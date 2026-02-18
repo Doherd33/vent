@@ -43,7 +43,6 @@ body {
   min-height: 100vh;
 }
 
-/* ── NOISE ── */
 body::before {
   content: '';
   position: fixed; inset: 0;
@@ -51,9 +50,6 @@ body::before {
   pointer-events: none; z-index: 0;
 }
 
-/* ══════════════════════════════════════
-   SUBMIT SCREEN
-══════════════════════════════════════ */
 #submitScreen {
   min-height: 100vh;
   display: flex;
@@ -165,9 +161,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 
 .s-hint { margin-top: 20px; font-size: 11px; color: var(--dim); text-align: center; line-height: 1.8; letter-spacing: .01em; }
 
-/* ══════════════════════════════════════
-   PROCESSING SCREEN
-══════════════════════════════════════ */
 #procScreen {
   display: none; min-height: 100vh;
   flex-direction: column; align-items: center; justify-content: center;
@@ -210,15 +203,11 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .p-step.live .p-icon { border-color: var(--accent); background: var(--accent2); color: var(--accent); }
 .p-step.done .p-icon { border-color: var(--green); background: var(--green2); color: var(--green); }
 
-/* ══════════════════════════════════════
-   FEEDBACK SCREEN  — DASHBOARD
-══════════════════════════════════════ */
 #fbScreen {
   display: none; position: relative; z-index: 1;
   min-height: 100vh; padding: 0 0 80px;
 }
 
-/* Top bar */
 .fb-topbar {
   position: sticky; top: 0; z-index: 100;
   background: rgba(7,7,9,.85); backdrop-filter: blur(16px);
@@ -249,7 +238,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 }
 .new-sub-btn:hover { border-color: var(--accent3); color: var(--text); }
 
-/* Hero banner */
 .fb-hero {
   padding: 36px 28px 28px;
   border-bottom: 1px solid var(--border);
@@ -271,7 +259,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .pill-amber { background: var(--gold2); border: 1px solid rgba(212,168,90,.2); color: var(--gold); }
 .pill-red   { background: var(--red2);  border: 1px solid rgba(224,112,112,.2); color: var(--red); }
 
-/* Observation echo */
 .obs-echo {
   margin-top: 18px;
   padding: 14px 16px;
@@ -282,22 +269,18 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .obs-echo::before { content: '"'; color: var(--accent); font-size: 18px; line-height: 0; vertical-align: -3px; margin-right: 3px; }
 .obs-echo::after  { content: '"'; color: var(--accent); font-size: 18px; line-height: 0; vertical-align: -3px; margin-left: 3px; }
 
-/* Dashboard grid */
 .dashboard {
   padding: 24px 28px 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto;
   gap: 14px;
 }
 
-/* Panel base */
 .panel {
   background: var(--s1); border: 1px solid var(--border); border-radius: 14px;
   overflow: hidden; transition: border-color .2s;
 }
 .panel:hover { border-color: var(--borderhi); }
-
 .panel.full  { grid-column: 1 / -1; }
 .panel.left  { grid-column: 1; }
 .panel.right { grid-column: 2; }
@@ -332,7 +315,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .panel-body { display: none; padding: 16px; }
 .panel.open .panel-body { display: block; }
 
-/* ── SOP TABLE ── */
 .sop-table { width: 100%; border-collapse: collapse; }
 .sop-table th {
   font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
@@ -360,7 +342,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .flag-ambi { background: var(--gold2); color: var(--gold); }
 .flag-ok   { background: var(--green2); color: var(--green); }
 
-/* ── SCI EVAL ── */
 .sci-summary { font-size: 13.5px; color: var(--mid); line-height: 1.75; margin-bottom: 16px; }
 .sci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .sci-item {
@@ -374,15 +355,12 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .sci-item-val.green  { color: var(--green); }
 .sci-item-val.accent { color: var(--accent); }
 
-/* ── CORRECTIVE ACTIONS ── */
 .ca-list { display: flex; flex-direction: column; gap: 8px; }
 .ca-item {
   display: flex; gap: 12px;
   padding: 12px 14px;
   background: var(--s2); border: 1px solid var(--border); border-radius: 9px;
-  transition: border-color .2s;
 }
-.ca-item:hover { border-color: var(--borderhi); }
 .ca-num {
   width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -402,7 +380,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .ca-short{ background: var(--gold2);  color: var(--gold); }
 .ca-long { background: var(--blue2);  color: var(--blue); }
 
-/* ── CONTACTS ── */
 .contact-list { display: flex; flex-direction: column; gap: 8px; }
 .contact-item {
   display: flex; align-items: flex-start; gap: 12px;
@@ -434,7 +411,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .dept-ops { background: var(--green2);  color: var(--green); }
 .dept-ms  { background: var(--teal2);   color: var(--teal); }
 
-/* ── TIMELINE ── */
 .timeline { display: flex; flex-direction: column; gap: 0; position: relative; }
 .timeline::before {
   content: ''; position: absolute; left: 10px; top: 8px; bottom: 8px;
@@ -458,7 +434,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .tl-event { font-size: 13px; color: var(--text); font-weight: 400; margin-bottom: 2px; }
 .tl-detail { font-size: 12px; color: var(--mid); line-height: 1.55; }
 
-/* ── PATTERN ── */
 .pattern-summary { font-size: 13.5px; color: var(--mid); line-height: 1.75; margin-bottom: 14px; }
 .pattern-bar-wrap { margin-bottom: 14px; }
 .pb-label { font-size: 11px; color: var(--dim); margin-bottom: 6px; display: flex; justify-content: space-between; }
@@ -471,9 +446,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
   border-radius: 8px; font-size: 12px; color: var(--gold); line-height: 1.55;
 }
 
-/* utils */
 @keyframes up { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-.hidden { display: none !important; }
 
 @media (max-width: 640px) {
   .dashboard { grid-template-columns: 1fr; padding: 16px 16px 0; }
@@ -487,7 +460,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 </head>
 <body>
 
-<!-- ══════════ SUBMIT SCREEN ══════════ -->
+<!-- SUBMIT SCREEN -->
 <div id="submitScreen">
   <div class="submit-wrap">
     <div class="s-nav">
@@ -543,7 +516,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
   </div>
 </div>
 
-<!-- ══════════ PROCESSING SCREEN ══════════ -->
+<!-- PROCESSING SCREEN -->
 <div id="procScreen">
   <div class="proc-logo">Vent<div class="pip"></div></div>
   <div class="proc-ring"></div>
@@ -557,14 +530,14 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
   </div>
 </div>
 
-<!-- ══════════ FEEDBACK SCREEN ══════════ -->
+<!-- FEEDBACK SCREEN -->
 <div id="fbScreen">
 
   <div class="fb-topbar">
     <div class="logo">Vent<div class="pip"></div></div>
     <div class="fb-status">
       <div class="status-dot"></div>
-      <span id="fbStatusText">Observation received and logged</span>
+      <span>Observation received and logged</span>
     </div>
     <div class="topbar-right">
       <div class="ref-code" id="refCode">VNT-0000</div>
@@ -577,19 +550,18 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
       <div>
         <div class="hero-title">Your observation has been <em>evaluated.</em></div>
         <div class="hero-meta">
-          <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span id="heroArea">Upstream</span></span>
-          <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="heroShift">Day shift</span></span>
-          <span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Anonymous</span>
+          <span><span id="heroArea">Upstream</span></span>
+          <span><span id="heroShift">Day shift</span></span>
+          <span>Anonymous</span>
         </div>
       </div>
       <div class="pill pill-green" id="priorityPill">Logged</div>
     </div>
-    <div class="obs-echo" id="obsEcho">Your observation text here.</div>
+    <div class="obs-echo" id="obsEcho"></div>
   </div>
 
   <div class="dashboard">
 
-    <!-- SOP & PBR REFERENCES — full width -->
     <div class="panel full open" id="panelSOP">
       <div class="panel-head" onclick="tog('panelSOP')">
         <div class="ph-left">
@@ -604,22 +576,15 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
         </div>
       </div>
       <div class="panel-body">
-        <table class="sop-table" id="sopTable">
-          <thead>
-            <tr>
-              <th>Document</th>
-              <th>Title</th>
-              <th>Relevant Step</th>
-              <th>How it relates</th>
-              <th>Status</th>
-            </tr>
-          </thead>
+        <table class="sop-table">
+          <thead><tr>
+            <th>Document</th><th>Title</th><th>Relevant Step</th><th>How it relates</th><th>Status</th>
+          </tr></thead>
           <tbody id="sopTbody"></tbody>
         </table>
       </div>
     </div>
 
-    <!-- SCIENTIFIC EVALUATION — left -->
     <div class="panel left open" id="panelSci">
       <div class="panel-head" onclick="tog('panelSci')">
         <div class="ph-left">
@@ -631,12 +596,11 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
         <svg class="ph-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="panel-body">
-        <div class="sci-summary" id="sciSummary">Loading...</div>
+        <div class="sci-summary" id="sciSummary"></div>
         <div class="sci-grid" id="sciGrid"></div>
       </div>
     </div>
 
-    <!-- CORRECTIVE ACTIONS — right -->
     <div class="panel right open" id="panelCA">
       <div class="panel-head" onclick="tog('panelCA')">
         <div class="ph-left">
@@ -655,7 +619,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
       </div>
     </div>
 
-    <!-- CONTACTS — left -->
     <div class="panel left open" id="panelContacts">
       <div class="panel-head" onclick="tog('panelContacts')">
         <div class="ph-left">
@@ -671,7 +634,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
       </div>
     </div>
 
-    <!-- REVIEW TIMELINE — right -->
     <div class="panel right open" id="panelTime">
       <div class="panel-head" onclick="tog('panelTime')">
         <div class="ph-left">
@@ -687,7 +649,6 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
       </div>
     </div>
 
-    <!-- PATTERN INTELLIGENCE — full width -->
     <div class="panel full" id="panelPattern">
       <div class="panel-head" onclick="tog('panelPattern')">
         <div class="ph-left">
@@ -700,7 +661,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
         <svg class="ph-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="panel-body">
-        <div class="pattern-summary" id="patternSummary">Loading...</div>
+        <div class="pattern-summary" id="patternSummary"></div>
         <div class="pattern-bar-wrap">
           <div class="pb-label">
             <span>Submissions on this topic</span>
@@ -710,338 +671,214 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
         </div>
         <div class="threshold-note">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span id="thresholdNote">When 3 or more independent submissions describe the same issue, it is automatically escalated to priority review — regardless of shift, seniority, or who raised it.</span>
+          <span id="thresholdNote">When 3 or more independent submissions describe the same issue, it is automatically escalated to priority review.</span>
         </div>
       </div>
     </div>
 
-  </div><!-- /dashboard -->
-</div><!-- /fbScreen -->
+  </div>
+</div>
 
 <script>
-let selArea = 'Upstream';
+  // ── CONFIG ──
+  const SERVER_URL = 'http://localhost:3001';
 
-function setArea(btn) {
-  document.querySelectorAll('.atab').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  selArea = btn.dataset.area;
-}
-function onType(el) { document.getElementById('goBtn').disabled = el.value.trim().length < 10; }
-function onKey(e)   { if ((e.metaKey||e.ctrlKey) && e.key==='Enter') doSubmit(); }
-function tog(id)    { document.getElementById(id).classList.toggle('open'); }
+  let selArea = 'Upstream';
 
-function showScreen(id) {
-  ['submitScreen','procScreen','fbScreen'].forEach(s => {
-    const el = document.getElementById(s);
-    if (s === id) {
-      el.style.display = s === 'procScreen' ? 'flex' : 'block';
-      el.style.animation = 'up .4s ease both';
-    } else {
-      el.style.display = 'none';
-    }
-  });
-}
-
-function animateSteps(cb) {
-  const ids = ['ps0','ps1','ps2','ps3','ps4','ps5'];
-  let i = 0;
-  const tick = () => {
-    if (i > 0) {
-      const prev = document.getElementById(ids[i-1]);
-      prev.classList.remove('live'); prev.classList.add('done');
-      prev.querySelector('.p-icon').textContent = '✓';
-    }
-    if (i < ids.length) {
-      document.getElementById(ids[i]).classList.add('live');
-      i++; setTimeout(tick, 800);
-    } else { setTimeout(cb, 300); }
-  };
-  tick();
-}
-
-async function doSubmit() {
-  const text = document.getElementById('ventText').value.trim();
-  if (text.length < 10) return;
-  const shift = document.getElementById('shiftSel').value || 'Unspecified';
-
-  showScreen('procScreen');
-  animateSteps(async () => {
-    const data = await getAIFeedback(text, selArea, shift);
-    populateFeedback(data, text, shift);
-    showScreen('fbScreen');
-    window.scrollTo({top:0,behavior:'smooth'});
-    // Animate progress bar
-    setTimeout(() => {
-      const fill = document.getElementById('pbFill');
-      fill.classList.add('animate');
-    }, 400);
-  });
-}
-
-async function getAIFeedback(observation, area, shift) {
-  const prompt = `You are the AI engine of Vent — an anonymous improvement intelligence system embedded in a regulated biologics manufacturing facility. A floor operator has submitted an observation. Generate a detailed, realistic feedback report as if you are a real system with access to this facility's documentation.
-
-Process area: ${area}
-Shift: ${shift}
-Observation: "${observation}"
-
-Use realistic pharmaceutical/bioprocessing document codes, real-sounding person names with titles, and specific technical language. Make it feel like a real facility system. Return ONLY valid JSON:
-
-{
-  "priority": "High" | "Medium" | "Low",
-  "sopRefs": [
-    {
-      "code": "e.g. SOP-US-042",
-      "title": "Full SOP title",
-      "step": "e.g. Step 4.3.2",
-      "relevance": "One sentence on how this SOP relates to the observation",
-      "flag": "gap" | "ambiguous" | "compliant"
-    }
-  ],
-  "bprRefs": [
-    {
-      "code": "e.g. BPR-2024-0118",
-      "title": "Batch or Process Record title",
-      "step": "e.g. Section 7, Step 12",
-      "relevance": "One sentence on how this record relates",
-      "flag": "gap" | "ambiguous" | "compliant"
-    }
-  ],
-  "sciEval": {
-    "summary": "3-4 sentences of genuine scientific and engineering analysis of the observation. Reference real bioprocessing phenomena, equipment behaviour, or regulatory considerations.",
-    "rootCauseHypothesis": "Most likely root cause in one sentence",
-    "riskLevel": "High" | "Medium" | "Low",
-    "affectedParameter": "e.g. Dissolved Oxygen, pH, Yield, Sterility",
-    "regulatoryFlag": "Yes" | "No",
-    "regulatoryNote": "One sentence on regulatory implications if any"
-  },
-  "correctiveActions": [
-    {
-      "title": "Action title",
-      "description": "What needs to be done and why",
-      "timing": "immediate" | "short" | "long",
-      "timingLabel": "e.g. Within 24h" | "Within 2 weeks" | "Next change control cycle"
-    }
-  ],
-  "contacts": [
-    {
-      "name": "Realistic full name",
-      "role": "Job title",
-      "dept": "qa" | "eng" | "ops" | "ms",
-      "deptLabel": "Department name",
-      "avatarClass": "av-a" | "av-b" | "av-c" | "av-d" | "av-e",
-      "initials": "2 letter initials",
-      "why": "Why this person specifically needs to be involved"
-    }
-  ],
-  "timeline": [
-    {
-      "state": "done" | "now" | "next" | "later",
-      "when": "e.g. Now · Just submitted",
-      "event": "Event title",
-      "detail": "One sentence detail"
-    }
-  ],
-  "pattern": {
-    "summary": "2 sentences on how pattern recognition works for this type of observation and what the escalation threshold means for the submitter.",
-    "currentCount": 1,
-    "threshold": 3
+  function setArea(btn) {
+    document.querySelectorAll('.atab').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    selArea = btn.dataset.area;
   }
-}`;
 
-  try {
-    const res = await fetch('http://localhost:3001/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        system: 'You are an expert pharmaceutical manufacturing AI. Return ONLY valid JSON. No markdown. No preamble.',
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const d = await res.json();
-    const raw = d.content.map(b => b.text||'').join('');
-    return JSON.parse(raw.replace(/```json|```/g,'').trim());
-  } catch(e) {
-    // Rich demo fallback
-    return {
-      priority: "Medium",
-      sopRefs: [
-        { code: "SOP-US-042", title: "Bioreactor Operations and Probe Calibration Procedure", step: "Step 4.3.2", relevance: "Defines the post-sanitisation probe stabilisation window and acceptable drift tolerances for DO measurement.", flag: "ambiguous" },
-        { code: "SOP-US-019", title: "Upstream Process Equipment Cleaning and Sanitisation", step: "Step 6.1 — Step 6.4", relevance: "Specifies the Tuesday CIP/SIP cycle parameters for Vessel 3 series; does not address probe re-equilibration time.", flag: "gap" },
-        { code: "SOP-QC-011", title: "In-Process Control Monitoring — Bioreactor Parameters", step: "Step 3.2.1", relevance: "Mandates DO readings within ±5% of setpoint before inoculation; silent on post-sanitisation anomaly handling.", flag: "ambiguous" }
-      ],
-      bprRefs: [
-        { code: "BPR-2024-0334", title: "Seed Train Expansion — Vessel 3B, Batch 2024-0334", step: "Section 7, Step 12", relevance: "Operator note field in this batch record references a DO probe lag following sanitisation — not formally escalated.", flag: "gap" },
-        { code: "BPR-2024-0291", title: "Seed Train Expansion — Vessel 3B, Batch 2024-0291", step: "Section 7, Step 12", relevance: "Identical pattern observed; operator compensated manually. No deviation raised.", flag: "gap" }
-      ],
-      sciEval: {
-        summary: "The behaviour described is consistent with electrochemical polarographic DO probe drift following exposure to hot alkaline sanitisation solution during CIP/SIP cycles. The probe membrane and electrolyte are transiently disrupted, requiring a re-equilibration period before accurate measurement resumes. This is a well-documented phenomenon in GMP bioreactor environments and typically resolves within 90–120 minutes. The concern is that the SOP does not account for this window, creating a risk that an operator new to the vessel may inoculate before the probe has stabilised.",
-        rootCauseHypothesis: "Polarographic probe membrane disruption during hot CIP/SIP — resolved by passive re-equilibration, but not documented in current procedure.",
-        riskLevel: "Medium",
-        affectedParameter: "Dissolved Oxygen (DO)",
-        regulatoryFlag: "Yes",
-        regulatoryNote: "Undocumented operator workarounds constitute a GMP documentation gap under EU GMP Annex 11 and ICH Q10 continuous improvement requirements."
-      },
-      correctiveActions: [
-        { title: "Raise informal observation to QA for triage", description: "Initiate a triage review to determine whether a formal deviation is required for the undocumented operator practice across batches BPR-2024-0334 and BPR-2024-0291.", timing: "immediate", timingLabel: "Within 48h" },
-        { title: "Update SOP-US-042 to include post-sanitisation stabilisation step", description: "Amend Step 4.3.2 to define a mandatory 90-minute probe stabilisation hold following Vessel 3 series CIP/SIP, with acceptance criteria before inoculation is permitted.", timing: "short", timingLabel: "Within 2 weeks" },
-        { title: "Review Vessel 3 series probe calibration schedule", description: "Engineering to inspect the membrane condition on probes 3A, 3B, and 3C and assess whether the drift pattern indicates accelerated probe degradation requiring replacement.", timing: "short", timingLabel: "Within 1 week" },
-        { title: "Retrospective batch record review for undocumented compensations", description: "QA to conduct a look-back review of the last 12 Vessel 3 series batches for undocumented operator interventions related to DO anomalies post-sanitisation.", timing: "long", timingLabel: "Next change control cycle" }
-      ],
-      contacts: [
-        { name: "Dr. Sarah Malone", role: "QA Manager — Upstream", dept: "qa", deptLabel: "Quality Assurance", avatarClass: "av-a", initials: "SM", why: "Primary reviewer for upstream deviation triage and SOP change authorisation." },
-        { name: "Ciarán Walsh", role: "Process Engineer — Bioreactor Systems", dept: "eng", deptLabel: "Engineering", avatarClass: "av-b", initials: "CW", why: "Responsible for Vessel 3 series equipment qualification and probe calibration programme." },
-        { name: "Dr. Aoife Byrne", role: "Senior Scientist — Cell Culture", dept: "ops", deptLabel: "Upstream Operations", avatarClass: "av-c", initials: "AB", why: "Process owner for seed train expansion protocols; will assess biological impact of the DO anomaly window." },
-        { name: "Tomasz Kowalski", role: "Manufacturing Science Lead", dept: "ms", deptLabel: "Manufacturing Science", avatarClass: "av-d", initials: "TK", why: "Owns the SOP change control process and retrospective batch data analysis." }
-      ],
-      timeline: [
-        { state: "done", when: "Now", event: "Observation received and logged", detail: "Assigned reference VNT-0291. Structured automatically and routed for review." },
-        { state: "now",  when: "Within 24–48 hours", event: "QA triage review", detail: "Dr. Sarah Malone (QA Manager) will assess whether a formal deviation is required." },
-        { state: "next", when: "Within 1 week", event: "Engineering probe inspection", detail: "Ciarán Walsh to inspect Vessel 3A/3B/3C DO probes and report findings." },
-        { state: "next", when: "Within 2 weeks", event: "SOP-US-042 draft amendment", detail: "Tomasz Kowalski to draft updated Step 4.3.2 for SME review and approval." },
-        { state: "later", when: "Next change control cycle", event: "Retrospective batch review complete", detail: "12-batch look-back to be presented at monthly Quality Review Board." }
-      ],
-      pattern: {
-        summary: "This observation has been matched to a known equipment reference (Vessel 3 series, DO probes) and process area. If 2 more independent submissions describe the same behaviour, it will be automatically escalated to priority status — removing the need for anyone to push for action individually.",
-        currentCount: 1,
-        threshold: 3
+  function onType(el) { document.getElementById('goBtn').disabled = el.value.trim().length < 10; }
+  function onKey(e)   { if ((e.metaKey||e.ctrlKey) && e.key==='Enter') doSubmit(); }
+  function tog(id)    { document.getElementById(id).classList.toggle('open'); }
+
+  function showScreen(id) {
+    ['submitScreen','procScreen','fbScreen'].forEach(s => {
+      const el = document.getElementById(s);
+      if (s === id) {
+        el.style.display = s === 'procScreen' ? 'flex' : 'block';
+      } else {
+        el.style.display = 'none';
       }
-    };
+    });
   }
-}
 
-function populateFeedback(d, obsText, shift) {
-  // Ref + hero
-  const ref = 'VNT-' + Math.floor(1000 + Math.random()*8999);
-  document.getElementById('refCode').textContent = ref;
-  document.getElementById('heroArea').textContent = selArea;
-  document.getElementById('heroShift').textContent = (shift||'Unspecified') + ' shift';
-  document.getElementById('obsEcho').textContent = obsText;
+  function animateSteps(cb) {
+    const ids = ['ps0','ps1','ps2','ps3','ps4','ps5'];
+    let i = 0;
+    const tick = () => {
+      if (i > 0) {
+        const prev = document.getElementById(ids[i-1]);
+        prev.classList.remove('live'); prev.classList.add('done');
+        prev.querySelector('.p-icon').textContent = '✓';
+      }
+      if (i < ids.length) {
+        document.getElementById(ids[i]).classList.add('live');
+        i++; setTimeout(tick, 800);
+      } else { setTimeout(cb, 300); }
+    };
+    tick();
+  }
 
-  // Priority pill
-  const pill = document.getElementById('priorityPill');
-  const p = d.priority || 'Medium';
-  pill.textContent = p + ' Priority';
-  pill.className = 'pill ' + (p==='High'?'pill-red': p==='Medium'?'pill-amber':'pill-green');
+  async function doSubmit() {
+    const text = document.getElementById('ventText').value.trim();
+    if (text.length < 10) return;
+    const shift = document.getElementById('shiftSel').value || 'Unspecified';
+    const willingToConsult = document.getElementById('conToggle').checked;
 
-  // SOP + BPR table
-  const allDocs = [...(d.sopRefs||[]), ...(d.bprRefs||[])];
-  document.getElementById('sopCount').textContent = allDocs.length + ' docs';
-  const tbody = document.getElementById('sopTbody');
-  tbody.innerHTML = '';
-  allDocs.forEach(r => {
-    const flagClass = r.flag==='gap'?'flag-gap': r.flag==='ambiguous'?'flag-ambi':'flag-ok';
-    const flagLabel = r.flag==='gap'?'Gap': r.flag==='ambiguous'?'Ambiguous':'Compliant';
-    tbody.innerHTML += `<tr>
-      <td><div class="sop-code">${r.code}</div></td>
-      <td>${r.title}</td>
-      <td><span class="sop-step">${r.step}</span></td>
-      <td>${r.relevance}</td>
-      <td><span class="flag ${flagClass}">${flagLabel}</span></td>
-    </tr>`;
-  });
+    showScreen('procScreen');
 
-  // Sci eval
-  const s = d.sciEval || {};
-  document.getElementById('sciSummary').textContent = s.summary || '';
-  const grid = document.getElementById('sciGrid');
-  grid.innerHTML = '';
-  const sciItems = [
-    { label:'Root Cause Hypothesis', val: s.rootCauseHypothesis, cls:'' },
-    { label:'Risk Level', val: s.riskLevel, cls: s.riskLevel==='High'?'red': s.riskLevel==='Medium'?'amber':'green' },
-    { label:'Affected Parameter', val: s.affectedParameter, cls:'accent' },
-    { label:'Regulatory Flag', val: s.regulatoryNote, cls: s.regulatoryFlag==='Yes'?'red':'' }
-  ];
-  sciItems.forEach(i => {
-    grid.innerHTML += `<div class="sci-item">
-      <div class="sci-item-label">${i.label}</div>
-      <div class="sci-item-val ${i.cls}">${i.val||'—'}</div>
-    </div>`;
-  });
+    animateSteps(async () => {
+      try {
+        // Call YOUR server — not Anthropic directly
+        const res = await fetch(`${SERVER_URL}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            observation: text,
+            area: selArea,
+            shift: shift,
+            willingToConsult: willingToConsult
+          })
+        });
 
-  // Corrective actions
-  const cas = d.correctiveActions || [];
-  document.getElementById('caCount').textContent = cas.length;
-  const caList = document.getElementById('caList');
-  caList.innerHTML = '';
-  cas.forEach((c,i) => {
-    const tcls = c.timing==='immediate'?'ca-imm': c.timing==='short'?'ca-short':'ca-long';
-    caList.innerHTML += `<div class="ca-item">
-      <div class="ca-num">${String(i+1).padStart(2,'0')}</div>
-      <div class="ca-text">
-        <div class="ca-title">${c.title}</div>
-        <div class="ca-desc">${c.description}</div>
-      </div>
-      <div class="ca-type ${tcls}">${c.timingLabel}</div>
-    </div>`;
-  });
+        const data = await res.json();
+        populateFeedback(data, text, shift);
+        showScreen('fbScreen');
+        window.scrollTo({top:0,behavior:'smooth'});
+        setTimeout(() => {
+          document.getElementById('pbFill').classList.add('animate');
+        }, 400);
 
-  // Contacts
-  const contacts = d.contacts || [];
-  const cl = document.getElementById('contactList');
-  cl.innerHTML = '';
-  contacts.forEach(c => {
-    cl.innerHTML += `<div class="contact-item">
-      <div class="contact-avatar ${c.avatarClass}">${c.initials}</div>
-      <div class="contact-info">
-        <div class="contact-name">${c.name}</div>
-        <div class="contact-role">${c.role}</div>
-        <div class="contact-why">${c.why}</div>
-      </div>
-      <div class="contact-dept dept-${c.dept}">${c.deptLabel}</div>
-    </div>`;
-  });
+      } catch(err) {
+        console.error('Error:', err);
+        alert('Could not connect to server. Make sure it is running.');
+        showScreen('submitScreen');
+      }
+    });
+  }
 
-  // Timeline
-  const tl = document.getElementById('timeline');
-  tl.innerHTML = '';
-  (d.timeline||[]).forEach(t => {
-    const sym = t.state==='done'?'✓': t.state==='now'?'●':'○';
-    tl.innerHTML += `<div class="tl-item">
-      <div class="tl-dot tl-${t.state}">${sym}</div>
-      <div class="tl-content">
-        <div class="tl-when">${t.when}</div>
-        <div class="tl-event">${t.event}</div>
-        <div class="tl-detail">${t.detail}</div>
-      </div>
-    </div>`;
-  });
+  function populateFeedback(d, obsText, shift) {
+    document.getElementById('refCode').textContent = d.refCode || 'VNT-0000';
+    document.getElementById('heroArea').textContent = selArea;
+    document.getElementById('heroShift').textContent = (shift||'Unspecified') + ' shift';
+    document.getElementById('obsEcho').textContent = obsText;
 
-  // Pattern
-  const pat = d.pattern || {};
-  document.getElementById('patternSummary').textContent = pat.summary || '';
-  const cur = pat.currentCount || 1;
-  const thr = pat.threshold || 3;
-  document.getElementById('pbFraction').textContent = `${cur} / ${thr} threshold`;
-  document.getElementById('patternBadge').textContent = `${cur} submission${cur>1?'s':''}`;
-  const pct = Math.round((cur/thr)*100);
-  document.getElementById('pbFill').style.setProperty('--w', pct+'%');
-  document.getElementById('thresholdNote').textContent =
-    `When ${thr} or more independent submissions describe the same issue, it is automatically escalated to priority review — regardless of shift, seniority, or who raised it.`;
-}
+    const pill = document.getElementById('priorityPill');
+    const p = d.priority || 'Medium';
+    pill.textContent = p + ' Priority';
+    pill.className = 'pill ' + (p==='High'?'pill-red': p==='Medium'?'pill-amber':'pill-green');
 
-function resetAll() {
-  document.getElementById('ventText').value = '';
-  document.getElementById('goBtn').disabled = true;
-  document.getElementById('conToggle').checked = false;
-  document.getElementById('shiftSel').value = '';
-  document.querySelectorAll('.atab').forEach(b => b.classList.remove('on'));
-  document.querySelector('[data-area="Upstream"]').classList.add('on');
-  selArea = 'Upstream';
-  ['ps0','ps1','ps2','ps3','ps4','ps5'].forEach((id,i) => {
-    const el = document.getElementById(id);
-    el.classList.remove('live','done');
-    el.querySelector('.p-icon').textContent = String(i+1).padStart(2,'0');
-  });
-  document.getElementById('pbFill').classList.remove('animate');
+    const allDocs = [...(d.sopRefs||[]), ...(d.bprRefs||[])];
+    document.getElementById('sopCount').textContent = allDocs.length + ' docs';
+    const tbody = document.getElementById('sopTbody');
+    tbody.innerHTML = '';
+    allDocs.forEach(r => {
+      const flagClass = r.flag==='gap'?'flag-gap': r.flag==='ambiguous'?'flag-ambi':'flag-ok';
+      const flagLabel = r.flag==='gap'?'Gap': r.flag==='ambiguous'?'Ambiguous':'Compliant';
+      tbody.innerHTML += `<tr>
+        <td><div class="sop-code">${r.code}</div></td>
+        <td>${r.title}</td>
+        <td><span class="sop-step">${r.step}</span></td>
+        <td>${r.relevance}</td>
+        <td><span class="flag ${flagClass}">${flagLabel}</span></td>
+      </tr>`;
+    });
+
+    const s = d.sciEval || {};
+    document.getElementById('sciSummary').textContent = s.summary || '';
+    const grid = document.getElementById('sciGrid');
+    grid.innerHTML = '';
+    [
+      { label:'Root Cause Hypothesis', val: s.rootCauseHypothesis, cls:'' },
+      { label:'Risk Level', val: s.riskLevel, cls: s.riskLevel==='High'?'red': s.riskLevel==='Medium'?'amber':'green' },
+      { label:'Affected Parameter', val: s.affectedParameter, cls:'accent' },
+      { label:'Regulatory Note', val: s.regulatoryNote, cls: s.regulatoryFlag==='Yes'?'red':'' }
+    ].forEach(i => {
+      grid.innerHTML += `<div class="sci-item">
+        <div class="sci-item-label">${i.label}</div>
+        <div class="sci-item-val ${i.cls}">${i.val||'—'}</div>
+      </div>`;
+    });
+
+    const cas = d.correctiveActions || [];
+    document.getElementById('caCount').textContent = cas.length;
+    const caList = document.getElementById('caList');
+    caList.innerHTML = '';
+    cas.forEach((c,i) => {
+      const tcls = c.timing==='immediate'?'ca-imm': c.timing==='short'?'ca-short':'ca-long';
+      caList.innerHTML += `<div class="ca-item">
+        <div class="ca-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="ca-text">
+          <div class="ca-title">${c.title}</div>
+          <div class="ca-desc">${c.description}</div>
+        </div>
+        <div class="ca-type ${tcls}">${c.timingLabel}</div>
+      </div>`;
+    });
+
+    const cl = document.getElementById('contactList');
+    cl.innerHTML = '';
+    (d.contacts||[]).forEach(c => {
+      cl.innerHTML += `<div class="contact-item">
+        <div class="contact-avatar ${c.avatarClass}">${c.initials}</div>
+        <div class="contact-info">
+          <div class="contact-name">${c.name}</div>
+          <div class="contact-role">${c.role}</div>
+          <div class="contact-why">${c.why}</div>
+        </div>
+        <div class="contact-dept dept-${c.dept}">${c.deptLabel}</div>
+      </div>`;
+    });
+
+    const tl = document.getElementById('timeline');
+    tl.innerHTML = '';
+    (d.timeline||[]).forEach(t => {
+      const sym = t.state==='done'?'✓': t.state==='now'?'●':'○';
+      tl.innerHTML += `<div class="tl-item">
+        <div class="tl-dot tl-${t.state}">${sym}</div>
+        <div class="tl-content">
+          <div class="tl-when">${t.when}</div>
+          <div class="tl-event">${t.event}</div>
+          <div class="tl-detail">${t.detail}</div>
+        </div>
+      </div>`;
+    });
+
+    const pat = d.pattern || {};
+    document.getElementById('patternSummary').textContent = pat.summary || '';
+    const cur = pat.currentCount || 1;
+    const thr = pat.threshold || 3;
+    document.getElementById('pbFraction').textContent = `${cur} / ${thr} threshold`;
+    document.getElementById('patternBadge').textContent = `${cur} submission${cur>1?'s':''}`;
+    const pct = Math.round((cur/thr)*100);
+    document.getElementById('pbFill').style.setProperty('--w', pct+'%');
+    document.getElementById('thresholdNote').textContent =
+      `When ${thr} or more independent submissions describe the same issue, it is automatically escalated to priority review — regardless of shift, seniority, or who raised it.`;
+  }
+
+  function resetAll() {
+    document.getElementById('ventText').value = '';
+    document.getElementById('goBtn').disabled = true;
+    document.getElementById('conToggle').checked = false;
+    document.getElementById('shiftSel').value = '';
+    document.querySelectorAll('.atab').forEach(b => b.classList.remove('on'));
+    document.querySelector('[data-area="Upstream"]').classList.add('on');
+    selArea = 'Upstream';
+    ['ps0','ps1','ps2','ps3','ps4','ps5'].forEach((id,i) => {
+      const el = document.getElementById(id);
+      el.classList.remove('live','done');
+      el.querySelector('.p-icon').textContent = String(i+1).padStart(2,'0');
+    });
+    document.getElementById('pbFill').classList.remove('animate');
+    showScreen('submitScreen');
+    setTimeout(() => document.getElementById('ventText').focus(), 100);
+  }
+
   showScreen('submitScreen');
-  setTimeout(() => document.getElementById('ventText').focus(), 100);
-}
-
-// Init
-showScreen('submitScreen');
 </script>
 </body>
 </html>

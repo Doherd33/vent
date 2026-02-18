@@ -1,37 +1,45 @@
-// Load environment variables from .env file
 require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
 const Anthropic = require('@anthropic-ai/sdk');
+const { createClient } = require('@supabase/supabase-js');
 
-// Create the server
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Allow requests from your front end
 app.use(cors());
 app.use(express.json());
 
-// Create Anthropic client using your API key
+// Anthropic client
 const anthropic = new Anthropic.default({
   apiKey: process.env.ANTHROPIC_API_KEY
 });
 
-// Test route — just to confirm server is running
+// Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
+
+// Test route
 app.get('/', (req, res) => {
   res.json({ message: 'Vent server is running' });
 });
 
-// Main route — receives submissions from the front end
+// Submit route
 app.post('/submit', async (req, res) => {
-  const { observation, area, shift } = req.body;
+  const { observation, area, shift, willingToConsult } = req.body;
 
   if (!observation || observation.length < 10) {
     return res.status(400).json({ error: 'Observation too short' });
   }
 
+  // Generate reference code
+  const refCode = 'VNT-' + Math.floor(1000 + Math.random() * 8999);
+
   try {
+    // Call Anthropic API
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
@@ -61,7 +69,27 @@ Return this exact JSON structure with realistic pharmaceutical detail:
     const clean = raw.replace(/```json|```/g, '').trim();
     const feedback = JSON.parse(clean);
 
-    res.json(feedback);
+    // Save to Supabase
+    const { error } = await supabase
+      .from('submissions')
+      .insert({
+        ref_code: refCode,
+        process_area: area,
+        shift: shift,
+        raw_text: observation,
+        priority: feedback.priority,
+        structured: feedback,
+        willing_to_consult: willingToConsult || false
+      });
+
+    if (error) {
+      console.error('Supabase error:', error);
+    } else {
+      console.log('Submission saved:', refCode);
+    }
+
+    // Return feedback to front end
+    res.json({ ...feedback, refCode });
 
   } catch (error) {
     console.error('Error:', error);
@@ -69,7 +97,6 @@ Return this exact JSON structure with realistic pharmaceutical detail:
   }
 });
 
-// Start the server
 app.listen(PORT, () => {
   console.log(`Vent server running on http://localhost:${PORT}`);
 });
