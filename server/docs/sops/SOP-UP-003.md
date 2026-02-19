@@ -1,0 +1,302 @@
+# STANDARD OPERATING PROCEDURE
+
+| Field | Detail |
+|---|---|
+| **Document Number** | SOP-UP-003 |
+| **Title** | Cell Density, Viability Monitoring and Bleed Rate Management |
+| **Revision** | 02 |
+| **Effective Date** | 2024-01-20 |
+| **Review Date** | 2025-01-20 |
+| **Department** | Upstream Processing |
+| **Author** | R. Connolly – Process Scientist |
+| **Reviewed By** | S. Walsh – Senior Process Scientist |
+| **Approved By** | C. O'Brien – QA Manager |
+| **Classification** | GMP Controlled Document |
+
+> **UNCONTROLLED WHEN PRINTED** – Always verify currency against the Document Management System before use.
+
+---
+
+## 1. PURPOSE
+
+This SOP defines the procedure for routine daily cell density and viability monitoring during perfusion bioreactor operation, including in-process metabolite sampling, bleed rate calculation, and escalation criteria. The purpose is to maintain a stable, productive cell culture within defined operating parameters and to provide a consistent, documented basis for process decisions during perfusion runs.
+
+---
+
+## 2. SCOPE
+
+This procedure applies to all Manufacturing Associates (MA) and Senior Manufacturing Associates (SMA) operating perfusion bioreactors in the Upstream Processing suite. It covers daily sampling, automated cell counting, metabolite measurement, bleed calculation, and associated BPR documentation. It applies from the day after inoculation (Day 1) until the end of the production run.
+
+---
+
+## 3. REGULATORY REFERENCES
+
+- 21 CFR Part 211.192 – Production Record Review
+- ICH Q8(R2) – Pharmaceutical Development (Design Space and Process Understanding)
+- ICH Q10 – Pharmaceutical Quality System
+- Internal: QMS-GEN-001 – Document Control
+
+---
+
+## 4. DEFINITIONS
+
+| Term | Definition |
+|---|---|
+| VCD | Viable Cell Density – concentration of live cells per unit volume (×10⁶ cells/mL) |
+| Viability | Percentage of live cells relative to total cells, expressed as % |
+| Bleed | Controlled daily removal of culture volume (cells + medium) to maintain VCD at target |
+| Bleed Rate | Volume of culture removed per day, expressed as a fraction of working volume (e.g., 0.05 = 5% per day) |
+| CSPR | Cell-Specific Perfusion Rate – the volume of medium delivered per cell per day (nL/cell/day); used for scale-up and optimisation |
+| Glucose | Primary energy source for CHO cell culture; monitored to assess culture health and metabolic rate |
+| Lactate | Metabolic by-product of glycolysis; elevated lactate indicates metabolic stress or oxygen limitation |
+| Glutamine | Secondary energy/nitrogen source; depletion can limit cell growth |
+| Osmolality | Measure of dissolved solute concentration in culture medium (mOsm/kg); elevated values indicate evaporation or metabolic accumulation |
+| Doubling Time | Time taken for the viable cell population to double under current culture conditions |
+
+---
+
+## 5. RESPONSIBILITIES
+
+| Role | Responsibility |
+|---|---|
+| Manufacturing Associate (MA) | Perform daily sampling, operate cell counter, perform metabolite analysis, record all results in BPR, calculate bleed volume |
+| Senior Manufacturing Associate (SMA) | Independently verify bleed volume calculation, witness bleed execution, countersign BPR |
+| Process Scientist (PS) | Review daily data, set or adjust perfusion and bleed rates, investigate trends and deviations, sign off on daily data in electronic batch record |
+| QA Representative | Review completed BPR sections, approve deviations |
+
+---
+
+## 6. SAFETY PRECAUTIONS
+
+6.1 All PPE requirements per site Cleanroom SOB-PPE-001 apply in the manufacturing suite.
+
+6.2 All bioreactor samples are to be treated as BSL-1 biological material per Biosafety Plan BSP-001.
+
+6.3 Sample containers from the bioreactor must be handled with care. Do not centrifuge sample containers beyond instrument rated capacity. Cap sample containers securely before transport.
+
+6.4 The Vi-Cell XR and Cedex HiRes instruments contain trypan blue dye, which is a potential carcinogen. Avoid skin and eye contact. Refer to SDS-CHEM-091 (Trypan Blue). Wear gloves when changing reagent cassettes or cleaning the instrument.
+
+6.5 Dispose of all biological waste from the cell counter per SOP-ENV-003. Do not pour cell counter waste directly to drain without deactivation.
+
+---
+
+## 7. EQUIPMENT AND MATERIALS
+
+### 7.1 Equipment
+
+- Vi-Cell XR Automated Cell Viability Analyser (Beckman Coulter) or Cedex HiRes Analyser (Roche) – calibrated and within PM schedule
+- BioProfile FLEX2 Analyser (Nova Biomedical) or equivalent – for metabolite and gas analysis
+- Calibrated analytical balance (for bleed volume measurement by weight)
+- Peristaltic pump (calibrated) – for bleed execution
+- Class II BSC – for aseptic sample handling if required
+
+### 7.2 Consumables
+
+- Vi-Cell XR sample cups or Cedex HiRes sample tubes (as applicable)
+- Sterile syringes: 10 mL and 20 mL
+- Sterile sample containers (capped, labelled)
+- Trypan Blue 0.4% solution (Vi-Cell XR, if manual dilution required)
+- BioProfile FLEX2 analysis cartridges (within expiry)
+- Single-use bleed collection bag (appropriately sized for bleed volume)
+
+---
+
+## 8. PROCEDURE
+
+### 8.1 Sampling Schedule
+
+8.1.1 Routine daily sampling is performed **once per day, between 08:00 and 10:00**, unless an additional sample is requested by the Process Scientist or triggered by an alert condition.
+
+8.1.2 On Day 1 post-inoculation, an additional sample is taken at 24 hours post-inoculation regardless of time of day. Record this as the Day 1 sample.
+
+8.1.3 If a control parameter alert or action limit is exceeded on the bioreactor control system, take an unscheduled cell count immediately and notify the Process Scientist. Document in BPR Section 6.
+
+8.1.4 The Process Scientist may request additional samples (e.g., twice daily) during ramp-up phase, process deviation investigation, or as part of a planned experiment. Record any additional sampling in BPR Section 6.
+
+---
+
+### 8.2 Sample Collection
+
+8.2.1 Ensure sample port is sanitised per SOP-ASP-001 (70% IPA wipe, allow 60 seconds contact time, allow to dry before sampling).
+
+8.2.2 Discard the first **2 mL** from the sample port (dead volume) into a waste container before collecting the sample.
+
+8.2.3 Collect **10 mL** total sample into a sterile, labelled sample container using a sterile syringe.
+
+8.2.4 Label the sample container with: bioreactor ID, batch number, run day, sample time.
+
+8.2.5 Process the sample immediately – do not allow sample to stand for more than **30 minutes** before analysis. If delay is anticipated, store sample on ice and analyse within 2 hours.
+
+8.2.6 Record sample collection time in BPR Section 6.
+
+---
+
+### 8.3 Cell Count – Vi-Cell XR
+
+8.3.1 Power on the Vi-Cell XR and allow to warm up for ≥ 15 minutes. Confirm instrument has passed the daily performance check (QC) per instrument log IQ-QC-VICELL-01.
+
+8.3.2 Gently invert sample container 5–10 times to resuspend cells. Do not vortex.
+
+8.3.3 Load a 0.5 mL aliquot of sample into a labelled Vi-Cell sample cup. Place cup in the Vi-Cell carousel.
+
+8.3.4 Enter sample ID (Batch Number – Bioreactor ID – Run Day – Time) into the Vi-Cell software.
+
+8.3.5 Run the analysis using the validated CHO cell counting method (method name: CHO_PERFUSION_v3 or equivalent saved method as per IQ-QC-VICELL-01).
+
+8.3.6 The instrument will automatically apply a trypan blue dilution and image analysis. Minimum 200 cells must be counted for the result to be valid. If fewer than 200 cells counted (e.g., low VCD at early culture stage), note in BPR and re-run with a 1:2 dilution in PBS.
+
+8.3.7 Record the following from the Vi-Cell printout in BPR Section 6:
+
+| Parameter | Unit | Record |
+|---|---|---|
+| Total Cell Density | ×10⁶ cells/mL | Yes |
+| Viable Cell Density (VCD) | ×10⁶ cells/mL | Yes |
+| Cell Viability | % | Yes |
+| Mean Cell Diameter | µm | Yes |
+| Cell Count (number counted) | n | Yes |
+| Analysis Time | HH:MM | Yes |
+
+---
+
+### 8.4 Metabolite Analysis – BioProfile FLEX2
+
+8.4.1 Take a 2 mL aliquot from the collected sample. Load into BioProfile FLEX2 sample port per instrument SOP SOP-QC-018.
+
+8.4.2 Record the following metabolite results in BPR Section 6:
+
+| Parameter | Unit | Typical Target Range | Alert If |
+|---|---|---|---|
+| Glucose | mmol/L | 20–40 (depends on perfusion rate) | < 10 or > 60 mmol/L |
+| Lactate | mmol/L | < 4.0 | > 4.0 |
+| Glutamine | mmol/L | 2–8 | < 1.0 |
+| Ammonium (NH₄⁺) | mmol/L | < 5.0 | > 5.0 |
+| pH (off-line) | — | 7.10–7.30 | < 7.00 or > 7.40 |
+| pCO₂ | mmHg | 40–80 | > 100 |
+| pO₂ | mmHg | 80–120 | < 40 |
+| Osmolality | mOsm/kg | 290–340 | > 370 |
+
+8.4.3 Off-line pH should be cross-referenced against the on-line pH probe reading from the control system. Alert if off-line and on-line pH diverge by more than **0.1 pH units**. If divergence exceeds 0.2 units, consider re-calibrating the on-line probe. Notify Process Scientist.
+
+> **ALERT PROTOCOL:** For any metabolite result at or beyond an alert limit, notify the Process Scientist by phone or in person within **1 hour** of receiving the result. Do not wait for the daily review. Document the alert notification in BPR Section 6 with time, PS name contacted, and agreed action.
+
+---
+
+### 8.5 Bleed Rate Calculation and Execution
+
+#### 8.5.1 When to Bleed
+
+8.5.1.1 A daily cell bleed is performed once VCD has exceeded the **lower bleed threshold** defined in PS-[PRODUCT CODE]-UP-001 (typically **≥ 30 × 10⁶ cells/mL**).
+
+8.5.1.2 The bleed is used to:
+- Prevent VCD from exceeding the upper target defined in the process specification
+- Maintain steady-state culture
+- Remove accumulating metabolic waste products
+
+8.5.1.3 The target steady-state VCD range is defined in PS-[PRODUCT CODE]-UP-001 (typically **40–80 × 10⁶ cells/mL** for an intensified perfusion process).
+
+> **KNOWN GAP – High VCD with High Viability:** The current process specification does not provide a clear decision tree for the scenario in which VCD is above the upper target but cell viability remains ≥ 95% and all metabolites are within range. In practice, Process Scientists have applied different bleed rates in this situation, leading to inconsistent run trajectories across batches. An updated guidance document is in preparation (Change Control CC-UP-2024-009, open). Until resolved, escalate this situation to the Process Scientist and document the decision made in the BPR with PS signature.
+
+#### 8.5.2 Bleed Volume Calculation
+
+8.5.2.1 Calculate the daily bleed volume using the following formula:
+
+```
+Bleed Volume (mL) = Bleed Rate (fraction/day) × Working Volume (mL)
+```
+
+Where Bleed Rate is set by the Process Scientist based on current VCD relative to the target VCD. A simplified approximation for steady-state maintenance:
+
+```
+Bleed Rate ≈ µ_net (net growth rate, day⁻¹)
+```
+
+At steady state, bleed rate ≈ growth rate to maintain constant VCD.
+
+8.5.2.2 The Process Scientist sets and communicates the bleed rate each day following data review. The MA calculates the corresponding bleed volume and records the calculation in BPR Section 6.
+
+8.5.2.3 **[W – Witness Required]** SMA independently verifies the bleed volume calculation. Both MA and SMA sign BPR Section 6.
+
+#### 8.5.3 Bleed Execution
+
+8.5.3.1 Connect a sterile single-use bleed collection bag to the bioreactor bleed port using aseptic technique per SOP-ASP-001.
+
+8.5.3.2 Open the bleed port valve and allow culture to flow into the collection bag by gravity or using a peristaltic pump set to a controlled flow rate. Do not use a flow rate that causes excessive foaming in the vessel.
+
+8.5.3.3 Monitor the volume transferred by weight (calibrated balance under the collection bag). Stop bleed when the target bleed volume ± 5% has been removed.
+
+8.5.3.4 Seal the collection bag. Record bleed start time, end time, and actual volume removed in BPR Section 6.
+
+8.5.3.5 Dispose of the bleed bag per SOP-ENV-003 (Biowaste Deactivation). The bleed bag must not be left unattended in the suite. Remove immediately and deactivate.
+
+---
+
+### 8.6 Trend Monitoring and Escalation
+
+8.6.1 The Process Scientist reviews the full daily dataset each day and signs the BPR electronic review record.
+
+8.6.2 Escalation thresholds requiring immediate PS and QA notification (not to wait for the daily review):
+
+| Trigger | Action |
+|---|---|
+| Cell viability drops below **80%** | Immediately notify PS. Discuss run continuation. Raise deviation. |
+| VCD falls below **50% of target** without explanation | Immediately notify PS. Evaluate contamination. Consider run termination. |
+| Off-line pH diverges > 0.2 units from on-line probe | Recalibrate probe. If probe failed, raise deviation. Notify PS. |
+| Glucose < 5 mmol/L | Increase perfusion rate immediately. Notify PS. Consider bolus glucose addition (requires PS written authorisation). |
+| Lactate > 6 mmol/L | Notify PS. Consider reducing perfusion osmolality, increasing VVD. Raise deviation. |
+| Ammonium > 8 mmol/L | Notify PS. Evaluate medium formulation. Raise deviation if sustained. |
+| Visible particles or colour change in culture | Sample for bioburden. Notify PS and QA. Suspend operations pending investigation. |
+
+8.6.3 All escalations must be documented in BPR Section 6 with: time of observation, person notified, agreed action, and outcome.
+
+---
+
+## 9. IN-PROCESS CONTROLS SUMMARY
+
+| Parameter | Target | Alert | Action |
+|---|---|---|---|
+| VCD (×10⁶ cells/mL) | Per PS-[PRODUCT CODE]-UP-001 | ±20% of target | ±40% of target → deviation |
+| Viability (%) | ≥ 90 | < 85 | < 80 → immediate escalation |
+| Glucose (mmol/L) | 20–40 | < 10 or > 60 | < 5 → immediate action |
+| Lactate (mmol/L) | < 4.0 | 4.0–6.0 | > 6.0 → deviation |
+| Osmolality (mOsm/kg) | 290–340 | 340–370 | > 370 → deviation |
+| Off/On-line pH divergence | < 0.05 units | 0.05–0.10 | > 0.10 → recalibrate |
+
+---
+
+## 10. DEVIATIONS
+
+10.1 Any parameter outside acceptance criteria and any procedural deviation must be documented on DEV-FORM-001.
+
+10.2 Report to QA within 4 hours of occurrence. Critical deviations (viability < 80%, visible contamination, filter failure) require immediate QA notification.
+
+---
+
+## 11. REFERENCES
+
+| Document | Title |
+|---|---|
+| SOP-UP-001 | Bioreactor Setup, Preparation and Inoculation |
+| SOP-UP-002 | Perfusion Media Preparation and Exchange |
+| SOP-UP-004 | Harvest Line and ATF System Operation |
+| SOP-QC-015 | Cell Counting Procedure |
+| SOP-QC-018 | BioProfile FLEX2 Operation |
+| SOP-ASP-001 | Aseptic Technique and Connection Procedure |
+| SOP-ENV-003 | Biowaste Deactivation Procedure |
+| BPR-UP-001 | Upstream Perfusion Batch Production Record |
+| PS-[PRODUCT CODE]-UP-001 | Process Specification – Upstream Parameters |
+| QMS-DEV-001 | Deviation Classification and Management |
+
+---
+
+## 12. REVISION HISTORY
+
+| Rev | Effective Date | Description of Change | Author | QA Approval |
+|---|---|---|---|---|
+| 00 | 2022-03-01 | Initial release | R. Connolly | C. O'Brien |
+| 01 | 2023-02-14 | Updated metabolite alert limits table (8.4.2). Added off-line vs on-line pH divergence requirement (8.4.3). | R. Connolly | C. O'Brien |
+| 02 | 2024-01-20 | Added escalation table (8.6.2). Added NOTE at 8.5.1.3 re: high VCD/high viability gap (CC-UP-2024-009). Updated bleed execution to include balance-by-weight method. | R. Connolly | C. O'Brien |
+
+---
+
+*SOP-UP-003 Rev 02 | Classification: GMP Controlled | UNCONTROLLED WHEN PRINTED*
+*Verify current revision in Document Management System before use*

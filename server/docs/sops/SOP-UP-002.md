@@ -1,0 +1,342 @@
+# STANDARD OPERATING PROCEDURE
+
+| Field | Detail |
+|---|---|
+| **Document Number** | SOP-UP-002 |
+| **Title** | Perfusion Media Preparation, Sterile Filtration and Exchange |
+| **Revision** | 03 |
+| **Effective Date** | 2024-05-01 |
+| **Review Date** | 2025-05-01 |
+| **Department** | Upstream Processing |
+| **Author** | S. Walsh – Process Scientist |
+| **Reviewed By** | J. Murphy – Senior Process Engineer |
+| **Approved By** | C. O'Brien – QA Manager |
+| **Classification** | GMP Controlled Document |
+
+> **UNCONTROLLED WHEN PRINTED** – Always verify currency against the Document Management System before use.
+
+---
+
+## 1. PURPOSE
+
+This SOP describes the preparation, quality control testing, sterile filtration, and in-process exchange of perfusion culture medium used in upstream biologics manufacturing. It also covers calculation and adjustment of perfusion rate (vessel volumes per day, VVD), and initiation of perfusion flow following bioreactor inoculation.
+
+---
+
+## 2. SCOPE
+
+This procedure applies to all Manufacturing Associates and Senior Manufacturing Associates working in the Upstream Processing suite who are responsible for media preparation, QC testing, and perfusion operation. This SOP covers both basal medium and feed supplement preparation where applicable to perfusion processes.
+
+This SOP does not cover N-1 seed culture medium preparation (refer to SOP-UP-006) or raw material receipt and sampling (refer to SOP-WH-001).
+
+---
+
+## 3. REGULATORY REFERENCES
+
+- 21 CFR Part 211.68 – Automatic, Mechanical, and Electronic Equipment
+- ICH Q7 – Section 4 (Buildings and Facilities), Section 5 (Process Equipment)
+- EU GMP Annex 1 – Manufacture of Sterile Medicinal Products
+- USP <71> Sterility Tests
+- USP <1229> Sterilisation of Compendial Articles
+- Internal: QMS-GEN-001 – Document Control
+
+---
+
+## 4. DEFINITIONS
+
+| Term | Definition |
+|---|---|
+| Perfusion | Continuous feeding of fresh medium into a bioreactor while simultaneously removing spent medium, maintaining constant culture volume |
+| VVD | Vessel Volumes per Day – the number of times the bioreactor working volume is exchanged in 24 hours (e.g., 1.0 VVD = one complete working volume per day) |
+| Basal Medium | Base culture medium providing essential nutrients, salts, buffering, and growth factors |
+| Feed Supplement | Concentrated nutrient solution added to supplement basal medium during extended culture |
+| Sterile Filtration | Passage of liquid medium through a validated 0.22µm filter to achieve sterility |
+| Bioburden | Measured level of microbial contamination in a non-sterile material prior to filtration |
+| Hold Time | Maximum allowable duration between medium preparation and use |
+| TFF | Tangential Flow Filtration – used in the ATF perfusion system for cell retention |
+| ATF | Alternating Tangential Flow – a perfusion cell retention device using a hollow fibre membrane |
+
+---
+
+## 5. RESPONSIBILITIES
+
+| Role | Responsibility |
+|---|---|
+| Manufacturing Associate (MA) | Prepare medium, perform in-process QC checks, operate perfusion system, record all BPR entries |
+| Senior Manufacturing Associate (SMA) | Witness critical steps (marked **[W]**), verify filter integrity tests, countersign BPR |
+| Process Scientist (PS) | Review daily VVD targets, approve any changes to perfusion rate, investigate deviations |
+| QC Analyst | Perform media release testing (osmolality, pH, sterility, mycoplasma as applicable) |
+| QA Representative | Review BPR, approve deviations, authorise hold time extensions |
+
+---
+
+## 6. SAFETY PRECAUTIONS
+
+6.1 Cleanroom gown, double gloves, and safety glasses required in all media preparation and manufacturing areas.
+
+6.2 Powdered media components may be respiratory irritants. Wear an appropriate dust mask when handling dry powder media. Prepare powder media in a negative pressure or ventilated enclosure.
+
+6.3 When handling concentrated medium components (e.g., sodium bicarbonate solutions at high concentration), avoid inhalation of aerosols.
+
+6.4 All media preparation vessels, stir plates, and peristaltic pumps must be visually inspected for damage before use. Damaged equipment must not be used; tag out and raise a maintenance request.
+
+6.5 If a sterile filter integrity test fails, the medium batch is not sterile and must not be used. Contain and dispose of per SOP-ENV-003.
+
+---
+
+## 7. EQUIPMENT AND MATERIALS
+
+### 7.1 Equipment
+
+- Stainless steel media preparation vessel (jacketed, with agitation, validated) – 100L or 500L as applicable
+- Peristaltic pump (Masterflex or Watson-Marlow, calibrated)
+- Sterile filtration assembly: Sartorius Sartoguard PES capsule filter (0.22µm) or Millipore Millipak equivalent
+- Filter integrity test instrument: Sartorius Sartocheck 4 Plus or Millipore Integritest 5
+- Conductivity and pH meter (calibrated, with certificate)
+- Osmometer (Advanced Instruments 3250 or equivalent, calibrated)
+- Autoclave (Class B) for glassware and small components
+- Class II BSC for aseptic sampling
+
+### 7.2 Reagents and Consumables
+
+- Basal medium powder or liquid concentrate (as per current BOM for product, QC-released, within expiry)
+- WFI (Water for Injection) – confirmed within specification per QC-WFI daily release
+- L-Glutamine solution (200mM, sterile, within expiry) if not included in basal medium
+- Sodium bicarbonate (sterile, 7.5% w/v solution) for pH adjustment
+- Pluronic F-68 (10% w/v solution, sterile) as anti-foam/shear protectant where required by process specification
+- 0.22µm sterile filter capsule (single use, lot number on BPR)
+- Single-use bioprocess bags (Flexsafe RM or equivalent) for sterile medium storage
+- Sampling pouches and syringes (sterile)
+
+---
+
+## 8. PROCEDURE
+
+### 8.1 Pre-Preparation Checks
+
+8.1.1 Confirm that all raw materials to be used are QC-released. Verify expiry dates and certificate of analysis (CoA) for each component. Record lot numbers in BPR-UP-001, Section 7.
+
+8.1.2 Confirm that WFI is available and within the current daily specification (conductivity ≤ 1.1 µS/cm at 20°C, endotoxin ≤ 0.25 EU/mL as per current release data from QC). Record WFI batch reference in BPR Section 7.
+
+8.1.3 Confirm that the preparation vessel has a completed cleaning record (SOP-CL-002) and is within the cleaning validity period (≤ 5 days since cleaning, unless vessel has been closed and integrity-maintained). Record cleaning record reference in BPR Section 7.
+
+8.1.4 Calibrate the bench-top pH meter using pH 4.00 and pH 7.00 certified buffers before use. Record calibration result and buffer lot numbers in BPR Section 7. Acceptance criterion: slope 95–105%.
+
+8.1.5 Calibrate the bench-top osmometer per manufacturer instructions and SOP-QC-012 using appropriate osmolality standards. Record calibration result in BPR Section 7.
+
+---
+
+### 8.2 Medium Preparation
+
+#### 8.2.1 WFI Addition
+
+8.2.1.1 Add approximately **80% of the total target WFI volume** to the preparation vessel. Begin agitation at low speed (30–60 RPM depending on vessel size).
+
+8.2.1.2 Record WFI volume added and time of addition in BPR Section 7.
+
+#### 8.2.2 Basal Medium Dissolution
+
+8.2.2.1 Weigh the required quantity of basal medium powder per the approved batch formula (BF-[PRODUCT CODE]-002). Record weight, lot number, and expiry date in BPR Section 7.
+
+8.2.2.2 Add powder slowly to the circulating WFI. Avoid adding all powder at once to prevent clumping. Rinse the weighing container with a small aliquot of WFI and add rinsings to the vessel.
+
+8.2.2.3 Mix for a minimum of **30 minutes** at low agitation. Confirm complete dissolution by visual inspection – medium should be clear with no visible particles or undissolved powder. Record dissolution time in BPR Section 7.
+
+> **NOTE:** If using liquid medium concentrate, skip 8.2.2.1–8.2.2.3. Add the required volume of concentrate as specified in BF-[PRODUCT CODE]-002 and proceed to 8.2.3.
+
+#### 8.2.3 Supplement Addition
+
+8.2.3.1 Add L-Glutamine solution at a final concentration of **4mM** (unless otherwise specified in process specification PS-[PRODUCT CODE]-UP-001). Calculate and record the volume added in BPR Section 7.
+
+8.2.3.2 Add Pluronic F-68 solution to a final concentration of **0.1% w/v** if required by process specification. Record volume added in BPR Section 7.
+
+8.2.3.3 Make up to final target volume with WFI. Mix for a further **15 minutes**.
+
+#### 8.2.4 pH Adjustment
+
+8.2.4.1 Take a 10 mL sample from the preparation vessel. Measure pH using the calibrated bench-top pH meter at room temperature.
+
+8.2.4.2 Target pH before filtration: **7.00–7.20** (pH will rise slightly during CO₂ off-gassing after sterile filtration and equilibration in the bioreactor).
+
+8.2.4.3 If pH requires adjustment, add **7.5% sodium bicarbonate** (alkaline) or **1M HCl** (acid) dropwise under agitation. Re-measure after each addition. Allow 5 minutes for equilibration before re-measuring.
+
+> **NOTE – pH Adjustment Guidance Gap:** The current process specification does not define the maximum volume of pH adjustment solution that can be added before the batch is considered non-conforming. In practice, additions >100mL per 100L of medium have been flagged as anomalous by operators. A formal pH adjustment limit should be defined in the process specification (Change Control CC-UP-2023-041, under review since November 2023, not yet closed).
+
+8.2.4.4 Record final pre-filtration pH in BPR Section 7.
+
+#### 8.2.5 Osmolality Check
+
+8.2.5.1 Take a 1 mL sample and measure osmolality using the calibrated osmometer per SOP-QC-012.
+
+8.2.5.2 **Acceptance Criterion:** 290–340 mOsm/kg (refer to PS-[PRODUCT CODE]-UP-001 for product-specific limits).
+
+8.2.5.3 Record osmolality result in BPR Section 7. If outside acceptance criterion, do not proceed. Raise a deviation and contact the Process Scientist.
+
+---
+
+### 8.3 Sterile Filtration
+
+8.3.1 **Pre-Use Filter Integrity Test**
+
+8.3.1.1 Before use, perform a non-destructive pre-use integrity test (bubble point or diffusion test) on the 0.22µm filter capsule using the Sartocheck 4 Plus or equivalent instrument per SOP-QC-020 (Filter Integrity Testing).
+
+8.3.1.2 Record filter lot number, instrument ID, test type, and result in BPR Section 8.
+
+8.3.1.3 **Acceptance Criterion:** As per filter manufacturer specification and validated values in filter qualification report FQ-UP-001. If filter fails pre-use integrity test, the filter must not be used. Replace with a new filter from the same lot or a different lot. Re-test. Record failure and replacement in BPR and raise deviation if two consecutive filters from the same lot fail.
+
+8.3.2 **Filtration**
+
+8.3.2.1 Connect the filter capsule to the preparation vessel outlet line and to the receiving single-use bioprocess bag using aseptic connections per SOP-ASP-001.
+
+8.3.2.2 **[W – Witness Required]** SMA to witness all aseptic connections made during filtration setup. Record in BPR Section 8.
+
+8.3.2.3 Pump medium through the filter at a flow rate not exceeding **150 L/m²/h** (LMH) to avoid membrane damage. Record start time and flow rate in BPR Section 8.
+
+8.3.2.4 Following complete transfer, rinse the filter with a maximum of **5L WFI** to recover hold-up volume if required and within the same batch.
+
+8.3.2.5 Seal the receiving bioprocess bag aseptically. Label with: product, batch number, medium lot reference, volume, date of filtration, and expiry date/time.
+
+8.3.3 **Post-Use Filter Integrity Test**
+
+8.3.3.1 Perform a post-use integrity test on the filter immediately after filtration, before disconnecting the filter from the system.
+
+8.3.3.2 **Acceptance Criterion:** Same as pre-use (FQ-UP-001). Record result in BPR Section 8.
+
+8.3.3.3 **If post-use integrity test fails:** This indicates potential filter breach during filtration. The filtrate (medium) must be quarantined immediately. Do not use. Raise a critical deviation on DEV-FORM-001. Notify QA and PS immediately. All downstream bioreactor material from that medium batch may also need to be quarantined pending investigation.
+
+---
+
+### 8.4 Medium Quality Control Testing
+
+8.4.1 Following sterile filtration, collect a QC sample (minimum 50 mL) aseptically from the receiving bag.
+
+8.4.2 Submit sample to QC for the following tests:
+
+| Test | Method | Acceptance Criterion | Typical TAT |
+|---|---|---|---|
+| pH (post-filtration) | Calibrated pH meter | 6.90–7.30 | Same day |
+| Osmolality | Osmometer | 290–340 mOsm/kg | Same day |
+| Bioburden | USP <61> | ≤ 10 CFU/100mL | 5 days |
+| Sterility | USP <71> | No growth | 14 days |
+| Endotoxin | LAL (USP <85>) | ≤ 0.5 EU/mL | Same day |
+| Appearance | Visual | Clear, colourless to pale yellow, no visible particles | Same day |
+
+8.4.3 Medium may be used prior to receipt of bioburden, sterility, and endotoxin results provided same-day tests (pH, osmolality, appearance) are within specification. This is a **conditional release**. If any subsequent QC result fails, raise a critical deviation immediately.
+
+> **NOTE:** The current procedure does not define the action to take if bioburden results are received and are out-of-specification AFTER the medium has already been added to a running bioreactor. This is an identified documentation gap. Interim guidance from the process science team (email 14-Feb-2024, PS Walsh) states that the bioreactor run should continue and QA should assess risk, but this guidance has not been formally incorporated into this SOP or a deviation management procedure. This gap is flagged for formal resolution in the next SOP revision.
+
+---
+
+### 8.5 Medium Storage and Hold Time
+
+8.5.1 Sterile-filtered medium stored in sealed single-use bags at **2–8°C** is valid for a maximum of **5 days** from date of filtration.
+
+8.5.2 Sterile-filtered medium stored at room temperature (**15–25°C**) is valid for a maximum of **24 hours** from date of filtration.
+
+8.5.3 Medium must not be used beyond these hold times. If medium is approaching hold time expiry during an active perfusion run, notify the Process Scientist to schedule fresh preparation. Do not extend hold times without written QA approval.
+
+---
+
+### 8.6 Perfusion Initiation
+
+8.6.1 Perfusion flow is initiated when the bioreactor VCD reaches the **perfusion trigger density** as defined in PS-[PRODUCT CODE]-UP-001 (typically **10–20 × 10⁶ cells/mL**).
+
+8.6.2 Confirm with the Process Scientist that the VCD trigger has been reached and that all in-process parameters are within specification before initiating perfusion.
+
+8.6.3 Connect the sterile medium supply bag to the perfusion pump inlet line using aseptic technique per SOP-ASP-001.
+
+8.6.4 **[W – Witness Required]** SMA to witness aseptic medium connection for perfusion. Record time and SMA signature in BPR Section 9.
+
+8.6.5 Set initial perfusion rate to **0.5 VVD**. Convert VVD to pump flow rate (mL/hour):
+
+```
+Flow rate (mL/hr) = (VVD × Working Volume in mL) / 24
+```
+
+Record calculated flow rate and pump setting in BPR Section 9.
+
+8.6.6 Confirm the bleed (cell removal) line is operational per SOP-UP-003 before initiating perfusion.
+
+---
+
+### 8.7 Perfusion Rate Adjustment
+
+8.7.1 The target perfusion rate is adjusted by the Process Scientist based on daily VCD, viability, metabolite data, and glucose consumption per SOP-UP-003.
+
+8.7.2 Typical perfusion rate range during steady-state operation: **1.0–2.5 VVD** (product- and cell line-specific; refer to PS-[PRODUCT CODE]-UP-001).
+
+8.7.3 Any change to the perfusion pump flow rate requires:
+- Written instruction from the Process Scientist (recorded in BPR Section 9 or via electronic batch record system)
+- Implementation by MA or SMA
+- Verification of new pump setting and independent check by SMA
+
+8.7.4 Record all perfusion rate changes with time, old rate, new rate, and authorisation in BPR Section 9.
+
+---
+
+### 8.8 Medium Changeover During Continuous Perfusion
+
+8.8.1 When a medium bag is approaching empty (< 5% volume remaining), prepare and connect the next medium bag before the current bag is fully depleted to avoid air introduction into the perfusion line.
+
+8.8.2 Confirm that the replacement bag is from a QC-released batch and within hold time. Record lot number of new bag in BPR Section 9.
+
+8.8.3 Using aseptic technique, connect replacement bag to the perfusion inlet line. Do not stop the perfusion pump during changeover.
+
+8.8.4 Record changeover time and medium bag lot number in BPR Section 9.
+
+---
+
+## 9. IN-PROCESS CONTROLS
+
+| Parameter | Target | Alert Limit | Action Limit |
+|---|---|---|---|
+| Pre-filtration pH | 7.00–7.20 | Outside range | Outside range → contact PS, do not filter |
+| Post-filtration pH | 6.90–7.30 | Outside range | Outside range → quarantine, raise deviation |
+| Osmolality (mOsm/kg) | 290–340 | Outside range | Outside range → quarantine, raise deviation |
+| Bioburden (CFU/100mL) | ≤ 10 | > 5 CFU → alert | > 10 CFU → deviation, investigate |
+| Endotoxin (EU/mL) | ≤ 0.5 | — | > 0.5 → quarantine, critical deviation |
+| Perfusion rate (VVD) | Per PS instruction | ± 0.1 VVD from target | ± 0.2 VVD from target |
+
+---
+
+## 10. DEVIATIONS
+
+10.1 Any deviation from this procedure, or result outside acceptance criteria, must be documented on DEV-FORM-001 and reported to QA within 4 hours.
+
+10.2 Critical deviations (filter integrity failure, sterility failure, endotoxin out-of-specification) require immediate QA notification and production hold pending investigation per QMS-DEV-001.
+
+---
+
+## 11. REFERENCES
+
+| Document | Title |
+|---|---|
+| SOP-UP-001 | Bioreactor Setup, Preparation and Inoculation |
+| SOP-UP-003 | Cell Density and Viability Monitoring |
+| SOP-UP-004 | Harvest Line and ATF System Operation |
+| SOP-QC-012 | Osmolality Measurement Procedure |
+| SOP-QC-020 | Filter Integrity Testing (Sartocheck / Integritest) |
+| SOP-ASP-001 | Aseptic Technique and Connection Procedure |
+| SOP-CL-002 | Preparation Vessel Cleaning Procedure |
+| SOP-ENV-003 | Biowaste Deactivation Procedure |
+| BPR-UP-001 | Upstream Perfusion Batch Production Record |
+| PS-[PRODUCT CODE]-UP-001 | Process Specification – Upstream Parameters |
+| BF-[PRODUCT CODE]-002 | Batch Formula – Perfusion Medium |
+| FQ-UP-001 | Filter Qualification Report – 0.22µm Capsule Filters |
+| QMS-DEV-001 | Deviation Classification and Management |
+
+---
+
+## 12. REVISION HISTORY
+
+| Rev | Effective Date | Description of Change | Author | QA Approval |
+|---|---|---|---|---|
+| 00 | 2021-11-01 | Initial release | S. Walsh | C. O'Brien |
+| 01 | 2022-08-15 | Added osmolality check step (8.2.5). Updated filter integrity test procedure references. | S. Walsh | C. O'Brien |
+| 02 | 2023-06-12 | Updated hold time at 2–8°C from 3 days to 5 days following validation study VS-MED-003. Added post-use filter integrity test (8.3.3). | J. Murphy | C. O'Brien |
+| 03 | 2024-05-01 | Added NOTE at 8.2.4.3 re: pH adjustment volume gap. Added NOTE at 8.4.3 re: post-use bioburden result action gap. Updated medium QC table (8.4.2). | S. Walsh | C. O'Brien |
+
+---
+
+*SOP-UP-002 Rev 03 | Classification: GMP Controlled | UNCONTROLLED WHEN PRINTED*
+*Verify current revision in Document Management System before use*

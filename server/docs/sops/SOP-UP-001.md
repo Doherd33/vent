@@ -1,0 +1,373 @@
+# STANDARD OPERATING PROCEDURE
+
+| Field | Detail |
+|---|---|
+| **Document Number** | SOP-UP-001 |
+| **Title** | Bioreactor Setup, Preparation and Inoculation |
+| **Revision** | 02 |
+| **Effective Date** | 2024-03-15 |
+| **Review Date** | 2025-03-15 |
+| **Department** | Upstream Processing |
+| **Author** | J. Murphy – Senior Process Engineer |
+| **Reviewed By** | S. Walsh – Process Scientist |
+| **Approved By** | C. O'Brien – QA Manager |
+| **Classification** | GMP Controlled Document |
+
+> **UNCONTROLLED WHEN PRINTED** – Always verify currency against the Document Management System before use.
+
+---
+
+## 1. PURPOSE
+
+This SOP describes the procedure for the preparation, setup, and inoculation of stirred-tank bioreactors (STR) used in perfusion-based upstream manufacturing of recombinant biologics. It covers equipment verification, probe calibration, media addition, vessel conditioning, seed culture assessment, and aseptic inoculation.
+
+---
+
+## 2. SCOPE
+
+This procedure applies to all upstream processing personnel involved in the setup, preparation, and inoculation of bioreactors at the Biologics Manufacturing Facility. Applicable vessel sizes: 50L, 200L, and 500L working volume configurations. This SOP does not cover N-1 seed bioreactor setup (refer to SOP-UP-006).
+
+---
+
+## 3. REGULATORY REFERENCES
+
+- 21 CFR Part 211 – Current Good Manufacturing Practice for Finished Pharmaceuticals
+- ICH Q7 – Good Manufacturing Practice Guide for Active Pharmaceutical Ingredients
+- ICH Q10 – Pharmaceutical Quality System
+- EU GMP Annex 1 – Manufacture of Sterile Medicinal Products
+- Internal QMS Reference: QMS-GEN-001 – Document Control Procedure
+
+---
+
+## 4. DEFINITIONS
+
+| Term | Definition |
+|---|---|
+| STR | Stirred Tank Reactor – a vessel in which biological reactions are carried out under controlled environmental conditions |
+| DO | Dissolved Oxygen – expressed as percentage saturation relative to air-saturated media at 37°C |
+| VCD | Viable Cell Density – number of live cells per unit volume, expressed as ×10⁶ cells/mL |
+| Inoculation | Aseptic transfer of seed culture into the production bioreactor |
+| N-1 Stage | Penultimate bioreactor stage immediately preceding the production vessel |
+| Sparger | Device for introducing gas (air, O₂, CO₂, N₂) into the bioreactor culture via submerged orifices |
+| Working Volume | Actual volume of cell culture medium in the bioreactor during steady-state operation |
+| vvm | Vessel volumes per minute – unit of gas flow rate |
+| SIP | Steam-In-Place – sterilisation of vessel and lines using pressurised steam |
+| CIP | Clean-In-Place – automated or manual cleaning of vessel and lines |
+
+---
+
+## 5. RESPONSIBILITIES
+
+| Role | Responsibility |
+|---|---|
+| Manufacturing Associate (MA) | Execute all procedural steps, complete all BPR entries, report deviations |
+| Senior Manufacturing Associate (SMA) | Witness critical steps (marked **[W]**), verify equipment readiness, countersign BPR |
+| Process Scientist (PS) | Review in-process data, provide technical guidance on deviations, approve borderline results |
+| QA Representative | Review completed BPR sections, approve deviations, provide GMP oversight |
+
+---
+
+## 6. SAFETY PRECAUTIONS
+
+### 6.1 Personal Protective Equipment
+
+6.1.1 Cleanroom gown, double gloves, and safety glasses are mandatory at all times in the manufacturing suite.
+
+6.1.2 A face shield must be worn when handling caustic cleaning agents (NaOH ≥ 1M) or during any steam connection work.
+
+6.1.3 Heat-resistant gloves must be worn during SIP connection or disconnection activities. Never touch steam fittings with bare hands.
+
+### 6.2 Chemical Hazards
+
+6.2.1 **Sodium Hydroxide (1M NaOH):** Corrosive to skin and eyes. Refer to SDS-CHEM-042 before handling. Neutralise spills with dilute acid and absorb with appropriate material.
+
+6.2.2 **Phosphoric Acid (0.1M H₃PO₄):** Corrosive. Refer to SDS-CHEM-019. Avoid inhalation and contact with skin.
+
+6.2.3 **CO₂ gas:** Asphyxiation risk in enclosed or poorly ventilated spaces. Consult site gas safety plan GAS-SAF-001. Ensure CO₂ detectors are operational in the suite before starting gas connections.
+
+### 6.3 Biological Hazards
+
+6.3.1 Cell culture material is classified as Biosafety Level 1 (BSL-1) per Biosafety Plan BSP-001. Handle in accordance with this plan at all times.
+
+6.3.2 All liquid waste streams exiting the bioreactor must be deactivated prior to drain disposal per SOP-ENV-003 (Biowaste Deactivation Procedure). Chemical deactivation (NaOH, final concentration ≥ 0.5M, ≥ 30 minutes contact time) or autoclave deactivation are acceptable methods.
+
+---
+
+## 7. EQUIPMENT AND MATERIALS
+
+### 7.1 Equipment
+
+- Stirred tank bioreactor system (50L, 200L, or 500L as applicable)
+- pH probe: Mettler-Toledo InPro 3253/225 or equivalent
+- DO probe: Mettler-Toledo InPro 6800 or equivalent
+- Bioreactor control system (DeltaV or Wonderware)
+- Peristaltic pump set (Masterflex L/S or equivalent), calibrated
+- Biosafety cabinet (Class II, Type A2) for aseptic connections
+- Automated cell counter: Vi-Cell XR or Cedex HiRes
+- Calibrated analytical balance (for inoculation volume by weight if sight glass unavailable)
+
+### 7.2 Reagents and Consumables
+
+- Production culture medium (prepared per SOP-UP-002, QC-released)
+- pH calibration buffers: pH 4.00 and pH 7.00 (certified, traceable, within expiry)
+- DO probe membrane caps (Mettler-Toledo, compatible with InPro 6800)
+- Polarisation solution (where applicable per probe manufacturer instructions)
+- 45% w/v glucose solution (sterile filtered, QC-released)
+- 1M NaOH base solution (sterile filtered, QC-released)
+- Sterile gaskets, clamps, and single-use tubing sets (per assembly drawing AD-UP-001)
+- Sterile sampling syringes and sample containers
+
+---
+
+## 8. PROCEDURE
+
+### 8.1 Pre-Use Checks and Equipment Verification
+
+8.1.1 Verify that the bioreactor vessel and all associated instrumentation have a current calibration certificate attached and within calibration due date. Record calibration tag numbers and due dates in BPR-UP-001, Section 2.
+
+8.1.2 Verify that the previous CIP and SIP records for this bioreactor vessel are complete and within validity (CIP valid ≤ 7 days prior to use; SIP valid ≤ 24 hours prior to media addition). Refer to SOP-UP-005 for CIP/SIP validity criteria. If records are absent, incomplete, or out of validity: **stop, do not proceed.** Raise Deviation Report DEV-FORM-001 and contact the Process Scientist.
+
+8.1.3 Inspect the bioreactor vessel exterior for visible damage, corrosion, cracked welds, or evidence of prior contamination. Record inspection result (Pass/Fail) in BPR Section 2.
+
+8.1.4 Confirm that the current batch production record (BPR-UP-001) is available with correct batch number, product code, and manufacturing date printed and confirmed against the batch schedule.
+
+8.1.5 **[W – Witness Required]** SMA to verify completion of steps 8.1.1 through 8.1.4. Both MA and SMA sign BPR Section 2.
+
+---
+
+### 8.2 Probe Preparation and Calibration
+
+#### 8.2.1 pH Probe
+
+8.2.1.1 Remove pH probe from storage solution (3M KCl). Rinse with purified water (PW) and blot dry with a lint-free wipe. Do not rub the sensing membrane.
+
+8.2.1.2 Allow probe to equilibrate at ambient temperature for a minimum of **30 minutes** before calibration.
+
+8.2.1.3 Perform two-point calibration using certified pH 4.00 and pH 7.00 buffer solutions at room temperature. Follow instrument-specific calibration procedure in IQ-UP-003 (bioreactor control system IQ/OQ).
+
+8.2.1.4 Record calibration slope, offset, and buffer lot numbers in BPR Section 3.
+
+8.2.1.5 **Acceptance Criteria:** Slope must be **95%–105%**. Offset must be within ± 30 mV of theoretical value. If outside these ranges, recalibrate with a freshly opened buffer set. If still outside range, replace probe and repeat. Do not install a probe that fails calibration acceptance criteria.
+
+#### 8.2.2 DO Probe
+
+8.2.2.1 Install a new membrane cap on the DO probe per Mettler-Toledo Maintenance Guide MT-DO-001. Ensure membrane is wrinkle-free and electrolyte is completely filled with no air bubbles.
+
+8.2.2.2 Connect the DO probe to the bioreactor control system transmitter.
+
+8.2.2.3 Allow the probe to polarise for a **minimum of 6 hours** before in-situ calibration. **This step must be initiated at least 6 hours before planned inoculation time.** Record polarisation start time in BPR Section 3.
+
+8.2.2.4 In-situ two-point calibration (zero and span) will be performed after media addition and vessel conditioning – see step 8.5.3.
+
+---
+
+### 8.3 Vessel Assembly
+
+8.3.1 Install the calibrated pH probe into Port 3 (lower ring, position 3) per assembly drawing AD-UP-001. Torque fitting to 25–30 Nm with calibrated torque wrench.
+
+8.3.2 Install the DO probe into Port 4 (lower ring, position 4) per AD-UP-001.
+
+8.3.3 Install the inoculation line with integral 0.2µm hydrophobic vent filter on the inoculation port (Port 7, upper head plate). Confirm filter integrity by manufacturer certification (lot number recorded in BPR Section 3).
+
+8.3.4 Install the harvest/perfusion line with integrated ATF system connection per SOP-UP-004, Section 8.1. Confirm hollow fibre membrane lot number and integrity test result are on file.
+
+8.3.5 Connect all gas supply lines (air, O₂, CO₂, N₂) to the appropriate sparger inlets. Verify correct gas type at each connection point. Confirm gas cylinder pressures are adequate (≥ 50 bar) and that cylinder labels match the gas type required.
+
+8.3.6 **[W – Witness Required]** SMA to verify all probe and line installations are correct per AD-UP-001. Record in BPR Section 3.
+
+8.3.7 Conduct a **pressure hold test** on the assembled vessel: pressurise to **0.5 bar** with nitrogen. Hold for **10 minutes**. **Acceptance Criterion:** Pressure drop ≤ 0.02 bar. Record start and end pressure, pass/fail result in BPR Section 3. If pressure drop exceeds limit, identify and rectify leak source before proceeding.
+
+---
+
+### 8.4 Sterilisation Verification
+
+8.4.1 Retrieve the SIP record for this vessel from SOP-UP-005. Confirm the following parameters were met:
+
+| Parameter | Requirement |
+|---|---|
+| Steam temperature | 121°C ± 2°C |
+| Hold time | ≥ 30 minutes at temperature |
+| F₀ value | ≥ 15 |
+
+8.4.2 Confirm that all biological indicator (BI) results from the SIP cycle are documented as **negative (no growth)**. If BI results are not yet available, **do not proceed** with media addition until QA has confirmed and approved the BI results. Record BI lot number and result in BPR Section 3.
+
+---
+
+### 8.5 Media Addition and Vessel Conditioning
+
+#### 8.5.1 Media Transfer
+
+8.5.1.1 Confirm that production medium is prepared per SOP-UP-002 and has a QC release record on file. Record medium lot number, preparation date, and QC release date in BPR Section 4.
+
+8.5.1.2 **[W – Witness Required]** SMA to witness all aseptic connections made during media transfer. Record in BPR Section 4. Connect the sterile medium transfer bag or container to the bioreactor media inlet line using aseptic connector technique per SOP-ASP-001.
+
+8.5.1.3 Transfer the appropriate volume of medium to achieve target working volume:
+
+| Vessel Size | Target Working Volume | Acceptable Range |
+|---|---|---|
+| 50L | 35L | 34.3–35.7L |
+| 200L | 140L | 137.2–142.8L |
+| 500L | 350L | 343–357L |
+
+8.5.1.4 Verify transferred volume by sight glass or calibrated load cell. Record actual volume in BPR Section 4. If actual volume is outside acceptable range, contact Process Scientist before proceeding.
+
+#### 8.5.2 Vessel Conditioning
+
+8.5.2.1 Set bioreactor temperature setpoint to **37.0°C ± 0.5°C**. Allow vessel to equilibrate to temperature – typical time 45–90 minutes for vessels ≥ 200L. Record equilibration start time in BPR Section 4.
+
+8.5.2.2 Set agitation rate to **60 RPM**. Begin sparging with air at **0.02 vvm**.
+
+8.5.2.3 Enable pH control: setpoint **7.20**. CO₂ overlay for pH reduction; 1M NaOH for pH correction upward. Allow pH to stabilise for a minimum of **2 hours** before DO calibration.
+
+8.5.2.4 Allow temperature and pH to stabilise within ± 0.1 pH units and ± 0.2°C of setpoint for ≥ 30 consecutive minutes before proceeding to DO calibration.
+
+#### 8.5.3 DO Calibration (In-Situ, Two-Point)
+
+8.5.3.1 **Zero point:** Switch sparging to **N₂ only** at 0.05 vvm. Agitate at 60 RPM. Wait until DO reading is stable at **0% air saturation** for ≥ 5 consecutive minutes. Set zero point on control system. Record zero value in BPR Section 3.
+
+8.5.3.2 **Span (100%) point:** Switch sparging to **air** at 0.05 vvm, agitation 60 RPM. Allow DO to rise and stabilise at 100% air saturation (may take 30–60 minutes). Once stable at 100% ± 2% for ≥ 5 minutes, set span point. Record in BPR Section 3.
+
+8.5.3.3 Set DO control setpoint to **40% air saturation**. Enable DO control cascade: agitation increase → increased air flow → O₂ overlay (in that priority order).
+
+#### 8.5.4 Pre-Inoculation Parameter Verification
+
+8.5.4.1 Confirm all control parameters are stable within setpoints prior to inoculation:
+
+| Parameter | Setpoint | Pre-Inoculation Acceptance Range |
+|---|---|---|
+| Temperature (°C) | 37.0 | 36.5–37.5 |
+| pH | 7.20 | 7.10–7.30 |
+| DO (% air sat.) | 40 | 30–50 |
+| Agitation (RPM) | 60 | 55–65 |
+
+8.5.4.2 **[W – Witness Required]** SMA to verify all parameters are within acceptance range and sign BPR Section 4.
+
+---
+
+### 8.6 Seed Culture Assessment
+
+#### 8.6.1 Cell Count and Viability
+
+8.6.1.1 Retrieve N-1 seed culture from upstream stage per SOP-UP-006. Confirm N-1 BPR is complete and N-1 QC release is on file.
+
+8.6.1.2 Take a representative **1.0 mL** sample from the N-1 seed vessel via sample port using aseptic technique.
+
+8.6.1.3 Count cells immediately using Vi-Cell XR or Cedex HiRes per SOP-QC-015 (Cell Counting). Record instrument ID, VCD, and cell viability in BPR Section 5.
+
+8.6.1.4 **Inoculation Acceptance Criteria:**
+
+| Parameter | Acceptance Criterion |
+|---|---|
+| Cell Viability | **≥ 90%** |
+| VCD | Per process specification PS-[PRODUCT CODE]-UP-001 |
+| Mycoplasma (rapid test) | **Negative** |
+
+> **NOTE – Borderline Viability:** If cell viability is between **85% and 90%**, **do not inoculate.** Contact the Process Scientist immediately. A deviation must be raised on DEV-FORM-001. Inoculation may only proceed with written QA approval and PS sign-off. This is a known gap in the current process specification – there is no formal decision tree for viability in the 85–90% range and this situation has resulted in inconsistent decision-making across shifts. A process specification update is pending review (Change Control CC-UP-2024-017, open).
+
+8.6.1.5 Confirm mycoplasma rapid test result is **negative** per QC release record. If result is pending, do not inoculate. Record mycoplasma test lot number and result in BPR Section 5.
+
+#### 8.6.2 Inoculation Volume Calculation
+
+8.6.2.1 Calculate the volume of seed culture required to achieve the target seeding density:
+
+```
+V_seed (L) = (Target VCD × V_bioreactor) / VCD_seed
+```
+
+8.6.2.2 Target seeding density: as defined in PS-[PRODUCT CODE]-UP-001 (typically **0.3–0.5 × 10⁶ cells/mL** for 500L perfusion start).
+
+8.6.2.3 Record the full calculation in BPR Section 5. Calculation must be independently verified by SMA. Both MA and SMA sign BPR Section 5.
+
+---
+
+### 8.7 Inoculation
+
+8.7.1 In a Class II BSC or using validated aseptic connector technique, connect the seed culture transfer bag or N-1 vessel to the inoculation line (Port 7) using a sterile quick-connect coupling.
+
+8.7.2 **[W – Witness Required]** SMA to witness all aseptic connections at inoculation. Record connection time and witness signature in BPR Section 5.
+
+8.7.3 Transfer the calculated inoculation volume into the production bioreactor using a calibrated peristaltic pump. Set pump speed to achieve transfer within 15–30 minutes. Record actual transferred volume in BPR Section 5.
+
+8.7.4 Following transfer, clamp the inoculation line. Disconnect seed vessel connection using aseptic technique. Cap all open ports with sterile caps immediately.
+
+8.7.5 Record **time and date of inoculation** in BPR Section 5. This is the official start time (T=0) of the production run.
+
+8.7.6 Collect a post-inoculation sample (1.0 mL) from the bioreactor sample port no later than 30 minutes after inoculation completion. Count on Vi-Cell XR or Cedex HiRes. Record actual post-inoculation VCD in BPR Section 5.
+
+8.7.7 **Verify** post-inoculation VCD is within ± 20% of the target seeding density. If outside this range, raise a deviation immediately.
+
+---
+
+### 8.8 Post-Inoculation Monitoring
+
+8.8.1 Record all process control parameters hourly for the first 4 hours post-inoculation in BPR Section 6. Notify Process Scientist if any parameter moves outside the alert limits below.
+
+8.8.2 Take a cell count at **24 hours post-inoculation** per SOP-UP-003.
+
+8.8.3 Continue monitoring per SOP-UP-003. Initiate perfusion flow when cell density reaches the VCD trigger point defined in PS-[PRODUCT CODE]-UP-001. For initiation of perfusion, refer to SOP-UP-002, Section 8.3.
+
+---
+
+## 9. IN-PROCESS CONTROLS
+
+| Parameter | Setpoint | Alert Limit | Action Limit | Action Required |
+|---|---|---|---|---|
+| Temperature (°C) | 37.0 | ±0.5 | ±1.0 | Alert: notify PS. Action: notify PS + QA, raise deviation |
+| pH | 7.20 | ±0.10 | ±0.20 | Alert: notify PS. Action: notify PS + QA, raise deviation |
+| DO (% air sat.) | 40 | ±10 | ±20 | Alert: notify PS. Action: notify PS + QA, raise deviation |
+| Agitation (RPM) | 60 | ±10 | ±20 | Alert: notify PS. Action: notify PS + QA, raise deviation |
+
+> **Alert Limit:** Notify Process Scientist. Document observation in BPR.
+> **Action Limit:** Immediately notify PS and QA. Raise deviation report DEV-FORM-001 before continuing.
+
+---
+
+## 10. DEVIATIONS
+
+10.1 Any step not performed as written, or any result outside acceptance criteria, constitutes a deviation and must be documented on Deviation Report Form DEV-FORM-001.
+
+10.2 All deviations must be reported to QA within **4 hours** of occurrence.
+
+10.3 Critical deviations (as defined in QMS-DEV-001) require QA and PS sign-off before work continues.
+
+10.4 Potential deviation scenarios include (but are not limited to):
+- pH or DO probe failing calibration acceptance criteria
+- Pressure hold test failure
+- Cell viability at inoculation between 85–90% (see 8.6.1.4 NOTE)
+- Post-inoculation VCD outside ± 20% of target
+- Any unplanned interruption to temperature, pH, or DO control
+
+---
+
+## 11. REFERENCES
+
+| Document | Title |
+|---|---|
+| SOP-UP-002 | Perfusion Media Preparation and Exchange |
+| SOP-UP-003 | Cell Density and Viability Monitoring |
+| SOP-UP-004 | Harvest Line and ATF System Operation |
+| SOP-UP-005 | Bioreactor CIP/SIP Procedure |
+| SOP-UP-006 | N-1 Seed Bioreactor Operation and Transfer |
+| SOP-QC-015 | Cell Counting Procedure (Vi-Cell XR / Cedex HiRes) |
+| SOP-ASP-001 | Aseptic Technique and Connection Procedure |
+| SOP-ENV-003 | Biowaste Deactivation Procedure |
+| BPR-UP-001 | Upstream Perfusion Batch Production Record |
+| AD-UP-001 | Bioreactor Assembly Drawing – 50L / 200L / 500L |
+| PS-[PRODUCT CODE]-UP-001 | Process Specification – Product-Specific Upstream Parameters |
+| IQ-UP-003 | Bioreactor Control System IQ/OQ |
+| QMS-DEV-001 | Deviation Classification and Management |
+
+---
+
+## 12. REVISION HISTORY
+
+| Rev | Effective Date | Description of Change | Author | QA Approval |
+|---|---|---|---|---|
+| 00 | 2022-01-10 | Initial release | J. Murphy | C. O'Brien |
+| 01 | 2023-04-18 | Updated DO calibration procedure (8.5.3). Added pressure hold test requirement (8.3.7). Updated probe acceptance criteria. | J. Murphy | C. O'Brien |
+| 02 | 2024-03-15 | Updated inoculation acceptance criteria (8.6.1.4) to include borderline viability NOTE. Added mycoplasma rapid test requirement at inoculation. Referenced open change control CC-UP-2024-017. | S. Walsh | C. O'Brien |
+
+---
+
+*SOP-UP-001 Rev 02 | Classification: GMP Controlled | UNCONTROLLED WHEN PRINTED*
+*Verify current revision in Document Management System before use*

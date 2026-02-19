@@ -1,0 +1,566 @@
+# BATCH PRODUCTION RECORD
+
+| Field | Detail |
+|---|---|
+| **Document Number** | BPR-UP-001 |
+| **Title** | Upstream Perfusion Bioreactor – Batch Production Record Template |
+| **Revision** | 02 |
+| **Effective Date** | 2024-03-15 |
+| **Review Date** | 2025-03-15 |
+| **Department** | Upstream Processing |
+| **Author** | C. O'Brien – QA Manager |
+| **Approved By** | D. Fitzpatrick – Director of Manufacturing Operations |
+| **Classification** | GMP Controlled Template – Complete one BPR per batch |
+
+> **UNCONTROLLED WHEN PRINTED** – Print only from the Document Management System. Handwritten entries must be made in black or blue permanent ink. Corrections: single line through error, initials, date, reason. No correction fluid (Tipp-Ex) permitted.
+
+---
+
+## BATCH IDENTIFICATION
+
+| Field | Entry |
+|---|---|
+| **Product Name** | |
+| **Product Code** | |
+| **Batch Number** | |
+| **Bioreactor ID** | |
+| **Vessel Size (L)** | |
+| **Process Specification Reference** | PS-[PRODUCT CODE]-UP-001 Rev: |
+| **Planned Run Duration (days)** | |
+| **BPR Issued By (QA)** | Name: _________________ Signature: _________________ Date: __________ |
+| **BPR Issued Date** | |
+
+---
+
+## SECTION 1 – BATCH SCHEDULE
+
+| Milestone | Planned Date/Time | Actual Date/Time | Performed By | Verified By |
+|---|---|---|---|---|
+| CIP Commenced | | | | |
+| CIP Completed / Conditionally Released | | | | |
+| SIP Commenced | | | | |
+| SIP Completed / Conditionally Released | | | | |
+| Media Addition Commenced | | | | |
+| Media Addition Completed | | | | |
+| Inoculation (T=0) | | | | |
+| Perfusion Initiated | | | | |
+| Run End (planned) | | | | |
+| Run End (actual) | | | | |
+| Reason for Early Termination (if applicable) | | | | |
+
+---
+
+## SECTION 2 – EQUIPMENT VERIFICATION
+
+### 2.1 Pre-Use Equipment Checklist
+
+| Item | Equipment ID | Calibration Due Date | Certificate Number | Pass/Fail | MA Initials | SMA Initials |
+|---|---|---|---|---|---|---|
+| Bioreactor control system | | | | | | |
+| pH probe | | | | | | |
+| DO probe | | | | | | |
+| Agitation motor/impeller | | | | | | |
+| Temperature sensor (RTD) | | | | | | |
+| Pressure transducer (vessel) | | | | | | |
+| ATF pressure transducer (P1) | | | | | | |
+| ATF pressure transducer (P2) | | | | | | |
+| Peristaltic pump (perfusion) | | | | | | |
+| Peristaltic pump (bleed) | | | | | | |
+| Analytical balance | | | | | | |
+| Vi-Cell XR / Cedex HiRes | | | | | | |
+| BioProfile FLEX2 | | | | | | |
+
+**2.2 Vessel Inspection**
+Vessel exterior inspection result: [ ] PASS  [ ] FAIL
+Observations: _____________________________________________________________________________
+
+**[W] SMA Verification – Equipment Check Complete**
+Name: _________________________ Signature: _________________ Date: __________ Time: ________
+
+---
+
+## SECTION 3 – PROBE CALIBRATION
+
+### 3.1 pH Probe Calibration
+
+| Parameter | Buffer 1 (pH 4.00) | Buffer 2 (pH 7.00) |
+|---|---|---|
+| Buffer Lot Number | | |
+| Buffer Expiry Date | | |
+| Measured pH | | |
+| Expected pH | 4.00 | 7.00 |
+
+| Calibration Parameter | Value | Acceptance Criterion | Pass/Fail |
+|---|---|---|---|
+| Slope (%) | | 95–105% | |
+| Offset (mV) | | ± 30 mV | |
+
+Probe Serial Number: ___________________
+Calibration performed by (MA): _________________________ Date: __________ Time: ________
+
+### 3.2 DO Probe Preparation
+
+| Parameter | Entry |
+|---|---|
+| DO Probe Serial Number | |
+| Membrane Cap Lot Number | |
+| Polarisation Start Date/Time | |
+| Polarisation Duration (minimum 6 hours) | ☐ Confirmed ≥ 6 hours |
+
+**In-Situ DO Calibration (performed after media addition – see Section 4)**
+
+| Point | Value Achieved | Duration Stable | Accepted? |
+|---|---|---|---|
+| Zero Point (% sat.) | | ≥ 5 min at 0% | ☐ Yes ☐ No |
+| Span Point (% sat.) | | ≥ 5 min at 100 ± 2% | ☐ Yes ☐ No |
+
+DO Calibration Performed By (MA): _________________________ Date: __________ Time: ________
+
+### 3.3 Vessel Assembly Verification
+
+Vessel assembly verified against AD-UP-001: [ ] YES  [ ] NO
+
+Pressure hold test:
+- Applied pressure (bar): _______
+- Hold duration (min): _______
+- End pressure (bar): _______
+- Pressure drop (bar): _______ (Accept: ≤ 0.02 bar)  [ ] PASS  [ ] FAIL
+
+**[W] SMA Witness – Assembly and Pressure Hold:**
+Name: _________________________ Signature: _________________ Date: __________ Time: ________
+
+---
+
+## SECTION 4 – MEDIA ADDITION
+
+| Parameter | Entry |
+|---|---|
+| Medium Name | |
+| Medium Lot Number | |
+| Medium QC Release Reference | |
+| Medium Preparation Date | |
+| Medium Expiry Date/Time | |
+| Target Working Volume (L) | |
+| Actual Volume Added (L) | |
+| Acceptance Criterion | ± 2% of target |
+| Within Criterion? | [ ] YES  [ ] NO |
+| Medium Addition Start Time | |
+| Medium Addition End Time | |
+
+**Pre-Inoculation Parameter Verification**
+
+| Parameter | Setpoint | Reading | Within Range? |
+|---|---|---|---|
+| Temperature (°C) | 37.0 | | [ ] YES [ ] NO |
+| pH | 7.20 | | [ ] YES [ ] NO |
+| DO (% air sat.) | 40 | | [ ] YES [ ] NO |
+| Agitation (RPM) | 60 | | [ ] YES [ ] NO |
+
+**[W] SMA Witness – Media Addition and Pre-Inoculation Verification:**
+Name: _________________________ Signature: _________________ Date: __________ Time: ________
+
+---
+
+## SECTION 5 – INOCULATION
+
+### 5.1 Seed Culture Assessment
+
+| Parameter | Result | Acceptance Criterion | Pass/Fail |
+|---|---|---|---|
+| N-1 Bioreactor ID | — | — | — |
+| N-1 BPR Reference | — | — | — |
+| VCD at Inoculation (×10⁶ cells/mL) | | Per PS-[PC]-UP-001 | |
+| Viability at Inoculation (%) | | ≥ 90% | |
+| Mycoplasma Rapid Test Result | | Negative | |
+| Mycoplasma Test Lot Number | | — | — |
+| Cell Count Performed By | | — | — |
+| Cell Count Instrument ID | | — | — |
+| Cell Count Time | | — | — |
+
+If viability 85–90%: Deviation Raised? [ ] YES – DEV No: ____________ QA/PS Sign-off obtained? [ ] YES
+
+### 5.2 Inoculation Volume Calculation
+
+| Parameter | Value |
+|---|---|
+| Target seeding VCD (×10⁶ cells/mL) | |
+| Working Volume (mL) | |
+| N-1 VCD (×10⁶ cells/mL) | |
+| **Calculated Inoculation Volume (mL)** | **V = (Target VCD × Working Vol) / N-1 VCD =** |
+
+MA Calculation: _________________________ Initials: _______ Date: ________
+**[W] SMA Independent Verification:** _________________________ Initials: _______ Date: ________
+
+### 5.3 Inoculation Execution
+
+| Parameter | Entry |
+|---|---|
+| Inoculation Volume Transferred (mL) | |
+| Inoculation Start Time | |
+| Inoculation End Time | |
+| Official Run Start Time (T=0) | |
+| Post-Inoculation VCD (×10⁶ cells/mL) | |
+| Post-Inoculation VCD within ± 20% of target? | [ ] YES  [ ] NO → raise deviation |
+| Aseptic connections witnessed by (SMA) | |
+| SMA Signature | |
+
+---
+
+## SECTION 6 – DAILY MONITORING LOG
+
+*Complete one row per day. Take samples between 08:00 and 10:00 unless otherwise instructed.*
+
+### 6a – Cell Culture Data
+
+| Run Day | Date | Sample Time | VCD (×10⁶/mL) | Viability (%) | Mean Diameter (µm) | Instrument Used | Counted By |
+|---|---|---|---|---|---|---|---|
+| Day 1 (24hr) | | | | | | | |
+| Day 2 | | | | | | | |
+| Day 3 | | | | | | | |
+| Day 4 | | | | | | | |
+| Day 5 | | | | | | | |
+| Day 6 | | | | | | | |
+| Day 7 | | | | | | | |
+| Day 8 | | | | | | | |
+| Day 9 | | | | | | | |
+| Day 10 | | | | | | | |
+| Day 11 | | | | | | | |
+| Day 12 | | | | | | | |
+| Day 13 | | | | | | | |
+| Day 14 | | | | | | | |
+| Day 15 | | | | | | | |
+| Day 16 | | | | | | | |
+| Day 17 | | | | | | | |
+| Day 18 | | | | | | | |
+| Day 19 | | | | | | | |
+| Day 20 | | | | | | | |
+| Day 21 | | | | | | | |
+| Day 22 | | | | | | | |
+| Day 23 | | | | | | | |
+| Day 24 | | | | | | | |
+| Day 25 | | | | | | | |
+| Day 26 | | | | | | | |
+| Day 27 | | | | | | | |
+| Day 28 | | | | | | | |
+| Day 29 | | | | | | | |
+| Day 30 | | | | | | | |
+
+*Add continuation sheets as required for runs > 30 days. Label: BPR-[BATCH NO]-MON-[SHEET NO]*
+
+### 6b – Metabolite Data (BioProfile FLEX2)
+
+| Run Day | Glucose (mmol/L) | Lactate (mmol/L) | Glutamine (mmol/L) | NH₄⁺ (mmol/L) | pH (off-line) | pCO₂ (mmHg) | Osmolality (mOsm/kg) | Analysed By |
+|---|---|---|---|---|---|---|---|---|
+| Day 1 | | | | | | | | |
+| Day 2 | | | | | | | | |
+| Day 3 | | | | | | | | |
+| Day 4 | | | | | | | | |
+| Day 5 | | | | | | | | |
+| Day 6 | | | | | | | | |
+| Day 7 | | | | | | | | |
+| Day 8 | | | | | | | | |
+| Day 9 | | | | | | | | |
+| Day 10 | | | | | | | | |
+| Day 11 | | | | | | | | |
+| Day 12 | | | | | | | | |
+| Day 13 | | | | | | | | |
+| Day 14 | | | | | | | | |
+| Day 15 | | | | | | | | |
+
+*Continue on additional sheets for runs > 15 days*
+
+### 6c – Bleed Record
+
+| Run Day | Bleed Rate (fraction/day) | Calculated Volume (mL) | Actual Volume Removed (mL) | Start Time | End Time | MA Initials | SMA Witness |
+|---|---|---|---|---|---|---|---|
+| Day 1 | — | — | — | — | — | — | — |
+| Day 2 | | | | | | | |
+| Day 3 | | | | | | | |
+| Day 4 | | | | | | | |
+| Day 5 | | | | | | | |
+| Day 6 | | | | | | | |
+| Day 7 | | | | | | | |
+| Day 8 | | | | | | | |
+| Day 9 | | | | | | | |
+| Day 10 | | | | | | | |
+| Day 11 | | | | | | | |
+| Day 12 | | | | | | | |
+| Day 13 | | | | | | | |
+| Day 14 | | | | | | | |
+| Day 15 | | | | | | | |
+
+### 6d – Process Scientist Daily Data Review
+
+| Run Day | Data Reviewed | Perfusion Rate Approved (VVD) | Comments | PS Name | PS Signature | Date |
+|---|---|---|---|---|---|---|
+| Day 1 | ☐ | | | | | |
+| Day 2 | ☐ | | | | | |
+| Day 3 | ☐ | | | | | |
+| Day 4 | ☐ | | | | | |
+| Day 5 | ☐ | | | | | |
+| Day 6 | ☐ | | | | | |
+| Day 7 | ☐ | | | | | |
+
+*Continue on additional sheets*
+
+---
+
+## SECTION 7 – MEDIUM PREPARATION AND PERFUSION LOG
+
+### 7a – Medium Batch Log
+
+| Medium Batch # | Preparation Date | Medium Lot Number | Volume (L) | QC Release Ref | Expiry Date | Used From (date) | Used To (date) | Prepared By | QC Released By |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | | | | | | | | | |
+| 2 | | | | | | | | | |
+| 3 | | | | | | | | | |
+| 4 | | | | | | | | | |
+| 5 | | | | | | | | | |
+| 6 | | | | | | | | | |
+
+### 7b – Perfusion Rate Log
+
+| Date | Time | Run Day | Previous Rate (VVD) | New Rate (VVD) | Calculated Flow Rate (mL/hr) | Reason for Change | Authorised By (PS) | Implemented By (MA) | SMA Check |
+|---|---|---|---|---|---|---|---|---|---|
+| | | | | | | | | | |
+| | | | | | | | | | |
+| | | | | | | | | | |
+| | | | | | | | | | |
+| | | | | | | | | | |
+
+---
+
+## SECTION 8 – STERILE FILTRATION RECORDS (Medium)
+
+| Medium Batch # | Filter Type | Filter Lot Number | Pre-Use Integrity Test Result | Post-Use Integrity Test Result | Filtration Date | Filtered By | SMA Witness |
+|---|---|---|---|---|---|---|---|
+| 1 | | | ☐ Pass ☐ Fail | ☐ Pass ☐ Fail | | | |
+| 2 | | | ☐ Pass ☐ Fail | ☐ Pass ☐ Fail | | | |
+| 3 | | | ☐ Pass ☐ Fail | ☐ Pass ☐ Fail | | | |
+| 4 | | | ☐ Pass ☐ Fail | ☐ Pass ☐ Fail | | | |
+| 5 | | | ☐ Pass ☐ Fail | ☐ Pass ☐ Fail | | | |
+| 6 | | | ☐ Pass ☐ Fail | ☐ Pass ☐ Fail | | | |
+
+Filter Integrity Test Instrument ID: ______________________ Calibration Due Date: ______________
+
+---
+
+## SECTION 9 – PERFUSION INITIATION
+
+| Parameter | Entry |
+|---|---|
+| VCD at Perfusion Initiation (×10⁶ cells/mL) | |
+| Perfusion Trigger VCD per Process Spec (×10⁶ cells/mL) | |
+| Trigger VCD Met? | ☐ YES  ☐ NO → delay, document reason |
+| Perfusion Initiation Date/Time | |
+| Initial Perfusion Rate (VVD) | |
+| Initial Flow Rate Setting (mL/hr) | |
+| Aseptic Connection Witnessed by (SMA) | |
+| SMA Signature | |
+
+---
+
+## SECTION 10 – ATF SYSTEM RECORD
+
+### 10a – ATF Setup
+
+| Parameter | Entry |
+|---|---|
+| ATF System Model | |
+| ATF Controller ID | |
+| ATF Controller Calibration Due Date | |
+| Hollow Fibre Membrane Lot Number | |
+| Hollow Fibre MWCO | |
+| Hollow Fibre Surface Area (m²) | |
+| Hollow Fibre Expiry Date | |
+| Ethanol Flush Volume (L) | |
+| Post-Flush Conductivity (µS/cm) | (Accept: ≤ 2.0) |
+| Water Integrity Test Result | ☐ PASS  ☐ FAIL |
+| WIT Method Used | ☐ Bubble Point  ☐ Other: ____________ |
+| WIT Applied Pressure (bar) | |
+| ATF System Assembly Verified vs AD-UP-004 | ☐ YES |
+| Post-Assembly Pressure Hold Result | ☐ PASS  ☐ FAIL |
+| SMA Verification Signature | |
+| ATF Start Time | |
+| Initial TMP (bar) | |
+| Initial ATF Stroke Rate (strokes/min) | |
+
+### 10b – Daily TMP Monitoring
+
+| Run Day | Time | TMP (bar) | ATF Stroke Rate | Status (Normal/Alert/Action) | Action Taken | Recorded By |
+|---|---|---|---|---|---|---|
+| Day 1 | | | | | | |
+| Day 2 | | | | | | |
+| Day 3 | | | | | | |
+| Day 4 | | | | | | |
+| Day 5 | | | | | | |
+| Day 6 | | | | | | |
+| Day 7 | | | | | | |
+| Day 8 | | | | | | |
+| Day 9 | | | | | | |
+| Day 10 | | | | | | |
+| Day 11 | | | | | | |
+| Day 12 | | | | | | |
+| Day 13 | | | | | | |
+| Day 14 | | | | | | |
+| Day 15 | | | | | | |
+
+---
+
+## SECTION 11 – HARVEST COLLECTION LOG
+
+| Bag # | Collection Start (Date/Time) | Collection End (Date/Time) | Gross Weight (kg) | Net Volume (L) | Run Day(s) Covered | In-Process Testing Submitted? | Transferred to DSP? | MA Initials | SMA Witness |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | | | | | | ☐ | ☐ | | |
+| 2 | | | | | | ☐ | ☐ | | |
+| 3 | | | | | | ☐ | ☐ | | |
+| 4 | | | | | | ☐ | ☐ | | |
+| 5 | | | | | | ☐ | ☐ | | |
+| 6 | | | | | | ☐ | ☐ | | |
+| 7 | | | | | | ☐ | ☐ | | |
+
+**Total Harvest Volume (L):** ______________
+
+---
+
+## SECTION 12 – CIP RECORD
+
+| Step | Parameter | Target | Actual | Start Time | End Time | Duration | Pass/Fail |
+|---|---|---|---|---|---|---|---|
+| Pre-Rinse WFI | Temperature (°C) | ≥ 60 | | | | | |
+| Pre-Rinse WFI | Duration (min) | 10 | | | | | |
+| Caustic Wash | NaOH Conc. (M) | 0.5 | | | | | |
+| Caustic Wash | Temperature (°C) | 70 ± 5 | | | | | |
+| Caustic Wash | Duration (min) | ≥ 30 | | | | | |
+| Intermediate Rinse | Duration (min) | 15 | | | | | |
+| Intermediate Rinse | Conductivity (µS/cm) | ≤ 50 | | | | | |
+| Acid Wash | H₃PO₄ Conc. (M) | 0.1 | | | | | |
+| Acid Wash | Temperature (°C) | 60 ± 5 | | | | | |
+| Acid Wash | Duration (min) | ≥ 20 | | | | | |
+| Final Rinse | Duration (min) | ≥ 20 | | | | | |
+| Final Rinse | Conductivity (µS/cm) | ≤ 1.3 | | | | | |
+| Final Rinse | pH | 5.0–7.5 | | | | | |
+| Final Rinse TOC | TOC (mg/L) | ≤ 0.5 | Pending | — | — | — | |
+
+NaOH Lot Number: _____________ H₃PO₄ Lot Number: _____________
+CIP Completed: Date __________ Time ________
+CIP Validity Expires (CIP date + 7 days): __________
+
+**[W] SMA Verification – CIP Complete:**
+Name: _________________________ Signature: _________________ Date: __________ Time: ________
+
+**QA Conditional Release for SIP (based on conductivity and pH):**
+Name: _________________________ Signature: _________________ Date: __________ Time: ________
+
+---
+
+## SECTION 13 – SIP RECORD
+
+| Parameter | Target | Actual | Pass/Fail |
+|---|---|---|---|
+| SIP Start Time | — | | — |
+| SIP Hold Start Time (when ≥ 119°C reached) | — | | — |
+| SIP Hold End Time | — | | — |
+| SIP Hold Duration (min) | ≥ 30 | | |
+| Minimum Reference Temperature During Hold (°C) | ≥ 119 | | |
+| Maximum Reference Temperature During Hold (°C) | ≤ 123 | | |
+| Mean Vessel Pressure During Hold (bar) | 1.0 ± 0.2 | | |
+| Calculated F₀ Value | ≥ 15 | | |
+| BI Strip 1 Location | Bottom drain | ☐ Placed ☐ Removed | — |
+| BI Strip 1 Lot Number | | | — |
+| BI Strip 1 Incubation Result (7 day) | Negative | | |
+| BI Strip 2 Location | Inoculation port | ☐ Placed ☐ Removed | — |
+| BI Strip 2 Lot Number | | | — |
+| BI Strip 2 Incubation Result (7 day) | Negative | | |
+| Temperature Logger ID | | | — |
+| Temperature Logger Calibration Due | | | — |
+
+SIP Completed: Date __________ Time ________
+SIP Validity Expires (SIP date + 24 hours): __________
+
+**[W] Engineering Technician – SIP Setup Verification:**
+Name: _________________________ Signature: _________________ Date: __________ Time: ________
+
+**QA Conditional Release for Media Addition (based on temperature log / F₀):**
+Name: _________________________ Signature: _________________ Date: __________ Time: ________
+
+**QA Final SIP Release (following negative BI results):**
+Name: _________________________ Signature: _________________ Date: __________ Time: ________
+
+---
+
+## SECTION 14 – DEVIATION LOG
+
+*Record all deviations occurring during this batch. Each deviation must also have a separate DEV-FORM-001 raised.*
+
+| # | Date/Time | Section/Step | Description of Deviation | Deviation Report Number | Severity (Critical/Major/Minor) | Immediate Action Taken | QA Notified (Time) | QA Name | Open/Closed |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | | | | | | | | | |
+| 2 | | | | | | | | | |
+| 3 | | | | | | | | | |
+| 4 | | | | | | | | | |
+| 5 | | | | | | | | | |
+
+---
+
+## SECTION 15 – RAW MATERIALS RECONCILIATION
+
+| Material | Lot Number | Amount Received | Amount Used | Amount Returned/Destroyed | Balance | MA Initials | SMA Check |
+|---|---|---|---|---|---|---|---|
+| Basal Medium | | | | | | | |
+| L-Glutamine | | | | | | | |
+| Pluronic F-68 | | | | | | | |
+| 45% Glucose | | | | | | | |
+| 1M NaOH (base) | | | | | | | |
+| 0.5M NaOH (CIP) | | | | | | | |
+| 0.1M H₃PO₄ (CIP) | | | | | | | |
+| WFI (total, L) | | | | | | | |
+
+---
+
+## SECTION 16 – END-OF-RUN SUMMARY
+
+| Parameter | Value |
+|---|---|
+| Actual Run Duration (days) | |
+| Total Harvest Collected (L) | |
+| Final VCD at Run End (×10⁶ cells/mL) | |
+| Final Viability at Run End (%) | |
+| Reason for Run Termination | ☐ Planned end  ☐ Viability drop  ☐ Contamination  ☐ Equipment failure  ☐ Other: ____________ |
+| Total Number of Deviations | |
+| Number of Critical Deviations | |
+| Run End Date/Time | |
+| All Harvest Bags Transferred to DSP? | ☐ YES  ☐ NO – outstanding: ________________ |
+
+---
+
+## SECTION 17 – BPR COMPLETION AND SIGN-OFF
+
+### 17.1 Operator Declaration
+
+I confirm that all entries in this BPR are complete, accurate, and were made at the time of performance. All procedures were performed in accordance with the referenced SOPs. All deviations are documented.
+
+| Role | Name (print) | Signature | Date |
+|---|---|---|---|
+| Lead Manufacturing Associate | | | |
+| Senior Manufacturing Associate | | | |
+| Process Scientist | | | |
+
+### 17.2 QA Batch Record Review
+
+| Review Stage | Reviewer Name | Signature | Date | Comments |
+|---|---|---|---|---|
+| QA Interim Review (Day 7) | | | | |
+| QA Interim Review (Day 14) | | | | |
+| QA Final Review (End of Run) | | | | |
+| QA Batch Release Decision | | | | ☐ Released to DSP  ☐ Rejected  ☐ Pending |
+
+### 17.3 Director of Manufacturing Sign-Off
+
+Name: _________________________ Signature: _________________ Date: __________
+
+---
+
+*BPR-UP-001 Rev 02 | Classification: GMP Controlled Template*
+*UNCONTROLLED WHEN PRINTED – Print only from Document Management System*
+*Complete in black or blue permanent ink. No correction fluid permitted.*
