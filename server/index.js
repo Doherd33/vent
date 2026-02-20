@@ -148,7 +148,7 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
   }
 });
 
-// GET /sop/:docId — fetch all chunks for a document (for the SOP viewer)
+// GET /sop/:docId — fetch all chunks for a document
 app.get('/sop/:docId', async (req, res) => {
   const { data, error } = await supabase
     .from('sop_chunks')
@@ -161,6 +161,37 @@ app.get('/sop/:docId', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch SOP' });
   }
   res.json(data || []);
+});
+
+// GET /sop/:docId/chunk?section=8.6.1 — fetch the best-matching chunk for a section reference
+app.get('/sop/:docId/chunk', async (req, res) => {
+  const section = (req.query.section || '').trim();
+
+  const { data, error } = await supabase
+    .from('sop_chunks')
+    .select('section_title, content')
+    .eq('doc_id', req.params.docId)
+    .order('created_at', { ascending: true });
+
+  if (error || !data) {
+    return res.status(500).json({ error: 'Failed to fetch SOP' });
+  }
+
+  if (!section) {
+    return res.json(data[0] || null);
+  }
+
+  // Find the chunk whose section_title best matches the requested section number
+  // e.g. section="8.6.1.4" should match chunk titled "8.6.1 Cell Count and Viability"
+  const prefix = section.split('.').slice(0, 3).join('.');  // e.g. "8.6.1"
+  const broader = section.split('.').slice(0, 2).join('.');  // e.g. "8.6"
+
+  let match = data.find(c => c.section_title && c.section_title.startsWith(prefix))
+           || data.find(c => c.section_title && c.section_title.startsWith(broader))
+           || data.find(c => c.section_title && c.section_title.includes(broader))
+           || data[0];
+
+  res.json(match);
 });
 
 // GET /submissions — fetch all for the dashboard
