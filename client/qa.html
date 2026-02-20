@@ -9,28 +9,28 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:       #1e1e1e;
-  --s1:       #252526;
-  --s2:       #2d2d30;
-  --s3:       #3c3c3f;
-  --border:   #3d3d42;
-  --borderhi: #525257;
-  --text:     #d4d4d4;
-  --mid:      #a0a0aa;
-  --dim:      #6c6c77;
-  --accent:   #c586c0;
-  --accent2:  rgba(197,134,192,0.12);
-  --accent3:  rgba(197,134,192,0.2);
-  --gold:     #d4a85a;
-  --gold2:    rgba(212,168,90,0.12);
-  --green:    #6fba8a;
-  --green2:   rgba(111,186,138,0.12);
-  --red:      #e07070;
-  --red2:     rgba(224,112,112,0.12);
-  --blue:     #9cdcfe;
-  --blue2:    rgba(156,220,254,0.12);
-  --teal:     #4ec9b0;
-  --teal2:    rgba(78,201,176,0.12);
+  --bg:       #f0f4f8;
+  --s1:       #ffffff;
+  --s2:       #f8fafc;
+  --s3:       #eef2f7;
+  --border:   #d0d8e4;
+  --borderhi: #a8b8cc;
+  --text:     #1a2638;
+  --mid:      #4a5a72;
+  --dim:      #8a98aa;
+  --accent:   #1b5fcc;
+  --accent2:  rgba(27,95,204,0.08);
+  --accent3:  rgba(27,95,204,0.15);
+  --gold:     #c97d20;
+  --gold2:    rgba(201,125,32,0.1);
+  --green:    #1a8a60;
+  --green2:   rgba(26,138,96,0.1);
+  --red:      #c93030;
+  --red2:     rgba(201,48,48,0.1);
+  --blue:     #1b5fcc;
+  --blue2:    rgba(27,95,204,0.1);
+  --teal:     #1a9080;
+  --teal2:    rgba(26,144,128,0.1);
 }
 
 html, body { height: 100%; }
@@ -59,7 +59,7 @@ body::before {
 /* ── TOPBAR ── */
 .topbar {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(30,30,30,.96); backdrop-filter: blur(20px);
+  background: rgba(240,244,248,.97); backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center;
   padding: 0 28px; gap: 20px; height: 56px;
@@ -259,7 +259,7 @@ body::before {
 /* ── SOP VIEWER DRAWER ── */
 .sop-backdrop {
   position: fixed; inset: 0;
-  background: rgba(7,7,9,.6); z-index: 199;
+  background: rgba(26,38,56,.4); z-index: 199;
   display: none;
   animation: fadeIn .2s ease;
 }
@@ -354,7 +354,7 @@ body::before {
 /* ── DRAFT MODAL ── */
 .modal-backdrop {
   position: fixed; inset: 0;
-  background: rgba(7,7,9,.7); z-index: 300;
+  background: rgba(26,38,56,.5); z-index: 300;
   display: none; align-items: center; justify-content: center; padding: 20px;
   animation: fadeIn .2s ease;
 }
