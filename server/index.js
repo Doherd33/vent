@@ -15,7 +15,9 @@ app.use(express.json());
 
 const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-const voyage = new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY });
+// Strip any accidental surrounding quotes from the key value
+const voyageKey = (process.env.VOYAGE_API_KEY || '').replace(/^["']|["']$/g, '');
+const voyage = new VoyageAIClient({ apiKey: voyageKey });
 
 // Debug: test the full RAG pipeline
 app.get('/debug-rag', async (req, res) => {
@@ -43,8 +45,9 @@ app.get('/', (req, res) => {
       ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
       SUPABASE_URL:      !!process.env.SUPABASE_URL,
       SUPABASE_KEY:      !!process.env.SUPABASE_KEY,
-      VOYAGE_API_KEY:    !!process.env.VOYAGE_API_KEY,
-      VOYAGE_KEY_PREFIX: process.env.VOYAGE_API_KEY ? process.env.VOYAGE_API_KEY.slice(0, 6) : 'MISSING'
+      VOYAGE_API_KEY:    !!voyageKey,
+      VOYAGE_KEY_PREFIX: voyageKey ? voyageKey.slice(0, 6) : 'MISSING',
+      VOYAGE_RAW_PREFIX: process.env.VOYAGE_API_KEY ? process.env.VOYAGE_API_KEY.slice(0, 3) : 'MISSING'
     }
   });
 });
