@@ -24,24 +24,29 @@ app.get('/', (req, res) => {
 
 // Search Supabase for SOP chunks relevant to the observation
 async function getRelevantChunks(observation, area) {
-  const result = await voyage.embed({
-    input: [`Process area: ${area}. ${observation}`],
-    model: 'voyage-3-lite'
-  });
+  try {
+    const result = await voyage.embed({
+      input: [`Process area: ${area}. ${observation}`],
+      model: 'voyage-3-lite'
+    });
 
-  const embedding = result.data[0].embedding;
+    const embedding = result.data[0].embedding;
 
-  const { data, error } = await supabase.rpc('match_sop_chunks', {
-    query_embedding: embedding,
-    match_count: 6
-  });
+    const { data, error } = await supabase.rpc('match_sop_chunks', {
+      query_embedding: embedding,
+      match_count: 6
+    });
 
-  if (error) {
-    console.error('Vector search error:', error.message);
+    if (error) {
+      console.error('Vector search error:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error('getRelevantChunks failed:', err.message);
     return [];
   }
-
-  return data || [];
 }
 
 // Format retrieved SOP chunks into a readable context block for Claude
@@ -300,7 +305,7 @@ Return ONLY valid JSON — no markdown, no preamble.
 
   } catch (error) {
     console.error('Query error:', error);
-    res.status(500).json({ error: 'Query failed', detail: error.message, stack: error.stack });
+    res.status(500).json({ error: 'Query failed' });
   }
 });
 
