@@ -17,6 +17,24 @@ const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 const voyage = new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY });
 
+// Debug: test the full RAG pipeline
+app.get('/debug-rag', async (req, res) => {
+  const results = { voyage: null, supabase_rpc: null, chunks: 0 };
+  try {
+    const r = await voyage.embed({ input: ['cell viability inoculation'], model: 'voyage-3-lite' });
+    results.voyage = 'OK - embedding length ' + r.data[0].embedding.length;
+    const { data, error } = await supabase.rpc('match_sop_chunks', {
+      query_embedding: r.data[0].embedding,
+      match_count: 3
+    });
+    if (error) results.supabase_rpc = 'ERROR: ' + error.message;
+    else { results.supabase_rpc = 'OK'; results.chunks = data.length; results.titles = data.map(c => c.section_title); }
+  } catch (e) {
+    results.error = e.message;
+  }
+  res.json(results);
+});
+
 // Health check
 app.get('/', (req, res) => {
   res.json({
