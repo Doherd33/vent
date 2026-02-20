@@ -12,7 +12,16 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
-app.use(express.static(require('path').join(__dirname, '../docs')));
+const path = require('path');
+const fs = require('fs');
+// Try both possible docs locations depending on Railway's working directory
+const docsFromServer = path.join(__dirname, '../docs');
+const docsFromRoot   = path.join(process.cwd(), 'docs');
+const docsPath = fs.existsSync(docsFromServer) ? docsFromServer : docsFromRoot;
+console.log('[STATIC] __dirname:', __dirname);
+console.log('[STATIC] cwd:', process.cwd());
+console.log('[STATIC] docs path:', docsPath, '| exists:', fs.existsSync(docsPath));
+app.use(express.static(docsPath));
 
 const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
