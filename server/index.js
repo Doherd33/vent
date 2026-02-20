@@ -319,6 +319,6 @@ Return ONLY valid JSON — no markdown, no preamble.
 });
 
 app.listen(PORT, () => {
-  console.log(`Vent server running on http://localhost:${PORT}`);
-  console.log(`VOYAGE_API_KEY present: ${!!process.env.VOYAGE_API_KEY}`);
+  const keys = ['ANTHROPIC_API_KEY','SUPABASE_URL','SUPABASE_KEY','VOYAGE_API_KEY'];
+  keys.forEach(k => console.log(`[ENV] ${k}: ${process.env[k] ? 'SET' : 'MISSING'}`));
 });
