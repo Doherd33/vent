@@ -211,6 +211,68 @@ app.patch('/submissions/:refCode/status', async (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /query — operator SOP knowledge search
+app.post('/query', async (req, res) => {
+  const { question, area } = req.body;
+
+  if (!question || question.length < 5) {
+    return res.status(400).json({ error: 'Question too short' });
+  }
+
+  try {
+    const chunks = await getRelevantChunks(question, area || 'Upstream');
+    const sopContext = buildSopContext(chunks);
+
+    console.log(`[QUERY] "${question.slice(0, 60)}" — ${chunks.length} chunks retrieved`);
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [{
+        role: 'user',
+        content: `You are the SOP Knowledge Assistant for a biologics manufacturing facility running upstream perfusion processes. An operator on the manufacturing floor has asked a question. You have the relevant SOP sections below. Answer clearly and practically.
+
+RULES:
+- Answer only from the SOP content provided. Do not invent steps or values.
+- If the question is procedural, return numbered steps.
+- If the question is about a specification or parameter value, populate the params array.
+- If the question cannot be answered from the provided SOP content, say so clearly in the summary.
+- Keep language plain and direct — this is for a floor operator, not a regulator.
+- Always cite the exact SOP section numbers you drew from.
+
+════ RELEVANT SOP SECTIONS ════
+${sopContext}
+═══════════════════════════════
+
+Process area: ${area || 'Upstream'}
+Operator question: "${question}"
+
+Return ONLY valid JSON — no markdown, no preamble.
+
+{
+  "category": "procedure or specification or troubleshooting or general",
+  "summary": "2–3 sentences answering the question in plain language",
+  "steps": [{ "n": 1, "action": "step instruction", "detail": "additional detail or null", "critical": false, "value": "specific value or target if relevant, else null" }],
+  "params": [{ "name": "parameter name", "value": "target value", "unit": "unit string", "range": "acceptable range or null", "flag": "critical or normal" }],
+  "warnings": ["warning text — only include genuine safety or quality critical cautions"],
+  "notes": ["general procedural note"],
+  "sources": [{ "code": "doc_id e.g. SOP-UP-001", "title": "document title", "section": "section number e.g. 8.6.1" }]
+}`
+      }]
+    });
+
+    const raw = message.content[0].text;
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const answer = JSON.parse(clean);
+
+    res.json(answer);
+
+  } catch (error) {
+    console.error('Query error:', error);
+    res.status(500).json({ error: 'Query failed' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Vent server running on http://localhost:${PORT}`);
 });
