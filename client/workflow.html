@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Observation Workflow</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #f0f4f8;
+  --s1:       #ffffff;
+  --s2:       #f8fafc;
+  --s3:       #eef2f7;
+  --border:   #d0d8e4;
+  --borderhi: #a8b8cc;
+  --text:     #1a2638;
+  --mid:      #4a5a72;
+  --dim:      #8a98aa;
+  --accent:   #1b5fcc;
+  --accent2:  rgba(27,95,204,0.08);
+  --accent3:  rgba(27,95,204,0.15);
+  --gold:     #c97d20;
+  --gold2:    rgba(201,125,32,0.1);
+  --green:    #1a8a60;
+  --green2:   rgba(26,138,96,0.1);
+  --red:      #c93030;
+  --red2:     rgba(201,48,48,0.1);
+  --blue:     #1b5fcc;
+  --blue2:    rgba(27,95,204,0.1);
+  --teal:     #1a9080;
+  --teal2:    rgba(26,144,128,0.1);
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+@keyframes spin     { to { transform: rotate(360deg); } }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── TOPBAR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(240,244,248,.97); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 28px; gap: 16px; height: 56px;
+}
+.logo {
+  font-family: 'Instrument Serif', serif; font-size: 22px;
+  letter-spacing: -.02em; color: var(--text);
+  display: flex; align-items: center; gap: 7px;
+  text-decoration: none; flex-shrink: 0;
+}
+.pip { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: breathe 3s ease-in-out infinite; }
+.topbar-label {
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--dim); padding-left: 16px; border-left: 1px solid var(--border); flex-shrink: 0;
+}
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.ref-chip {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim);
+  background: var(--s2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+}
+.priority-pill {
+  font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase;
+  padding: 4px 12px; border-radius: 100px;
+}
+.p-high   { background: var(--red2);   color: var(--red); }
+.p-medium { background: var(--gold2);  color: var(--gold); }
+.p-low    { background: var(--green2); color: var(--green); }
+.new-btn {
+  background: none; border: 1px solid var(--border); border-radius: 7px;
+  color: var(--mid); font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 6px 14px; cursor: pointer; text-decoration: none;
+  transition: border-color .15s, color .15s;
+}
+.new-btn:hover { border-color: var(--borderhi); color: var(--text); }
+
+/* ── PAGE ── */
+.page {
+  position: relative; z-index: 1;
+  max-width: 860px; margin: 0 auto;
+  padding: 32px 24px 80px;
+  animation: fadeUp .4s ease both;
+}
+
+/* ── HERO ── */
+.hero {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 16px;
+  padding: 28px 32px; margin-bottom: 16px;
+}
+.hero-status {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--green); font-weight: 400; margin-bottom: 14px;
+}
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: breathe 2s ease-in-out infinite; }
+.hero-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px; line-height: 1.25; color: var(--text); margin-bottom: 6px;
+}
+.hero-title em { color: var(--accent); font-style: italic; }
+.hero-sub { font-size: 14px; color: var(--mid); margin-bottom: 20px; line-height: 1.6; }
+.obs-quote {
+  background: var(--s2); border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0; padding: 14px 18px;
+  font-family: 'Instrument Serif', serif; font-style: italic;
+  font-size: 15px; color: var(--mid); line-height: 1.7; margin-bottom: 18px;
+}
+.meta-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.meta-chip {
+  font-size: 11px; padding: 5px 12px; border-radius: 100px;
+  background: var(--s3); border: 1px solid var(--border);
+  color: var(--mid); display: flex; align-items: center; gap: 5px;
+}
+.chip-hi { background: var(--accent2); border-color: rgba(27,95,204,.2); color: var(--accent); }
+
+/* ── WORKFLOW STATUS TRACKER ── */
+.status-tracker {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 24px; margin-bottom: 32px;
+  display: flex; align-items: flex-start;
+}
+.st-step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+.st-step + .st-step::before {
+  content: ''; position: absolute; right: 50%; top: 11px;
+  width: 100%; height: 1px; background: var(--border); z-index: 0;
+}
+.st-step.done + .st-step::before { background: var(--green); }
+.st-step.active + .st-step::before { background: linear-gradient(to right, var(--accent), var(--border)); }
+.st-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid var(--border); background: var(--s2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: var(--dim); font-family: 'JetBrains Mono', monospace;
+  position: relative; z-index: 1;
+}
+.st-step.active .st-dot { border-color: var(--accent); background: var(--accent2); color: var(--accent); }
+.st-step.done   .st-dot { border-color: var(--green);  background: var(--green2);  color: var(--green); }
+.st-label { font-size: 10px; color: var(--dim); margin-top: 7px; text-align: center; letter-spacing: .02em; }
+.st-step.active .st-label { color: var(--accent); font-weight: 500; }
+.st-step.done   .st-label { color: var(--mid); }
+
+/* ── SECTION LABEL ── */
+.section-label {
+  font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 20px; font-weight: 400;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── WORKFLOW PHASES ── */
+.workflow { position: relative; padding-left: 0; }
+.workflow-line {
+  position: absolute; left: 18px; top: 38px; bottom: 80px;
+  width: 1px; background: var(--border);
+}
+
+.phase-block {
+  display: flex; gap: 20px; margin-bottom: 28px;
+  animation: fadeUp .4s ease both;
+}
+.phase-icon { flex-shrink: 0; width: 38px; }
+.phase-dot {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  position: relative; z-index: 1;
+  transition: all .2s;
+}
+.phase-active   .phase-dot { background: var(--accent2); border: 2px solid var(--accent); color: var(--accent); box-shadow: 0 0 0 5px rgba(27,95,204,0.06); }
+.phase-upcoming .phase-dot { background: var(--s1); border: 1.5px solid var(--border); color: var(--dim); }
+.phase-done     .phase-dot { background: var(--green2); border: 1.5px solid var(--green); color: var(--green); }
+
+.phase-content { flex: 1; padding-top: 6px; }
+.phase-header { margin-bottom: 16px; }
+.phase-eyebrow { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-bottom: 4px; }
+.phase-name { font-size: 17px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.phase-active .phase-name { color: var(--accent); }
+.phase-timing {
+  font-size: 12px; color: var(--mid);
+  display: flex; align-items: center; gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.phase-desc { font-size: 13px; color: var(--mid); margin-top: 8px; line-height: 1.6; }
+
+/* ── CONTACT CARDS ── */
+.contacts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.contact-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; transition: border-color .15s, box-shadow .15s;
+}
+.phase-active .contact-card { border-color: rgba(27,95,204,0.2); }
+.contact-card:hover { border-color: var(--borderhi); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+
+.cc-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.cc-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 500;
+}
+.av-a { background: rgba(27,95,204,0.1);  color: #1b5fcc; border: 1px solid rgba(27,95,204,0.2); }
+.av-b { background: rgba(27,95,204,0.08); color: #1b5fcc; border: 1px solid rgba(27,95,204,0.15); }
+.av-c { background: var(--green2);        color: var(--green); border: 1px solid rgba(26,138,96,0.2); }
+.av-d { background: var(--gold2);         color: var(--gold);  border: 1px solid rgba(201,125,32,0.2); }
+.av-e { background: var(--teal2);         color: var(--teal);  border: 1px solid rgba(26,144,128,0.2); }
+
+.cc-info { flex: 1; }
+.cc-name { font-size: 13px; color: var(--text); font-weight: 500; }
+.cc-role { font-size: 11.5px; color: var(--mid); margin-top: 1px; }
+.cc-dept {
+  display: inline-block; margin-top: 5px;
+  font-size: 9px; font-weight: 500; padding: 2px 7px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: .05em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.dept-qa  { background: var(--accent2); color: var(--accent); }
+.dept-ops { background: var(--green2);  color: var(--green); }
+.dept-eng { background: var(--blue2);   color: var(--blue); }
+.dept-ms  { background: var(--gold2);   color: var(--gold); }
+
+.cc-why {
+  font-size: 12px; color: var(--mid); line-height: 1.55;
+  border-top: 1px solid var(--border); padding-top: 10px;
+}
+.no-contacts { font-size: 13px; color: var(--dim); font-style: italic; padding: 4px 0 12px; }
+
+/* ── BOTTOM GRID ── */
+.bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+.section-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px;
+}
+.sc-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--border);
+}
+.sc-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sci-amber { background: var(--gold2);   color: var(--gold); }
+.sci-blue  { background: var(--blue2);   color: var(--blue); }
+.sci-red   { background: var(--red2);    color: var(--red); }
+.sci-green { background: var(--green2);  color: var(--green); }
+.sc-title  { font-size: 13px; font-weight: 500; color: var(--text); }
+
+/* SOP chips */
+.sop-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sop-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 8px; font-size: 11.5px;
+  border: 1px solid;
+}
+.chip-gap  { background: var(--red2);   color: var(--red);   border-color: rgba(201,48,48,.2); }
+.chip-ambi { background: var(--gold2);  color: var(--gold);  border-color: rgba(201,125,32,.2); }
+.chip-ok   { background: var(--green2); color: var(--green); border-color: rgba(26,138,96,.2); }
+.sop-code  { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 500; }
+.sop-step  { font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: .75; }
+.reg-note  { margin-top: 14px; display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--red); line-height: 1.5; }
+
+/* Corrective actions */
+.action-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.action-item:last-child { border-bottom: none; }
+.action-timing {
+  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace; margin-bottom: 4px;
+}
+.t-imm   { color: var(--red); }
+.t-short { color: var(--gold); }
+.t-long  { color: var(--blue); }
+.action-title { font-size: 13px; color: var(--text); font-weight: 400; margin-bottom: 3px; }
+.action-desc  { font-size: 12px; color: var(--mid); line-height: 1.55; }
+
+/* Scientific eval full width card */
+.sci-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 14px;
+  padding: 20px 22px; margin-top: 14px;
+}
+.sci-summary { font-size: 13.5px; color: var(--mid); line-height: 1.75; margin-bottom: 16px; }
+.sci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sci-cell {
+  background: var(--s2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+}
+.sci-cell-label { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--dim); margin-bottom: 5px; font-family: 'JetBrains Mono', monospace; }
+.sci-cell-val   { font-size: 13px; color: var(--text); line-height: 1.5; }
+.sv-red    { color: var(--red); }
+.sv-amber  { color: var(--gold); }
+.sv-green  { color: var(--green); }
+.sv-accent { color: var(--accent); }
+
+/* ── LOADING / ERROR ── */
+.loading {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 80vh; gap: 14px;
+}
+.spinner {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  animation: spin 1s linear infinite;
+}
+.loading-label { font-size: 13px; color: var(--mid); }
+
+/* ── MOBILE ── */
+@media (max-width: 640px) {
+  .topbar { padding: 0 16px; gap: 10px; }
+  .topbar-label { display: none; }
+  .page { padding: 20px 16px 60px; }
+  .hero { padding: 20px; }
+  .hero-title { font-size: 22px; }
+  .contacts-grid { grid-template-columns: 1fr; }
+  .bottom-grid { grid-template-columns: 1fr; }
+  .sci-grid { grid-template-columns: 1fr; }
+  .status-tracker { padding: 14px 12px; }
+  .st-label { font-size: 9px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING STATE -->
+<div id="loadingView" class="loading">
+  <div class="spinner"></div>
+  <div class="loading-label">Loading workflow...</div>
+</div>
+
+<!-- MAIN VIEW -->
+<div id="mainView" style="display:none">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <a href="index.html" class="logo">Vent<div class="pip"></div></a>
+    <div class="topbar-label">Observation Workflow</div>
+    <div class="topbar-right">
+      <div class="ref-chip" id="topRefCode">—</div>
+      <div class="priority-pill" id="topPriority"></div>
+      <a href="index.html" class="new-btn">New submission</a>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-status">
+        <div class="status-dot"></div>
+        Observation received and workflow initiated
+      </div>
+      <div class="hero-title">Your observation has been <em>routed.</em></div>
+      <div class="hero-sub" id="heroSub">Processing...</div>
+      <div class="obs-quote" id="obsQuote"></div>
+      <div class="meta-chips" id="metaChips"></div>
+    </div>
+
+    <!-- WORKFLOW STATUS TRACKER -->
+    <div class="status-tracker">
+      <div class="st-step" id="sts0">
+        <div class="st-dot">1</div>
+        <div class="st-label">Submitted</div>
+      </div>
+      <div class="st-step" id="sts1">
+        <div class="st-dot">2</div>
+        <div class="st-label">Acknowledged</div>
+      </div>
+      <div class="st-step" id="sts2">
+        <div class="st-dot">3</div>
+        <div class="st-label">In Progress</div>
+      </div>
+      <div class="st-step" id="sts3">
+        <div class="st-dot">4</div>
+        <div class="st-label">Resolved</div>
+      </div>
+    </div>
+
+    <!-- WORKFLOW PHASES -->
+    <div class="section-label">Notification workflow</div>
+    <div class="workflow" id="workflowEl">
+      <div class="workflow-line"></div>
+    </div>
+
+    <!-- BOTTOM: SOP refs + Corrective actions -->
+    <div class="bottom-grid">
+      <div class="section-card">
+        <div class="sc-head">
+          <div class="sc-icon sci-amber">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="sc-title">SOP References</div>
+        </div>
+        <div id="sopContent"></div>
+      </div>
+      <div class="section-card">
+        <div class="sc-head">
+          <div class="sc-icon sci-blue">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <div class="sc-title">Corrective Actions</div>
+        </div>
+        <div id="actionsContent"></div>
+      </div>
+    </div>
+
+    <!-- SCIENTIFIC EVALUATION -->
+    <div class="sci-card">
+      <div class="sc-head">
+        <div class="sc-icon sci-red">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+        </div>
+        <div class="sc-title">Scientific &amp; Risk Evaluation</div>
+      </div>
+      <div class="sci-summary" id="sciSummary"></div>
+      <div class="sci-grid" id="sciGrid"></div>
+    </div>
+
+  </div><!-- /page -->
+</div><!-- /mainView -->
+
+<script>
+const SERVER_URL = 'https://vent-production-8f8a.up.railway.app';
+
+const PHASE_DEFS = [
+  { num: 1, label: 'Immediate Response',  timing: '0 – 4 hours',  desc: 'Operational notification — floor-level awareness and immediate response initiated.' },
+  { num: 2, label: 'Document & Notify',   timing: 'Same day',     desc: 'Quality documentation — deviation or change control raised in the QMS.' },
+  { num: 3, label: 'Investigate & Act',   timing: '2 – 7 days',   desc: 'Technical root cause investigation and corrective action implementation.' },
+  { num: 4, label: 'Review & Close',      timing: '1 – 4 weeks',  desc: 'Senior review of findings, regulatory assessment, and formal sign-off.' }
+];
+
+const STATUS_ACTIVE = { new: 0, acknowledged: 1, in_progress: 2, resolved: 3 };
+
+async function init() {
+  const ref = new URLSearchParams(window.location.search).get('ref');
+  if (!ref) { window.location.href = 'index.html'; return; }
+
+  try {
+    const d = await loadData(ref);
+    render(d);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('loadingView').innerHTML = `
+      <div style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:12px;color:var(--dim)">—</div>
+        <div style="font-size:15px;color:var(--text);margin-bottom:6px">Could not load submission</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:24px">${ref}</div>
+        <a href="index.html" style="font-size:13px;color:var(--accent);text-decoration:none">← New submission</a>
+      </div>`;
+  }
+}
+
+async function loadData(ref) {
+  // Try localStorage first (stored right after submission)
+  try {
+    const raw = localStorage.getItem('vent_' + ref);
+    if (raw) return normaliseLocal(JSON.parse(raw));
+  } catch (_) {}
+  // Fall back to API
+  const res = await fetch(`${SERVER_URL}/submissions/${ref}`);
+  if (!res.ok) throw new Error('Not found');
+  return normaliseApi(await res.json());
+}
+
+function normaliseLocal(d) {
+  return {
+    refCode: d.refCode,
+    area:    d.process_area || 'Upstream',
+    shift:   d.shift        || 'Unspecified',
+    obs:     d.raw_text     || '',
+    status:  d.status       || 'new',
+    priority: d.priority    || 'Medium',
+    contacts: d.contacts    || [],
+    sopRefs:  [...(d.sopRefs||[]), ...(d.bprRefs||[])],
+    sciEval:  d.sciEval     || {},
+    actions:  d.correctiveActions || [],
+    pattern:  d.pattern     || {}
+  };
+}
+
+function normaliseApi(d) {
+  const s = d.structured || {};
+  return {
+    refCode: d.ref_code,
+    area:    d.process_area || 'Upstream',
+    shift:   d.shift        || 'Unspecified',
+    obs:     d.raw_text     || '',
+    status:  d.status       || 'new',
+    priority: d.priority || s.priority || 'Medium',
+    contacts: s.contacts || [],
+    sopRefs:  [...(s.sopRefs||[]), ...(s.bprRefs||[])],
+    sciEval:  s.sciEval  || {},
+    actions:  s.correctiveActions || [],
+    pattern:  s.pattern  || {}
+  };
+}
+
+function derivePhase(c) {
+  if (c.workflowPhase) return parseInt(c.workflowPhase);
+  const role = (c.role || '').toLowerCase();
+  const dept = c.dept || '';
+  if (role.includes('shift lead') || role.includes('ehs')) return 1;
+  if (dept === 'qa' && (role.includes('lead') || role.includes('qms'))) return 2;
+  if (dept === 'ms' || (dept === 'eng' && !role.includes('director'))) return 3;
+  if (role.includes('director') || role.includes('qp') || role.includes('senior')) return 4;
+  return 2;
+}
+
+function render(d) {
+  document.title = `Vent · ${d.refCode}`;
+
+  // Topbar
+  document.getElementById('topRefCode').textContent = d.refCode;
+  const pill = document.getElementById('topPriority');
+  pill.textContent = d.priority;
+  pill.className = 'priority-pill ' + (d.priority === 'High' ? 'p-high' : d.priority === 'Low' ? 'p-low' : 'p-medium');
+
+  // Hero
+  const gapCount = d.sopRefs.filter(r => r.flag === 'gap').length;
+  document.getElementById('heroSub').textContent =
+    `${d.contacts.length} contact${d.contacts.length !== 1 ? 's' : ''} notified · ` +
+    `${d.sopRefs.length} SOP reference${d.sopRefs.length !== 1 ? 's' : ''} identified` +
+    (gapCount ? ` · ${gapCount} procedural gap${gapCount > 1 ? 's' : ''} flagged` : '');
+
+  document.getElementById('obsQuote').textContent = d.obs;
+
+  const pCls = d.priority === 'High' ? 'chip-hi' : '';
+  document.getElementById('metaChips').innerHTML = [
+    { label: d.area },
+    { label: (d.shift || 'Unspecified') + ' Shift' },
+    { label: d.priority + ' Priority', cls: pCls },
+    { label: d.refCode }
+  ].map(c => `<div class="meta-chip ${c.cls||''}">${c.label}</div>`).join('');
+
+  // Status tracker
+  const activeIdx = STATUS_ACTIVE[d.status] ?? 0;
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('sts' + i);
+    const dot = el.querySelector('.st-dot');
+    if (i < activeIdx)      { el.className = 'st-step done';   dot.textContent = '✓'; }
+    else if (i === activeIdx) el.className = 'st-step active';
+    else                      el.className = 'st-step';
+  });
+
+  // Group contacts by phase
+  const grouped = { 1:[], 2:[], 3:[], 4:[] };
+  d.contacts.forEach(c => {
+    const p = derivePhase(c);
+    (grouped[p] = grouped[p] || []).push(c);
+  });
+
+  const activePhase = activeIdx + 1; // status 0→phase1, 1→phase2, etc. (resolved = phase 5, all done)
+  const resolvedAll = d.status === 'resolved';
+
+  // Render phases
+  const wEl = document.getElementById('workflowEl');
+  const phaseHtml = PHASE_DEFS.map((ph, i) => {
+    const contacts = grouped[ph.num] || [];
+    let state;
+    if (resolvedAll)              state = 'done';
+    else if (ph.num < activePhase) state = 'done';
+    else if (ph.num === activePhase) state = 'active';
+    else                           state = 'upcoming';
+
+    const dotContent = state === 'done' ? '✓' : ph.num;
+
+    const cardsHtml = contacts.length
+      ? `<div class="contacts-grid">${contacts.map(renderContact).join('')}</div>`
+      : `<div class="no-contacts">No contacts assigned to this phase for this observation.</div>`;
+
+    return `
+<div class="phase-block phase-${state}" style="animation-delay:${i * 0.08}s">
+  <div class="phase-icon"><div class="phase-dot">${dotContent}</div></div>
+  <div class="phase-content">
+    <div class="phase-header">
+      <div class="phase-eyebrow">Phase ${ph.num}</div>
+      <div class="phase-name">${ph.label}</div>
+      <div class="phase-timing">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        ${ph.timing}
+      </div>
+      <div class="phase-desc">${ph.desc}</div>
+    </div>
+    ${cardsHtml}
+  </div>
+</div>`;
+  }).join('');
+
+  // Re-inject keeping the line element
+  wEl.innerHTML = '<div class="workflow-line"></div>' + phaseHtml;
+
+  // SOP refs
+  const sopEl = document.getElementById('sopContent');
+  if (d.sopRefs.length) {
+    const chips = d.sopRefs.map(r => {
+      const cls = r.flag === 'gap' ? 'chip-gap' : r.flag === 'ambiguous' ? 'chip-ambi' : 'chip-ok';
+      const icon = r.flag === 'gap' ? '▲' : r.flag === 'ambiguous' ? '◆' : '✓';
+      return `<div class="sop-chip ${cls}" title="${r.relevance}">
+        <span style="font-size:9px">${icon}</span>
+        <span class="sop-code">${r.code}</span>
+        <span class="sop-step">${r.step}</span>
+      </div>`;
+    }).join('');
+    const regNote = (d.sciEval.regulatoryFlag === 'Yes' && d.sciEval.regulatoryNote)
+      ? `<div class="reg-note"><span>⚑</span><span>${d.sciEval.regulatoryNote}</span></div>`
+      : '';
+    sopEl.innerHTML = `<div class="sop-chips">${chips}</div>${regNote}`;
+  } else {
+    sopEl.innerHTML = '<div style="font-size:13px;color:var(--dim)">No SOP references identified.</div>';
+  }
+
+  // Corrective actions
+  const actEl = document.getElementById('actionsContent');
+  if (d.actions.length) {
+    actEl.innerHTML = d.actions.map(a => {
+      const tc = a.timing === 'immediate' ? 't-imm' : a.timing === 'short' ? 't-short' : 't-long';
+      return `<div class="action-item">
+        <div class="action-timing ${tc}">${a.timingLabel || a.timing}</div>
+        <div class="action-title">${a.title}</div>
+        <div class="action-desc">${a.description}</div>
+      </div>`;
+    }).join('');
+  } else {
+    actEl.innerHTML = '<div style="font-size:13px;color:var(--dim)">No corrective actions specified.</div>';
+  }
+
+  // Scientific eval
+  const sc = d.sciEval;
+  document.getElementById('sciSummary').textContent = sc.summary || '';
+  const cells = [
+    { label: 'Root Cause Hypothesis', val: sc.rootCauseHypothesis, cls: '' },
+    { label: 'Affected Parameter',    val: sc.affectedParameter,   cls: 'sv-accent' },
+    { label: 'Risk Level',            val: sc.riskLevel,
+      cls: sc.riskLevel === 'High' ? 'sv-red' : sc.riskLevel === 'Medium' ? 'sv-amber' : 'sv-green' },
+    { label: 'Regulatory Flag',       val: sc.regulatoryFlag,
+      cls: sc.regulatoryFlag === 'Yes' ? 'sv-red' : 'sv-green' }
+  ];
+  document.getElementById('sciGrid').innerHTML = cells.map(c => `
+    <div class="sci-cell">
+      <div class="sci-cell-label">${c.label}</div>
+      <div class="sci-cell-val ${c.cls}">${c.val || '—'}</div>
+    </div>`).join('');
+
+  // Show
+  document.getElementById('loadingView').style.display = 'none';
+  document.getElementById('mainView').style.display = 'block';
+}
+
+function renderContact(c) {
+  const dCls = c.dept === 'qa' ? 'dept-qa' : c.dept === 'eng' ? 'dept-eng' : c.dept === 'ms' ? 'dept-ms' : 'dept-ops';
+  return `
+<div class="contact-card">
+  <div class="cc-top">
+    <div class="cc-avatar ${c.avatarClass || 'av-a'}">${c.initials || '?'}</div>
+    <div class="cc-info">
+      <div class="cc-name">${c.name}</div>
+      <div class="cc-role">${c.role}</div>
+      <div class="cc-dept ${dCls}">${c.deptLabel || c.dept}</div>
+    </div>
+  </div>
+  ${c.why ? `<div class="cc-why">${c.why}</div>` : ''}
+</div>`;
+}
+
+init();
+</script>
+</body>
+</html>

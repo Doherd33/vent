@@ -766,12 +766,18 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
         });
 
         const data = await res.json();
-        populateFeedback(data, text, shift);
-        showScreen('fbScreen');
-        window.scrollTo({top:0,behavior:'smooth'});
-        setTimeout(() => {
-          document.getElementById('pbFill').classList.add('animate');
-        }, 400);
+
+        // Store in localStorage so workflow.html can read it immediately
+        localStorage.setItem('vent_' + data.refCode, JSON.stringify({
+          ...data,
+          raw_text: text,
+          process_area: selArea,
+          shift: shift,
+          status: 'new'
+        }));
+
+        // Redirect to workflow page
+        window.location.href = 'workflow.html?ref=' + data.refCode;
 
       } catch(err) {
         console.error('Error:', err);

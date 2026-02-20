@@ -86,6 +86,7 @@ An operator has submitted an observation. You have been given the ACTUAL facilit
 RULES:
 - Reference ONLY the SOP documents provided below. Do not invent SOP codes or section numbers.
 - Select 3–5 contacts from the CONTACTS DIRECTORY below. Use their EXACT name, role, dept, deptLabel, initials, and avatarClass — do not invent or modify any contact fields.
+- Assign each contact a workflowPhase integer (1–4): 1=Immediate floor response (Shift Leads, EHS, 0–4h); 2=Document & notify (QA Leads, QMS Lead, same day); 3=Investigate & act (MSAT, Engineering specialists, 2–7 days); 4=Review & close (Directors, QP, Senior staff, 1–4 weeks).
 - If the observation matches a documented gap or NOTE in the SOPs, flag it explicitly.
 - Be specific. Use actual section numbers from the SOP content below.
 
@@ -109,7 +110,7 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
   "bprRefs": [{ "code": "BPR-UP-001 if relevant", "title": "Batch Production Record", "step": "section ref", "relevance": "one sentence", "flag": "gap or ambiguous or compliant" }],
   "sciEval": { "summary": "3-4 sentences grounded in the retrieved SOP content", "rootCauseHypothesis": "one sentence", "riskLevel": "High or Medium or Low", "affectedParameter": "specific parameter name", "regulatoryFlag": "Yes or No", "regulatoryNote": "one sentence citing relevant regulation or SOP requirement" },
   "correctiveActions": [{ "title": "action title", "description": "specific description referencing actual SOP steps where possible", "timing": "immediate or short or long", "timingLabel": "e.g. Within 24 hours" }],
-  "contacts": [{ "name": "exact name from directory", "role": "exact role from directory", "dept": "exact dept from directory", "deptLabel": "exact deptLabel from directory", "avatarClass": "exact avatarClass from directory", "initials": "exact initials from directory", "why": "one sentence specific to this observation explaining why this person needs to act" }],
+  "contacts": [{ "name": "exact name from directory", "role": "exact role from directory", "dept": "exact dept from directory", "deptLabel": "exact deptLabel from directory", "avatarClass": "exact avatarClass from directory", "initials": "exact initials from directory", "workflowPhase": 1, "why": "one sentence specific to this observation explaining why this person needs to act" }],
   "timeline": [{ "state": "done or now or next or later", "when": "timeframe", "event": "event title", "detail": "one sentence" }],
   "pattern": { "summary": "two sentences on whether this is a recurring pattern", "currentCount": 1, "threshold": 3 }
 }`
@@ -174,6 +175,20 @@ app.get('/submissions', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch submissions' });
   }
   res.json(data || []);
+});
+
+// GET /submissions/:refCode — fetch a single submission
+app.get('/submissions/:refCode', async (req, res) => {
+  const { data, error } = await supabase
+    .from('submissions')
+    .select('*')
+    .eq('ref_code', req.params.refCode)
+    .single();
+
+  if (error || !data) {
+    return res.status(404).json({ error: 'Submission not found' });
+  }
+  res.json(data);
 });
 
 // PATCH /submissions/:refCode/status — update workflow status
