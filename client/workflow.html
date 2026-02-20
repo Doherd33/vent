@@ -261,44 +261,62 @@ body {
 .sci-green { background: var(--green2);  color: var(--green); }
 .sc-title  { font-size: 13px; font-weight: 500; color: var(--text); }
 
-/* SOP chips */
-.sop-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.sop-chip {
-  display: flex; align-items: center; gap: 6px;
-  padding: 5px 10px; border-radius: 8px; font-size: 11.5px;
-  border: 1px solid;
-}
-.chip-gap  { background: var(--red2);   color: var(--red);   border-color: rgba(201,48,48,.2); }
-.chip-ambi { background: var(--gold2);  color: var(--gold);  border-color: rgba(201,125,32,.2); }
-.chip-ok   { background: var(--green2); color: var(--green); border-color: rgba(26,138,96,.2); }
-.sop-code  { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 500; }
-.sop-step  { font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: .75; }
-.reg-note  { margin-top: 14px; display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--red); line-height: 1.5; }
+/* SOP Reference cards */
+.sop-intro { font-size: 13px; color: var(--mid); margin-bottom: 14px; line-height: 1.6; }
+.sop-ref-card { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.sop-ref-card:last-child { border-bottom: none; }
+.sop-ref-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.sop-flag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 100px; flex-shrink: 0; }
+.flag-gap  { background: var(--red2);   color: var(--red); }
+.flag-ambi { background: var(--gold2);  color: var(--gold); }
+.flag-ok   { background: var(--green2); color: var(--green); }
+.sop-ref-meta { display: flex; align-items: center; gap: 8px; }
+.sop-ref-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; color: var(--accent); background: var(--accent2); padding: 2px 8px; border-radius: 5px; }
+.sop-ref-step { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); }
+.sop-ref-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 5px; }
+.sop-ref-relevance { font-size: 13px; color: var(--mid); line-height: 1.6; }
+.reg-note { margin-top: 14px; display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--red); line-height: 1.5; background: var(--red2); padding: 10px 12px; border-radius: 8px; }
 
 /* Corrective actions */
-.action-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.actions-intro { font-size: 13px; color: var(--mid); margin-bottom: 14px; line-height: 1.6; }
+.action-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
 .action-item:last-child { border-bottom: none; }
-.action-timing {
-  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
-  font-family: 'JetBrains Mono', monospace; margin-bottom: 4px;
+.action-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 100px; margin-bottom: 7px;
 }
-.t-imm   { color: var(--red); }
-.t-short { color: var(--gold); }
-.t-long  { color: var(--blue); }
-.action-title { font-size: 13px; color: var(--text); font-weight: 400; margin-bottom: 3px; }
-.action-desc  { font-size: 12px; color: var(--mid); line-height: 1.55; }
+.badge-imm   { background: var(--red2);  color: var(--red); }
+.badge-short { background: var(--gold2); color: var(--gold); }
+.badge-long  { background: var(--blue2); color: var(--blue); }
+.action-title { font-size: 14px; color: var(--text); font-weight: 500; margin-bottom: 4px; }
+.action-desc  { font-size: 13px; color: var(--mid); line-height: 1.6; }
 
-/* Scientific eval full width card */
+/* Scientific eval */
 .sci-card {
   background: var(--s1); border: 1px solid var(--border); border-radius: 14px;
   padding: 20px 22px; margin-top: 14px;
 }
-.sci-summary { font-size: 13.5px; color: var(--mid); line-height: 1.75; margin-bottom: 16px; }
-.sci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.sci-cell {
-  background: var(--s2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+.risk-banner {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 18px; border-radius: 10px; margin-bottom: 18px; border: 1px solid;
 }
-.sci-cell-label { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--dim); margin-bottom: 5px; font-family: 'JetBrains Mono', monospace; }
+.risk-banner.risk-high   { background: var(--red2);   border-color: rgba(201,48,48,.2); }
+.risk-banner.risk-medium { background: var(--gold2);  border-color: rgba(201,125,32,.2); }
+.risk-banner.risk-low    { background: var(--green2); border-color: rgba(26,138,96,.2); }
+.risk-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.risk-high   .risk-dot { background: var(--red); }
+.risk-medium .risk-dot { background: var(--gold); }
+.risk-low    .risk-dot { background: var(--green); }
+.risk-label { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--mid); font-family: 'JetBrains Mono', monospace; }
+.risk-val { font-size: 15px; font-weight: 500; }
+.risk-high   .risk-val { color: var(--red); }
+.risk-medium .risk-val { color: var(--gold); }
+.risk-low    .risk-val { color: var(--green); }
+.risk-sub { font-size: 12px; color: var(--mid); margin-left: auto; }
+.sci-summary { font-size: 14px; color: var(--mid); line-height: 1.8; margin-bottom: 18px; }
+.sci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sci-cell { background: var(--s2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.sci-cell-label { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; }
 .sci-cell-val   { font-size: 13px; color: var(--text); line-height: 1.5; }
 .sv-red    { color: var(--red); }
 .sv-amber  { color: var(--gold); }
@@ -404,7 +422,7 @@ body {
           <div class="sc-icon sci-amber">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
-          <div class="sc-title">SOP References</div>
+          <div class="sc-title">Which procedures relate to this</div>
         </div>
         <div id="sopContent"></div>
       </div>
@@ -413,7 +431,7 @@ body {
           <div class="sc-icon sci-blue">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           </div>
-          <div class="sc-title">Corrective Actions</div>
+          <div class="sc-title">What needs to happen</div>
         </div>
         <div id="actionsContent"></div>
       </div>
@@ -425,8 +443,9 @@ body {
         <div class="sc-icon sci-red">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
         </div>
-        <div class="sc-title">Scientific &amp; Risk Evaluation</div>
+        <div class="sc-title">What the AI assessed about your observation</div>
       </div>
+      <div id="riskBanner"></div>
       <div class="sci-summary" id="sciSummary"></div>
       <div class="sci-grid" id="sciGrid"></div>
     </div>
@@ -607,48 +626,76 @@ function render(d) {
   // SOP refs
   const sopEl = document.getElementById('sopContent');
   if (d.sopRefs.length) {
-    const chips = d.sopRefs.map(r => {
-      const cls = r.flag === 'gap' ? 'chip-gap' : r.flag === 'ambiguous' ? 'chip-ambi' : 'chip-ok';
-      const icon = r.flag === 'gap' ? '▲' : r.flag === 'ambiguous' ? '◆' : '✓';
-      return `<div class="sop-chip ${cls}" title="${r.relevance}">
-        <span style="font-size:9px">${icon}</span>
-        <span class="sop-code">${r.code}</span>
-        <span class="sop-step">${r.step}</span>
+    const gapCount = d.sopRefs.filter(r => r.flag === 'gap').length;
+    const intro = gapCount
+      ? `${gapCount} procedural gap${gapCount > 1 ? 's were' : ' was'} identified in the procedures below. These will be escalated to QA for review.`
+      : `The following SOP sections are relevant to your observation. No gaps were found — the procedures appear to cover this scenario.`;
+    const cards = d.sopRefs.map(r => {
+      const flagCls  = r.flag === 'gap' ? 'flag-gap'  : r.flag === 'ambiguous' ? 'flag-ambi' : 'flag-ok';
+      const flagIcon = r.flag === 'gap' ? '▲ Gap identified' : r.flag === 'ambiguous' ? '◆ Needs clarification' : '✓ Procedure covers this';
+      return `<div class="sop-ref-card">
+        <div class="sop-ref-top">
+          <div class="sop-ref-meta">
+            <span class="sop-ref-code">${r.code}</span>
+            <span class="sop-ref-step">§ ${r.step}</span>
+          </div>
+          <span class="sop-flag ${flagCls}">${flagIcon}</span>
+        </div>
+        <div class="sop-ref-title">${r.title}</div>
+        <div class="sop-ref-relevance">${r.relevance}</div>
       </div>`;
     }).join('');
     const regNote = (d.sciEval.regulatoryFlag === 'Yes' && d.sciEval.regulatoryNote)
-      ? `<div class="reg-note"><span>⚑</span><span>${d.sciEval.regulatoryNote}</span></div>`
+      ? `<div class="reg-note"><span style="flex-shrink:0">⚑</span><span><strong>Regulatory note:</strong> ${d.sciEval.regulatoryNote}</span></div>`
       : '';
-    sopEl.innerHTML = `<div class="sop-chips">${chips}</div>${regNote}`;
+    sopEl.innerHTML = `<p class="sop-intro">${intro}</p>${cards}${regNote}`;
   } else {
-    sopEl.innerHTML = '<div style="font-size:13px;color:var(--dim)">No SOP references identified.</div>';
+    sopEl.innerHTML = `<p class="sop-intro">Your observation didn't match any specific SOP sections currently in the system. It has still been captured and routed to the appropriate contacts for review.</p>`;
   }
 
   // Corrective actions
   const actEl = document.getElementById('actionsContent');
   if (d.actions.length) {
-    actEl.innerHTML = d.actions.map(a => {
-      const tc = a.timing === 'immediate' ? 't-imm' : a.timing === 'short' ? 't-short' : 't-long';
-      return `<div class="action-item">
-        <div class="action-timing ${tc}">${a.timingLabel || a.timing}</div>
-        <div class="action-title">${a.title}</div>
-        <div class="action-desc">${a.description}</div>
-      </div>`;
-    }).join('');
+    const timingOrder = { immediate: 0, short: 1, long: 2 };
+    const sorted = [...d.actions].sort((a, b) => (timingOrder[a.timing] ?? 3) - (timingOrder[b.timing] ?? 3));
+    actEl.innerHTML = `<p class="actions-intro">These actions are required based on your observation, listed in order of urgency.</p>` +
+      sorted.map(a => {
+        const bc = a.timing === 'immediate' ? 'badge-imm' : a.timing === 'short' ? 'badge-short' : 'badge-long';
+        const icon = a.timing === 'immediate' ? '↑ Immediate —' : a.timing === 'short' ? '→ Short-term —' : '◎ Long-term —';
+        return `<div class="action-item">
+          <div class="action-badge ${bc}">${icon} ${a.timingLabel || a.timing}</div>
+          <div class="action-title">${a.title}</div>
+          <div class="action-desc">${a.description}</div>
+        </div>`;
+      }).join('');
   } else {
-    actEl.innerHTML = '<div style="font-size:13px;color:var(--dim)">No corrective actions specified.</div>';
+    actEl.innerHTML = `<p class="actions-intro">No specific corrective actions were generated. Your shift lead and QA team will determine the appropriate next steps based on the routed contacts.</p>`;
   }
 
   // Scientific eval
   const sc = d.sciEval;
+  const rl = (sc.riskLevel || '').toLowerCase();
+  const riskClass = rl === 'high' ? 'risk-high' : rl === 'low' ? 'risk-low' : 'risk-medium';
+  const riskSub = rl === 'high' ? 'Requires prompt escalation' : rl === 'low' ? 'Monitor and document' : 'Review within normal workflow';
+  document.getElementById('riskBanner').innerHTML = sc.riskLevel ? `
+    <div class="risk-banner ${riskClass}">
+      <div class="risk-dot"></div>
+      <div>
+        <div class="risk-label">Risk level</div>
+        <div class="risk-val">${sc.riskLevel}</div>
+      </div>
+      <div class="risk-sub">${riskSub}</div>
+    </div>` : '';
+
   document.getElementById('sciSummary').textContent = sc.summary || '';
+
   const cells = [
-    { label: 'Root Cause Hypothesis', val: sc.rootCauseHypothesis, cls: '' },
-    { label: 'Affected Parameter',    val: sc.affectedParameter,   cls: 'sv-accent' },
-    { label: 'Risk Level',            val: sc.riskLevel,
-      cls: sc.riskLevel === 'High' ? 'sv-red' : sc.riskLevel === 'Medium' ? 'sv-amber' : 'sv-green' },
-    { label: 'Regulatory Flag',       val: sc.regulatoryFlag,
-      cls: sc.regulatoryFlag === 'Yes' ? 'sv-red' : 'sv-green' }
+    { label: 'Most likely cause',          val: sc.rootCauseHypothesis, cls: '' },
+    { label: 'Process parameter at risk',  val: sc.affectedParameter,   cls: 'sv-accent' },
+    { label: 'Regulatory requirement',
+      val: sc.regulatoryFlag === 'Yes' ? 'Yes — a regulatory requirement applies to this observation' : sc.regulatoryFlag === 'No' ? 'No specific regulatory requirement identified' : sc.regulatoryFlag,
+      cls: sc.regulatoryFlag === 'Yes' ? 'sv-red' : 'sv-green' },
+    { label: 'What was assessed against',  val: 'Facility SOPs cross-referenced via AI. Contacts routed based on process area and observation type.', cls: '' }
   ];
   document.getElementById('sciGrid').innerHTML = cells.map(c => `
     <div class="sci-cell">
