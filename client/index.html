@@ -50,8 +50,31 @@ body::before {
   pointer-events: none; z-index: 0;
 }
 
+/* ── TOPBAR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(240,244,248,.97); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 28px; gap: 4px; height: 56px;
+}
+.t-logo {
+  font-family: 'Instrument Serif', serif; font-size: 22px;
+  letter-spacing: -.02em; color: var(--text);
+  display: flex; align-items: center; gap: 7px;
+  text-decoration: none; flex-shrink: 0; margin-right: 8px;
+}
+/* ── APP NAV (shared) ── */
+.app-nav { display: flex; align-items: center; gap: 2px; }
+.nav-item {
+  font-size: 13px; color: var(--mid); padding: 6px 12px; border-radius: 7px;
+  text-decoration: none; transition: color .15s, background .15s; white-space: nowrap;
+}
+.nav-item:hover { color: var(--text); background: var(--s3); }
+.nav-item.on { color: var(--accent); background: var(--accent2); font-weight: 500; }
+
 #submitScreen {
-  min-height: 100vh;
+  min-height: calc(100vh - 56px);
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -477,13 +500,19 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 </head>
 <body>
 
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="index.html" class="t-logo">Vent<div class="pip"></div></a>
+  <div class="app-nav">
+    <a href="index.html"    class="nav-item on">Submit</a>
+    <a href="dashboard.html" class="nav-item">Dashboard</a>
+    <a href="qa.html"        class="nav-item">QA Control</a>
+  </div>
+</div>
+
 <!-- SUBMIT SCREEN -->
 <div id="submitScreen">
   <div class="submit-wrap">
-    <div class="s-nav">
-      <div class="logo">Vent<div class="pip"></div></div>
-      <div class="nav-label">Ground Intelligence</div>
-    </div>
 
     <div class="s-headline">What have you been <em>noticing?</em></div>
     <div class="s-subhead">Describe what you've observed on the floor. AI reads the SOPs and routes it to the right people — anonymously.</div>

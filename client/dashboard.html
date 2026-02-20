@@ -75,6 +75,14 @@ body::before {
   width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
   animation: breathe 3s ease-in-out infinite;
 }
+/* ── APP NAV ── */
+.app-nav { display: flex; align-items: center; gap: 2px; }
+.nav-item {
+  font-size: 13px; color: var(--mid); padding: 6px 12px; border-radius: 7px;
+  text-decoration: none; transition: color .15s, background .15s; white-space: nowrap;
+}
+.nav-item:hover { color: var(--text); background: var(--s3); }
+.nav-item.on { color: var(--accent); background: var(--accent2); font-weight: 500; }
 .topbar-label {
   font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
   color: var(--dim); padding-left: 16px; border-left: 1px solid var(--border);
@@ -378,7 +386,11 @@ body::before {
 <!-- TOPBAR -->
 <header class="topbar">
   <a href="index.html" class="logo" style="text-decoration:none">Vent<div class="pip"></div></a>
-  <div class="topbar-label">Intelligence Dashboard</div>
+  <div class="app-nav">
+    <a href="index.html"     class="nav-item">Submit</a>
+    <a href="dashboard.html" class="nav-item on">Dashboard</a>
+    <a href="qa.html"        class="nav-item">QA Control</a>
+  </div>
 
   <div class="topbar-stats">
     <div class="ts-item"><span class="ts-num" id="tTotal">—</span>&nbsp;total</div>
@@ -392,10 +404,6 @@ body::before {
       <svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.87"/></svg>
       Refresh
     </button>
-    <a href="index.html" class="submit-link">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Submit
-    </a>
   </div>
 </header>
 
