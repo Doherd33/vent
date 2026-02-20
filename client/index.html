@@ -52,19 +52,25 @@ body::before {
 
 #submitScreen {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 40px 24px;
   position: relative; z-index: 1;
 }
 
-.submit-wrap { width: 100%; max-width: 620px; animation: up .5s ease both; }
+.submit-wrap {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  animation: up .5s ease both;
+}
 
 .s-nav {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 48px;
+  margin-bottom: 56px;
 }
 .logo {
   font-family: 'Instrument Serif', serif;
@@ -78,7 +84,15 @@ body::before {
 @keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
 .nav-label { font-size: 11px; color: var(--dim); letter-spacing: .08em; text-transform: uppercase; }
 
-.s-eyebrow { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-bottom: 16px; }
+.s-headline {
+  font-family: 'Instrument Serif', serif;
+  font-size: 32px; line-height: 1.25; color: var(--text);
+  margin-bottom: 8px; letter-spacing: -.01em;
+}
+.s-headline em { color: var(--accent); font-style: italic; }
+.s-subhead { font-size: 14px; color: var(--mid); margin-bottom: 32px; line-height: 1.6; }
+
+.s-eyebrow { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
 
 .area-row {
   display: flex; gap: 2px; margin-bottom: 2px; overflow-x: auto; scrollbar-width: none; padding-bottom: 1px;
@@ -102,10 +116,13 @@ body::before {
 .input-box:focus-within { box-shadow: 0 0 0 1px rgba(184,164,216,.12), 0 16px 48px rgba(0,0,0,.6); }
 
 textarea {
-  width: 100%; min-height: 148px; background: transparent; border: none; outline: none;
-  resize: none; padding: 20px 20px 10px;
-  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 300; line-height: 1.7;
+  width: 100%; min-height: 160px; background: transparent; border: none; outline: none;
+  resize: none; padding: 22px 22px 12px;
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 300; line-height: 1.75;
   color: var(--text); caret-color: var(--accent);
+}
+@media (min-width: 640px) {
+  textarea { min-height: 180px; font-size: 16px; }
 }
 textarea::placeholder {
   color: var(--dim); font-family: 'Instrument Serif', serif;
@@ -468,7 +485,10 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
       <div class="nav-label">Ground Intelligence</div>
     </div>
 
-    <div class="s-eyebrow">What have you been noticing?</div>
+    <div class="s-headline">What have you been <em>noticing?</em></div>
+    <div class="s-subhead">Describe what you've observed on the floor. AI reads the SOPs and routes it to the right people — anonymously.</div>
+
+    <div class="s-eyebrow">Select process area</div>
 
     <div class="area-row" role="tablist">
       <button class="atab on" data-area="Upstream"   onclick="setArea(this)">Upstream</button>
