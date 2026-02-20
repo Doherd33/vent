@@ -320,4 +320,5 @@ Return ONLY valid JSON — no markdown, no preamble.
 
 app.listen(PORT, () => {
   console.log(`Vent server running on http://localhost:${PORT}`);
+  console.log(`VOYAGE_API_KEY present: ${!!process.env.VOYAGE_API_KEY}`);
 });
