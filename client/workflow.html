@@ -201,6 +201,27 @@ body {
 }
 .phase-desc { font-size: 13px; color: var(--mid); margin-top: 8px; line-height: 1.6; }
 
+/* ── WHO BAR ── */
+.who-bar {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 20px; margin-bottom: 20px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+}
+.who-bar-title { font-size: 12px; font-weight: 500; color: var(--text); flex-shrink: 0; }
+.who-avatars { display: flex; align-items: center; }
+.who-av-wrap { position: relative; margin-right: -7px; cursor: default; }
+.who-av-wrap:last-child { margin-right: 0; }
+.who-av {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 500; border: 2px solid var(--s1);
+}
+.who-presence {
+  position: absolute; bottom: 0; right: 0;
+  width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--s1);
+}
+.who-bar-meta { font-size: 12px; color: var(--mid); margin-left: 6px; }
+
 /* ── CONTACT CARDS ── */
 .contacts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .contact-card {
@@ -210,23 +231,36 @@ body {
 .phase-active .contact-card { border-color: rgba(27,95,204,0.2); }
 .contact-card:hover { border-color: var(--borderhi); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 
-.cc-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.cc-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.cc-avatar-wrap { position: relative; flex-shrink: 0; }
 .cc-avatar {
-  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 500;
+  font-size: 13px; font-weight: 500;
 }
 .av-a { background: rgba(27,95,204,0.1);  color: #1b5fcc; border: 1px solid rgba(27,95,204,0.2); }
 .av-b { background: rgba(27,95,204,0.08); color: #1b5fcc; border: 1px solid rgba(27,95,204,0.15); }
 .av-c { background: var(--green2);        color: var(--green); border: 1px solid rgba(26,138,96,0.2); }
 .av-d { background: var(--gold2);         color: var(--gold);  border: 1px solid rgba(201,125,32,0.2); }
 .av-e { background: var(--teal2);         color: var(--teal);  border: 1px solid rgba(26,144,128,0.2); }
+.cc-presence-dot {
+  position: absolute; bottom: 1px; right: 1px;
+  width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--s1);
+}
+.presence-online  { background: #22c55e; }
+.presence-away    { background: var(--gold); }
+.presence-offline { background: var(--dim); }
 
-.cc-info { flex: 1; }
-.cc-name { font-size: 13px; color: var(--text); font-weight: 500; }
+.cc-info { flex: 1; min-width: 0; }
+.cc-name { font-size: 13px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cc-role { font-size: 11.5px; color: var(--mid); margin-top: 1px; }
+.cc-location {
+  font-size: 11px; color: var(--dim); margin-top: 3px;
+  display: flex; align-items: center; gap: 3px;
+}
+.cc-status-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .cc-dept {
-  display: inline-block; margin-top: 5px;
+  display: inline-block;
   font-size: 9px; font-weight: 500; padding: 2px 7px; border-radius: 4px;
   text-transform: uppercase; letter-spacing: .05em;
   font-family: 'JetBrains Mono', monospace;
@@ -235,6 +269,10 @@ body {
 .dept-ops { background: var(--green2);  color: var(--green); }
 .dept-eng { background: var(--blue2);   color: var(--blue); }
 .dept-ms  { background: var(--gold2);   color: var(--gold); }
+.cc-presence-label { font-size: 10px; }
+.cc-presence-online  { color: #22c55e; }
+.cc-presence-away    { color: var(--gold); }
+.cc-presence-offline { color: var(--dim); }
 
 .cc-why {
   font-size: 12px; color: var(--mid); line-height: 1.55;
@@ -409,6 +447,9 @@ body {
       </div>
     </div>
 
+    <!-- WHO BAR -->
+    <div id="whoBar" class="who-bar" style="display:none"></div>
+
     <!-- WORKFLOW PHASES -->
     <div class="section-label">Notification workflow</div>
     <div class="workflow" id="workflowEl">
@@ -576,6 +617,9 @@ function render(d) {
     else                      el.className = 'st-step';
   });
 
+  // Who bar
+  renderWhoBar(d.contacts);
+
   // Group contacts by phase
   const grouped = { 1:[], 2:[], 3:[], 4:[] };
   d.contacts.forEach(c => {
@@ -708,20 +752,80 @@ function render(d) {
   document.getElementById('mainView').style.display = 'block';
 }
 
+function getPresence(c) {
+  const hour = new Date().getHours();
+  const phase = derivePhase(c);
+  // Phase 1 (Shift Lead, EHS) — always on the floor
+  if (phase === 1) return 'online';
+  const biz  = hour >= 8  && hour < 18;
+  const core = hour >= 9  && hour < 17;
+  // Directors / QP / Senior — core hours only
+  if (phase === 4) return core ? 'online' : biz ? 'away' : 'offline';
+  // Everyone else — business hours
+  return biz ? 'online' : 'away';
+}
+
+function getLocation(c) {
+  const dept = (c.dept || '').toLowerCase();
+  const role = (c.role || '').toLowerCase();
+  if (role.includes('ehs'))       return 'EHS Office';
+  if (dept === 'ops')             return 'Manufacturing Floor';
+  if (dept === 'qa')              return 'QA Office';
+  if (dept === 'ms')              return 'MSAT Lab';
+  if (dept === 'eng')             return 'Engineering Office';
+  return 'On-site';
+}
+
 function renderContact(c) {
-  const dCls = c.dept === 'qa' ? 'dept-qa' : c.dept === 'eng' ? 'dept-eng' : c.dept === 'ms' ? 'dept-ms' : 'dept-ops';
+  const dCls      = c.dept === 'qa' ? 'dept-qa' : c.dept === 'eng' ? 'dept-eng' : c.dept === 'ms' ? 'dept-ms' : 'dept-ops';
+  const presence  = getPresence(c);
+  const dotCls    = presence === 'online' ? 'presence-online' : presence === 'away' ? 'presence-away' : 'presence-offline';
+  const labelCls  = presence === 'online' ? 'cc-presence-online' : presence === 'away' ? 'cc-presence-away' : 'cc-presence-offline';
+  const labelTxt  = presence === 'online' ? '● Online now' : presence === 'away' ? '● Away' : '● Offline';
+  const location  = getLocation(c);
   return `
 <div class="contact-card">
   <div class="cc-top">
-    <div class="cc-avatar ${c.avatarClass || 'av-a'}">${c.initials || '?'}</div>
+    <div class="cc-avatar-wrap">
+      <div class="cc-avatar ${c.avatarClass || 'av-a'}">${c.initials || '?'}</div>
+      <div class="cc-presence-dot ${dotCls}"></div>
+    </div>
     <div class="cc-info">
       <div class="cc-name">${c.name}</div>
       <div class="cc-role">${c.role}</div>
-      <div class="cc-dept ${dCls}">${c.deptLabel || c.dept}</div>
+      <div class="cc-location">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${location}
+      </div>
+      <div class="cc-status-row">
+        <div class="cc-dept ${dCls}">${c.deptLabel || c.dept}</div>
+        <span class="cc-presence-label ${labelCls}">${labelTxt}</span>
+      </div>
     </div>
   </div>
   ${c.why ? `<div class="cc-why">${c.why}</div>` : ''}
 </div>`;
+}
+
+function renderWhoBar(contacts) {
+  const el = document.getElementById('whoBar');
+  if (!contacts.length) { el.style.display = 'none'; return; }
+
+  const onlineCount = contacts.filter(c => getPresence(c) === 'online').length;
+  const avatarHtml  = contacts.map(c => {
+    const presence = getPresence(c);
+    const dotCls   = presence === 'online' ? 'presence-online' : presence === 'away' ? 'presence-away' : 'presence-offline';
+    return `<div class="who-av-wrap" title="${c.name} — ${c.role}">
+      <div class="who-av ${c.avatarClass || 'av-a'}">${c.initials || '?'}</div>
+      <div class="who-presence ${dotCls}"></div>
+    </div>`;
+  }).join('');
+
+  el.style.display = 'flex';
+  el.innerHTML = `
+    <div class="who-bar-title">People on this</div>
+    <div class="who-avatars">${avatarHtml}</div>
+    <div class="who-bar-meta">${contacts.length} contacts notified &nbsp;·&nbsp; ${onlineCount} online now</div>`;
 }
 
 init();
