@@ -19,7 +19,16 @@ const voyage = new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY });
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({ message: 'Vent server is running' });
+  res.json({
+    message: 'Vent server is running',
+    env: {
+      ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
+      SUPABASE_URL:      !!process.env.SUPABASE_URL,
+      SUPABASE_KEY:      !!process.env.SUPABASE_KEY,
+      VOYAGE_API_KEY:    !!process.env.VOYAGE_API_KEY,
+      VOYAGE_KEY_PREFIX: process.env.VOYAGE_API_KEY ? process.env.VOYAGE_API_KEY.slice(0, 6) : 'MISSING'
+    }
+  });
 });
 
 // Search Supabase for SOP chunks relevant to the observation
