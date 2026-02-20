@@ -139,6 +139,40 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
   }
 });
 
+// GET /submissions — fetch all for the dashboard
+app.get('/submissions', async (req, res) => {
+  const { data, error } = await supabase
+    .from('submissions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Supabase fetch error:', error);
+    return res.status(500).json({ error: 'Failed to fetch submissions' });
+  }
+  res.json(data || []);
+});
+
+// PATCH /submissions/:refCode/status — update workflow status
+app.patch('/submissions/:refCode/status', async (req, res) => {
+  const { status } = req.body;
+  const valid = ['new', 'acknowledged', 'in_progress', 'resolved'];
+  if (!valid.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  const { error } = await supabase
+    .from('submissions')
+    .update({ status })
+    .eq('ref_code', req.params.refCode);
+
+  if (error) {
+    console.error('Status update error:', error);
+    return res.status(500).json({ error: 'Failed to update status' });
+  }
+  res.json({ ok: true });
+});
+
 app.listen(PORT, () => {
   console.log(`Vent server running on http://localhost:${PORT}`);
 });
