@@ -21,6 +21,7 @@ const docsPath = fs.existsSync(docsFromServer) ? docsFromServer : docsFromRoot;
 console.log('[STATIC] __dirname:', __dirname);
 console.log('[STATIC] cwd:', process.cwd());
 console.log('[STATIC] docs path:', docsPath, '| exists:', fs.existsSync(docsPath));
+try { console.log('[STATIC] files:', fs.readdirSync(docsPath).join(', ')); } catch(e) { console.log('[STATIC] readdir error:', e.message); }
 app.use(express.static(docsPath));
 
 const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
