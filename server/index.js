@@ -300,7 +300,7 @@ Return ONLY valid JSON — no markdown, no preamble.
 
   } catch (error) {
     console.error('Query error:', error);
-    res.status(500).json({ error: 'Query failed' });
+    res.status(500).json({ error: 'Query failed', detail: error.message, stack: error.stack });
   }
 });
 
