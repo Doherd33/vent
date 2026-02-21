@@ -470,16 +470,314 @@ body::before {
 
 <script>
 const SERVER_URL = 'https://vent-production-8f8a.up.railway.app';
-// NOTE: To enable status tracking, run this SQL in Supabase once:
-// ALTER TABLE submissions ADD COLUMN IF NOT EXISTS status text DEFAULT 'new';
+const DEMO_MODE = true; // set false to load from live server
 
 let allSubs = [];
 let openRefs = new Set();
+
+// ── MOCK DATA ──────────────────────────────────────────
+const MOCK_SUBS = [
+  {
+    ref_code: 'VNT-0047',
+    priority: 'High',
+    process_area: 'Upstream',
+    shift: 'Night',
+    status: 'new',
+    created_at: '2026-02-21T06:42:00Z',
+    raw_text: 'Dissolved oxygen probe on N-2 bioreactor (500L) showing erratic fluctuations between 18% and 67% over the past 4 hours. Sparging rate unchanged. Probe last calibrated on Day 0 per SOP. Currently Day 6 of perfusion run with VCD at 45\u00d710\u2076 cells/mL. DO control loop has been in manual override since 04:15.',
+    structured: {
+      sopRefs: [
+        { code: 'SOP-UP-001', title: 'Bioreactor Setup & Inoculation', step: '\u00a78.2', relevance: 'Probe calibration frequency and acceptance criteria — no mid-run recalibration protocol defined', flag: 'gap' },
+        { code: 'SOP-UP-003', title: 'Perfusion Run Monitoring', step: '\u00a76.4', relevance: 'DO control loop operation and manual override procedure', flag: 'ok' }
+      ],
+      bprRefs: [
+        { code: 'BPR-UP-001', title: 'Batch Production Record', step: '\u00a74.2', relevance: 'In-process DO monitoring — deviation requires formal documentation before batch release', flag: 'gap' }
+      ],
+      sciEval: {
+        summary: 'Erratic DO readings at high VCD (45\u00d710\u2076/mL) are consistent with probe membrane fouling due to protein accumulation. At this cell density, oxygen demand is substantial and unreliable DO control creates risk of hypoxic stress. Manual override mitigates immediate risk but does not resolve root cause. Formal deviation documentation is required given the stage of this GMP production run.',
+        rootCauseHypothesis: 'Probe membrane fouling or electrochemical drift at elevated cell density',
+        riskLevel: 'High',
+        affectedParameter: 'Dissolved Oxygen (setpoint 40%)',
+        regulatoryFlag: 'Yes',
+        regulatoryNote: 'DO excursion on Day 6 of GMP production run requires formal deviation documentation under 21 CFR Part 211'
+      },
+      correctiveActions: [
+        { title: 'Perform in-situ 2-point probe recalibration', description: 'Conduct recalibration using N\u2082 sparge (0%) and air-saturated reference (100%) without interrupting perfusion. Document result in BPR.', timing: 'immediate', timingLabel: 'Now' },
+        { title: 'Adjust sparge rate incrementally', description: 'If recalibration confirms true DO drop, increase air sparging by 10% increments. Monitor cell viability after each adjustment.', timing: 'immediate', timingLabel: 'Now' },
+        { title: 'Replace probe membrane before next run', description: 'Schedule membrane replacement and full pre-calibration. Update PM schedule for probes used beyond Day 4 at VCD >30\u00d710\u2076.', timing: 'short', timingLabel: '24\u201348 hrs' },
+        { title: 'Add mid-run calibration to SOP-UP-001', description: 'Evaluate adding a mandatory mid-run probe recalibration step for perfusion runs exceeding 40\u00d710\u2076 cells/mL.', timing: 'long', timingLabel: '1\u20132 wks' }
+      ],
+      contacts: [
+        { name: 'Liu Chen', role: 'Bioprocessing Shift Lead', initials: 'LC', avatarClass: 'av-b', dept: 'ops', deptLabel: 'Manufacturing' },
+        { name: 'Ciar\u00e1n Murphy', role: 'Upstream Manufacturing Lead', initials: 'CM', avatarClass: 'av-c', dept: 'ops', deptLabel: 'Manufacturing' },
+        { name: 'Dr. Robert Kim', role: 'Senior MSAT Director', initials: 'RK', avatarClass: 'av-e', dept: 'ms', deptLabel: 'MSAT' },
+        { name: 'Sin\u00e9ad Kelly', role: 'QA Manufacturing Lead', initials: 'SK', avatarClass: 'av-a', dept: 'qa', deptLabel: 'QA' }
+      ]
+    }
+  },
+  {
+    ref_code: 'VNT-0046',
+    priority: 'High',
+    process_area: 'Upstream',
+    shift: 'Day',
+    status: 'in_progress',
+    created_at: '2026-02-20T14:18:00Z',
+    raw_text: 'Excessive foam formation in N-1 bioreactor (50L) seed train at approximately 6 hours post-inoculation. Antifoam C Emulsion added at standard 0.1% v/v per SOP but foam layer persisting at 8cm depth. No other process parameters outside range. Agitation 120 RPM, DO 40%, pH 7.15.',
+    structured: {
+      sopRefs: [
+        { code: 'SOP-UP-002', title: 'Seed Train Operation', step: '\u00a75.3', relevance: 'Antifoam addition protocol — no escalation dose or maximum cumulative volume defined', flag: 'ambiguous' },
+        { code: 'SOP-UP-001', title: 'Bioreactor Setup & Inoculation', step: '\u00a77.1', relevance: 'Inoculation procedure and post-inoculation monitoring parameters', flag: 'ok' }
+      ],
+      bprRefs: [],
+      sciEval: {
+        summary: 'Persistent foaming in seed bioreactors is commonly caused by protein surfactants from cell lysis or incomplete media dissolution. At 6 hours post-inoculation, some lysis is expected as cells adapt to the bioreactor environment. Excessive foam risks entrapping cells at the headspace interface, reducing effective working volume and potentially compromising seed quality ahead of the N-2 transfer.',
+        rootCauseHypothesis: 'Surfactant activity from protein carry-over in seed culture or incomplete media dissolution',
+        riskLevel: 'Medium',
+        affectedParameter: 'Mass transfer coefficient (kLa) and headspace foam depth',
+        regulatoryFlag: 'No',
+        regulatoryNote: 'No immediate regulatory concern — document antifoam additions in BPR for seed quality tracking'
+      },
+      correctiveActions: [
+        { title: 'Increase antifoam to 0.2% v/v', description: 'Double the antifoam dose and monitor over 30 minutes. Document addition time and volume in BPR.', timing: 'immediate', timingLabel: 'Now' },
+        { title: 'Assess seed culture quality pre-transfer', description: 'Perform Vi-Cell viability check before N-1 to N-2 transfer. Proceed only if viability \u226590% and VCD within target range.', timing: 'short', timingLabel: '6\u201312 hrs' },
+        { title: 'Add antifoam escalation guidance to SOP-UP-002', description: 'Define maximum cumulative antifoam volume, escalation steps, and decision criteria for persistent foaming events.', timing: 'long', timingLabel: '1 wk' }
+      ],
+      contacts: [
+        { name: 'Liu Chen', role: 'Bioprocessing Shift Lead', initials: 'LC', avatarClass: 'av-b', dept: 'ops', deptLabel: 'Manufacturing' },
+        { name: 'Dr. Sarah Park', role: 'MSAT Technical Services Lead', initials: 'SP', avatarClass: 'av-e', dept: 'ms', deptLabel: 'MSAT' },
+        { name: 'Sin\u00e9ad Kelly', role: 'QA Manufacturing Lead', initials: 'SK', avatarClass: 'av-a', dept: 'qa', deptLabel: 'QA' }
+      ]
+    }
+  },
+  {
+    ref_code: 'VNT-0045',
+    priority: 'Medium',
+    process_area: 'Media Prep',
+    shift: 'Day',
+    status: 'acknowledged',
+    created_at: '2026-02-20T15:03:00Z',
+    raw_text: 'Basal media hold temperature in vessel MP-04 measured 22.4\u00b0C at 14:30. Set point is 20\u00b0C \u00b11\u00b0C per SOP-UP-004 — deviation is +2.4\u00b0C above upper limit. Vessel has been in hold for 9 hours. Media is scheduled for use in N-2 production bioreactor at 08:00 tomorrow.',
+    structured: {
+      sopRefs: [
+        { code: 'SOP-UP-004', title: 'Media Preparation & Hold', step: '\u00a73.2', relevance: 'Temperature specification for basal media hold — no action guidance if excursion occurs', flag: 'gap' }
+      ],
+      bprRefs: [
+        { code: 'BPR-UP-001', title: 'Batch Production Record', step: '\u00a72.4', relevance: 'Media preparation sign-off — temperature excursion must be documented before batch release', flag: 'gap' }
+      ],
+      sciEval: {
+        summary: 'A 2.4\u00b0C excursion above the upper hold temperature specification raises concerns about media component stability, particularly glutamine (half-life sensitive to temperature) and heat-labile vitamins. The 9-hour duration at elevated temperature compounds the risk. Media should be assessed against degradation models before use. If glutamine has degraded significantly, cell growth kinetics in the production bioreactor will be affected.',
+        rootCauseHypothesis: 'Temperature controller fault or chiller unit partial failure on vessel MP-04',
+        riskLevel: 'Medium',
+        affectedParameter: 'Glutamine stability and heat-labile vitamin degradation',
+        regulatoryFlag: 'Yes',
+        regulatoryNote: 'Temperature excursion on GMP media requires formal OOS assessment and QA sign-off before use in production'
+      },
+      correctiveActions: [
+        { title: 'Initiate OOS assessment for media batch', description: 'Contact QA to open an out-of-specification investigation. Media must not be used until assessment and disposition decision are complete.', timing: 'immediate', timingLabel: 'Now' },
+        { title: 'Engineering inspection of vessel MP-04', description: 'Check temperature controller calibration, chiller unit status, and probe positioning. Capture full data logger readings for the hold period.', timing: 'short', timingLabel: '4\u20138 hrs' },
+        { title: 'Add temperature excursion response to SOP-UP-004', description: 'Define action limits, notification escalation, and hold vs. discard decision criteria for media temperature deviations.', timing: 'long', timingLabel: '2 wks' }
+      ],
+      contacts: [
+        { name: 'Emma Walsh', role: 'QA Manufacturing Lead', initials: 'EW', avatarClass: 'av-d', dept: 'qa', deptLabel: 'QA' },
+        { name: 'Aoife Brennan', role: 'Manufacturing Operations Lead', initials: 'AB', avatarClass: 'av-c', dept: 'ops', deptLabel: 'Manufacturing' },
+        { name: 'Brian Gallagher', role: 'Senior Engineering Director', initials: 'BG', avatarClass: 'av-a', dept: 'eng', deptLabel: 'Engineering' }
+      ]
+    }
+  },
+  {
+    ref_code: 'VNT-0044',
+    priority: 'High',
+    process_area: 'Downstream',
+    shift: 'Day',
+    status: 'acknowledged',
+    created_at: '2026-02-19T10:45:00Z',
+    raw_text: 'Harvest centrifuge yield for DSP batch 2024-DS-089 calculated at 73% based on pre/post cell counts. SOP specifies \u226588% yield for this step. Bowl speed 8,400 RPM and feed rate 12 L/hr were both within specification. This is the second consecutive batch below threshold — batch 2024-DS-086 yielded 79%.',
+    structured: {
+      sopRefs: [
+        { code: 'SOP-UP-005', title: 'Harvest & Primary Clarification', step: '\u00a74.3', relevance: 'Centrifuge yield acceptance criteria and in-spec troubleshooting guide', flag: 'ok' },
+        { code: 'SOP-UP-005', title: 'Harvest & Primary Clarification', step: '\u00a75.1', relevance: 'Feed pump calibration verification requirement before each run — not recorded in recent BPRs', flag: 'gap' }
+      ],
+      bprRefs: [
+        { code: 'BPR-UP-001', title: 'Batch Production Record', step: '\u00a76.1', relevance: 'Yield calculation and out-of-specification result handling procedure', flag: 'gap' }
+      ],
+      sciEval: {
+        summary: 'A 15% yield deficit across two consecutive batches indicates a systematic rather than random cause. Most likely explanations: feed pump calibration drift causing actual flow rate to deviate from set point; centrifuge bowl wear reducing separation efficiency; or upstream culture quality changes (elevated debris from apoptosis) affecting clarification. The trend across two batches formally triggers CAPA initiation under site QMS.',
+        rootCauseHypothesis: 'Feed pump calibration drift or centrifuge bowl wear reducing separation efficiency',
+        riskLevel: 'High',
+        affectedParameter: 'Product recovery yield at harvest (target \u226588%)',
+        regulatoryFlag: 'Yes',
+        regulatoryNote: 'Consecutive OOS yield results require CAPA initiation and batch risk assessment under site QMS'
+      },
+      correctiveActions: [
+        { title: 'Verify harvest feed pump calibration', description: 'Perform gravimetric calibration check on harvest feed pump. Compare actual vs set point flow rate across full operating range.', timing: 'immediate', timingLabel: 'Now' },
+        { title: 'Initiate CAPA for consecutive OOS yields', description: 'Open formal CAPA in QMS. Assign MSAT as technical lead. Include batches 2024-DS-086 and 2024-DS-089 in scope.', timing: 'short', timingLabel: '24 hrs' },
+        { title: 'Schedule centrifuge bowl inspection', description: 'Engineering to inspect bowl for wear or imbalance. Review maintenance history against manufacturer service intervals.', timing: 'short', timingLabel: '2\u20133 days' }
+      ],
+      contacts: [
+        { name: 'Ciar\u00e1n Murphy', role: 'Upstream Manufacturing Lead', initials: 'CM', avatarClass: 'av-c', dept: 'ops', deptLabel: 'Manufacturing' },
+        { name: 'Dr. Robert Kim', role: 'Senior MSAT Director', initials: 'RK', avatarClass: 'av-e', dept: 'ms', deptLabel: 'MSAT' },
+        { name: 'Omar Hassan', role: 'QMS Lead', initials: 'OH', avatarClass: 'av-a', dept: 'qa', deptLabel: 'QA' },
+        { name: 'Tom Ryan', role: 'Maintenance Lead', initials: 'TR', avatarClass: 'av-d', dept: 'eng', deptLabel: 'Engineering' }
+      ]
+    }
+  },
+  {
+    ref_code: 'VNT-0043',
+    priority: 'Low',
+    process_area: 'QC',
+    shift: 'Day',
+    status: 'resolved',
+    created_at: '2026-02-18T09:30:00Z',
+    raw_text: 'Vi-Cell XR automated counter gave 94.2% viability vs 91.8% from manual haemocytometer count on the same sample. Delta is 2.4%. Both methods are within the acceptable range (\u226585%), but the gap between methods is larger than the typical \u22641% variance we normally observe.',
+    structured: {
+      sopRefs: [
+        { code: 'SOP-UP-003', title: 'Perfusion Run Monitoring', step: '\u00a77.2', relevance: 'Cell viability measurement method and acceptable inter-method variance — range not defined', flag: 'ambiguous' }
+      ],
+      bprRefs: [],
+      sciEval: {
+        summary: 'A 2.4% inter-method variance is within normal biological variability for cell counting techniques. Vi-Cell XR and haemocytometer use different Trypan Blue exclusion mechanisms (automated image analysis vs manual exclusion) which can produce small systematic differences. Both values are well above the 85% acceptance criterion — no product quality risk. The observation highlights a useful gap: SOP should define acceptable inter-method variance.',
+        rootCauseHypothesis: 'Systematic difference in Trypan Blue exclusion between automated and manual methods',
+        riskLevel: 'Low',
+        affectedParameter: 'Cell viability measurement method comparison',
+        regulatoryFlag: 'No',
+        regulatoryNote: 'No regulatory concern — both values within criteria; document as process knowledge observation'
+      },
+      correctiveActions: [
+        { title: 'Define inter-method variance spec in SOP-UP-003', description: 'Update SOP to include acceptable inter-method variance range (suggest \u22643%) and escalation criteria if delta is exceeded.', timing: 'long', timingLabel: '2\u20134 wks' }
+      ],
+      contacts: [
+        { name: 'Dr. Sarah Park', role: 'MSAT Technical Services Lead', initials: 'SP', avatarClass: 'av-e', dept: 'ms', deptLabel: 'MSAT' },
+        { name: 'Emma Walsh', role: 'QA Manufacturing Lead', initials: 'EW', avatarClass: 'av-d', dept: 'qa', deptLabel: 'QA' }
+      ]
+    }
+  },
+  {
+    ref_code: 'VNT-0042',
+    priority: 'Medium',
+    process_area: 'Upstream',
+    shift: 'Night',
+    status: 'resolved',
+    created_at: '2026-02-17T03:17:00Z',
+    raw_text: 'Agitation set point on production bioreactor UP-02 noted at 42 RPM instead of the specified 45 RPM during overnight monitoring at 01:05. Duration approximately 2 hours before discovery. Manually corrected at 03:17. All other parameters normal — VCD 38\u00d710\u2076/mL, viability 97%.',
+    structured: {
+      sopRefs: [
+        { code: 'SOP-UP-003', title: 'Perfusion Run Monitoring', step: '\u00a75.6', relevance: 'Agitation set point verification interval and alarm response procedure', flag: 'ok' }
+      ],
+      bprRefs: [
+        { code: 'BPR-UP-001', title: 'Batch Production Record', step: '\u00a74.5', relevance: 'Process parameter deviations must be documented with timestamp and corrective action', flag: 'ok' }
+      ],
+      sciEval: {
+        summary: 'A 3 RPM reduction (6.7% below set point) for 2 hours in a perfusion bioreactor at high VCD is unlikely to cause product quality impact. At 42 RPM, bulk mixing and oxygen transfer remain adequate. Cell viability (97%) and VCD (38\u00d710\u2076/mL) are within normal range, confirming no adverse effect. Deviation has been corrected and requires only BPR documentation.',
+        rootCauseHypothesis: 'Likely input error during parameter check or transient control system event',
+        riskLevel: 'Low',
+        affectedParameter: 'Agitation rate (set point 45 RPM)',
+        regulatoryFlag: 'No',
+        regulatoryNote: 'Minor deviation — document in BPR with corrective action notes; no further regulatory action required'
+      },
+      correctiveActions: [
+        { title: 'Document deviation in BPR', description: 'Record deviation window (01:05\u201303:17), parameter delta (42 vs 45 RPM), and corrective action in the batch production record.', timing: 'immediate', timingLabel: 'Complete' }
+      ],
+      contacts: [
+        { name: 'Kai Wu', role: 'Bioprocessing Shift Lead', initials: 'KW', avatarClass: 'av-b', dept: 'ops', deptLabel: 'Manufacturing' },
+        { name: 'Sin\u00e9ad Kelly', role: 'QA Manufacturing Lead', initials: 'SK', avatarClass: 'av-a', dept: 'qa', deptLabel: 'QA' }
+      ]
+    }
+  },
+  {
+    ref_code: 'VNT-0041',
+    priority: 'High',
+    process_area: 'Facilities',
+    shift: 'Day',
+    status: 'new',
+    created_at: '2026-02-21T09:15:00Z',
+    raw_text: 'Differential pressure alarm in cleanroom transition zone TC-02 (Grade B to Grade C corridor) triggered twice in the last hour at 09:03 and 09:47. Each alarm lasted approximately 45 seconds before self-clearing. HVAC team notified but no root cause identified. Perfusion run Day 8 ongoing in adjacent production suite UP-02.',
+    structured: {
+      sopRefs: [
+        { code: 'SOP-UP-001', title: 'Bioreactor Setup & Inoculation', step: '\u00a73.1', relevance: 'Environmental monitoring requirements and cleanroom classification for upstream production suites', flag: 'ok' }
+      ],
+      bprRefs: [
+        { code: 'BPR-UP-001', title: 'Batch Production Record', step: '\u00a71.3', relevance: 'Environmental condition log — DP alarms during active production run must be captured and reviewed', flag: 'gap' }
+      ],
+      sciEval: {
+        summary: 'Intermittent differential pressure losses in a Grade B/C transition zone during an active GMP production run represent a significant environmental control concern. Repeated DP alarms — even if self-clearing — may indicate HVAC instability that could result in a sustained pressure failure and grade classification breach. Regulatory requirements mandate investigation and documentation of all environmental excursions during production.',
+        rootCauseHypothesis: 'HVAC filter loading, damper instability, or door seal degradation in transition zone TC-02',
+        riskLevel: 'High',
+        affectedParameter: 'Cleanroom differential pressure (Grade B/C boundary)',
+        regulatoryFlag: 'Yes',
+        regulatoryNote: 'Environmental control failure during GMP production requires immediate investigation per EU GMP Annex 1 and FDA aseptic processing guidance'
+      },
+      correctiveActions: [
+        { title: 'Assign HVAC engineer to TC-02 immediately', description: 'Engineering to inspect HVAC dampers, filter differential gauges, and door seals in TC-02. Do not delay pending a third alarm event.', timing: 'immediate', timingLabel: 'Now' },
+        { title: 'Evaluate risk to UP-02 production run', description: 'QA and Manufacturing Lead to assess whether active Day 8 production run should be paused pending DP stability confirmation.', timing: 'immediate', timingLabel: 'Now' },
+        { title: 'Open environmental deviation report', description: 'Document both alarm events (09:03, 09:47) in environmental monitoring system. Open formal deviation report with timestamps and HVAC data.', timing: 'short', timingLabel: '2\u20134 hrs' }
+      ],
+      contacts: [
+        { name: 'Michael Burke', role: 'Facilities & Utilities Director', initials: 'MB', avatarClass: 'av-b', dept: 'eng', deptLabel: 'Engineering' },
+        { name: 'Catherine Murphy', role: 'EHS Lead', initials: 'CM', avatarClass: 'av-d', dept: 'ops', deptLabel: 'Manufacturing' },
+        { name: 'Sin\u00e9ad Kelly', role: 'QA Manufacturing Lead', initials: 'SK', avatarClass: 'av-a', dept: 'qa', deptLabel: 'QA' },
+        { name: 'Wei Zhang', role: 'Senior Manufacturing Director', initials: 'WZ', avatarClass: 'av-c', dept: 'ops', deptLabel: 'Manufacturing' }
+      ]
+    }
+  },
+  {
+    ref_code: 'VNT-0040',
+    priority: 'Medium',
+    process_area: 'Upstream',
+    shift: 'Day',
+    status: 'in_progress',
+    created_at: '2026-02-19T13:22:00Z',
+    raw_text: 'VCD on bioreactor UP-01 trending at 28\u00d710\u2076 cells/mL on Day 4 of perfusion, below the target range of 35\u201340\u00d710\u2076 cells/mL per process design space. Glucose 4.2 g/L (normal), temperature 37.0\u00b0C, pH 7.12, DO 42% — all within spec. Perfusion rate not yet adjusted. Seed VCD at inoculation was 1.8\u00d710\u2076/mL vs target 2.0\u00d710\u2076/mL.',
+    structured: {
+      sopRefs: [
+        { code: 'SOP-UP-003', title: 'Perfusion Run Monitoring', step: '\u00a78.1', relevance: 'VCD growth trajectory targets and perfusion rate adjustment criteria', flag: 'ok' },
+        { code: 'SOP-UP-002', title: 'Seed Train Operation', step: '\u00a76.2', relevance: 'N-1 to N-2 transfer inoculation density specification (2.0 \u00b10.3 \u00d710\u2076/mL)', flag: 'ok' }
+      ],
+      bprRefs: [],
+      sciEval: {
+        summary: 'VCD of 28\u00d710\u2076/mL on Day 4 against a target of 35\u201340\u00d710\u2076/mL suggests a slower-than-expected growth phase, most likely initiated by the slightly below-target inoculation density of 1.8\u00d710\u2076/mL (10% below spec, though within tolerance). All metabolic parameters are normal, indicating healthy cells in a prolonged lag phase. Continued monitoring with a precautionary perfusion rate adjustment is recommended.',
+        rootCauseHypothesis: 'Below-target seed inoculation density extending the lag phase duration',
+        riskLevel: 'Medium',
+        affectedParameter: 'Viable Cell Density growth trajectory (target 35\u201340\u00d710\u2076/mL by Day 4)',
+        regulatoryFlag: 'No',
+        regulatoryNote: 'Parameters within specification — monitor and document; no immediate regulatory action required'
+      },
+      correctiveActions: [
+        { title: 'Reduce perfusion rate by 15%', description: 'Decrease perfusion rate to increase nutrient concentration in vessel and support recovery of VCD growth rate. Monitor response over 24 hours.', timing: 'immediate', timingLabel: 'Today' },
+        { title: 'Increase VCD monitoring to twice daily', description: 'Move from daily to twice-daily VCD measurements until growth curve returns to target trajectory.', timing: 'short', timingLabel: '24\u201348 hrs' },
+        { title: 'Review N-1 to N-2 transfer acceptance criteria', description: 'Evaluate whether inoculation density tolerance (\u00b10.3 \u00d710\u2076/mL) should be tightened given observed impact on Day 4 growth kinetics.', timing: 'long', timingLabel: '2\u20133 wks' }
+      ],
+      contacts: [
+        { name: 'Ciar\u00e1n Murphy', role: 'Upstream Manufacturing Lead', initials: 'CM', avatarClass: 'av-c', dept: 'ops', deptLabel: 'Manufacturing' },
+        { name: 'Dr. Sarah Park', role: 'MSAT Technical Services Lead', initials: 'SP', avatarClass: 'av-e', dept: 'ms', deptLabel: 'MSAT' },
+        { name: 'Liu Chen', role: 'Bioprocessing Shift Lead', initials: 'LC', avatarClass: 'av-b', dept: 'ops', deptLabel: 'Manufacturing' }
+      ]
+    }
+  }
+];
 
 // ── LOAD ──────────────────────────────────────────────
 async function loadSubmissions() {
   const btn = document.getElementById('refreshBtn');
   btn.classList.add('spinning');
+
+  if (DEMO_MODE) {
+    await new Promise(r => setTimeout(r, 700));
+    allSubs = MOCK_SUBS;
+    renderStats();
+    renderList();
+    renderPatternBanner();
+    btn.classList.remove('spinning');
+    if (!document.getElementById('demoBadge')) {
+      const badge = document.createElement('span');
+      badge.id = 'demoBadge';
+      badge.style.cssText = 'font-size:10px;font-family:"JetBrains Mono",monospace;color:var(--dim);background:var(--s3);border:1px solid var(--border);padding:3px 9px;border-radius:5px;letter-spacing:.05em;flex-shrink:0;';
+      badge.textContent = 'SAMPLE DATA';
+      document.querySelector('.topbar-right').insertBefore(badge, document.querySelector('.topbar-right').firstChild);
+    }
+    setTimeout(() => { if (!openRefs.size) toggleRow('VNT-0047'); }, 500);
+    return;
+  }
+
   try {
     const res = await fetch(`${SERVER_URL}/submissions`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -552,7 +850,7 @@ function renderList() {
     return;
   }
 
-  list.innerHTML = filtered.map(rowHTML).join('');
+  list.innerHTML = filtered.map((s, i) => rowHTML(s, i)).join('');
 
   // Restore expanded rows
   openRefs.forEach(ref => {
@@ -565,7 +863,7 @@ function renderList() {
 }
 
 // ── ROW HTML ──────────────────────────────────────────
-function rowHTML(s) {
+function rowHTML(s, idx = 0) {
   const status = st_(s);
   const p = s.structured || {};
   const sops = [...(p.sopRefs || []), ...(p.bprRefs || [])];
@@ -582,7 +880,7 @@ function rowHTML(s) {
   const { label, next, cls } = nextAction(status);
 
   return `
-<div class="sub-row" data-ref="${esc(s.ref_code)}">
+<div class="sub-row" data-ref="${esc(s.ref_code)}" style="animation-delay:${idx * 0.055}s">
   <div class="sub-main" onclick="toggleRow('${esc(s.ref_code)}')">
     <div><span class="pill ${priorityCls}">${esc(s.priority)}</span></div>
     <div><span class="mono">${esc(s.ref_code)}</span></div>
@@ -742,6 +1040,17 @@ function toggleRow(ref) {
 
 async function doStatusUpdate(ref, newStatus, btn) {
   btn.disabled = true;
+
+  if (DEMO_MODE) {
+    await new Promise(r => setTimeout(r, 350));
+    const sub = allSubs.find(s => s.ref_code === ref);
+    if (sub) sub.status = newStatus;
+    renderStats();
+    renderList();
+    renderPatternBanner();
+    return;
+  }
+
   try {
     const res = await fetch(`${SERVER_URL}/submissions/${ref}/status`, {
       method: 'PATCH',
