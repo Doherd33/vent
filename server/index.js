@@ -26,14 +26,17 @@ app.use(express.static(docsPath));
 
 const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-// Strip any accidental surrounding quotes from the key value
-const voyageKey = (process.env.VOYAGE_API_KEY || '').replace(/^["']|["']$/g, '');
-const voyage = new VoyageAIClient({ apiKey: voyageKey });
+// Read voyage key lazily so Railway env vars are always current
+function getVoyageClient() {
+  const key = (process.env.VOYAGE_API_KEY || '').replace(/^["']|["']$/g, '');
+  return { client: new VoyageAIClient({ apiKey: key }), key };
+}
 
 // Debug: test the full RAG pipeline
 app.get('/debug-rag', async (req, res) => {
   const results = { voyage: null, supabase_rpc: null, chunks: 0 };
   try {
+    const { client: voyage } = getVoyageClient();
     const r = await voyage.embed({ input: ['cell viability inoculation'], model: 'voyage-3-lite' });
     results.voyage = 'OK - embedding length ' + r.data[0].embedding.length;
     const { data, error } = await supabase.rpc('match_sop_chunks', {
@@ -56,8 +59,8 @@ app.get('/', (req, res) => {
       ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
       SUPABASE_URL:      !!process.env.SUPABASE_URL,
       SUPABASE_KEY:      !!process.env.SUPABASE_KEY,
-      VOYAGE_API_KEY:    !!voyageKey,
-      VOYAGE_KEY_PREFIX: voyageKey ? voyageKey.slice(0, 6) : 'MISSING',
+      VOYAGE_API_KEY:    !!getVoyageClient().key,
+      VOYAGE_KEY_PREFIX: getVoyageClient().key ? getVoyageClient().key.slice(0, 6) : 'MISSING',
       VOYAGE_RAW_PREFIX: process.env.VOYAGE_API_KEY ? process.env.VOYAGE_API_KEY.slice(0, 3) : 'MISSING'
     }
   });
@@ -66,6 +69,7 @@ app.get('/', (req, res) => {
 // Search Supabase for SOP chunks relevant to the observation
 async function getRelevantChunks(observation, area) {
   try {
+    const { client: voyage } = getVoyageClient();
     const result = await voyage.embed({
       input: [`Process area: ${area}. ${observation}`],
       model: 'voyage-3-lite'
