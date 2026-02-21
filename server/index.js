@@ -58,8 +58,17 @@ app.get('/debug-rag', async (req, res) => {
   res.json(results);
 });
 
+// Explicit HTML page routes (more reliable than express.static on Railway)
+['index', 'dashboard', 'query', 'qa', 'workflow'].forEach(page => {
+  app.get(`/${page === 'index' ? '' : page + '.html'}`, (req, res) => {
+    const file = path.join(docsPath, page === 'index' ? 'index.html' : `${page}.html`);
+    if (fs.existsSync(file)) return res.sendFile(file);
+    res.status(404).send(`${page}.html not found at ${file}`);
+  });
+});
+
 // Health check
-app.get('/', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({
     message: 'Vent server is running',
     env: {
