@@ -28,7 +28,8 @@ const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 // Read voyage key lazily so Railway env vars are always current
 function getVoyageClient() {
-  const key = (process.env.VOYAGE_API_KEY || '').replace(/^["']|["']$/g, '');
+  const raw = process.env.VOYAGE_KEY || process.env.VOYAGE_API_KEY || '';
+  const key = raw.replace(/^["']|["']$/g, '');
   return { client: new VoyageAIClient({ apiKey: key }), key };
 }
 
