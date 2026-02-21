@@ -470,6 +470,62 @@ body {
   .vent-panel { right: 12px; left: 12px; width: auto; bottom: 176px; }
 }
 
+/* ── DRAWER TABS ── */
+.sd-head-top {
+  padding: 20px 22px 14px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.sd-tabs {
+  display: flex; gap: 2px; padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sd-tab {
+  background: none; border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 300;
+  color: var(--dim); padding: 8px 10px; border-radius: 0;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color .15s;
+}
+.sd-tab:hover { color: var(--text); }
+.sd-tab.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 400; }
+
+/* ── PIPELINE (Change Progress) ── */
+.prog-cards { display: flex; flex-direction: column; gap: 14px; }
+.prog-card {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 11px; padding: 14px 16px;
+}
+.prog-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.prog-card-ref {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 500;
+  color: var(--accent); background: var(--accent2); padding: 2px 8px; border-radius: 5px; flex-shrink: 0;
+}
+.prog-card-area { font-size: 11px; color: var(--dim); flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pl-pipeline { display: flex; flex-direction: column; }
+.pl-step { display: flex; gap: 12px; }
+.pl-left { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
+.pl-dot {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 9px; z-index: 1;
+}
+.pl-dot.done    { background: var(--green2); border: 1.5px solid var(--green); color: var(--green); }
+.pl-dot.active  { background: var(--teal2);  border: 1.5px solid var(--teal);  color: var(--teal); }
+.pl-dot.pending { background: var(--s3);     border: 1.5px solid var(--border); color: var(--dim); }
+.pl-connector { width: 1.5px; flex: 1; min-height: 8px; background: var(--border); margin: 2px 0; }
+.pl-connector.done-line { background: var(--green); opacity: .35; }
+.pl-body { flex: 1; padding-bottom: 14px; }
+.pl-step:last-child .pl-body { padding-bottom: 0; }
+.pl-stage { font-size: 12.5px; color: var(--text); font-weight: 400; line-height: 1.3; }
+.pl-who   { font-size: 11px; color: var(--mid); margin-top: 2px; }
+.pl-note  { font-size: 11px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
+.pl-date  { font-size: 10px; color: var(--dim); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+.pl-badge-active {
+  display: inline-flex; align-items: center; gap: 3px; margin-left: 6px;
+  font-size: 9px; font-family: 'JetBrains Mono', monospace; font-weight: 600;
+  background: var(--teal2); color: var(--teal); padding: 1px 7px; border-radius: 100px;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+
 /* ── MY SUBMISSIONS TRIGGER ── */
 .subs-trigger {
   display: flex; align-items: center; gap: 7px;
@@ -504,9 +560,8 @@ body {
 .subs-drawer.show { transform: translateX(0); }
 
 .sd-head {
-  flex-shrink: 0; padding: 20px 22px 16px;
+  flex-shrink: 0;
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: flex-start; justify-content: space-between;
 }
 .sd-title { font-family: 'Instrument Serif', serif; font-size: 19px; color: var(--text); }
 .sd-sub   { font-size: 11px; color: var(--dim); margin-top: 3px; }
@@ -668,17 +723,21 @@ body {
 <div class="subs-drawer" id="subsDrawer">
 
   <div class="sd-head">
-    <div>
-      <div class="sd-title">My Submissions</div>
-      <div class="sd-sub">Your floor observations &amp; their outcomes</div>
+    <div class="sd-head-top">
+      <div class="sd-title">My Activity</div>
+      <button class="sd-close" onclick="closeSubsDrawer()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
-    <button class="sd-close" onclick="closeSubsDrawer()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
+    <div class="sd-tabs">
+      <button class="sd-tab on" onclick="switchSubsTab('subs',this)">My Submissions</button>
+      <button class="sd-tab"    onclick="switchSubsTab('progress',this)">Change Progress</button>
+    </div>
   </div>
 
   <div class="sd-scroll" id="sdScroll">
-    <!-- rendered by renderSubsDrawer() -->
+    <div id="sdPanelSubs"><!-- rendered by renderSubsDrawer() --></div>
+    <div id="sdPanelProg" style="display:none"><!-- rendered by renderProgressTab() --></div>
   </div>
 
 </div>
@@ -1067,7 +1126,15 @@ const MY_SUBS = [
     priority: 'high',
     text:     'DO probe showing erratic readings during inoculation — values jumping ±15% outside the expected window across 3 consecutive runs.',
     status:   'new',
-    date:     '2 hours ago'
+    date:     '2 hours ago',
+    pipeline: [
+      { stage:'Submitted',          status:'done',    who:'You',            date:'2 hours ago',  note:'Observation logged and routed to QA.' },
+      { stage:'Received by QA',     status:'active',  who:'QA Team',                             note:'Under initial review — triaging priority.' },
+      { stage:'MSAT / MFG Review',  status:'pending' },
+      { stage:'AD Review',          status:'pending' },
+      { stage:'Director Sign-off',  status:'pending' },
+      { stage:'Doc Control',        status:'pending' }
+    ]
   },
   {
     ref:      'VNT-0048',
@@ -1077,7 +1144,15 @@ const MY_SUBS = [
     status:   'acknowledged',
     date:     '3 days ago',
     outcome:  'QA reviewing with MSAT — BPR cross-check initiated.',
-    reviewer: 'QA Team'
+    reviewer: 'QA Team',
+    pipeline: [
+      { stage:'Submitted',          status:'done',    who:'You',                  date:'3 days ago',  note:'Observation logged.' },
+      { stage:'Received by QA',     status:'done',    who:'QA Team',              date:'2 days ago',  note:'BPR cross-check initiated.' },
+      { stage:'MSAT / MFG Review',  status:'active',  who:'Siobhán K., MSAT',                         note:'Reviewing documented volumes against batch records.' },
+      { stage:'AD Review',          status:'pending' },
+      { stage:'Director Sign-off',  status:'pending' },
+      { stage:'Doc Control',        status:'pending' }
+    ]
   },
   {
     ref:      'VNT-0044',
@@ -1087,7 +1162,15 @@ const MY_SUBS = [
     status:   'in_progress',
     date:     '8 days ago',
     outcome:  'MSAT investigating parameter discrepancy — deviation report DEV-0192 opened.',
-    reviewer: 'Siobhán K., MSAT'
+    reviewer: 'Siobhán K., MSAT',
+    pipeline: [
+      { stage:'Submitted',          status:'done',   who:'You',                  date:'8 days ago',  note:'Observation logged.' },
+      { stage:'Received by QA',     status:'done',   who:'QA Team',              date:'7 days ago',  note:'Observation verified and escalated to MSAT.' },
+      { stage:'MSAT / MFG Review',  status:'done',   who:'Siobhán K., MSAT',     date:'4 days ago',  note:'DEV-0192 opened. Parameter discrepancy confirmed.' },
+      { stage:'AD Review',          status:'active', who:'Conor F., AD',                             note:'Reviewing deviation report and proposed SOP amendment.' },
+      { stage:'Director Sign-off',  status:'pending' },
+      { stage:'Doc Control',        status:'pending' }
+    ]
   },
   {
     ref:      'VNT-0041',
@@ -1097,7 +1180,15 @@ const MY_SUBS = [
     status:   'resolved',
     date:     '14 days ago',
     outcome:  'SOP-CIP-003 Rev.4 updated — sensor timeout tolerance added to §4.2. Engineering confirmed sensor within spec.',
-    reviewer: 'Ciarán M., Engineering'
+    reviewer: 'Ciarán M., Engineering',
+    pipeline: [
+      { stage:'Submitted',          status:'done', who:'You',                    date:'14 days ago', note:'Observation logged.' },
+      { stage:'Received by QA',     status:'done', who:'QA Team',                date:'13 days ago', note:'Confirmed against maintenance log.' },
+      { stage:'MSAT / MFG Review',  status:'done', who:'Ciarán M., Engineering', date:'11 days ago', note:'Sensor verified in spec. Root cause: timeout setting in §4.2.' },
+      { stage:'AD Review',          status:'done', who:'Conor F., AD',           date:'9 days ago',  note:'SOP amendment approved.' },
+      { stage:'Director Sign-off',  status:'done', who:'Dr. M. Walsh',           date:'7 days ago',  note:'Approved.' },
+      { stage:'Doc Control',        status:'done', who:'Doc Control',            date:'5 days ago',  note:'SOP-CIP-003 Rev.4 issued and released.' }
+    ]
   },
   {
     ref:      'VNT-0037',
@@ -1107,11 +1198,23 @@ const MY_SUBS = [
     status:   'resolved',
     date:     '22 days ago',
     outcome:  'SOP-QC-011 harmonised with BPR — acceptance criterion standardised at 85% across both documents.',
-    reviewer: 'Aoife D., QA'
+    reviewer: 'Aoife D., QA',
+    pipeline: [
+      { stage:'Submitted',          status:'done', who:'You',                    date:'22 days ago', note:'Observation logged.' },
+      { stage:'Received by QA',     status:'done', who:'Aoife D., QA',           date:'21 days ago', note:'Discrepancy confirmed between SOP and BPR.' },
+      { stage:'MSAT / MFG Review',  status:'done', who:'Siobhán K., MSAT',       date:'18 days ago', note:'SOP criterion of 85% confirmed as correct.' },
+      { stage:'AD Review',          status:'done', who:'Conor F., AD',           date:'16 days ago', note:'Harmonisation approved.' },
+      { stage:'Director Sign-off',  status:'done', who:'Dr. M. Walsh',           date:'13 days ago', note:'Approved.' },
+      { stage:'Doc Control',        status:'done', who:'Doc Control',            date:'10 days ago', note:'SOP-QC-011 harmonised with BPR and re-issued.' }
+    ]
   }
 ];
 
 function openSubsDrawer() {
+  // Reset to first tab
+  document.querySelectorAll('.sd-tab').forEach((b, i) => b.classList.toggle('on', i === 0));
+  document.getElementById('sdPanelSubs').style.display = '';
+  document.getElementById('sdPanelProg').style.display = 'none';
   renderSubsDrawer();
   document.getElementById('subsDrawer').classList.add('show');
   document.getElementById('subsBackdrop').classList.add('show');
@@ -1119,6 +1222,13 @@ function openSubsDrawer() {
 function closeSubsDrawer() {
   document.getElementById('subsDrawer').classList.remove('show');
   document.getElementById('subsBackdrop').classList.remove('show');
+}
+function switchSubsTab(tab, btn) {
+  document.querySelectorAll('.sd-tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('sdPanelSubs').style.display = tab === 'subs' ? '' : 'none';
+  document.getElementById('sdPanelProg').style.display = tab === 'progress' ? '' : 'none';
+  if (tab === 'progress') renderProgressTab();
 }
 function renderSubsDrawer() {
   const name    = localStorage.getItem('vent_name') || null;
@@ -1172,7 +1282,7 @@ function renderSubsDrawer() {
       ${sopsUpdated} SOP${sopsUpdated > 1 ? 's' : ''} updated directly from your reports
     </div>` : '';
 
-  document.getElementById('sdScroll').innerHTML = `
+  document.getElementById('sdPanelSubs').innerHTML = `
     <div class="sd-impact">
       <div class="sd-impact-top">
         <div class="sd-avatar">${escHtml(initial)}</div>
@@ -1199,6 +1309,54 @@ function renderSubsDrawer() {
     </div>
     <div class="sd-section-lbl">Your observations</div>
     <div class="sd-cards">${cards}</div>
+  `;
+}
+
+function renderProgressTab() {
+  const badgeCls = { new:'sb-new', acknowledged:'sb-ack', in_progress:'sb-wip', resolved:'sb-done' };
+  const badgeTxt = { new:'New', acknowledged:'Acknowledged', in_progress:'In Progress', resolved:'Resolved ✓' };
+
+  const cards = MY_SUBS.map(s => {
+    const pipelineHtml = s.pipeline.map((step, idx) => {
+      const isLast = idx === s.pipeline.length - 1;
+      const dotInner = step.status === 'done'
+        ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`
+        : step.status === 'active'
+          ? `<div style="width:7px;height:7px;border-radius:50%;background:var(--teal)"></div>`
+          : `<div style="width:5px;height:5px;border-radius:50%;background:var(--border)"></div>`;
+      const connCls  = step.status === 'done' ? 'pl-connector done-line' : 'pl-connector';
+      const connector = !isLast ? `<div class="${connCls}"></div>` : '';
+      const activeBadge = step.status === 'active' ? `<span class="pl-badge-active">● With them now</span>` : '';
+      const whoHtml  = step.who  ? `<div class="pl-who">${escHtml(step.who)}${activeBadge}</div>` : '';
+      const noteHtml = step.note ? `<div class="pl-note">${escHtml(step.note)}</div>` : '';
+      const dateHtml = step.date ? `<div class="pl-date">${escHtml(step.date)}</div>` : '';
+      return `
+      <div class="pl-step">
+        <div class="pl-left">
+          <div class="pl-dot ${step.status}">${dotInner}</div>
+          ${connector}
+        </div>
+        <div class="pl-body">
+          <div class="pl-stage">${escHtml(step.stage)}</div>
+          ${whoHtml}${noteHtml}${dateHtml}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `
+    <div class="prog-card">
+      <div class="prog-card-top">
+        <span class="prog-card-ref">${escHtml(s.ref)}</span>
+        <span class="prog-card-area">${escHtml(s.area)}</span>
+        <span class="sc-badge ${badgeCls[s.status]}">${badgeTxt[s.status]}</span>
+      </div>
+      <div class="pl-pipeline">${pipelineHtml}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('sdPanelProg').innerHTML = `
+    <div class="sd-section-lbl" style="margin-bottom:14px">Where each of your observations sits in the approval pipeline</div>
+    <div class="prog-cards">${cards}</div>
   `;
 }
 
