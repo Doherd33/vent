@@ -390,6 +390,7 @@ body::before {
   <div class="app-nav">
     <a href="index.html"     class="nav-item">Submit</a>
     <a href="query.html"     class="nav-item">Query SOPs</a>
+    <a href="submissions.html" class="nav-item">Submissions</a>
     <a href="dashboard.html" class="nav-item on">Dashboard</a>
     <a href="qa.html"        class="nav-item">QA Control</a>
   </div>
@@ -1116,7 +1117,7 @@ setInterval(loadSubmissions, 60000);
   if (!role) return;
   const labels = {operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
   const clrs   = {operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
-  const navRules = {operator:['Query SOPs'],qa:['Submit','Dashboard','QA Control'],director:['Dashboard','QA Control'],msat:['Submit','Query SOPs','Dashboard'],engineering:['Dashboard'],admin:['Submit','Query SOPs','Dashboard','QA Control']};
+  const navRules = {operator:['Query SOPs'],qa:['Submit','Submissions','Dashboard','QA Control'],director:['Submissions','Dashboard','QA Control'],msat:['Submit','Query SOPs','Submissions','Dashboard'],engineering:['Submissions','Dashboard'],admin:['Submit','Query SOPs','Submissions','Dashboard','QA Control']};
   const right = document.querySelector('.topbar-right');
   if (!right) return;
   const safe = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';

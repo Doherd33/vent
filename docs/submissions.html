@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Floor Submissions</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #f0f4f8;
+  --s1:       #ffffff;
+  --s2:       #f8fafc;
+  --s3:       #eef2f7;
+  --border:   #d0d8e4;
+  --borderhi: #a8b8cc;
+  --text:     #1a2638;
+  --mid:      #4a5a72;
+  --dim:      #8a98aa;
+  --accent:   #1b5fcc;
+  --accent2:  rgba(27,95,204,0.08);
+  --accent3:  rgba(27,95,204,0.15);
+  --gold:     #c97d20;
+  --gold2:    rgba(201,125,32,0.1);
+  --green:    #1a8a60;
+  --green2:   rgba(26,138,96,0.1);
+  --red:      #c93030;
+  --red2:     rgba(201,48,48,0.1);
+  --blue:     #1b5fcc;
+  --blue2:    rgba(27,95,204,0.1);
+  --teal:     #1a9080;
+  --teal2:    rgba(26,144,128,0.1);
+}
+
+html { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+
+@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── TOPBAR ── */
+.topbar {
+  flex-shrink: 0; z-index: 100;
+  background: rgba(240,244,248,.97); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 28px; gap: 16px; height: 56px;
+}
+.logo {
+  font-family: 'Instrument Serif', serif; font-size: 22px;
+  letter-spacing: -.02em; color: var(--text);
+  display: flex; align-items: center; gap: 7px;
+  text-decoration: none; flex-shrink: 0;
+}
+.pip { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: breathe 3s ease-in-out infinite; }
+.app-nav { display: flex; align-items: center; gap: 2px; flex: 1; }
+.nav-item {
+  font-size: 13px; color: var(--mid); padding: 6px 12px; border-radius: 7px;
+  text-decoration: none; transition: color .15s, background .15s; white-space: nowrap;
+}
+.nav-item:hover { color: var(--text); background: var(--s3); }
+.nav-item.on { color: var(--accent); background: var(--accent2); font-weight: 500; }
+.topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  flex-shrink: 0;
+  background: var(--s1); border-bottom: 1px solid var(--border);
+  padding: 20px 28px 18px;
+}
+.ph-inner { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.ph-title { font-family: 'Instrument Serif', serif; font-size: 24px; color: var(--text); margin-bottom: 4px; }
+.ph-sub   { font-size: 12.5px; color: var(--dim); }
+
+/* Stats strip */
+.stat-strip { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+.stat-chip {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 9px;
+  padding: 8px 18px; min-width: 72px; text-align: center;
+}
+.sc-n {
+  font-family: 'Instrument Serif', serif; font-size: 26px; line-height: 1; margin-bottom: 3px;
+}
+.sc-n.ct { color: var(--teal); }
+.sc-n.ca { color: var(--accent); }
+.sc-n.cg { color: var(--gold); }
+.sc-n.cv { color: var(--green); }
+.sc-lbl { font-size: 9.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--dim); }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  flex-shrink: 0;
+  background: rgba(240,244,248,.98); border-bottom: 1px solid var(--border);
+  padding: 10px 28px;
+}
+.filter-inner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.status-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.s-pill {
+  background: none; border: 1px solid var(--border); border-radius: 100px;
+  font-family: 'DM Sans', sans-serif; font-size: 11.5px; color: var(--mid);
+  padding: 5px 12px; cursor: pointer; transition: all .12s; white-space: nowrap;
+}
+.s-pill:hover { border-color: var(--borderhi); color: var(--text); }
+.s-pill.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.filter-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.f-select {
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--s1); color: var(--mid);
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 6px 10px; outline: none; cursor: pointer;
+}
+.f-select:focus { border-color: var(--accent); }
+.search-wrap { position: relative; display: flex; align-items: center; }
+.search-ico  { position: absolute; left: 9px; color: var(--dim); pointer-events: none; }
+.f-search {
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--s1); color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 6px 10px 6px 30px; outline: none; width: 200px;
+}
+.f-search:focus { border-color: var(--accent); }
+.f-search::placeholder { color: var(--dim); }
+.result-count { font-size: 11px; color: var(--dim); white-space: nowrap; }
+
+/* ── LIST AREA ── */
+.list-area { flex: 1; overflow-y: auto; }
+.list-inner {
+  max-width: 1060px; width: 100%; margin: 0 auto;
+  padding: 16px 28px 48px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+
+/* ── SUBMISSION ROW ── */
+.sub-row {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 11px;
+  overflow: hidden; transition: border-color .15s;
+  animation: fadeUp .2s ease both;
+}
+.sub-row:hover { border-color: var(--borderhi); }
+.sub-row.expanded { border-color: rgba(27,95,204,.3); }
+
+.sub-row-head { display: flex; cursor: pointer; }
+.sr-pri-bar { width: 4px; flex-shrink: 0; border-radius: 11px 0 0 11px; }
+.sr-pri-bar.high   { background: var(--red); }
+.sr-pri-bar.medium { background: var(--gold); }
+.sr-pri-bar.low    { background: var(--green); }
+
+.sr-main { flex: 1; padding: 13px 16px 12px; min-width: 0; }
+
+.sr-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+.sr-ref {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 500;
+  color: var(--accent); background: var(--accent2); padding: 2px 8px; border-radius: 5px; flex-shrink: 0;
+}
+.sr-submitter { font-size: 12.5px; font-weight: 400; color: var(--text); flex-shrink: 0; }
+.sr-sep { color: var(--borderhi); font-size: 12px; }
+.sr-area {
+  font-size: 10.5px; font-weight: 500; padding: 2px 8px; border-radius: 5px; flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .02em;
+}
+.area-upstream { background: var(--blue2);  color: var(--blue); }
+.area-media    { background: var(--teal2);  color: var(--teal); }
+.area-harvest  { background: var(--gold2);  color: var(--gold); }
+.area-cip      { background: var(--s3);     color: var(--mid); border: 1px solid var(--border); }
+.area-qc       { background: var(--green2); color: var(--green); }
+
+.sr-date { font-size: 10.5px; color: var(--dim); margin-left: auto; white-space: nowrap; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+
+.sr-preview {
+  font-size: 13px; color: var(--mid); line-height: 1.65;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-bottom: 9px;
+}
+
+.sr-bottom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sr-badge {
+  font-size: 9px; font-family: 'JetBrains Mono', monospace; font-weight: 600;
+  padding: 2px 8px; border-radius: 100px;
+  text-transform: uppercase; letter-spacing: .04em; flex-shrink: 0;
+}
+.sb-new   { background: var(--accent2); color: var(--accent); }
+.sb-ack   { background: var(--gold2);   color: var(--gold); }
+.sb-wip   { background: var(--teal2);   color: var(--teal); }
+.sb-done  { background: var(--green2);  color: var(--green); }
+
+.sr-stage { font-size: 11.5px; color: var(--mid); display: flex; align-items: center; gap: 5px; }
+.sr-stage-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+.sr-expand-btn {
+  margin-left: auto; background: none; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--dim); cursor: pointer; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.sr-expand-btn:hover { border-color: var(--borderhi); color: var(--text); }
+.sub-row.expanded .sr-expand-btn { border-color: var(--accent); color: var(--accent); background: var(--accent2); }
+.expand-chevron { transition: transform .22s cubic-bezier(.34,1.1,.64,1); }
+.sub-row.expanded .expand-chevron { transform: rotate(180deg); }
+
+/* ── EXPANDED BODY ── */
+.sub-row-body {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 20px 20px 22px 24px;
+}
+.sub-row.expanded .sub-row-body { display: block; }
+
+.full-text {
+  font-size: 13.5px; color: var(--text); line-height: 1.75;
+  margin-bottom: 20px; padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.expand-section-lbl {
+  font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--dim); font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.expand-section-lbl::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.outcome-box {
+  margin-top: 18px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.ob-icon { flex-shrink: 0; margin-top: 2px; }
+.ob-txt  { font-size: 12.5px; color: var(--text); line-height: 1.55; }
+.ob-by   { font-size: 11px; color: var(--dim); margin-top: 3px; }
+
+/* ── PIPELINE ── */
+.pl-pipeline { display: flex; flex-direction: column; }
+.pl-step { display: flex; gap: 12px; }
+.pl-left { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
+.pl-dot {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 9px; z-index: 1;
+}
+.pl-dot.done    { background: var(--green2); border: 1.5px solid var(--green); color: var(--green); }
+.pl-dot.active  { background: var(--teal2);  border: 1.5px solid var(--teal);  color: var(--teal); }
+.pl-dot.pending { background: var(--s3);     border: 1.5px solid var(--border); color: var(--dim); }
+.pl-connector { width: 1.5px; flex: 1; min-height: 8px; background: var(--border); margin: 2px 0; }
+.pl-connector.done-line { background: var(--green); opacity: .35; }
+.pl-body { flex: 1; padding-bottom: 12px; }
+.pl-step:last-child .pl-body { padding-bottom: 0; }
+.pl-stage { font-size: 12.5px; color: var(--text); font-weight: 400; line-height: 1.3; }
+.pl-who   { font-size: 11px; color: var(--mid); margin-top: 2px; }
+.pl-note  { font-size: 11px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
+.pl-date  { font-size: 10px; color: var(--dim); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+.pl-badge-active {
+  display: inline-flex; align-items: center; gap: 3px; margin-left: 6px;
+  font-size: 9px; font-family: 'JetBrains Mono', monospace; font-weight: 600;
+  background: var(--teal2); color: var(--teal); padding: 1px 7px; border-radius: 100px;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+
+/* ── EMPTY STATE ── */
+.empty-list {
+  text-align: center; padding: 60px 20px;
+  color: var(--dim); font-size: 13px; line-height: 1.7;
+}
+.empty-list strong { color: var(--mid); display: block; margin-bottom: 6px; font-size: 14px; }
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .topbar { padding: 0 14px; }
+  .page-header { padding: 16px 14px; }
+  .filter-bar { padding: 10px 14px; }
+  .list-inner { padding: 12px 14px 28px; }
+  .sr-date { display: none; }
+  .stat-strip { display: none; }
+  .f-search { width: 140px; }
+}
+</style>
+<script>
+  const _r = localStorage.getItem('vent_role');
+  if (!_r || _r === 'operator') window.location.replace('login.html');
+</script>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="index.html" class="logo">Vent<div class="pip"></div></a>
+  <div class="app-nav">
+    <a href="index.html"       class="nav-item">Submit</a>
+    <a href="query.html"       class="nav-item">Query SOPs</a>
+    <a href="submissions.html" class="nav-item on">Submissions</a>
+    <a href="dashboard.html"   class="nav-item">Dashboard</a>
+    <a href="qa.html"          class="nav-item">QA Control</a>
+  </div>
+  <div class="topbar-right" id="topbarRight"></div>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="ph-inner">
+    <div>
+      <div class="ph-title">Floor Submissions</div>
+      <div class="ph-sub">All operator observations — sorted newest first</div>
+    </div>
+    <div class="stat-strip" id="statStrip"></div>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-inner">
+    <div class="status-pills">
+      <button class="s-pill on" data-s="all"          onclick="setStatus(this)">All</button>
+      <button class="s-pill"    data-s="new"           onclick="setStatus(this)">New</button>
+      <button class="s-pill"    data-s="acknowledged"  onclick="setStatus(this)">Acknowledged</button>
+      <button class="s-pill"    data-s="in_progress"   onclick="setStatus(this)">In Progress</button>
+      <button class="s-pill"    data-s="resolved"      onclick="setStatus(this)">Resolved</button>
+    </div>
+    <div class="filter-right">
+      <select id="areaFilter" class="f-select" onchange="render()">
+        <option value="">All areas</option>
+        <option value="Upstream Bioreactor">Upstream</option>
+        <option value="Media Prep">Media Prep</option>
+        <option value="Harvest / TFF">Harvest / TFF</option>
+        <option value="CIP / SIP">CIP / SIP</option>
+        <option value="QC / In-process">QC</option>
+      </select>
+      <select id="priFilter" class="f-select" onchange="render()">
+        <option value="">All priorities</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+      <div class="search-wrap">
+        <svg class="search-ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchInput" type="text" class="f-search" placeholder="Search submissions…" oninput="render()">
+      </div>
+      <span class="result-count" id="resultCount"></span>
+    </div>
+  </div>
+</div>
+
+<!-- LIST AREA -->
+<div class="list-area">
+  <div class="list-inner" id="listInner"></div>
+</div>
+
+<script>
+// ── MOCK DATA ─────────────────────────────────────────
+const ALL_SUBS = [
+  {
+    ref: 'VNT-0051', area: 'Upstream Bioreactor', priority: 'high',
+    submitter: 'Padraig O.', date: '21 Feb 2026, 09:14',
+    text: 'DO probe showing erratic readings during inoculation — values jumping ±15% outside the expected window across 3 consecutive runs. Last calibration was within spec. Suspect membrane fouling or connector issue at the ingold port.',
+    status: 'new',
+    pipeline: [
+      { stage:'Submitted',         status:'done',   who:'Padraig O.',    date:'21 Feb 09:14', note:'Observation logged and routed to QA.' },
+      { stage:'Received by QA',    status:'active', who:'QA Team',                            note:'Under initial review — triaging priority.' },
+      { stage:'MSAT / MFG Review', status:'pending' },
+      { stage:'AD Review',         status:'pending' },
+      { stage:'Director Sign-off', status:'pending' },
+      { stage:'Doc Control',       status:'pending' }
+    ]
+  },
+  {
+    ref: 'VNT-0050', area: 'Media Prep', priority: 'medium',
+    submitter: 'Niamh B.', date: '20 Feb 2026, 14:32',
+    text: 'pH probe in the 200 L prep vessel shows a consistent drift of ~0.15 pH units low against the reference check during pre-use calibration. Drift observed on 4 consecutive media prep batches. Probe is within its service window but the pattern is consistent.',
+    status: 'acknowledged',
+    outcome: 'QA verified drift pattern. Probe flagged for early replacement — Maintenance order raised.',
+    reviewer: 'Aoife D., QA',
+    pipeline: [
+      { stage:'Submitted',         status:'done',   who:'Niamh B.',         date:'20 Feb 14:32', note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done',   who:'Aoife D., QA',     date:'20 Feb 16:10', note:'Drift pattern verified against batch records.' },
+      { stage:'MSAT / MFG Review', status:'active', who:'Siobhán K., MSAT',                      note:'Assessing impact on in-process pH readings for recent batches.' },
+      { stage:'AD Review',         status:'pending' },
+      { stage:'Director Sign-off', status:'pending' },
+      { stage:'Doc Control',       status:'pending' }
+    ]
+  },
+  {
+    ref: 'VNT-0049', area: 'CIP / SIP', priority: 'high',
+    submitter: 'Eoin F.', date: '19 Feb 2026, 07:55',
+    text: 'Drain valve on bioreactor B2 does not appear to fully seat after SIP cycle. A very slow drip was observed at the valve outlet during the subsequent pressure hold. This was noted on two separate occasions in the last week — could affect SIP validation integrity.',
+    status: 'in_progress',
+    outcome: 'Engineering investigating valve actuation and seat wear. B2 pressure hold test suspended pending inspection.',
+    reviewer: 'Ciarán M., Engineering',
+    pipeline: [
+      { stage:'Submitted',         status:'done',   who:'Eoin F.',               date:'19 Feb 07:55', note:'Flagged as high priority. Observation logged.' },
+      { stage:'Received by QA',    status:'done',   who:'QA Team',               date:'19 Feb 09:00', note:'Escalated immediately to Engineering.' },
+      { stage:'MSAT / MFG Review', status:'done',   who:'Ciarán M., Engineering', date:'19 Feb 11:30', note:'B2 pressure hold suspended. Valve inspection scheduled.' },
+      { stage:'AD Review',         status:'active', who:'Conor F., AD',                               note:'Reviewing scope of impact and corrective action plan.' },
+      { stage:'Director Sign-off', status:'pending' },
+      { stage:'Doc Control',       status:'pending' }
+    ]
+  },
+  {
+    ref: 'VNT-0048', area: 'Media Prep', priority: 'medium',
+    submitter: 'Padraig O.', date: '18 Feb 2026, 11:20',
+    text: 'Sodium bicarbonate additions not matching BPR documented volumes. Discrepancy of approximately 20 mL on 3 consecutive batches. BPR states 450 mL but operators have been adding 430 mL. Unclear whether this is a BPR error or a long-standing SOP deviation.',
+    status: 'acknowledged',
+    outcome: 'QA reviewing with MSAT — BPR cross-check initiated.',
+    reviewer: 'QA Team',
+    pipeline: [
+      { stage:'Submitted',         status:'done',   who:'Padraig O.',       date:'18 Feb 11:20', note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done',   who:'QA Team',          date:'18 Feb 13:00', note:'BPR cross-check initiated.' },
+      { stage:'MSAT / MFG Review', status:'active', who:'Siobhán K., MSAT',                      note:'Reviewing documented volumes against batch records.' },
+      { stage:'AD Review',         status:'pending' },
+      { stage:'Director Sign-off', status:'pending' },
+      { stage:'Doc Control',       status:'pending' }
+    ]
+  },
+  {
+    ref: 'VNT-0047', area: 'Harvest / TFF', priority: 'medium',
+    submitter: 'Fionnuala R.', date: '15 Feb 2026, 15:44',
+    text: 'TFF membrane flux declining earlier than expected. Target is 20 LMH for the full 2-hour concentration phase, but on the last 3 runs flux dropped to around 14 LMH at the 90-minute mark. Membrane is within its usage limit. SOP-TFF-002 does not include a mid-run flux checkpoint.',
+    status: 'in_progress',
+    outcome: 'MSAT reviewing flux data from last 5 batches. Potential link to upstream cell density identified.',
+    reviewer: 'Siobhán K., MSAT',
+    pipeline: [
+      { stage:'Submitted',         status:'done',   who:'Fionnuala R.',     date:'15 Feb 15:44', note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done',   who:'QA Team',          date:'16 Feb 08:30', note:'Forwarded to MSAT for technical review.' },
+      { stage:'MSAT / MFG Review', status:'active', who:'Siobhán K., MSAT',                      note:'Reviewing flux trend data. Link to upstream cell density being investigated.' },
+      { stage:'AD Review',         status:'pending' },
+      { stage:'Director Sign-off', status:'pending' },
+      { stage:'Doc Control',       status:'pending' }
+    ]
+  },
+  {
+    ref: 'VNT-0046', area: 'QC / In-process', priority: 'low',
+    submitter: 'Seán D.', date: '12 Feb 2026, 08:17',
+    text: 'Osmolality meter in QC lab requires re-calibration more frequently than the SOP-specified interval. SOP calls for weekly calibration but the meter has drifted outside the ±10 mOsm/kg tolerance on 3 occasions between weekly checks. Recommend adding a daily standard verification check.',
+    status: 'resolved',
+    outcome: 'SOP-QC-007 updated to require a daily osmolality standard check at the start of each working day.',
+    reviewer: 'Aoife D., QA',
+    pipeline: [
+      { stage:'Submitted',         status:'done', who:'Seán D.',         date:'12 Feb 08:17', note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done', who:'Aoife D., QA',    date:'12 Feb 10:00', note:'Calibration log reviewed — drift confirmed.' },
+      { stage:'MSAT / MFG Review', status:'done', who:'QC Team',         date:'13 Feb',       note:'Daily check endorsed. Impact on recent batches assessed as low.' },
+      { stage:'AD Review',         status:'done', who:'Conor F., AD',    date:'14 Feb',       note:'SOP amendment approved.' },
+      { stage:'Director Sign-off', status:'done', who:'Dr. M. Walsh',    date:'15 Feb',       note:'Approved.' },
+      { stage:'Doc Control',       status:'done', who:'Doc Control',     date:'17 Feb',       note:'SOP-QC-007 Rev.3 issued.' }
+    ]
+  },
+  {
+    ref: 'VNT-0045', area: 'Upstream Bioreactor', priority: 'medium',
+    submitter: 'Niamh B.', date: '11 Feb 2026, 16:05',
+    text: 'N-1 seed inoculation timing is specified as "morning of day 3" in the BPR but "72 ± 4 hours post-vial thaw" in the SOP. On late vial thaws this creates an ambiguity between hitting the BPR calendar day and staying within the SOP timing window. Operators unsure which takes precedence.',
+    status: 'acknowledged',
+    outcome: 'Deviation report DR-0204 raised. QA and MSAT reviewing for BPR/SOP harmonisation.',
+    reviewer: 'QA Team',
+    pipeline: [
+      { stage:'Submitted',         status:'done',   who:'Niamh B.',         date:'11 Feb 16:05', note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done',   who:'QA Team',          date:'12 Feb 09:00', note:'Deviation report DR-0204 raised.' },
+      { stage:'MSAT / MFG Review', status:'active', who:'Siobhán K., MSAT',                      note:'BPR and SOP alignment review in progress — draft wording prepared.' },
+      { stage:'AD Review',         status:'pending' },
+      { stage:'Director Sign-off', status:'pending' },
+      { stage:'Doc Control',       status:'pending' }
+    ]
+  },
+  {
+    ref: 'VNT-0044', area: 'Upstream Bioreactor', priority: 'medium',
+    submitter: 'Padraig O.', date: '13 Feb 2026, 10:30',
+    text: 'Agitation speed setpoint in SOP-UP-004 is inconsistent with the BPR for the N-1 seed step. SOP states 150 RPM; BPR shows 120 RPM. Operators have been following the BPR figure but the SOP has never been updated to match. Has been the case for at least 3 campaign cycles.',
+    status: 'in_progress',
+    outcome: 'MSAT investigating parameter discrepancy — deviation report DEV-0192 opened.',
+    reviewer: 'Siobhán K., MSAT',
+    pipeline: [
+      { stage:'Submitted',         status:'done',   who:'Padraig O.',       date:'13 Feb 10:30', note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done',   who:'QA Team',          date:'13 Feb 13:00', note:'Observation verified and escalated to MSAT.' },
+      { stage:'MSAT / MFG Review', status:'done',   who:'Siobhán K., MSAT', date:'17 Feb',       note:'DEV-0192 opened. Parameter discrepancy confirmed.' },
+      { stage:'AD Review',         status:'active', who:'Conor F., AD',                          note:'Reviewing deviation report and proposed SOP amendment.' },
+      { stage:'Director Sign-off', status:'pending' },
+      { stage:'Doc Control',       status:'pending' }
+    ]
+  },
+  {
+    ref: 'VNT-0043', area: 'Media Prep', priority: 'low',
+    submitter: 'Eoin F.', date: '8 Feb 2026, 09:45',
+    text: 'Temperature log for an overnight 50 L media hold shows a 45-minute gap between 02:15 and 03:00 on the continuous logger. The logger auto-restarts after firmware updates but there is no SOP guidance on how to handle or document these restart events in the batch record.',
+    status: 'resolved',
+    outcome: 'SOP-MP-001 updated with a new section covering logger restart documentation requirements.',
+    reviewer: 'Aoife D., QA',
+    pipeline: [
+      { stage:'Submitted',         status:'done', who:'Eoin F.',         date:'8 Feb 09:45', note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done', who:'Aoife D., QA',    date:'8 Feb 11:00', note:'Logger restart confirmed in firmware update log.' },
+      { stage:'MSAT / MFG Review', status:'done', who:'Engineering',     date:'9 Feb',       note:'Firmware update timing confirmed. No process impact found.' },
+      { stage:'AD Review',         status:'done', who:'Conor F., AD',    date:'10 Feb',      note:'SOP amendment approved.' },
+      { stage:'Director Sign-off', status:'done', who:'Dr. M. Walsh',    date:'11 Feb',      note:'Approved.' },
+      { stage:'Doc Control',       status:'done', who:'Doc Control',     date:'13 Feb',      note:'SOP-MP-001 updated with logger restart protocol.' }
+    ]
+  },
+  {
+    ref: 'VNT-0042', area: 'Harvest / TFF', priority: 'medium',
+    submitter: 'Fionnuala R.', date: '5 Feb 2026, 14:20',
+    text: 'TMP alarm threshold in SOP-TFF-001 is set at 3.5 bar. We have seen the TMP alarm trigger during normal operation at around 3.2 bar in the pre-filtration loading phase. The SOP threshold appears tighter than the actual validated process window — operators are pausing runs unnecessarily.',
+    status: 'resolved',
+    outcome: 'TMP alarm threshold reviewed by MSAT — SOP-TFF-001 updated with revised limits based on process validation data.',
+    reviewer: 'Siobhán K., MSAT',
+    pipeline: [
+      { stage:'Submitted',         status:'done', who:'Fionnuala R.',     date:'5 Feb 14:20', note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done', who:'QA Team',          date:'6 Feb 09:00', note:'Process validation data pulled for review.' },
+      { stage:'MSAT / MFG Review', status:'done', who:'Siobhán K., MSAT', date:'8 Feb',       note:'Revised threshold determined from PV data.' },
+      { stage:'AD Review',         status:'done', who:'Conor F., AD',     date:'10 Feb',      note:'Approved.' },
+      { stage:'Director Sign-off', status:'done', who:'Dr. M. Walsh',     date:'12 Feb',      note:'Approved.' },
+      { stage:'Doc Control',       status:'done', who:'Doc Control',      date:'14 Feb',      note:'SOP-TFF-001 Rev.5 issued.' }
+    ]
+  },
+  {
+    ref: 'VNT-0041', area: 'CIP / SIP', priority: 'low',
+    submitter: 'Padraig O.', date: '7 Feb 2026, 08:00',
+    text: 'Caustic rinse cycle consistently runs 2 minutes over the stated time in SOP-CIP-003. The vessel conductivity sensor takes longer to return to baseline than the SOP timer allows for, causing operators to manually extend the cycle every run.',
+    status: 'resolved',
+    outcome: 'SOP-CIP-003 Rev.4 updated — sensor timeout tolerance added to §4.2. Engineering confirmed sensor within spec.',
+    reviewer: 'Ciarán M., Engineering',
+    pipeline: [
+      { stage:'Submitted',         status:'done', who:'Padraig O.',             date:'7 Feb 08:00',  note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done', who:'QA Team',               date:'7 Feb 10:00',  note:'Confirmed against maintenance log.' },
+      { stage:'MSAT / MFG Review', status:'done', who:'Ciarán M., Engineering', date:'9 Feb',        note:'Sensor verified in spec. Root cause: timeout setting in §4.2.' },
+      { stage:'AD Review',         status:'done', who:'Conor F., AD',           date:'11 Feb',       note:'SOP amendment approved.' },
+      { stage:'Director Sign-off', status:'done', who:'Dr. M. Walsh',           date:'13 Feb',       note:'Approved.' },
+      { stage:'Doc Control',       status:'done', who:'Doc Control',            date:'15 Feb',       note:'SOP-CIP-003 Rev.4 issued and released.' }
+    ]
+  },
+  {
+    ref: 'VNT-0037', area: 'QC / In-process', priority: 'medium',
+    submitter: 'Padraig O.', date: '30 Jan 2026, 11:00',
+    text: 'Cell viability acceptance threshold for inoculation is 85% in SOP-QC-011 but 80% in the corresponding BPR section. The discrepancy has been causing uncertainty at the inoculation decision point and operators have been seeking senior sign-off on almost every batch to clarify.',
+    status: 'resolved',
+    outcome: 'SOP-QC-011 harmonised with BPR — acceptance criterion standardised at 85% across both documents.',
+    reviewer: 'Aoife D., QA',
+    pipeline: [
+      { stage:'Submitted',         status:'done', who:'Padraig O.',       date:'30 Jan 11:00', note:'Observation logged.' },
+      { stage:'Received by QA',    status:'done', who:'Aoife D., QA',     date:'30 Jan 13:00', note:'Discrepancy confirmed between SOP and BPR.' },
+      { stage:'MSAT / MFG Review', status:'done', who:'Siobhán K., MSAT', date:'2 Feb',        note:'SOP criterion of 85% confirmed as correct.' },
+      { stage:'AD Review',         status:'done', who:'Conor F., AD',     date:'4 Feb',        note:'Harmonisation approved.' },
+      { stage:'Director Sign-off', status:'done', who:'Dr. M. Walsh',     date:'6 Feb',        note:'Approved.' },
+      { stage:'Doc Control',       status:'done', who:'Doc Control',      date:'9 Feb',        note:'SOP-QC-011 harmonised with BPR and re-issued.' }
+    ]
+  }
+];
+
+// ── FILTER STATE ──────────────────────────────────────
+let _statusFilter = 'all';
+
+function setStatus(btn) {
+  document.querySelectorAll('.s-pill').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  _statusFilter = btn.dataset.s;
+  render();
+}
+
+function getFiltered() {
+  const area   = document.getElementById('areaFilter').value;
+  const pri    = document.getElementById('priFilter').value;
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  return ALL_SUBS.filter(s => {
+    if (_statusFilter !== 'all' && s.status !== _statusFilter) return false;
+    if (area && s.area !== area) return false;
+    if (pri  && s.priority !== pri) return false;
+    if (search) {
+      const hay = (s.text + s.ref + s.submitter + s.area + (s.outcome||'')).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function areaClass(area) {
+  if (area.includes('Upstream')) return 'area-upstream';
+  if (area.includes('Media'))    return 'area-media';
+  if (area.includes('Harvest'))  return 'area-harvest';
+  if (area.includes('CIP'))      return 'area-cip';
+  if (area.includes('QC'))       return 'area-qc';
+  return 'area-cip';
+}
+
+function currentStage(pipeline) {
+  const active = pipeline.find(s => s.status === 'active');
+  if (active) return { label: active.stage, who: active.who || '', color: 'var(--teal)' };
+  if (pipeline.every(s => s.status === 'done')) return { label: 'Completed', who: '', color: 'var(--green)' };
+  return { label: 'Pending review', who: '', color: 'var(--dim)' };
+}
+
+const badgeCls = { new:'sb-new', acknowledged:'sb-ack', in_progress:'sb-wip', resolved:'sb-done' };
+const badgeTxt = { new:'New', acknowledged:'Acknowledged', in_progress:'In Progress', resolved:'Resolved ✓' };
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function buildPipelineHtml(pipeline) {
+  return pipeline.map((step, idx) => {
+    const isLast   = idx === pipeline.length - 1;
+    const dotInner = step.status === 'done'
+      ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`
+      : step.status === 'active'
+        ? `<div style="width:7px;height:7px;border-radius:50%;background:var(--teal)"></div>`
+        : `<div style="width:5px;height:5px;border-radius:50%;background:var(--border)"></div>`;
+    const connCls   = step.status === 'done' ? 'pl-connector done-line' : 'pl-connector';
+    const connector = !isLast ? `<div class="${connCls}"></div>` : '';
+    const activeBadge = step.status === 'active' ? `<span class="pl-badge-active">● With them now</span>` : '';
+    const whoHtml  = step.who  ? `<div class="pl-who">${escHtml(step.who)}${activeBadge}</div>` : '';
+    const noteHtml = step.note ? `<div class="pl-note">${escHtml(step.note)}</div>` : '';
+    const dateHtml = step.date ? `<div class="pl-date">${escHtml(step.date)}</div>` : '';
+    return `
+    <div class="pl-step">
+      <div class="pl-left">
+        <div class="pl-dot ${step.status}">${dotInner}</div>
+        ${connector}
+      </div>
+      <div class="pl-body">
+        <div class="pl-stage">${escHtml(step.stage)}</div>
+        ${whoHtml}${noteHtml}${dateHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER ────────────────────────────────────────────
+function render() {
+  const filtered = getFiltered();
+  const el = document.getElementById('listInner');
+  const rc = document.getElementById('resultCount');
+  rc.textContent = filtered.length === ALL_SUBS.length
+    ? '' : `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`;
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty-list"><strong>No submissions match your filters.</strong>Try adjusting the status filter, area, or search term.</div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map((s, i) => {
+    const stage = currentStage(s.pipeline);
+    const outcomeHtml = s.outcome ? `
+    <div class="outcome-box">
+      <svg class="ob-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+      <div>
+        <div class="ob-txt">${escHtml(s.outcome)}</div>
+        ${s.reviewer ? `<div class="ob-by">${escHtml(s.reviewer)}</div>` : ''}
+      </div>
+    </div>` : '';
+
+    return `
+    <div class="sub-row" id="row-${i}" style="animation-delay:${i * 0.025}s">
+      <div class="sub-row-head" onclick="toggleRow(${i})">
+        <div class="sr-pri-bar ${s.priority}"></div>
+        <div class="sr-main">
+          <div class="sr-top">
+            <span class="sr-ref">${escHtml(s.ref)}</span>
+            <span class="sr-submitter">${escHtml(s.submitter)}</span>
+            <span class="sr-sep">·</span>
+            <span class="sr-area ${areaClass(s.area)}">${escHtml(s.area)}</span>
+            <span class="sr-date">${escHtml(s.date)}</span>
+          </div>
+          <div class="sr-preview">${escHtml(s.text)}</div>
+          <div class="sr-bottom">
+            <span class="sr-badge ${badgeCls[s.status]}">${badgeTxt[s.status]}</span>
+            <div class="sr-stage">
+              <div class="sr-stage-dot" style="background:${stage.color}"></div>
+              ${escHtml(stage.label)}${stage.who ? ` · ${escHtml(stage.who)}` : ''}
+            </div>
+            <button class="sr-expand-btn"
+              onclick="event.stopPropagation();toggleRow(${i})"
+              title="${s.status === 'new' ? 'View pipeline' : 'View details'}">
+              <svg class="expand-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="sub-row-body">
+        <div class="full-text">${escHtml(s.text)}</div>
+        <div class="expand-section-lbl">Approval Pipeline</div>
+        <div class="pl-pipeline">${buildPipelineHtml(s.pipeline)}</div>
+        ${outcomeHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleRow(i) {
+  document.getElementById(`row-${i}`).classList.toggle('expanded');
+}
+
+function renderStats() {
+  const total    = ALL_SUBS.length;
+  const newCount = ALL_SUBS.filter(s => s.status === 'new').length;
+  const inRev    = ALL_SUBS.filter(s => s.status === 'acknowledged' || s.status === 'in_progress').length;
+  const resolved = ALL_SUBS.filter(s => s.status === 'resolved').length;
+  document.getElementById('statStrip').innerHTML = `
+    <div class="stat-chip"><div class="sc-n ct">${total}</div><div class="sc-lbl">Total</div></div>
+    <div class="stat-chip"><div class="sc-n ca">${newCount}</div><div class="sc-lbl">New</div></div>
+    <div class="stat-chip"><div class="sc-n cg">${inRev}</div><div class="sc-lbl">In Review</div></div>
+    <div class="stat-chip"><div class="sc-n cv">${resolved}</div><div class="sc-lbl">Resolved</div></div>
+  `;
+}
+
+// ── AUTH TOPBAR ───────────────────────────────────────
+(function() {
+  const role = localStorage.getItem('vent_role');
+  const name = localStorage.getItem('vent_name');
+  if (!role) return;
+  const labels = {operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
+  const clrs   = {operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
+  const navRules = {
+    operator:    [],
+    qa:          ['Submit','Query SOPs','Submissions','Dashboard','QA Control'],
+    director:    ['Submissions','Dashboard','QA Control'],
+    msat:        ['Submit','Query SOPs','Submissions','Dashboard'],
+    engineering: ['Submissions','Dashboard'],
+    admin:       ['Submit','Query SOPs','Submissions','Dashboard','QA Control']
+  };
+  const right = document.querySelector('.topbar-right');
+  if (!right) return;
+  const safe = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+  const d = document.createElement('div');
+  d.style.cssText = 'display:flex;align-items:center;gap:8px;border-left:1px solid var(--border);padding-left:12px;flex-shrink:0;';
+  d.innerHTML = `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${clrs[role]||'var(--mid)'};background:var(--s3);border:1px solid var(--border);padding:3px 8px;border-radius:5px;letter-spacing:.05em;">${labels[role]||role.toUpperCase()}</span>${name?`<span style="font-size:12px;color:var(--mid);font-weight:300">${safe(name)}</span>`:''}<button onclick="localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');window.location.replace('login.html')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--borderhi)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">Sign out</button>`;
+  right.appendChild(d);
+  const allowed = navRules[role] || [];
+  document.querySelectorAll('.nav-item').forEach(l => { if (!allowed.some(a => l.textContent.trim().includes(a))) l.style.display = 'none'; });
+})();
+
+// Init
+renderStats();
+render();
+</script>
+</body>
+</html>
