@@ -33,6 +33,12 @@ function getVoyageClient() {
   return { client: new VoyageAIClient({ apiKey: key }), key };
 }
 
+// Debug: dump all env var names so we can see what Railway is actually passing
+app.get('/debug-env', (req, res) => {
+  const voyageKeys = Object.keys(process.env).filter(k => k.toLowerCase().includes('voyage'));
+  res.json({ voyageKeys, allKeys: Object.keys(process.env).sort() });
+});
+
 // Debug: test the full RAG pipeline
 app.get('/debug-rag', async (req, res) => {
   const results = { voyage: null, supabase_rpc: null, chunks: 0 };
