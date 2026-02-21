@@ -468,6 +468,132 @@ body {
   .vent-fab   { bottom: 118px; right: 16px; }
   .vent-panel { right: 12px; left: 12px; width: auto; bottom: 176px; }
 }
+
+/* ── MY SUBMISSIONS TRIGGER ── */
+.subs-trigger {
+  display: flex; align-items: center; gap: 7px;
+  background: none; border: 1px solid var(--border); border-radius: 7px;
+  font-family: 'DM Sans', sans-serif; font-size: 12.5px; color: var(--mid);
+  padding: 5px 12px; cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.subs-trigger:hover { border-color: var(--borderhi); color: var(--text); background: var(--s3); }
+.subs-count {
+  background: var(--teal); color: #fff;
+  font-size: 9.5px; font-family: 'JetBrains Mono', monospace;
+  padding: 1px 7px; border-radius: 100px; font-weight: 500;
+}
+
+/* ── SUBS BACKDROP ── */
+.subs-backdrop {
+  position: fixed; inset: 0; top: 56px; z-index: 299;
+  background: rgba(26,38,56,.1); backdrop-filter: blur(1.5px);
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.subs-backdrop.show { opacity: 1; pointer-events: all; }
+
+/* ── SUBS DRAWER ── */
+.subs-drawer {
+  position: fixed; top: 56px; left: 0; z-index: 300;
+  width: 420px; height: calc(100vh - 56px);
+  background: var(--bg); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  transform: translateX(-100%);
+  transition: transform .26s cubic-bezier(.34,1.1,.64,1);
+}
+.subs-drawer.show { transform: translateX(0); }
+
+.sd-head {
+  flex-shrink: 0; padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between;
+}
+.sd-title { font-family: 'Instrument Serif', serif; font-size: 19px; color: var(--text); }
+.sd-sub   { font-size: 11px; color: var(--dim); margin-top: 3px; }
+.sd-close {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  color: var(--dim); cursor: pointer; flex-shrink: 0; transition: all .15s;
+}
+.sd-close:hover { background: var(--s3); border-color: var(--borderhi); color: var(--text); }
+.sd-scroll { flex: 1; overflow-y: auto; padding: 18px 22px 28px; }
+
+/* ── IMPACT CARD ── */
+.sd-impact {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 12px;
+  padding: 15px 16px; margin-bottom: 20px;
+}
+.sd-impact-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.sd-avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: var(--teal2); border: 1px solid rgba(26,144,128,.22);
+  color: var(--teal); font-family: 'Instrument Serif', serif; font-size: 17px;
+  display: flex; align-items: center; justify-content: center;
+}
+.sd-impact-name { font-size: 13.5px; font-weight: 400; color: var(--text); }
+.sd-impact-role { font-size: 11px; color: var(--dim); margin-top: 2px; }
+.sd-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--border); padding-top: 13px; gap: 0;
+}
+.sd-stat { text-align: center; padding: 0 6px; }
+.sd-stat + .sd-stat { border-left: 1px solid var(--border); }
+.sd-stat-n {
+  font-family: 'Instrument Serif', serif; font-size: 26px; line-height: 1; margin-bottom: 4px;
+}
+.sd-stat-n.ct { color: var(--teal); }
+.sd-stat-n.cg { color: var(--gold); }
+.sd-stat-n.cv { color: var(--green); }
+.sd-stat-lbl { font-size: 9.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--dim); }
+.sd-impact-foot {
+  margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border);
+  font-size: 11.5px; color: var(--green); display: flex; align-items: center; gap: 7px;
+}
+
+/* ── SUBMISSION CARDS ── */
+.sd-section-lbl {
+  font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 10px; font-weight: 400;
+}
+.sd-cards { display: flex; flex-direction: column; gap: 9px; }
+.sub-card {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 11px; padding: 12px 14px; transition: border-color .15s;
+}
+.sub-card:hover { border-color: var(--borderhi); }
+.sc-top { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; flex-wrap: wrap; }
+.sc-ref {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 500;
+  color: var(--accent); background: var(--accent2); padding: 2px 8px; border-radius: 5px; flex-shrink: 0;
+}
+.sc-area { font-size: 11px; color: var(--dim); flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sc-badge {
+  font-size: 9px; font-family: 'JetBrains Mono', monospace; font-weight: 600;
+  padding: 2px 8px; border-radius: 100px; flex-shrink: 0;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.sb-new   { background: var(--accent2); color: var(--accent); }
+.sb-ack   { background: var(--gold2);   color: var(--gold); }
+.sb-wip   { background: var(--teal2);   color: var(--teal); }
+.sb-done  { background: var(--green2);  color: var(--green); }
+.sc-meta  { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.sc-pri   { display: flex; align-items: center; gap: 4px; font-size: 10.5px; color: var(--dim); }
+.sc-dot   { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.sc-text  {
+  font-size: 12.5px; color: var(--mid); line-height: 1.6;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.sc-date  { font-size: 10.5px; color: var(--dim); margin-top: 6px; }
+.sc-outcome {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; align-items: flex-start;
+}
+.sc-out-icon { flex-shrink: 0; margin-top: 2px; }
+.sc-out-txt  { font-size: 12px; color: var(--text); line-height: 1.55; }
+.sc-out-by   { font-size: 10.5px; color: var(--dim); margin-top: 3px; }
+
+@media (max-width: 640px) {
+  .subs-drawer { width: 100%; }
+}
 </style>
 <script>if(!localStorage.getItem('vent_role'))window.location.replace('login.html');</script>
 </head>
@@ -532,6 +658,28 @@ body {
       </button>
     </div>
   </div>
+</div>
+
+<!-- ── MY SUBMISSIONS BACKDROP ── -->
+<div class="subs-backdrop" id="subsBackdrop" onclick="closeSubsDrawer()"></div>
+
+<!-- ── MY SUBMISSIONS DRAWER ── -->
+<div class="subs-drawer" id="subsDrawer">
+
+  <div class="sd-head">
+    <div>
+      <div class="sd-title">My Submissions</div>
+      <div class="sd-sub">Your floor observations &amp; their outcomes</div>
+    </div>
+    <button class="sd-close" onclick="closeSubsDrawer()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="sd-scroll" id="sdScroll">
+    <!-- rendered by renderSubsDrawer() -->
+  </div>
+
 </div>
 
 <!-- ── VENT BACKDROP ── -->
@@ -910,6 +1058,149 @@ function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+// ── MY SUBMISSIONS DATA ──────────────────────────────
+const MY_SUBS = [
+  {
+    ref:      'VNT-0051',
+    area:     'Upstream Bioreactor',
+    priority: 'high',
+    text:     'DO probe showing erratic readings during inoculation — values jumping ±15% outside the expected window across 3 consecutive runs.',
+    status:   'new',
+    date:     '2 hours ago'
+  },
+  {
+    ref:      'VNT-0048',
+    area:     'Media Prep',
+    priority: 'medium',
+    text:     'Sodium bicarbonate additions not matching BPR documented volumes. Discrepancy of ~20 mL on 3 consecutive batches.',
+    status:   'acknowledged',
+    date:     '3 days ago',
+    outcome:  'QA reviewing with MSAT — BPR cross-check initiated.',
+    reviewer: 'QA Team'
+  },
+  {
+    ref:      'VNT-0044',
+    area:     'Upstream Bioreactor',
+    priority: 'medium',
+    text:     'Agitation speed setpoint in SOP appears inconsistent with what\'s in the BPR for the N-1 seed step.',
+    status:   'in_progress',
+    date:     '8 days ago',
+    outcome:  'MSAT investigating parameter discrepancy — deviation report DEV-0192 opened.',
+    reviewer: 'Siobhán K., MSAT'
+  },
+  {
+    ref:      'VNT-0041',
+    area:     'CIP / SIP',
+    priority: 'low',
+    text:     'Caustic rinse cycle consistently runs 2 min over stated time in SOP-CIP-003. Vessel conductivity sensor delay suspected.',
+    status:   'resolved',
+    date:     '14 days ago',
+    outcome:  'SOP-CIP-003 Rev.4 updated — sensor timeout tolerance added to §4.2. Engineering confirmed sensor within spec.',
+    reviewer: 'Ciarán M., Engineering'
+  },
+  {
+    ref:      'VNT-0037',
+    area:     'QC / In-process',
+    priority: 'medium',
+    text:     'Cell viability threshold for inoculation is 85% in the SOP but 80% in the BPR. Operators unsure which figure governs acceptance.',
+    status:   'resolved',
+    date:     '22 days ago',
+    outcome:  'SOP-QC-011 harmonised with BPR — acceptance criterion standardised at 85% across both documents.',
+    reviewer: 'Aoife D., QA'
+  }
+];
+
+function openSubsDrawer() {
+  renderSubsDrawer();
+  document.getElementById('subsDrawer').classList.add('show');
+  document.getElementById('subsBackdrop').classList.add('show');
+}
+function closeSubsDrawer() {
+  document.getElementById('subsDrawer').classList.remove('show');
+  document.getElementById('subsBackdrop').classList.remove('show');
+}
+function renderSubsDrawer() {
+  const name    = localStorage.getItem('vent_name') || null;
+  const initial = name ? name.trim()[0].toUpperCase() : '·';
+  const total   = MY_SUBS.length;
+  const resolved = MY_SUBS.filter(s => s.status === 'resolved').length;
+  const inReview = MY_SUBS.filter(s => s.status === 'acknowledged' || s.status === 'in_progress').length;
+  const sopsUpdated = resolved; // 1-to-1 in demo
+
+  const priDot = p => {
+    const c = p === 'high' ? 'var(--red)' : p === 'medium' ? 'var(--gold)' : 'var(--green)';
+    const l = p === 'high' ? 'High' : p === 'medium' ? 'Medium' : 'Low';
+    return `<div class="sc-pri"><div class="sc-dot" style="background:${c}"></div>${l} priority</div>`;
+  };
+  const badgeCls = { new:'sb-new', acknowledged:'sb-ack', in_progress:'sb-wip', resolved:'sb-done' };
+  const badgeTxt = { new:'New', acknowledged:'Acknowledged', in_progress:'In Progress', resolved:'Resolved ✓' };
+
+  const cards = MY_SUBS.map(s => {
+    let outcomeHtml = '';
+    if (s.outcome) {
+      const iconPath = s.status === 'resolved'
+        ? '<polyline points="20 6 9 17 4 12"/>'
+        : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+      const iconClr = s.status === 'resolved' ? 'var(--green)' : 'var(--teal)';
+      outcomeHtml = `
+      <div class="sc-outcome">
+        <svg class="sc-out-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${iconClr}" stroke-width="2.2">${iconPath}</svg>
+        <div>
+          <div class="sc-out-txt">${escHtml(s.outcome)}</div>
+          ${s.reviewer ? `<div class="sc-out-by">${escHtml(s.reviewer)}</div>` : ''}
+        </div>
+      </div>`;
+    }
+    return `
+    <div class="sub-card">
+      <div class="sc-top">
+        <span class="sc-ref">${escHtml(s.ref)}</span>
+        <span class="sc-area">${escHtml(s.area)}</span>
+        <span class="sc-badge ${badgeCls[s.status]}">${badgeTxt[s.status]}</span>
+      </div>
+      <div class="sc-meta">${priDot(s.priority)}</div>
+      <div class="sc-text">${escHtml(s.text)}</div>
+      <div class="sc-date">${escHtml(s.date)}</div>
+      ${outcomeHtml}
+    </div>`;
+  }).join('');
+
+  const impactFoot = sopsUpdated > 0 ? `
+    <div class="sd-impact-foot">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      ${sopsUpdated} SOP${sopsUpdated > 1 ? 's' : ''} updated directly from your reports
+    </div>` : '';
+
+  document.getElementById('sdScroll').innerHTML = `
+    <div class="sd-impact">
+      <div class="sd-impact-top">
+        <div class="sd-avatar">${escHtml(initial)}</div>
+        <div>
+          <div class="sd-impact-name">${name ? escHtml(name) : 'Operator'}</div>
+          <div class="sd-impact-role">Floor Operator · Upstream</div>
+        </div>
+      </div>
+      <div class="sd-stats">
+        <div class="sd-stat">
+          <div class="sd-stat-n ct">${total}</div>
+          <div class="sd-stat-lbl">Submitted</div>
+        </div>
+        <div class="sd-stat">
+          <div class="sd-stat-n cg">${inReview}</div>
+          <div class="sd-stat-lbl">In Review</div>
+        </div>
+        <div class="sd-stat">
+          <div class="sd-stat-n cv">${resolved}</div>
+          <div class="sd-stat-lbl">Resolved</div>
+        </div>
+      </div>
+      ${impactFoot}
+    </div>
+    <div class="sd-section-lbl">Your observations</div>
+    <div class="sd-cards">${cards}</div>
+  `;
+}
+
 // ── VENT PANEL ───────────────────────────────────────
 let _ventPri = 'medium';
 
@@ -975,6 +1266,18 @@ function resetVentPanel() {
   right.appendChild(d);
   const allowed = navRules[role] || [];
   document.querySelectorAll('.nav-item').forEach(l => { if (!allowed.some(a => l.textContent.trim().includes(a))) l.style.display = 'none'; });
+})();
+
+// Inject "My Submissions" button for operators
+(function() {
+  if (localStorage.getItem('vent_role') !== 'operator') return;
+  const right = document.getElementById('topbarRight');
+  if (!right) return;
+  const btn = document.createElement('button');
+  btn.className = 'subs-trigger';
+  btn.onclick = openSubsDrawer;
+  btn.innerHTML = 'My Submissions <span class="subs-count">' + MY_SUBS.length + '</span>';
+  right.insertBefore(btn, right.firstChild);
 })();
 </script>
 </body>
