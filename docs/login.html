@@ -299,6 +299,13 @@ body::before {
       <input type="text" id="nameInput" placeholder="e.g. Liu, Sinéad, Robert…" autocomplete="off">
     </div>
 
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="staffPass" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doStaffLogin()">
+    </div>
+    <div class="err-msg" id="staffErr"></div>
+
     <button class="continue-btn" id="continueBtn" onclick="doStaffLogin()" disabled>
       Continue
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -336,6 +343,7 @@ body::before {
 
 <script>
 const ADMIN_PASSWORD = 'vent2026';
+const STAFF_PASSWORD = 'vent2026';
 
 const ROLE_ROUTES = {
   operator:    'index.html',
@@ -368,6 +376,15 @@ function selectRole(item) {
 
 function doStaffLogin() {
   if (!selectedRole) return;
+  const pass = document.getElementById('staffPass').value;
+  if (pass !== STAFF_PASSWORD) {
+    const err = document.getElementById('staffErr');
+    err.textContent = 'Incorrect password.';
+    document.getElementById('staffPass').value = '';
+    document.getElementById('staffPass').focus();
+    setTimeout(() => { err.textContent = ''; }, 3500);
+    return;
+  }
   const name = document.getElementById('nameInput').value.trim();
   localStorage.setItem('vent_role', selectedRole);
   if (name) localStorage.setItem('vent_name', name);
