@@ -436,6 +436,52 @@ body {
   margin-top: 13px; font-size: 11px; color: var(--dim);
   display: flex; align-items: center; gap: 6px; line-height: 1.5;
 }
+
+/* ── VENT ATTACHMENTS ── */
+.vp-attach { margin-top: 13px; }
+.vp-drop {
+  border: 1.5px dashed var(--border); border-radius: 9px;
+  padding: 11px 13px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: border-color .15s, background .15s;
+}
+.vp-drop:hover, .vp-drop.drag-over {
+  border-color: var(--teal); background: var(--teal2);
+}
+.vp-drop-main { font-size: 12px; color: var(--mid); }
+.vp-drop-sub  { font-size: 10.5px; color: var(--dim); margin-top: 2px; }
+.vp-previews  { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+.vp-prev-item {
+  position: relative; width: 62px; height: 62px;
+  border-radius: 7px; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0;
+}
+.vp-prev-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vp-prev-vid {
+  width: 100%; height: 100%; background: var(--s3);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 4px;
+}
+.vp-prev-vid-name { font-size: 8px; color: var(--dim); text-align: center; overflow: hidden; max-height: 22px; word-break: break-all; line-height: 1.3; }
+.vp-prev-remove {
+  position: absolute; top: 2px; right: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: rgba(26,38,56,.72); color: #fff; border: none;
+  font-size: 10px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.vp-prev-remove:hover { background: rgba(26,38,56,.9); }
+
+/* attachment thumbnails in My Submissions cards */
+.sc-attachments { display: flex; gap: 5px; margin-top: 9px; flex-wrap: wrap; }
+.sc-att-img { width: 52px; height: 52px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
+.sc-att-vid {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; color: var(--mid); padding: 5px 8px;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 6px;
+  height: 52px; max-width: 100px; flex-shrink: 0;
+}
+.sc-att-vid-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 58px; }
+
 .vp-submit-btn {
   width: 100%; margin-top: 14px;
   background: var(--teal); color: #fff; border: none; border-radius: 9px;
@@ -782,6 +828,23 @@ body {
     <div class="vp-anon">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Anonymous by design. Your identity is never recorded.
+    </div>
+
+    <div class="vp-attach">
+      <label class="vp-label">Photos or video <span style="font-size:10px;color:var(--dim);font-weight:300;text-transform:none;letter-spacing:0">— optional</span></label>
+      <div class="vp-drop" id="vpDrop"
+           onclick="document.getElementById('vpFileInput').click()"
+           ondragover="onVpDragOver(event)"
+           ondragleave="onVpDragLeave(event)"
+           ondrop="onVpDrop(event)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--dim);flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <div>
+          <div class="vp-drop-main">Add photos or video</div>
+          <div class="vp-drop-sub">Drag &amp; drop or click &middot; up to 5 files</div>
+        </div>
+      </div>
+      <input type="file" id="vpFileInput" accept="image/*,video/*" multiple style="display:none" onchange="handleVentFiles(this.files)">
+      <div class="vp-previews" id="vpPreviews"></div>
     </div>
 
     <button class="vp-submit-btn" id="ventSubmitBtn" onclick="submitVent()">
@@ -1263,6 +1326,14 @@ function renderSubsDrawer() {
         </div>
       </div>`;
     }
+    let attachHtml = '';
+    if (s.attachments && s.attachments.length) {
+      attachHtml = `<div class="sc-attachments">` +
+        s.attachments.map(a => a.type === 'image'
+          ? `<img class="sc-att-img" src="${a.url}" alt="">`
+          : `<div class="sc-att-vid"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="sc-att-vid-name">${escHtml(a.name)}</span></div>`
+        ).join('') + `</div>`;
+    }
     return `
     <div class="sub-card">
       <div class="sc-top">
@@ -1273,6 +1344,7 @@ function renderSubsDrawer() {
       <div class="sc-meta">${priDot(s.priority)}</div>
       <div class="sc-text">${escHtml(s.text)}</div>
       <div class="sc-date">${escHtml(s.date)}</div>
+      ${attachHtml}
       ${outcomeHtml}
     </div>`;
   }).join('');
@@ -1362,7 +1434,51 @@ function renderProgressTab() {
 }
 
 // ── VENT PANEL ───────────────────────────────────────
-let _ventPri = 'medium';
+let _ventPri   = 'medium';
+let _ventFiles = [];
+
+function onVpDragOver(e) {
+  e.preventDefault();
+  document.getElementById('vpDrop').classList.add('drag-over');
+}
+function onVpDragLeave(e) {
+  document.getElementById('vpDrop').classList.remove('drag-over');
+}
+function onVpDrop(e) {
+  e.preventDefault();
+  document.getElementById('vpDrop').classList.remove('drag-over');
+  handleVentFiles(e.dataTransfer.files);
+}
+function handleVentFiles(files) {
+  Array.from(files).forEach(f => {
+    if (_ventFiles.length >= 5) return;
+    if (!f.type.startsWith('image/') && !f.type.startsWith('video/')) return;
+    _ventFiles.push(f);
+  });
+  renderVentPreviews();
+}
+function removeVentFile(i) {
+  _ventFiles.splice(i, 1);
+  renderVentPreviews();
+}
+function renderVentPreviews() {
+  const el = document.getElementById('vpPreviews');
+  if (!_ventFiles.length) { el.innerHTML = ''; return; }
+  el.innerHTML = _ventFiles.map((f, i) => {
+    const url   = URL.createObjectURL(f);
+    const isImg = f.type.startsWith('image/');
+    const inner = isImg
+      ? `<img class="vp-prev-img" src="${url}" alt="">`
+      : `<div class="vp-prev-vid">
+           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--mid);flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+           <div class="vp-prev-vid-name">${escHtml(f.name)}</div>
+         </div>`;
+    return `<div class="vp-prev-item">
+      ${inner}
+      <button class="vp-prev-remove" onclick="removeVentFile(${i})" title="Remove">×</button>
+    </div>`;
+  }).join('');
+}
 
 function toggleVentPanel() {
   document.getElementById('ventPanel').classList.contains('show') ? closeVentPanel() : openVentPanel();
@@ -1391,16 +1507,47 @@ async function submitVent() {
   btn.disabled = true;
   btn.innerHTML = 'Submitting…';
   await new Promise(r => setTimeout(r, 680));
-  const ref = 'VNT-' + String(Math.floor(Math.random() * 50) + 40).padStart(4, '0');
+  const ref = 'VNT-' + String(Date.now()).slice(-4);
+  // Capture attachments as object URLs for in-session preview
+  const attachments = _ventFiles.map(f => ({
+    url:  URL.createObjectURL(f),
+    type: f.type.startsWith('image/') ? 'image' : 'video',
+    name: f.name
+  }));
+  // Prepend to MY_SUBS so it appears immediately in the drawer
+  MY_SUBS.unshift({
+    ref,
+    area:     document.getElementById('ventArea').value,
+    priority: _ventPri,
+    text,
+    status:   'new',
+    date:     'Just now',
+    attachments: attachments.length ? attachments : undefined,
+    pipeline: [
+      { stage:'Submitted',         status:'done',   who:'You', date:'Just now', note:'Observation logged and routed to QA.' },
+      { stage:'Received by QA',    status:'pending' },
+      { stage:'MSAT / MFG Review', status:'pending' },
+      { stage:'AD Review',         status:'pending' },
+      { stage:'Director Sign-off', status:'pending' },
+      { stage:'Doc Control',       status:'pending' }
+    ]
+  });
+  // Update topbar trigger count
+  const trigger = document.querySelector('.subs-trigger');
+  if (trigger) trigger.querySelector('.subs-count').textContent = MY_SUBS.length;
   document.getElementById('vpBody').style.display = 'none';
   document.getElementById('vpSuccess').style.display = '';
-  document.getElementById('vpsRef').textContent = 'Ref. ' + ref + ' · QA & MSAT notified';
+  const attNote = _ventFiles.length ? ` · ${_ventFiles.length} file${_ventFiles.length > 1 ? 's' : ''} attached` : '';
+  document.getElementById('vpsRef').textContent = 'Ref. ' + ref + attNote + ' · QA & MSAT notified';
 }
 function resetVentPanel() {
   document.getElementById('ventText').value = '';
   document.querySelectorAll('.vp-pri-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('[data-p="medium"]').classList.add('on');
   _ventPri = 'medium';
+  _ventFiles = [];
+  document.getElementById('vpPreviews').innerHTML = '';
+  document.getElementById('vpFileInput').value = '';
   document.getElementById('vpBody').style.display = '';
   document.getElementById('vpSuccess').style.display = 'none';
   const btn = document.getElementById('ventSubmitBtn');
