@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #f0f4f8;
+  --s1:       #ffffff;
+  --s2:       #f8fafc;
+  --s3:       #eef2f7;
+  --border:   #d0d8e4;
+  --borderhi: #a8b8cc;
+  --text:     #1a2638;
+  --mid:      #4a5a72;
+  --dim:      #8a98aa;
+  --accent:   #1b5fcc;
+  --accent2:  rgba(27,95,204,0.08);
+  --accent3:  rgba(27,95,204,0.15);
+  --gold:     #c97d20;
+  --gold2:    rgba(201,125,32,0.1);
+  --green:    #1a8a60;
+  --green2:   rgba(26,138,96,0.1);
+  --red:      #c93030;
+  --red2:     rgba(201,48,48,0.1);
+  --teal:     #1a9080;
+  --teal2:    rgba(26,144,128,0.1);
+}
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── CARD ── */
+.card {
+  position: relative; z-index: 1;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 42px 40px 36px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 4px 40px rgba(26,38,56,0.08), 0 1px 4px rgba(26,38,56,0.04);
+  animation: fadeUp .35s ease both;
+}
+
+/* ── BRAND ── */
+.brand {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 30px;
+}
+.brand-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 27px; letter-spacing: -.02em; color: var(--text);
+}
+.pip {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent);
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* ── TABS ── */
+.tabs {
+  display: flex; gap: 2px;
+  background: var(--s3); border-radius: 10px; padding: 3px;
+  margin-bottom: 28px;
+}
+.tab {
+  flex: 1; background: none; border: none; border-radius: 8px;
+  padding: 8px 12px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300; color: var(--mid);
+  cursor: pointer; transition: all .15s;
+}
+.tab.on {
+  background: var(--s1); color: var(--text);
+  box-shadow: 0 1px 4px rgba(26,38,56,0.09);
+  font-weight: 400;
+}
+
+/* ── HEADING ── */
+.heading { margin-bottom: 20px; }
+.heading h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px; font-weight: 400; letter-spacing: -.01em; line-height: 1.25;
+}
+.heading .sub {
+  font-size: 13px; color: var(--mid); margin-top: 6px; line-height: 1.65;
+}
+
+/* ── ROLE LIST ── */
+.role-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 22px; }
+
+.role-item {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--s2); border: 1.5px solid var(--border);
+  border-radius: 11px; padding: 12px 16px;
+  cursor: pointer; transition: all .15s;
+  user-select: none;
+}
+.role-item:hover { border-color: var(--borderhi); background: var(--s1); }
+.role-item.selected { border-color: var(--accent); background: var(--accent2); }
+.role-item.selected[data-role="operator"]    { border-color: var(--teal);   background: var(--teal2); }
+.role-item.selected[data-role="qa"]          { border-color: var(--accent); background: var(--accent2); }
+.role-item.selected[data-role="director"]    { border-color: var(--gold);   background: var(--gold2); }
+.role-item.selected[data-role="msat"]        { border-color: var(--green);  background: var(--green2); }
+.role-item.selected[data-role="engineering"] { border-color: var(--borderhi); background: var(--s3); }
+
+.ri-icon {
+  width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--s3); color: var(--dim); transition: all .15s;
+}
+.role-item.selected[data-role="operator"]    .ri-icon { background: rgba(26,144,128,.14); color: var(--teal); }
+.role-item.selected[data-role="qa"]          .ri-icon { background: var(--accent2); color: var(--accent); }
+.role-item.selected[data-role="director"]    .ri-icon { background: var(--gold2);   color: var(--gold); }
+.role-item.selected[data-role="msat"]        .ri-icon { background: var(--green2);  color: var(--green); }
+.role-item.selected[data-role="engineering"] .ri-icon { background: var(--s3);      color: var(--mid); }
+
+.ri-text { flex: 1; }
+.ri-title { font-size: 13px; font-weight: 400; color: var(--text); margin-bottom: 2px; }
+.ri-desc  { font-size: 11.5px; color: var(--mid); line-height: 1.4; }
+
+.ri-check {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid var(--border); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.role-item.selected                          .ri-check { background: var(--accent); border-color: var(--accent); }
+.role-item.selected[data-role="operator"]    .ri-check { background: var(--teal);   border-color: var(--teal); }
+.role-item.selected[data-role="director"]    .ri-check { background: var(--gold);   border-color: var(--gold); }
+.role-item.selected[data-role="msat"]        .ri-check { background: var(--green);  border-color: var(--green); }
+.role-item.selected[data-role="engineering"] .ri-check { background: var(--mid);    border-color: var(--mid); }
+
+/* ── FIELDS ── */
+.field { margin-bottom: 16px; }
+.field label {
+  display: block; font-size: 10.5px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 7px; font-weight: 400;
+}
+.field input {
+  width: 100%; background: var(--s2); border: 1px solid var(--border);
+  border-radius: 9px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300;
+  padding: 11px 14px; outline: none; transition: border-color .15s;
+}
+.field input:focus { border-color: var(--borderhi); background: var(--s1); }
+.field input::placeholder { color: var(--dim); }
+
+/* ── BUTTON ── */
+.continue-btn {
+  width: 100%; background: var(--accent); border: none; border-radius: 9px;
+  color: #fff; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 500;
+  padding: 12px 20px; cursor: pointer; transition: opacity .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.continue-btn:hover   { opacity: .88; }
+.continue-btn:disabled { opacity: .35; cursor: default; }
+
+/* ── ERROR ── */
+.err-msg {
+  text-align: center; font-size: 12px; color: var(--red);
+  margin-top: 10px; min-height: 16px;
+}
+
+/* ── PANE VISIBILITY ── */
+.staff-pane, .admin-pane { display: none; }
+.staff-pane.show, .admin-pane.show { display: block; }
+
+/* ── FOOTER ── */
+.login-footer {
+  margin-top: 28px; padding-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: center; font-size: 12px; color: var(--dim); line-height: 1.7;
+}
+.login-footer em {
+  font-family: 'Instrument Serif', serif; font-style: italic;
+  font-size: 13.5px; color: var(--mid);
+}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="brand">
+    <span class="brand-name">Vent</span>
+    <div class="pip"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab('staff', this)">Staff Access</button>
+    <button class="tab"    onclick="switchTab('admin', this)">Admin</button>
+  </div>
+
+  <!-- ── STAFF PANE ── -->
+  <div class="staff-pane show" id="staffPane">
+
+    <div class="heading">
+      <h1>Who are you today?</h1>
+      <p class="sub">Select your role to be taken to the right view.</p>
+    </div>
+
+    <div class="role-list">
+
+      <div class="role-item" data-role="operator" onclick="selectRole(this)">
+        <div class="ri-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="ri-text">
+          <div class="ri-title">Operator</div>
+          <div class="ri-desc">Submit floor observations and query SOPs</div>
+        </div>
+        <div class="ri-check">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+      <div class="role-item" data-role="qa" onclick="selectRole(this)">
+        <div class="ri-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <div class="ri-text">
+          <div class="ri-title">QA</div>
+          <div class="ri-desc">Document control, deviation management &amp; CAPA oversight</div>
+        </div>
+        <div class="ri-check">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+      <div class="role-item" data-role="director" onclick="selectRole(this)">
+        <div class="ri-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <div class="ri-text">
+          <div class="ri-title">Director</div>
+          <div class="ri-desc">Strategic oversight, intelligence dashboard &amp; escalations</div>
+        </div>
+        <div class="ri-check">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+      <div class="role-item" data-role="msat" onclick="selectRole(this)">
+        <div class="ri-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+        </div>
+        <div class="ri-text">
+          <div class="ri-title">MSAT</div>
+          <div class="ri-desc">Process science, SOP knowledge base &amp; technical services</div>
+        </div>
+        <div class="ri-check">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+      <div class="role-item" data-role="engineering" onclick="selectRole(this)">
+        <div class="ri-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        </div>
+        <div class="ri-text">
+          <div class="ri-title">Engineering</div>
+          <div class="ri-desc">Facilities, automation, maintenance &amp; utilities</div>
+        </div>
+        <div class="ri-check">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="field">
+      <label>First name <span style="text-transform:none;letter-spacing:0;font-size:10px">(optional)</span></label>
+      <input type="text" id="nameInput" placeholder="e.g. Liu, Sinéad, Robert…" autocomplete="off">
+    </div>
+
+    <button class="continue-btn" id="continueBtn" onclick="doStaffLogin()" disabled>
+      Continue
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+
+  </div><!-- /staff-pane -->
+
+  <!-- ── ADMIN PANE ── -->
+  <div class="admin-pane" id="adminPane">
+
+    <div class="heading">
+      <h1>Admin access</h1>
+      <p class="sub">Enter your password to access the full system.</p>
+    </div>
+
+    <div class="field" style="margin-top:24px">
+      <label>Password</label>
+      <input type="password" id="adminPass" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doAdminLogin()">
+    </div>
+
+    <button class="continue-btn" onclick="doAdminLogin()">
+      Sign in
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+    <div class="err-msg" id="adminErr"></div>
+
+  </div><!-- /admin-pane -->
+
+  <div class="login-footer">
+    <em>Anonymous by design. Intelligent by necessity.</em>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+const ADMIN_PASSWORD = 'vent2026';
+
+const ROLE_ROUTES = {
+  operator:    'index.html',
+  qa:          'qa.html',
+  director:    'dashboard.html',
+  msat:        'query.html',
+  engineering: 'dashboard.html',
+  admin:       'dashboard.html'
+};
+
+// Already signed in? Redirect straight away.
+const _existing = localStorage.getItem('vent_role');
+if (_existing) window.location.replace(ROLE_ROUTES[_existing] || 'dashboard.html');
+
+let selectedRole = null;
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('staffPane').classList.toggle('show', tab === 'staff');
+  document.getElementById('adminPane').classList.toggle('show', tab === 'admin');
+}
+
+function selectRole(item) {
+  document.querySelectorAll('.role-item').forEach(i => i.classList.remove('selected'));
+  item.classList.add('selected');
+  selectedRole = item.dataset.role;
+  document.getElementById('continueBtn').disabled = false;
+}
+
+function doStaffLogin() {
+  if (!selectedRole) return;
+  const name = document.getElementById('nameInput').value.trim();
+  localStorage.setItem('vent_role', selectedRole);
+  if (name) localStorage.setItem('vent_name', name);
+  else localStorage.removeItem('vent_name');
+  window.location.href = ROLE_ROUTES[selectedRole];
+}
+
+function doAdminLogin() {
+  const pass = document.getElementById('adminPass').value;
+  if (pass === ADMIN_PASSWORD) {
+    localStorage.setItem('vent_role', 'admin');
+    localStorage.setItem('vent_name', 'Admin');
+    window.location.replace('dashboard.html');
+  } else {
+    const err = document.getElementById('adminErr');
+    err.textContent = 'Incorrect password. Try again.';
+    document.getElementById('adminPass').value = '';
+    document.getElementById('adminPass').focus();
+    setTimeout(() => { err.textContent = ''; }, 3500);
+  }
+}
+</script>
+</body>
+</html>
