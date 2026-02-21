@@ -73,32 +73,42 @@ app.get('/', (req, res) => {
   });
 });
 
+// Text search fallback when Voyage is unavailable
+async function getChunksByText(query) {
+  const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  if (!words.length) return [];
+  const { data, error } = await supabase
+    .from('sop_chunks')
+    .select('doc_id, doc_title, section_title, content')
+    .or(words.slice(0, 3).map(w => `content.ilike.%${w}%`).join(','))
+    .limit(6);
+  if (error) { console.error('Text search error:', error.message); return []; }
+  return (data || []).map(c => ({ ...c, similarity: 0.5 }));
+}
+
 // Search Supabase for SOP chunks relevant to the observation
 async function getRelevantChunks(observation, area) {
-  try {
-    const { client: voyage } = getVoyageClient();
-    const result = await voyage.embed({
-      input: [`Process area: ${area}. ${observation}`],
-      model: 'voyage-3-lite'
-    });
-
-    const embedding = result.data[0].embedding;
-
-    const { data, error } = await supabase.rpc('match_sop_chunks', {
-      query_embedding: embedding,
-      match_count: 6
-    });
-
-    if (error) {
-      console.error('Vector search error:', error.message);
-      return [];
+  const { client: voyage, key } = getVoyageClient();
+  if (key) {
+    try {
+      const result = await voyage.embed({
+        input: [`Process area: ${area}. ${observation}`],
+        model: 'voyage-3-lite'
+      });
+      const embedding = result.data[0].embedding;
+      const { data, error } = await supabase.rpc('match_sop_chunks', {
+        query_embedding: embedding,
+        match_count: 6
+      });
+      if (!error && data && data.length) return data;
+      console.warn('Vector search returned nothing, falling back to text search');
+    } catch (err) {
+      console.warn('Voyage failed, falling back to text search:', err.message);
     }
-
-    return data || [];
-  } catch (err) {
-    console.error('getRelevantChunks failed:', err.message);
-    return [];
+  } else {
+    console.warn('No Voyage key — using text search fallback');
   }
+  return getChunksByText(`${area} ${observation}`);
 }
 
 // Format retrieved SOP chunks into a readable context block for Claude
