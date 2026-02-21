@@ -61,13 +61,14 @@ body {
   text-decoration: none; flex-shrink: 0;
 }
 .pip { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: breathe 3s ease-in-out infinite; }
-.app-nav { display: flex; align-items: center; gap: 2px; }
+.app-nav { display: flex; align-items: center; gap: 2px; flex: 1; }
 .nav-item {
   font-size: 13px; color: var(--mid); padding: 6px 12px; border-radius: 7px;
   text-decoration: none; transition: color .15s, background .15s; white-space: nowrap;
 }
 .nav-item:hover { color: var(--text); background: var(--s3); }
 .nav-item.on { color: var(--accent); background: var(--accent2); font-weight: 500; }
+.topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
 /* ── CHAT AREA ── */
 .chat-area {
@@ -1261,7 +1262,7 @@ function resetVentPanel() {
   if (!right) return;
   const safe = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
   const d = document.createElement('div');
-  d.style.cssText = 'display:flex;align-items:center;gap:8px;border-left:1px solid var(--border);padding-left:12px;margin-left:4px;flex-shrink:0;';
+  d.style.cssText = 'display:flex;align-items:center;gap:8px;border-left:1px solid var(--border);padding-left:12px;flex-shrink:0;';
   d.innerHTML = `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${clrs[role]||'var(--mid)'};background:var(--s3);border:1px solid var(--border);padding:3px 8px;border-radius:5px;letter-spacing:.05em;">${labels[role]||role.toUpperCase()}</span>${name?`<span style="font-size:12px;color:var(--mid);font-weight:300">${safe(name)}</span>`:''}<button onclick="localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');window.location.replace('login.html')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--borderhi)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">Sign out</button>`;
   right.appendChild(d);
   const allowed = navRules[role] || [];
