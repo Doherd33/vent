@@ -339,6 +339,135 @@ body {
   .input-footer { flex-direction: column; align-items: stretch; }
   .send-btn { justify-content: center; }
 }
+
+/* ── VENT FAB ── */
+.vent-fab {
+  position: fixed; bottom: 136px; right: 28px; z-index: 200;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--teal); color: #fff; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 18px rgba(26,144,128,.38), 0 2px 6px rgba(26,144,128,.2);
+  transition: transform .18s, box-shadow .18s, background .18s;
+}
+.vent-fab:hover { transform: scale(1.09); box-shadow: 0 6px 26px rgba(26,144,128,.46); }
+.vent-fab.open  { background: var(--mid); box-shadow: 0 2px 10px rgba(26,38,56,.18); }
+.vent-fab svg   { transition: transform .2s cubic-bezier(.34,1.4,.64,1); }
+.vent-fab.open svg { transform: rotate(45deg); }
+
+.vent-fab-label {
+  position: fixed; right: 88px; z-index: 200;
+  background: var(--text); color: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 11.5px; font-weight: 400;
+  padding: 5px 10px; border-radius: 7px; white-space: nowrap;
+  pointer-events: none; opacity: 0; transition: opacity .15s, transform .12s;
+  transform: translateX(4px);
+}
+.vent-fab-label.show { opacity: 1; transform: translateX(0); }
+
+/* ── VENT BACKDROP ── */
+.vent-backdrop {
+  position: fixed; inset: 0; z-index: 198;
+  background: rgba(26,38,56,.09); backdrop-filter: blur(1.5px);
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.vent-backdrop.show { opacity: 1; pointer-events: all; }
+
+/* ── VENT PANEL ── */
+.vent-panel {
+  position: fixed; bottom: 198px; right: 28px; z-index: 199;
+  width: 368px; max-height: calc(100vh - 260px); overflow-y: auto;
+  background: var(--s1); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(26,38,56,.13), 0 2px 8px rgba(26,38,56,.07);
+  transform: translateY(16px) scale(.97); opacity: 0; pointer-events: none;
+  transition: transform .22s cubic-bezier(.34,1.4,.64,1), opacity .18s;
+}
+.vent-panel.show { transform: translateY(0) scale(1); opacity: 1; pointer-events: all; }
+
+.vp-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--s1); z-index: 1;
+}
+.vp-title { font-family: 'Instrument Serif', serif; font-size: 17px; color: var(--text); line-height: 1.2; }
+.vp-sub   { font-size: 11px; color: var(--dim); margin-top: 3px; }
+.vp-close {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  color: var(--dim); cursor: pointer; flex-shrink: 0; transition: all .15s; margin-left: 12px;
+}
+.vp-close:hover { background: var(--s3); border-color: var(--borderhi); color: var(--text); }
+
+.vp-body { padding: 18px 20px 22px; }
+.vp-label {
+  display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 7px; font-weight: 400;
+}
+.vent-textarea {
+  width: 100%; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--s2); color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300;
+  padding: 11px 13px; resize: none; outline: none; min-height: 88px;
+  line-height: 1.6; transition: border-color .15s, background .15s;
+}
+.vent-textarea:focus { border-color: var(--accent); background: var(--s1); }
+.vent-textarea::placeholder { color: var(--dim); }
+
+.vp-row2 { display: flex; gap: 8px; margin-top: 12px; align-items: flex-start; }
+.vp-area-sel {
+  flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--s2); color: var(--mid);
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 7px 10px; outline: none; cursor: pointer;
+}
+.vp-area-sel:focus { border-color: var(--accent); }
+.vp-pri { display: flex; gap: 4px; flex-shrink: 0; }
+.vp-pri-btn {
+  border: 1px solid var(--border); border-radius: 6px; background: var(--s2);
+  font-family: 'DM Sans', sans-serif; font-size: 11.5px; color: var(--mid);
+  padding: 6px 9px; cursor: pointer; transition: all .12s; white-space: nowrap;
+}
+.vp-pri-btn:hover { border-color: var(--borderhi); }
+.vp-pri-btn.on[data-p="low"]    { background: var(--green2); border-color: var(--green); color: var(--green); }
+.vp-pri-btn.on[data-p="medium"] { background: var(--gold2);  border-color: var(--gold);  color: var(--gold); }
+.vp-pri-btn.on[data-p="high"]   { background: var(--red2);   border-color: var(--red);   color: var(--red); }
+
+.vp-anon {
+  margin-top: 13px; font-size: 11px; color: var(--dim);
+  display: flex; align-items: center; gap: 6px; line-height: 1.5;
+}
+.vp-submit-btn {
+  width: 100%; margin-top: 14px;
+  background: var(--teal); color: #fff; border: none; border-radius: 9px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  padding: 11px 20px; cursor: pointer; transition: opacity .15s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.vp-submit-btn:hover   { opacity: .88; }
+.vp-submit-btn:disabled { opacity: .4; cursor: default; }
+
+.vp-success {
+  padding: 34px 24px 28px; text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+}
+.vps-icon {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: var(--green2); border: 1px solid rgba(26,138,96,.2);
+  color: var(--green); display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+.vps-title { font-family: 'Instrument Serif', serif; font-size: 19px; margin-bottom: 6px; }
+.vps-ref   { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); margin-bottom: 18px; }
+.vps-again {
+  background: none; border: 1px solid var(--border); border-radius: 7px;
+  font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--mid);
+  padding: 7px 16px; cursor: pointer; transition: all .15s;
+}
+.vps-again:hover { border-color: var(--borderhi); color: var(--text); }
+
+@media (max-width: 640px) {
+  .vent-fab   { bottom: 118px; right: 16px; }
+  .vent-panel { right: 12px; left: 12px; width: auto; bottom: 176px; }
+}
 </style>
 <script>if(!localStorage.getItem('vent_role'))window.location.replace('login.html');</script>
 </head>
@@ -404,6 +533,75 @@ body {
     </div>
   </div>
 </div>
+
+<!-- ── VENT BACKDROP ── -->
+<div class="vent-backdrop" id="ventBackdrop" onclick="closeVentPanel()"></div>
+
+<!-- ── VENT PANEL ── -->
+<div class="vent-panel" id="ventPanel">
+
+  <div class="vp-head">
+    <div>
+      <div class="vp-title">Raise an observation</div>
+      <div class="vp-sub">Anonymous &middot; routed to QA &amp; MSAT</div>
+    </div>
+    <button class="vp-close" onclick="closeVentPanel()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="vp-body" id="vpBody">
+    <label class="vp-label">Observation</label>
+    <textarea class="vent-textarea" id="ventText" placeholder="What did you observe? Any deviation, concern, or SOP gap?"></textarea>
+
+    <div class="vp-row2">
+      <select class="vp-area-sel" id="ventArea">
+        <option value="Upstream">Upstream Bioreactor</option>
+        <option value="Media Prep">Media Prep</option>
+        <option value="Harvest">Harvest / TFF</option>
+        <option value="CIP">CIP / SIP</option>
+        <option value="QC">QC / In-process</option>
+        <option value="General">General</option>
+      </select>
+      <div class="vp-pri">
+        <button class="vp-pri-btn" data-p="low"    onclick="setPri(this)">Low</button>
+        <button class="vp-pri-btn on" data-p="medium" onclick="setPri(this)">Med</button>
+        <button class="vp-pri-btn" data-p="high"   onclick="setPri(this)">High</button>
+      </div>
+    </div>
+
+    <div class="vp-anon">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Anonymous by design. Your identity is never recorded.
+    </div>
+
+    <button class="vp-submit-btn" id="ventSubmitBtn" onclick="submitVent()">
+      Submit observation
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+  </div>
+
+  <div class="vp-success" id="vpSuccess" style="display:none">
+    <div class="vps-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="vps-title">Observation logged</div>
+    <div class="vps-ref" id="vpsRef"></div>
+    <button class="vps-again" onclick="resetVentPanel()">Submit another</button>
+  </div>
+
+</div>
+
+<!-- ── VENT FAB ── -->
+<div class="vent-fab-label" id="ventFabTip" style="bottom:152px">Raise a concern</div>
+<button class="vent-fab" id="ventFab"
+        onclick="toggleVentPanel()"
+        onmouseover="document.getElementById('ventFabTip').classList.add('show')"
+        onmouseout="document.getElementById('ventFabTip').classList.remove('show')">
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
 
 <script>
 const SERVER = 'https://vent-production-8f8a.up.railway.app';
@@ -712,14 +910,62 @@ function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-// ── AUTH TOPBAR ──────────────────────────────────────
+// ── VENT PANEL ───────────────────────────────────────
+let _ventPri = 'medium';
+
+function toggleVentPanel() {
+  document.getElementById('ventPanel').classList.contains('show') ? closeVentPanel() : openVentPanel();
+}
+function openVentPanel() {
+  document.getElementById('ventPanel').classList.add('show');
+  document.getElementById('ventBackdrop').classList.add('show');
+  document.getElementById('ventFab').classList.add('open');
+  document.getElementById('ventFabTip').classList.remove('show');
+  setTimeout(() => document.getElementById('ventText').focus(), 240);
+}
+function closeVentPanel() {
+  document.getElementById('ventPanel').classList.remove('show');
+  document.getElementById('ventBackdrop').classList.remove('show');
+  document.getElementById('ventFab').classList.remove('open');
+}
+function setPri(btn) {
+  document.querySelectorAll('.vp-pri-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  _ventPri = btn.dataset.p;
+}
+async function submitVent() {
+  const text = document.getElementById('ventText').value.trim();
+  if (!text) { document.getElementById('ventText').focus(); return; }
+  const btn = document.getElementById('ventSubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = 'Submitting…';
+  await new Promise(r => setTimeout(r, 680));
+  const ref = 'VNT-' + String(Math.floor(Math.random() * 50) + 40).padStart(4, '0');
+  document.getElementById('vpBody').style.display = 'none';
+  document.getElementById('vpSuccess').style.display = '';
+  document.getElementById('vpsRef').textContent = 'Ref. ' + ref + ' · QA & MSAT notified';
+}
+function resetVentPanel() {
+  document.getElementById('ventText').value = '';
+  document.querySelectorAll('.vp-pri-btn').forEach(b => b.classList.remove('on'));
+  document.querySelector('[data-p="medium"]').classList.add('on');
+  _ventPri = 'medium';
+  document.getElementById('vpBody').style.display = '';
+  document.getElementById('vpSuccess').style.display = 'none';
+  const btn = document.getElementById('ventSubmitBtn');
+  btn.disabled = false;
+  btn.innerHTML = 'Submit observation <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+  setTimeout(() => document.getElementById('ventText').focus(), 50);
+}
+
+// ── AUTH TOPBAR ───────────────────────────────────────
 (function() {
   const role = localStorage.getItem('vent_role');
   const name = localStorage.getItem('vent_name');
   if (!role) return;
   const labels = {operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
   const clrs   = {operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
-  const navRules = {operator:['Submit','Query SOPs'],qa:['Submit','Dashboard','QA Control'],director:['Dashboard','QA Control'],msat:['Submit','Query SOPs','Dashboard'],engineering:['Dashboard'],admin:['Submit','Query SOPs','Dashboard','QA Control']};
+  const navRules = {operator:['Query SOPs'],qa:['Submit','Dashboard','QA Control'],director:['Dashboard','QA Control'],msat:['Submit','Query SOPs','Dashboard'],engineering:['Dashboard'],admin:['Submit','Query SOPs','Dashboard','QA Control']};
   const right = document.querySelector('.topbar-right');
   if (!right) return;
   const safe = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';

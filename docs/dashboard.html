@@ -1116,7 +1116,7 @@ setInterval(loadSubmissions, 60000);
   if (!role) return;
   const labels = {operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
   const clrs   = {operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
-  const navRules = {operator:['Submit','Query SOPs'],qa:['Submit','Dashboard','QA Control'],director:['Dashboard','QA Control'],msat:['Submit','Query SOPs','Dashboard'],engineering:['Dashboard'],admin:['Submit','Query SOPs','Dashboard','QA Control']};
+  const navRules = {operator:['Query SOPs'],qa:['Submit','Dashboard','QA Control'],director:['Dashboard','QA Control'],msat:['Submit','Query SOPs','Dashboard'],engineering:['Dashboard'],admin:['Submit','Query SOPs','Dashboard','QA Control']};
   const right = document.querySelector('.topbar-right');
   if (!right) return;
   const safe = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
