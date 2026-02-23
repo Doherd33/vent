@@ -176,8 +176,9 @@ body {
 
 /* ── RIGHT PANEL ── */
 .right-panel { grid-column: 5; grid-row: 1; background: #252526; border-left: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-.right-tab-bar { display: flex; align-items: center; background: #2d2d30; border-bottom: 1px solid #3c3c3c; height: 35px; flex-shrink: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
-.right-tab-bar::-webkit-scrollbar { display: none; }
+.right-panel-header { display: flex; align-items: stretch; background: #2d2d30; border-bottom: 1px solid #3c3c3c; height: 35px; flex-shrink: 0; }
+.right-tabs-scroll { flex: 1; display: flex; align-items: stretch; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; min-width: 0; }
+.right-tabs-scroll::-webkit-scrollbar { display: none; }
 .right-tab { padding: 0 8px 0 14px; height: 100%; display: flex; align-items: center; gap: 7px; font-size: 11px; color: #8e8e8e; border-right: 1px solid #3c3c3c; white-space: nowrap; cursor: pointer; flex-shrink: 0; user-select: none; transition: background 0.1s, color 0.1s; }
 .right-tab:hover { background: #2a2a2a; color: #cccccc; }
 .right-tab.active { background: #252526; color: #fff; border-top: 1px solid #007acc; }
@@ -185,7 +186,20 @@ body {
 .right-tab:hover .right-tab-close,
 .right-tab.active .right-tab-close { color: #6c6c6c; }
 .right-tab-close:hover { color: #ffffff !important; background: rgba(255,255,255,0.1); }
-.right-tab-bar-empty { padding: 0 14px; font-size: 11px; color: #5a5a5a; font-style: italic; display: flex; align-items: center; height: 100%; }
+.right-tabs-empty { padding: 0 14px; font-size: 11px; color: #5a5a5a; font-style: italic; display: flex; align-items: center; white-space: nowrap; }
+/* right toolbar */
+.right-toolbar { display: flex; align-items: center; flex-shrink: 0; padding: 0 5px; gap: 1px; border-left: 1px solid #3c3c3c; }
+.rt-sep { width: 1px; height: 16px; background: #3c3c3c; margin: 0 4px; }
+.rt-btn-group { position: relative; }
+.rt-btn { background: none; border: none; color: #8e8e8e; cursor: pointer; font-size: 13px; padding: 3px 7px; border-radius: 3px; line-height: 1; transition: background 0.12s, color 0.12s; display: flex; align-items: center; height: 24px; font-family: inherit; letter-spacing: 1px; }
+.rt-btn:hover { background: rgba(255,255,255,0.09); color: #cccccc; }
+.rt-btn.open  { background: rgba(255,255,255,0.12); color: #fff; }
+.rt-dropdown { position: absolute; top: calc(100% + 6px); right: 0; background: #252526; border: 1px solid #454545; border-radius: 3px; min-width: 200px; z-index: 200; box-shadow: 0 6px 18px rgba(0,0,0,0.55); display: none; flex-direction: column; padding: 4px 0; }
+.rt-dropdown.visible { display: flex; }
+.rt-dropdown-item { padding: 7px 16px; font-size: 12px; color: #cccccc; cursor: pointer; white-space: nowrap; transition: background 0.1s; }
+.rt-dropdown-item:hover { background: #094771; color: #fff; }
+.rt-dropdown-item.rt-disabled { color: #5a5a5a; cursor: default; pointer-events: none; }
+.rt-dropdown-sep { height: 1px; background: #3c3c3c; margin: 4px 0; }
 .right-content { flex: 1; overflow-y: auto; padding: 16px; }
 .right-content::-webkit-scrollbar { width: 4px; }
 .right-content::-webkit-scrollbar-thumb { background: #424242; border-radius: 2px; }
@@ -283,7 +297,36 @@ body {
 
   <!-- RIGHT PANEL -->
   <div class="right-panel" id="rightPanel">
-    <div class="right-tab-bar" id="rightTabBar"><div class="right-tab-bar-empty">SOP Viewer</div></div>
+    <div class="right-panel-header">
+      <div class="right-tabs-scroll" id="rightTabsInner"><div class="right-tabs-empty">SOP Viewer</div></div>
+      <div class="right-toolbar">
+        <!-- + button -->
+        <div class="rt-btn-group">
+          <button class="rt-btn" id="rtBtnAdd" onclick="toggleRtDropdown('rtDropAdd',event)" title="Add SOP">+</button>
+          <div class="rt-dropdown" id="rtDropAdd">
+            <div class="rt-dropdown-item" onclick="rtAction('browse')">&#128269;&nbsp; Browse SOP Database</div>
+            <div class="rt-dropdown-item" onclick="rtAction('search')">&#35;&nbsp; Search by Code</div>
+            <div class="rt-dropdown-sep"></div>
+            <div class="rt-dropdown-item rt-disabled">&#8627;&nbsp; Import from file &mdash; coming soon</div>
+          </div>
+        </div>
+        <!-- ... button -->
+        <div class="rt-btn-group">
+          <button class="rt-btn" id="rtBtnMore" onclick="toggleRtDropdown('rtDropMore',event)" title="More actions">&middot;&middot;&middot;</button>
+          <div class="rt-dropdown" id="rtDropMore">
+            <div class="rt-dropdown-item" onclick="rtAction('undo')">&#8629;&nbsp; Undo Last Change</div>
+            <div class="rt-dropdown-sep"></div>
+            <div class="rt-dropdown-item" onclick="rtAction('history')">&#8987;&nbsp; Change History</div>
+            <div class="rt-dropdown-item" onclick="rtAction('actlog')">&#9776;&nbsp; Activity Log</div>
+          </div>
+        </div>
+        <div class="rt-sep"></div>
+        <!-- expand -->
+        <button class="rt-btn" id="rtBtnExpand" onclick="toggleRightExpand()" title="Expand panel">&#10697;</button>
+        <!-- close -->
+        <button class="rt-btn" onclick="closeRight()" title="Close panel">&#10005;</button>
+      </div>
+    </div>
     <div class="right-content" id="rightContent">
       <div class="empty-state" style="height:100%"><p>Click a SOP row to view</p></div>
     </div>
@@ -388,6 +431,7 @@ const MOCK = [
 let filter='all', selected=null, selSopIdx=null, logLines=[], curBottom='log';
 let openTabs=[], activeTabId=null;
 let sopTabs=[], activeSopKey=null;
+let rightExpanded=false, preExpandCols=null;
 
 function addLog(msg,level='info'){
   const t=new Date().toLocaleTimeString('en-GB',{hour12:false});
@@ -579,10 +623,10 @@ function closeSopTab(key,e){
 
 function renderSopTabs(){
   if(!sopTabs.length){
-    document.getElementById('rightTabBar').innerHTML='<div class="right-tab-bar-empty">SOP Viewer</div>';
+    document.getElementById('rightTabsInner').innerHTML='<div class="right-tabs-empty">SOP Viewer</div>';
     return;
   }
-  document.getElementById('rightTabBar').innerHTML=sopTabs.map(t=>{
+  document.getElementById('rightTabsInner').innerHTML=sopTabs.map(t=>{
     const active=t.key===activeSopKey;
     return `<div class="right-tab ${active?'active':''}" onclick="switchSopTab('${t.key}',event)">`+
       `<span>${t.code} <span style="color:#5a5a5a;font-size:10px">${t.section}</span></span>`+
@@ -611,13 +655,16 @@ function closeRight(){
   sopTabs=[];
   activeSopKey=null;
   selSopIdx=null;
+  rightExpanded=false;
   const wb=document.getElementById('workbench');
   wb.classList.remove('sop-open');
   const leftW=wb.style.gridTemplateColumns ? parseFloat(wb.style.gridTemplateColumns) : 260;
   wb.style.gridTemplateColumns=leftW+'px 4px 1fr 4px 0px';
   document.getElementById('statusSop').textContent='';
-  document.getElementById('rightTabBar').innerHTML='<div class="right-tab-bar-empty">SOP Viewer</div>';
+  document.getElementById('rightTabsInner').innerHTML='<div class="right-tabs-empty">SOP Viewer</div>';
   document.getElementById('rightContent').innerHTML='<div class="empty-state" style="height:100%"><p>Click a SOP row to view</p></div>';
+  const eb=document.getElementById('rtBtnExpand');
+  if(eb){eb.innerHTML='&#10697;';eb.title='Expand panel';}
 }
 
 (function(){
@@ -628,6 +675,49 @@ function closeRight(){
   const el=document.getElementById('titleUser');
   if(el)el.textContent=(name||'')+' \u00b7 '+(labels[role]||role);
 })();
+
+// ─── RIGHT TOOLBAR ───────────────────────────────────────
+function toggleRtDropdown(id,e){
+  e.stopPropagation();
+  const drop=document.getElementById(id);
+  const btn=e.currentTarget;
+  const wasOpen=drop.classList.contains('visible');
+  document.querySelectorAll('.rt-dropdown').forEach(d=>d.classList.remove('visible'));
+  document.querySelectorAll('.rt-btn').forEach(b=>b.classList.remove('open'));
+  if(!wasOpen){ drop.classList.add('visible'); btn.classList.add('open'); }
+}
+function rtAction(action){
+  document.querySelectorAll('.rt-dropdown').forEach(d=>d.classList.remove('visible'));
+  document.querySelectorAll('.rt-btn').forEach(b=>b.classList.remove('open'));
+  if(action==='browse')      addLog('Browse SOP database \u2014 coming soon','info');
+  else if(action==='search') addLog('Search by code \u2014 coming soon','info');
+  else if(action==='undo')   addLog('Undo last change \u2014 coming soon','warn');
+  else if(action==='history')addLog('Change history \u2014 coming soon','info');
+  else if(action==='actlog'){
+    const logTab=document.querySelector('.bottom-tab');
+    switchBottom('log',logTab);
+    addLog('Activity log opened','info');
+  }
+}
+function toggleRightExpand(){
+  const wb=document.getElementById('workbench');
+  const btn=document.getElementById('rtBtnExpand');
+  if(!rightExpanded){
+    preExpandCols=wb.style.gridTemplateColumns||null;
+    const leftW=wb.style.gridTemplateColumns?parseFloat(wb.style.gridTemplateColumns):260;
+    wb.style.gridTemplateColumns=leftW+'px 4px 0px 4px 1fr';
+    btn.innerHTML='&#10696;'; btn.title='Collapse panel';
+    rightExpanded=true;
+  } else {
+    if(preExpandCols) wb.style.gridTemplateColumns=preExpandCols;
+    btn.innerHTML='&#10697;'; btn.title='Expand panel';
+    rightExpanded=false;
+  }
+}
+document.addEventListener('click',function(){
+  document.querySelectorAll('.rt-dropdown').forEach(d=>d.classList.remove('visible'));
+  document.querySelectorAll('.rt-btn').forEach(b=>b.classList.remove('open'));
+});
 
 renderLeft();
 renderTabs();
