@@ -516,9 +516,9 @@ addLog(MOCK.length+' submissions loaded','info');
     wb.style.gridTemplateColumns =
       cols[0]+'px 4px 1fr 4px '+cols[4]+'px';
   }
-  function setRows(rows) {
-    // row indices: 0=main, 1=resizer, 2=bottom
-    wb.style.gridTemplateRows = rows[0]+'px 4px '+rows[2]+'px';
+  function setRows(bottomPx) {
+    // main row stays 1fr; only bottom height is variable
+    wb.style.gridTemplateRows = '1fr 4px '+bottomPx+'px';
   }
 
   function makeDragger(el, onDrag) {
@@ -568,12 +568,13 @@ addLog(MOCK.length+' submissions loaded','info');
   // Main | Bottom
   let startY, startVal3;
   document.getElementById('resizerBottom').addEventListener('mousedown', function(e) {
-    startY = e.clientY; startVal3 = getRows()[2];
+    startY = e.clientY;
+    // read actual rendered pixel height of the bottom panel element
+    startVal3 = document.querySelector('.bottom-panel').getBoundingClientRect().height;
   });
   makeDragger(document.getElementById('resizerBottom'), function(e) {
-    const rows = getRows();
-    rows[2] = Math.max(40, Math.min(520, startVal3 + (startY - e.clientY)));
-    setRows(rows);
+    const newBottom = Math.max(40, Math.min(520, startVal3 + (startY - e.clientY)));
+    setRows(newBottom);
   });
 })();
 </script>
