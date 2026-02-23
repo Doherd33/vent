@@ -1503,40 +1503,63 @@ async function submitVent() {
   if (!text) { document.getElementById('ventText').focus(); return; }
   const btn = document.getElementById('ventSubmitBtn');
   btn.disabled = true;
-  btn.innerHTML = 'Submitting…';
-  await new Promise(r => setTimeout(r, 680));
-  const ref = 'VNT-' + String(Date.now()).slice(-4);
-  // Capture attachments as object URLs for in-session preview
-  const attachments = _ventFiles.map(f => ({
-    url:  URL.createObjectURL(f),
-    type: f.type.startsWith('image/') ? 'image' : 'video',
-    name: f.name
-  }));
-  // Prepend to MY_SUBS so it appears immediately in the drawer
-  MY_SUBS.unshift({
-    ref,
-    area:     document.getElementById('ventArea').value,
-    priority: _ventPri,
-    text,
-    status:   'new',
-    date:     'Just now',
-    attachments: attachments.length ? attachments : undefined,
-    pipeline: [
-      { stage:'Submitted',         status:'done',   who:'You', date:'Just now', note:'Observation logged and routed to QA.' },
-      { stage:'Received by QA',    status:'pending' },
-      { stage:'MSAT / MFG Review', status:'pending' },
-      { stage:'AD Review',         status:'pending' },
-      { stage:'Director Sign-off', status:'pending' },
-      { stage:'Doc Control',       status:'pending' }
-    ]
-  });
-  // Update topbar trigger count
-  const trigger = document.querySelector('.subs-trigger');
-  if (trigger) trigger.querySelector('.subs-count').textContent = MY_SUBS.length;
-  document.getElementById('vpBody').style.display = 'none';
-  document.getElementById('vpSuccess').style.display = '';
-  const attNote = _ventFiles.length ? ` · ${_ventFiles.length} file${_ventFiles.length > 1 ? 's' : ''} attached` : '';
-  document.getElementById('vpsRef').textContent = 'Ref. ' + ref + attNote + ' · QA & MSAT notified';
+  btn.innerHTML = 'Analysing &amp; submitting…';
+  const area = document.getElementById('ventArea').value;
+  const shift = localStorage.getItem('vent_name') || 'Day Shift';
+
+  try {
+    // POST to server — triggers Voyage embed + Claude analysis + Supabase store
+    const res = await fetch(SERVER + '/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        observation: text,
+        area: area,
+        shift: shift,
+        willingToConsult: true
+      })
+    });
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    const result = await res.json();
+    const ref = result.refCode || 'VNT-????';
+
+    // Capture attachments as object URLs for in-session preview
+    const attachments = _ventFiles.map(f => ({
+      url:  URL.createObjectURL(f),
+      type: f.type.startsWith('image/') ? 'image' : 'video',
+      name: f.name
+    }));
+    // Prepend to MY_SUBS so it appears immediately in the drawer
+    MY_SUBS.unshift({
+      ref,
+      area,
+      priority: result.priority || _ventPri,
+      text,
+      status:   'new',
+      date:     'Just now',
+      attachments: attachments.length ? attachments : undefined,
+      pipeline: [
+        { stage:'Submitted',         status:'done',   who:'You', date:'Just now', note:'Observation logged and routed to QA.' },
+        { stage:'Received by QA',    status:'pending' },
+        { stage:'MSAT / MFG Review', status:'pending' },
+        { stage:'AD Review',         status:'pending' },
+        { stage:'Director Sign-off', status:'pending' },
+        { stage:'Doc Control',       status:'pending' }
+      ]
+    });
+    // Update topbar trigger count
+    const trigger = document.querySelector('.subs-trigger');
+    if (trigger) trigger.querySelector('.subs-count').textContent = MY_SUBS.length;
+    document.getElementById('vpBody').style.display = 'none';
+    document.getElementById('vpSuccess').style.display = '';
+    const attNote = _ventFiles.length ? ` · ${_ventFiles.length} file${_ventFiles.length > 1 ? 's' : ''} attached` : '';
+    document.getElementById('vpsRef').textContent = 'Ref. ' + ref + attNote + ' · QA & MSAT notified';
+  } catch (err) {
+    console.error('Submit error:', err);
+    btn.innerHTML = 'Submit failed — try again';
+    btn.disabled = false;
+    return;
+  }
 }
 function resetVentPanel() {
   document.getElementById('ventText').value = '';
