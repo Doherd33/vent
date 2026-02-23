@@ -43,18 +43,41 @@ body {
 /* ── WORKBENCH ── */
 .workbench {
   display: grid;
-  grid-template-columns: 260px 1fr 0px;
-  grid-template-rows: 1fr 180px;
+  grid-template-columns: 260px 4px 1fr 4px 0px;
+  grid-template-rows: 1fr 4px 180px;
   overflow: hidden;
-  transition: grid-template-columns 0.25s ease;
 }
 .workbench.sop-open {
-  grid-template-columns: 260px 1fr 380px;
+  grid-template-columns: 260px 4px 1fr 4px 380px;
 }
+
+/* ── RESIZE HANDLES ── */
+.resizer {
+  background: #3c3c3c;
+  z-index: 10;
+  transition: background 0.15s;
+  position: relative;
+}
+.resizer:hover, .resizer.dragging { background: #007acc; }
+.resizer-v {
+  cursor: col-resize;
+  grid-row: 1 / 3;
+}
+.resizer-h {
+  cursor: row-resize;
+  grid-column: 2 / 6;
+}
+.resizer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.resizer-v::after  { left: -4px; right: -4px; }
+.resizer-h::after  { top: -4px; bottom: -4px; }
 
 /* ── LEFT PANEL ── */
 .left-panel {
-  grid-column: 1; grid-row: 1 / 3;
+  grid-column: 1; grid-row: 1 / 2;
   background: #252526;
   border-right: 1px solid #3c3c3c;
   display: flex; flex-direction: column;
@@ -108,7 +131,7 @@ body {
 .card-meta  { font-size: 10px; color: #5a5a5a; }
 
 /* ── CENTER PANEL ── */
-.center-panel { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; overflow: hidden; background: #1e1e1e; }
+.center-panel { grid-column: 3; grid-row: 1; display: flex; flex-direction: column; overflow: hidden; background: #1e1e1e; }
 .editor-tabs { display: flex; align-items: center; background: #2d2d30; border-bottom: 1px solid #3c3c3c; height: 35px; flex-shrink: 0; }
 .editor-tab { padding: 0 16px; height: 100%; display: flex; align-items: center; font-size: 12px; color: #8e8e8e; border-right: 1px solid #3c3c3c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
 .editor-tab.active { background: #1e1e1e; color: #fff; border-top: 1px solid #007acc; }
@@ -145,7 +168,7 @@ body {
 .change-desc  { font-size: 11px; color: #8e8e8e; line-height: 1.5; }
 
 /* ── RIGHT PANEL ── */
-.right-panel { grid-column: 3; grid-row: 1; background: #252526; border-left: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.right-panel { grid-column: 5; grid-row: 1; background: #252526; border-left: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .right-tabs { display: flex; align-items: center; background: #2d2d30; border-bottom: 1px solid #3c3c3c; height: 35px; flex-shrink: 0; }
 .right-tab-title { flex: 1; padding: 0 14px; height: 100%; display: flex; align-items: center; font-size: 12px; color: #ffffff; border-top: 1px solid #007acc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .right-close { padding: 0 10px; height: 100%; background: none; border: none; color: #6c6c6c; cursor: pointer; font-size: 16px; transition: color 0.15s; }
@@ -162,7 +185,7 @@ body {
 .sop-suggested { background: rgba(78,201,176,0.08); border-left: 3px solid #4ec9b0; padding: 8px 10px; border-radius: 0 2px 2px 0; font-size: 11px; font-family: 'Courier New', monospace; color: #4ec9b0; line-height: 1.7; white-space: pre-wrap; }
 
 /* ── BOTTOM PANEL ── */
-.bottom-panel { grid-column: 2 / 4; grid-row: 2; background: #1e1e1e; border-top: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; }
+.bottom-panel { grid-column: 1 / 6; grid-row: 3; background: #1e1e1e; border-top: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; }
 .bottom-tabs { display: flex; align-items: center; background: #2d2d30; border-bottom: 1px solid #3c3c3c; height: 30px; flex-shrink: 0; }
 .bottom-tab { padding: 0 16px; height: 100%; display: flex; align-items: center; font-size: 11px; color: #8e8e8e; cursor: pointer; border-right: 1px solid #3c3c3c; transition: color 0.15s; user-select: none; }
 .bottom-tab:hover { color: #cccccc; }
@@ -226,6 +249,9 @@ body {
     <div class="submission-list" id="subList"></div>
   </div>
 
+  <!-- RESIZER: left | center -->
+  <div class="resizer resizer-v" id="resizerLC"></div>
+
   <!-- CENTER PANEL -->
   <div class="center-panel">
     <div class="editor-tabs" id="editorTabs">
@@ -239,6 +265,9 @@ body {
     </div>
   </div>
 
+  <!-- RESIZER: center | right -->
+  <div class="resizer resizer-v" id="resizerCR"></div>
+
   <!-- RIGHT PANEL -->
   <div class="right-panel" id="rightPanel">
     <div class="right-tabs">
@@ -249,6 +278,9 @@ body {
       <div class="empty-state" style="height:100%"><p>Click a SOP row to view</p></div>
     </div>
   </div>
+
+  <!-- RESIZER: main | bottom -->
+  <div class="resizer resizer-h" id="resizerBottom"></div>
 
   <!-- BOTTOM PANEL -->
   <div class="bottom-panel">
@@ -429,7 +461,10 @@ function openSop(idx){
   const sop=selected.sops[idx];
   const content=SOP_CONTENT[sop.code]||{current:'Content not available.',suggested:'No suggestion defined.'};
   document.getElementById('rightTitle').textContent=sop.code+' \u00b7 '+sop.section;
-  document.getElementById('workbench').classList.add('sop-open');
+  const wb=document.getElementById('workbench');
+  wb.classList.add('sop-open');
+  const curCols=getComputedStyle(wb).gridTemplateColumns.split(' ').map(parseFloat);
+  wb.style.gridTemplateColumns=curCols[0]+'px 4px '+curCols[2]+'px 4px 380px';
   document.getElementById('statusSop').textContent='Viewing '+sop.code;
   document.getElementById('rightContent').innerHTML=`<div class="fade-in">
     <div class="sop-doc-title">${sop.title}</div>
@@ -442,7 +477,10 @@ function openSop(idx){
 }
 
 function closeRight(){
-  document.getElementById('workbench').classList.remove('sop-open');
+  const wb=document.getElementById('workbench');
+  wb.classList.remove('sop-open');
+  const curCols=getComputedStyle(wb).gridTemplateColumns.split(' ').map(parseFloat);
+  wb.style.gridTemplateColumns=curCols[0]+'px 4px '+curCols[2]+'px 4px 0px';
   document.getElementById('statusSop').textContent='';
   selSopIdx=null;
 }
@@ -460,6 +498,84 @@ renderLeft();
 renderLog();
 addLog('VENT QA Control ready','info');
 addLog(MOCK.length+' submissions loaded','info');
+
+// ─────────────────────────────────────────────
+// RESIZE HANDLES
+// ─────────────────────────────────────────────
+(function() {
+  const wb = document.getElementById('workbench');
+
+  function getCols() {
+    return getComputedStyle(wb).gridTemplateColumns.split(' ').map(parseFloat);
+  }
+  function getRows() {
+    return getComputedStyle(wb).gridTemplateRows.split(' ').map(parseFloat);
+  }
+  function setCols(cols) {
+    // col indices: 0=left, 1=resizer, 2=center, 3=resizer, 4=right
+    wb.style.gridTemplateColumns =
+      cols[0]+'px 4px '+cols[2]+'px 4px '+cols[4]+'px';
+  }
+  function setRows(rows) {
+    // row indices: 0=main, 1=resizer, 2=bottom
+    wb.style.gridTemplateRows = rows[0]+'px 4px '+rows[2]+'px';
+  }
+
+  function makeDragger(el, onDrag) {
+    el.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      el.classList.add('dragging');
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = el.classList.contains('resizer-v') ? 'col-resize' : 'row-resize';
+
+      function onMove(e) { onDrag(e); }
+      function onUp() {
+        el.classList.remove('dragging');
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  // Left | Center
+  let startX, startVal;
+  document.getElementById('resizerLC').addEventListener('mousedown', function(e) {
+    startX = e.clientX; startVal = getCols()[0];
+  });
+  makeDragger(document.getElementById('resizerLC'), function(e) {
+    const cols = getCols();
+    cols[0] = Math.max(160, Math.min(520, startVal + (e.clientX - startX)));
+    setCols(cols);
+  });
+
+  // Center | Right
+  let startX2, startVal2;
+  document.getElementById('resizerCR').addEventListener('mousedown', function(e) {
+    startX2 = e.clientX; startVal2 = getCols()[4];
+  });
+  makeDragger(document.getElementById('resizerCR'), function(e) {
+    const cols = getCols();
+    const newRight = Math.max(0, Math.min(700, startVal2 + (startX2 - e.clientX)));
+    cols[4] = newRight;
+    setCols(cols);
+    if (newRight > 20) wb.classList.add('sop-open');
+  });
+
+  // Main | Bottom
+  let startY, startVal3;
+  document.getElementById('resizerBottom').addEventListener('mousedown', function(e) {
+    startY = e.clientY; startVal3 = getRows()[2];
+  });
+  makeDragger(document.getElementById('resizerBottom'), function(e) {
+    const rows = getRows();
+    rows[2] = Math.max(40, Math.min(520, startVal3 + (startY - e.clientY)));
+    setRows(rows);
+  });
+})();
 </script>
 </body>
 </html>
