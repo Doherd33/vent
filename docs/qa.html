@@ -179,7 +179,7 @@ body {
 .right-panel-header { display: flex; align-items: stretch; background: #2d2d30; border-bottom: 1px solid #3c3c3c; height: 35px; flex-shrink: 0; }
 .right-tabs-scroll { flex: 1; display: flex; align-items: stretch; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; min-width: 0; }
 .right-tabs-scroll::-webkit-scrollbar { display: none; }
-.right-tab { padding: 0 8px 0 14px; height: 100%; display: flex; align-items: center; gap: 7px; font-size: 11px; color: #8e8e8e; border-right: 1px solid #3c3c3c; white-space: nowrap; cursor: pointer; flex-shrink: 0; user-select: none; transition: background 0.1s, color 0.1s; }
+.right-tab { padding: 0 8px 0 14px; height: 100%; display: flex; align-items: center; gap: 7px; font-size: 11px; color: #8e8e8e; border-right: 1px solid #3c3c3c; white-space: nowrap; cursor: pointer; flex-shrink: 0; user-select: none; transition: background 0.1s, color 0.1s, transform 0.13s cubic-bezier(0.2,0,0,1), opacity 0.13s; }
 .right-tab:hover { background: #2a2a2a; color: #cccccc; }
 .right-tab.active { background: #252526; color: #fff; border-top: 1px solid #007acc; }
 .right-tab-close { background: none; border: none; color: transparent; cursor: pointer; font-size: 11px; padding: 2px 3px; border-radius: 2px; line-height: 1; transition: color 0.1s, background 0.1s; flex-shrink: 0; }
@@ -490,7 +490,7 @@ const MOCK = [
 let filter='all', selected=null, selSopIdx=null, logLines=[], curBottom='log';
 let openTabs=[], activeTabId=null;
 let sopTabs=[], activeSopKey=null;
-let dragSopKey=null;
+let dragSopKey=null, dragSopWidth=0;
 let rightExpanded=false, preExpandCols=null;
 
 function addLog(msg,level='info'){
@@ -686,7 +686,10 @@ function sopTabDragStart(key,e){
   dragSopKey=key;
   e.dataTransfer.effectAllowed='move';
   e.dataTransfer.setData('text/plain',key);
-  // defer class so drag ghost captures the normal appearance
+  // capture width before ghost is taken
+  const srcEl=document.querySelector(`.right-tab[data-key="${CSS.escape(key)}"]`);
+  dragSopWidth=srcEl?srcEl.getBoundingClientRect().width:100;
+  // defer fade so the drag ghost still looks normal
   setTimeout(()=>{
     document.querySelectorAll('.right-tab[data-key]').forEach(el=>{
       if(el.dataset.key===key) el.classList.add('sop-dragging');
@@ -696,14 +699,30 @@ function sopTabDragStart(key,e){
 function sopTabDragOver(key,e){
   e.preventDefault();
   e.dataTransfer.dropEffect='move';
-  document.querySelectorAll('.right-tab.drop-left,.right-tab.drop-right').forEach(el=>{
-    el.classList.remove('drop-left','drop-right');
-  });
   if(key===dragSopKey) return;
-  const el=document.querySelector(`.right-tab[data-key="${CSS.escape(key)}"]`);
-  if(!el) return;
-  const mid=el.getBoundingClientRect().left+el.getBoundingClientRect().width/2;
-  el.classList.add(e.clientX<mid?'drop-left':'drop-right');
+  const hoverEl=document.querySelector(`.right-tab[data-key="${CSS.escape(key)}"]`);
+  if(!hoverEl) return;
+  const rect=hoverEl.getBoundingClientRect();
+  const insertBefore=e.clientX<rect.left+rect.width/2;
+  const fromIdx=sopTabs.findIndex(t=>t.key===dragSopKey);
+  const toIdx=sopTabs.findIndex(t=>t.key===key);
+  // effective insertion index in the array
+  const insertIdx=insertBefore?toIdx:toIdx+1;
+  // slide neighbours to open a gap at the target slot
+  document.querySelectorAll('.right-tab[data-key]').forEach(tabEl=>{
+    const k=tabEl.dataset.key;
+    if(k===dragSopKey) return;
+    const idx=sopTabs.findIndex(t=>t.key===k);
+    let shift=0;
+    if(fromIdx<insertIdx){
+      // dragging right: tabs between source+1 and insert-1 slide left
+      if(idx>fromIdx&&idx<insertIdx) shift=-dragSopWidth;
+    } else {
+      // dragging left: tabs between insert and source-1 slide right
+      if(idx>=insertIdx&&idx<fromIdx) shift=dragSopWidth;
+    }
+    tabEl.style.transform=shift?`translateX(${shift}px)`:'none';
+  });
 }
 function sopTabDrop(key,e){
   e.preventDefault();
@@ -725,8 +744,10 @@ function sopTabDragEnd(){
 }
 function _sopDragClean(){
   dragSopKey=null;
-  document.querySelectorAll('.right-tab.sop-dragging,.right-tab.drop-left,.right-tab.drop-right').forEach(el=>{
+  dragSopWidth=0;
+  document.querySelectorAll('.right-tab[data-key]').forEach(el=>{
     el.classList.remove('sop-dragging','drop-left','drop-right');
+    el.style.transform='';
   });
 }
 // ─────────────────────────────────────────────────────────────────────────────
