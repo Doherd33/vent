@@ -225,12 +225,19 @@ body {
 .draft-editor:focus { border-color: #007acc; }
 .draft-status { font-size: 10px; color: #5a5a5a; margin-top: 5px; }
 /* annotations */
-.annotation-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.annotation-item { background: #1e1e1e; border: 1px solid #3c3c3c; border-left: 3px solid #c586c0; border-radius: 0 2px 2px 0; padding: 8px 12px; }
-.annotation-meta { font-size: 10px; color: #5a5a5a; margin-bottom: 4px; }
-.annotation-text { font-size: 11px; color: #cccccc; line-height: 1.5; }
+.annotation-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.annotation-item { background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 0 3px 3px 0; padding: 10px 12px 10px 14px; position: relative; }
+.annotation-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.author-avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; letter-spacing: 0; }
+.author-name { font-size: 11px; font-weight: 600; }
+.role-badge-sm { font-size: 9px; padding: 1px 6px; border-radius: 2px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.annotation-time { font-size: 10px; color: #5a5a5a; margin-left: auto; }
+.annotation-text { font-size: 11px; color: #cccccc; line-height: 1.6; padding-left: 30px; }
+.annotation-reactions { display: flex; gap: 6px; margin-top: 8px; padding-left: 30px; }
+.reaction-chip { font-size: 10px; color: #6c6c6c; background: #2d2d30; border: 1px solid #3c3c3c; border-radius: 10px; padding: 1px 8px; cursor: pointer; transition: all 0.12s; user-select: none; }
+.reaction-chip:hover { color: #cccccc; border-color: #666; }
+.reaction-chip.reacted { background: rgba(0,122,204,0.15); border-color: #007acc; color: #007acc; }
 .annotation-input { width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px; color: #cccccc; font-size: 11px; font-family: inherit; padding: 8px 10px; resize: none; outline: none; margin-bottom: 6px; transition: border-color 0.15s; }
-.annotation-input:focus { border-color: #c586c0; }
 /* tab status badge */
 .tab-status { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .tab-status.accepted { background: #4ec9b0; }
@@ -704,7 +711,7 @@ function showSopContent(key){
     : '';
   // annotation count
   const annoCount=st.annotations.length;
-  const annoSummary=annoCount?`<div class="sop-block"><div class="sop-block-label">Annotations (${annoCount})</div><div class="annotation-list">${st.annotations.map(a=>`<div class="annotation-item"><div class="annotation-meta">${a.time} &middot; ${a.author}</div><div class="annotation-text">${a.text}</div></div>`).join('')}</div></div>`:'';
+  const annoSummary=annoCount?`<div class="sop-block"><div class="sop-block-label">Annotations (${annoCount})</div><div class="annotation-list">${st.annotations.map(a=>renderAnnotationHTML(a)).join('')}</div></div>`:'';
   document.getElementById('rightContent').innerHTML=`<div class="fade-in">
     <div class="action-bar">
       <button class="action-btn primary" onclick="rtAction('draft')">&#9998;&nbsp; Draft</button>
@@ -747,6 +754,62 @@ function closeRight(){
   const el=document.getElementById('titleUser');
   if(el)el.textContent=(name||'')+' \u00b7 '+(labels[role]||role);
 })();
+
+// ─── AUTHOR IDENTITY SYSTEM ──────────────────────────────
+const AUTHOR_PALETTE = ['#007acc','#c586c0','#4ec9b0','#ce9178','#9cdcfe','#d7ba7d','#f48771','#4fc1ff'];
+function authorColor(name){
+  // deterministic colour from name — same person always gets same colour
+  let hash=0; for(let i=0;i<name.length;i++) hash=(hash*31+name.charCodeAt(i))>>>0;
+  return AUTHOR_PALETTE[hash % AUTHOR_PALETTE.length];
+}
+function authorInitials(name){
+  const parts=name.trim().split(/\s+/);
+  return parts.length>=2 ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+}
+const ROLE_META={
+  operator: {label:'Operator',   bg:'rgba(78,201,176,0.15)',  color:'#4ec9b0'},
+  qa:       {label:'QA',         bg:'rgba(0,122,204,0.2)',    color:'#007acc'},
+  director: {label:'Director',   bg:'rgba(244,71,71,0.15)',   color:'#f44747'},
+  msat:     {label:'MSAT',       bg:'rgba(206,145,120,0.2)',  color:'#ce9178'},
+  engineering:{label:'Engineering',bg:'rgba(78,201,176,0.12)',color:'#4ec9b0'},
+  admin:    {label:'Admin',      bg:'rgba(215,186,125,0.18)', color:'#d7ba7d'},
+};
+function roleMeta(role){ return ROLE_META[role]||{label: role||'User', bg:'rgba(100,100,100,0.2)', color:'#8e8e8e'}; }
+
+function renderAnnotationHTML(a){
+  const col=authorColor(a.author);
+  const rm=roleMeta(a.role);
+  const initials=authorInitials(a.author);
+  const reacted=(a.reactions||[]);
+  const thumbsUp=reacted.includes('👍'); const noteIt=reacted.includes('📌');
+  return `<div class="annotation-item" style="border-left:3px solid ${col}">`+
+    `<div class="annotation-header">`+
+    `<div class="author-avatar" style="background:${col}22;color:${col};border:1.5px solid ${col}40">${initials}</div>`+
+    `<span class="author-name" style="color:${col}">${a.author}</span>`+
+    `<span class="role-badge-sm" style="background:${rm.bg};color:${rm.color}">${rm.label}</span>`+
+    `<span class="annotation-time">${a.date?a.date+' &middot; ':''} ${a.time}</span>`+
+    `</div>`+
+    `<div class="annotation-text">${a.text}</div>`+
+    `<div class="annotation-reactions">`+
+    `<span class="reaction-chip${thumbsUp?' reacted':''}" onclick="reactAnnotation(event,'${a._id}','👍')">👍 ${thumbsUp?'1':'+'}</span>`+
+    `<span class="reaction-chip${noteIt?' reacted':''}" onclick="reactAnnotation(event,'${a._id}','📌')">📌 ${noteIt?'1':'+'}</span>`+
+    `</div></div>`;
+}
+
+// Simple in-memory reaction toggle
+function reactAnnotation(e,id,emoji){
+  e.stopPropagation();
+  for(const key of Object.keys(sopTabState)){
+    const st=sopTabState[key];
+    const a=st.annotations.find(a=>a._id===id);
+    if(a){
+      if(!a.reactions) a.reactions=[];
+      const idx=a.reactions.indexOf(emoji);
+      idx>=0 ? a.reactions.splice(idx,1) : a.reactions.push(emoji);
+      displayRightContent(key); return;
+    }
+  }
+}
 
 // ─── RIGHT TOOLBAR ───────────────────────────────────────
 // Per-tab state: mode, draft text, annotations, accept/reject
@@ -936,28 +999,46 @@ function confirmReject(key){
 function renderAnnotateForm(key){
   const m=sopMeta(key); if(!m) return;
   const st=getTabState(key);
-  const existing=st.annotations.map(a=>`<div class="annotation-item"><div class="annotation-meta">${a.time} &middot; ${a.author}</div><div class="annotation-text">${a.text}</div></div>`).join('');
+  const existing=st.annotations.map(a=>renderAnnotationHTML(a)).join('');
+  const name=localStorage.getItem('vent_name')||'QA Reviewer';
+  const role=localStorage.getItem('vent_role')||'qa';
+  const col=authorColor(name); const rm=roleMeta(role); const initials=authorInitials(name);
   document.getElementById('rightContent').innerHTML=`<div class="fade-in">
     <div class="action-bar">
       <button class="action-btn" onclick="getTabState('${key}').mode='view';displayRightContent('${key}')">&#8592; Back to View</button>
     </div>
-    <div class="sop-block-label" style="margin-bottom:8px">${m.sop.code} &mdash; Annotations</div>
-    <textarea class="annotation-input" id="annotateTA" rows="4" placeholder="Add a comment or annotation&#8230;"></textarea>
-    <div class="action-bar">
-      <button class="action-btn primary" onclick="saveAnnotation('${key}')">&#128172;&nbsp; Add Annotation</button>
+    <div class="sop-block-label" style="margin-bottom:10px">${m.sop.code} &mdash; Annotations</div>
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:6px">
+      <div class="author-avatar" style="background:${col}22;color:${col};border:1.5px solid ${col}40;margin-top:6px;flex-shrink:0">${initials}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+          <span style="font-size:11px;font-weight:600;color:${col}">${name}</span>
+          <span class="role-badge-sm" style="background:${rm.bg};color:${rm.color}">${rm.label}</span>
+          <span style="font-size:10px;color:#5a5a5a">posting as</span>
+        </div>
+        <textarea class="annotation-input" id="annotateTA" rows="4" placeholder="Add a comment or annotation&#8230;" style="border-color:#3c3c3c" onfocus="this.style.borderColor='${col}'" onblur="this.style.borderColor='#3c3c3c'"></textarea>
+      </div>
     </div>
-    ${existing?`<div class="sop-block-label" style="margin-top:12px;margin-bottom:6px">Existing Annotations</div><div class="annotation-list">${existing}</div>`:''}
+    <div class="action-bar" style="padding-left:32px">
+      <button class="action-btn primary" onclick="saveAnnotation('${key}')" style="background:${col};border-color:${col}">&#128172;&nbsp; Submit</button>
+    </div>
+    ${existing?`<div class="sop-block-label" style="margin-top:16px;margin-bottom:8px">Thread &mdash; ${st.annotations.length} comment${st.annotations.length!==1?'s':''}</div><div class="annotation-list">${existing}</div>`:''}
   </div>`;
 }
 
 function saveAnnotation(key){
   const ta=document.getElementById('annotateTA');
   if(!ta||!ta.value.trim()) return;
-  const name=localStorage.getItem('vent_name')||'QA';
+  const name=localStorage.getItem('vent_name')||'QA Reviewer';
+  const role=localStorage.getItem('vent_role')||'qa';
   getTabState(key).annotations.push({
+    _id: Date.now().toString(36),
     text: ta.value.trim(),
     time: new Date().toLocaleTimeString('en-GB',{hour12:false}),
-    author: name
+    date: new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),
+    author: name,
+    role: role,
+    reactions: []
   });
   const m=sopMeta(key);
   addLog('Annotation added: '+(m?m.sop.code:key),'info');
