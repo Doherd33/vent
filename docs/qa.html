@@ -114,6 +114,13 @@ body {
 .submission-list::-webkit-scrollbar { width: 4px; }
 .submission-list::-webkit-scrollbar-thumb { background: #424242; border-radius: 2px; }
 
+.group-header { display: flex; align-items: center; padding: 10px 10px 4px 8px; cursor: pointer; user-select: none; color: #6c6c6c; font-size: 10px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase; gap: 6px; transition: color 0.12s; }
+.group-header:hover { color: #cccccc; }
+.group-chevron { font-size: 8px; transition: transform 0.15s ease; display: inline-block; color: #5a5a5a; flex-shrink: 0; }
+.group-chevron.group-collapsed { transform: rotate(-90deg); }
+.group-count { margin-left: auto; background: #3c3c3c; color: #8e8e8e; border-radius: 8px; padding: 1px 7px; font-size: 9px; font-weight: 600; flex-shrink: 0; }
+.group-items { margin-bottom: 4px; }
+
 .sub-card {
   padding: 8px 10px; border-radius: 2px; margin-bottom: 1px;
   cursor: pointer; transition: background 0.1s;
@@ -422,7 +429,7 @@ body {
 <script>
 const MOCK = [
   {
-    id:'VNT-0047', priority:'High', area:'Upstream', operator:'Liu Chen', date:'21 Feb 06:42',
+    id:'VNT-0047', priority:'High', area:'Upstream', operator:'Liu Chen', date:'23 Feb 06:42',
     title:'DO Probe Erratic Fluctuations — N-2 Bioreactor',
     obs:'Dissolved oxygen probe on N-2 bioreactor (500L) showing erratic fluctuations between 18% and 67% over the past 4 hours. Sparging rate unchanged. Probe last calibrated on Day 0 per SOP. Currently Day 6 of perfusion run with VCD at 45x10^6 cells/mL. DO control loop has been in manual override since 04:15.',
     sops:[
@@ -436,7 +443,7 @@ const MOCK = [
     ]
   },
   {
-    id:'VNT-0046', priority:'High', area:'Upstream', operator:'Liu Chen', date:'20 Feb 14:18',
+    id:'VNT-0046', priority:'High', area:'Upstream', operator:'Liu Chen', date:'23 Feb 11:05',
     title:'Excessive Foam Formation — N-1 Bioreactor',
     obs:'Excessive foam formation in N-1 bioreactor (50L) seed train at approximately 6 hours post-inoculation. Antifoam C Emulsion added at standard 0.1% v/v per SOP but foam layer persisting at 8cm depth. No other process parameters outside range. Agitation 120 RPM, DO 40%, pH 7.15.',
     sops:[
@@ -448,7 +455,7 @@ const MOCK = [
     ]
   },
   {
-    id:'VNT-0045', priority:'Medium', area:'Media Prep', operator:'Aoife Brennan', date:'20 Feb 15:03',
+    id:'VNT-0045', priority:'Medium', area:'Media Prep', operator:'Aoife Brennan', date:'22 Feb 15:03',
     title:'Basal Media Hold Temperature Excursion — MP-04',
     obs:'Basal media hold temperature in vessel MP-04 measured 22.4C at 14:30. Set point is 20C +/-1C per SOP-UP-004 — deviation is +2.4C above upper limit. Vessel has been in hold for 9 hours. Media is scheduled for use in N-2 production bioreactor at 08:00 tomorrow.',
     sops:[
@@ -461,7 +468,7 @@ const MOCK = [
     ]
   },
   {
-    id:'VNT-0044', priority:'High', area:'Downstream', operator:'Ciarán Murphy', date:'19 Feb 10:45',
+    id:'VNT-0044', priority:'High', area:'Downstream', operator:'Ciarán Murphy', date:'21 Feb 10:45',
     title:'Harvest Centrifuge Yield Below Threshold — 2nd Batch',
     obs:'Harvest centrifuge yield for DSP batch 2024-DS-089 calculated at 73% based on pre/post cell counts. SOP specifies >=88% yield for this step. Bowl speed 8,400 RPM and feed rate 12 L/hr were both within specification. This is the second consecutive batch below threshold — batch 2024-DS-086 yielded 79%.',
     sops:[
@@ -475,7 +482,7 @@ const MOCK = [
     ]
   },
   {
-    id:'VNT-0043', priority:'Low', area:'QC', operator:'Dr. Sarah Park', date:'18 Feb 09:30',
+    id:'VNT-0043', priority:'Low', area:'QC', operator:'Dr. Sarah Park', date:'19 Feb 09:30',
     title:'Vi-Cell vs Manual Count Variance — 2.4% Delta',
     obs:'Vi-Cell XR automated counter gave 94.2% viability vs 91.8% from manual haemocytometer count on the same sample. Delta is 2.4%. Both methods are within the acceptable range (>=85%), but the gap between methods is larger than the typical <=1% variance we normally observe.',
     sops:[
@@ -488,6 +495,29 @@ const MOCK = [
 ];
 
 let filter='all', selected=null, selSopIdx=null, logLines=[], curBottom='log';
+let collapsedGroups={};
+
+const _MONTH={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+function _parseSub(s){
+  const [d,m,t]=s.split(' '); const [h,mi]=t.split(':');
+  return new Date(2026,_MONTH[m],+d,+h,+mi);
+}
+function _groupLabel(dateStr){
+  const d=_parseSub(dateStr);
+  const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const dc=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const diffDays=Math.round((today-dc)/864e5);
+  if(diffDays===0) return 'Today';
+  if(diffDays===1) return 'Yesterday';
+  if(diffDays<7)  return 'This Week';
+  return 'Earlier';
+}
+function toggleGroup(label,e){
+  e.stopPropagation();
+  collapsedGroups[label]=!collapsedGroups[label];
+  renderLeft();
+}
 let openTabs=[], activeTabId=null;
 let sopTabs=[], activeSopKey=null;
 let dragSopKey=null, dragSopWidth=0;
@@ -519,18 +549,37 @@ function switchBottom(tab,el){
 function doExport(fmt){addLog('Export requested: '+fmt.toUpperCase(),'info');}
 
 function renderLeft(){
+  const ORDER=['Today','Yesterday','This Week','Earlier'];
   const filtered=filter==='all'?MOCK:MOCK.filter(s=>s.priority===filter);
   document.getElementById('subCount').textContent=filtered.length;
   document.getElementById('statusSubs').textContent=MOCK.length+' submissions loaded';
-  document.getElementById('subList').innerHTML=filtered.map(s=>{
-    const isActive=activeTabId===s.id;
-    const isOpen=openTabs.includes(s.id)&&!isActive;
-    return `<div class="sub-card ${isActive?'active':''}" onclick="selectSub('${s.id}')" style="${isOpen?'border-left-color:#555;':''}">`+
-      `<div class="card-top"><span class="card-id">${s.id}</span><span class="risk-badge risk-${s.priority}">${s.priority}</span></div>`+
-      `<div class="card-title">${s.title}</div>`+
-      `<div class="card-meta">${s.date} &middot; ${s.operator}${isOpen?' &middot; <span style="color:#5a9bc7;font-size:9px">OPEN</span>':''}</div>`+
+  const groups={};
+  filtered.forEach(s=>{ const g=_groupLabel(s.date); if(!groups[g])groups[g]=[]; groups[g].push(s); });
+  let html='';
+  ORDER.forEach(label=>{
+    const items=groups[label];
+    if(!items||!items.length) return;
+    const col=!!collapsedGroups[label];
+    html+=`<div class="group-header" onclick="toggleGroup('${label}',event)">`+
+      `<span class="group-chevron${col?' group-collapsed':''}">&#9660;</span>`+
+      `<span>${label}</span>`+
+      `<span class="group-count">${items.length}</span>`+
       `</div>`;
-  }).join('');
+    if(!col){
+      html+=`<div class="group-items">`;
+      items.forEach(s=>{
+        const isActive=activeTabId===s.id;
+        const isOpen=openTabs.includes(s.id)&&!isActive;
+        html+=`<div class="sub-card ${isActive?'active':''}" onclick="selectSub('${s.id}')" style="${isOpen?'border-left-color:#555;':''}">`+
+          `<div class="card-top"><span class="card-id">${s.id}</span><span class="risk-badge risk-${s.priority}">${s.priority}</span></div>`+
+          `<div class="card-title">${s.title}</div>`+
+          `<div class="card-meta">${s.date} &middot; ${s.operator}${isOpen?' &middot; <span style="color:#5a9bc7;font-size:9px">OPEN</span>':''}</div>`+
+          `</div>`;
+      });
+      html+=`</div>`;
+    }
+  });
+  document.getElementById('subList').innerHTML=html||'<div style="padding:24px 10px;color:#5a5a5a;font-size:11px;text-align:center">No submissions match filter</div>';
 }
 
 function setFilter(f,btn){
