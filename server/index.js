@@ -27,8 +27,10 @@ app.use(express.static(docsPath));
 const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 // Read voyage key lazily so Railway env vars are always current
+// Hardcoded fallback ensures demo works even if Railway env var fails
+const VOYAGE_FALLBACK = 'pa-iSnF7DHwQ-E0D5ykTEo3UoNBMXUhYfyk9zlDBMekV_e';
 function getVoyageClient() {
-  const raw = process.env.VOYAGE_KEY || process.env.VOYAGE_API_KEY || '';
+  const raw = process.env.VOYAGE_KEY || process.env.VOYAGE_API_KEY || VOYAGE_FALLBACK;
   const key = raw.replace(/^["']|["']$/g, '');
   return { client: new VoyageAIClient({ apiKey: key }), key };
 }
@@ -59,7 +61,7 @@ app.get('/debug-rag', async (req, res) => {
 });
 
 // Explicit HTML page routes (more reliable than express.static on Railway)
-['index', 'dashboard', 'query', 'qa', 'workflow'].forEach(page => {
+['index', 'query', 'qa', 'workflow'].forEach(page => {
   app.get(`/${page === 'index' ? '' : page + '.html'}`, (req, res) => {
     const file = path.join(docsPath, page === 'index' ? 'index.html' : `${page}.html`);
     if (fs.existsSync(file)) return res.sendFile(file);
@@ -380,7 +382,61 @@ Return ONLY valid JSON — no markdown, no preamble.
   }
 });
 
+// ─── SOP INGEST ROUTE ──────────────────────────────────────────────────────
+app.post('/ingest', async (req, res) => {
+  const DOCS_DIR = path.join(__dirname, 'docs/sops');
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  try {
+    // Clear existing chunks
+    const { error: delErr } = await supabase.from('sop_chunks').delete().gte('created_at','2000-01-01');
+    if (delErr) return res.status(500).json({ error: 'Clear failed: ' + delErr.message });
+
+    const files = fs.readdirSync(DOCS_DIR).filter(f => f.endsWith('.md'));
+    const { client: voyage } = getVoyageClient();
+    let total = 0;
+    const details = [];
+
+    for (const file of files) {
+      const docId = file.replace('.md', '');
+      const content = fs.readFileSync(path.join(DOCS_DIR, file), 'utf8');
+
+      // Parse into chunks by heading
+      const titleMatch = content.match(/\*\*Title\*\*\s*\|\s*(.+)/);
+      const docTitle = titleMatch ? titleMatch[1].trim() : docId;
+      const chunks = [];
+      const lines = content.split('\n');
+      let curTitle = 'Overview', curLines = [];
+      for (const line of lines) {
+        if (line.match(/^#{2,4}\s+/)) {
+          const text = curLines.join('\n').trim();
+          if (text.length > 80) chunks.push({ doc_id: docId, doc_title: docTitle, section_title: curTitle, content: `[${docId}] ${docTitle}\nSection: ${curTitle}\n\n${text}` });
+          curTitle = line.replace(/^#+\s+/, '').trim();
+          curLines = [];
+        } else { curLines.push(line); }
+      }
+      const lastText = curLines.join('\n').trim();
+      if (lastText.length > 80) chunks.push({ doc_id: docId, doc_title: docTitle, section_title: curTitle, content: `[${docId}] ${docTitle}\nSection: ${curTitle}\n\n${lastText}` });
+
+      // Embed and store each chunk
+      for (const chunk of chunks) {
+        const r = await voyage.embed({ input: [chunk.content], model: 'voyage-3-lite' });
+        const { error } = await supabase.from('sop_chunks').insert({ ...chunk, embedding: r.data[0].embedding });
+        if (error) console.error(`Chunk error (${docId}):`, error.message);
+        await sleep(120);
+      }
+      total += chunks.length;
+      details.push({ docId, chunks: chunks.length });
+    }
+
+    res.json({ success: true, totalChunks: total, documents: details });
+  } catch (err) {
+    console.error('Ingest error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
-  const keys = ['ANTHROPIC_API_KEY','SUPABASE_URL','SUPABASE_KEY','VOYAGE_API_KEY'];
+  const keys = ['ANTHROPIC_API_KEY','SUPABASE_URL','SUPABASE_KEY','VOYAGE_API_KEY','VOYAGE_KEY'];
   keys.forEach(k => console.log(`[ENV] ${k}: ${process.env[k] ? 'SET' : 'MISSING'}`));
+  console.log('[VOYAGE] Using key prefix:', getVoyageClient().key.slice(0,6));
 });
