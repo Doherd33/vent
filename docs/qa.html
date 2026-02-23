@@ -203,6 +203,46 @@ body {
 .right-content { flex: 1; overflow-y: auto; padding: 16px; }
 .right-content::-webkit-scrollbar { width: 4px; }
 .right-content::-webkit-scrollbar-thumb { background: #424242; border-radius: 2px; }
+/* action bar */
+.action-bar { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.action-btn { padding: 4px 12px; border-radius: 2px; border: 1px solid #454545; background: #2d2d30; color: #cccccc; font-size: 11px; cursor: pointer; transition: all 0.12s; font-family: inherit; }
+.action-btn:hover { background: #3c3c3c; color: #fff; border-color: #666; }
+.action-btn.primary { background: #007acc; border-color: #007acc; color: #fff; }
+.action-btn.primary:hover { background: #1a8ad4; }
+.action-btn.success { background: rgba(78,201,176,0.15); border-color: #4ec9b0; color: #4ec9b0; }
+.action-btn.success:hover { background: rgba(78,201,176,0.28); }
+.action-btn.danger  { background: rgba(244,71,71,0.12);  border-color: #f44747; color: #f44747; }
+.action-btn.danger:hover  { background: rgba(244,71,71,0.25); }
+/* diff view */
+.diff-view { font-family: "Courier New", monospace; font-size: 11px; line-height: 1.7; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px; overflow: auto; }
+.diff-line { display: flex; gap: 0; padding: 0 10px; white-space: pre; }
+.diff-line.dl-ctx { color: #8e8e8e; }
+.diff-line.dl-del { background: rgba(244,71,71,0.12); color: #f47777; border-left: 3px solid #f44747; padding-left: 7px; }
+.diff-line.dl-add { background: rgba(78,201,176,0.1); color: #4ec9b0; border-left: 3px solid #4ec9b0; padding-left: 7px; }
+.diff-gutter { width: 28px; flex-shrink: 0; color: #5a5a5a; user-select: none; font-size: 10px; padding-right: 8px; text-align: right; }
+/* draft editor */
+.draft-editor { width: 100%; min-height: 160px; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px; color: #d4d4d4; font-size: 11px; font-family: "Courier New", monospace; padding: 10px 12px; resize: vertical; line-height: 1.7; outline: none; transition: border-color 0.15s; }
+.draft-editor:focus { border-color: #007acc; }
+.draft-status { font-size: 10px; color: #5a5a5a; margin-top: 5px; }
+/* annotations */
+.annotation-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.annotation-item { background: #1e1e1e; border: 1px solid #3c3c3c; border-left: 3px solid #c586c0; border-radius: 0 2px 2px 0; padding: 8px 12px; }
+.annotation-meta { font-size: 10px; color: #5a5a5a; margin-bottom: 4px; }
+.annotation-text { font-size: 11px; color: #cccccc; line-height: 1.5; }
+.annotation-input { width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px; color: #cccccc; font-size: 11px; font-family: inherit; padding: 8px 10px; resize: none; outline: none; margin-bottom: 6px; transition: border-color 0.15s; }
+.annotation-input:focus { border-color: #c586c0; }
+/* tab status badge */
+.tab-status { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.tab-status.accepted { background: #4ec9b0; }
+.tab-status.rejected { background: #f44747; }
+.tab-status.draft    { background: #ffc64d; }
+/* version history */
+.version-list { display: flex; flex-direction: column; gap: 1px; }
+.version-item { padding: 9px 12px; background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; transition: background 0.1s; }
+.version-item:hover { background: #2a2d2e; }
+.version-dot { width: 8px; height: 8px; border-radius: 50%; background: #3c3c3c; border: 2px solid #007acc; flex-shrink: 0; margin-top: 4px; }
+.version-meta { font-size: 10px; color: #5a5a5a; margin-bottom: 2px; }
+.version-label { font-size: 11px; color: #cccccc; }
 .sop-doc-title { font-size: 13px; font-weight: 600; color: #e0e0e0; margin-bottom: 3px; }
 .sop-doc-meta  { font-size: 11px; color: #6c6c6c; margin-bottom: 16px; }
 .sop-block { margin-bottom: 16px; }
@@ -302,18 +342,26 @@ body {
       <div class="right-toolbar">
         <!-- + button -->
         <div class="rt-btn-group">
-          <button class="rt-btn" id="rtBtnAdd" onclick="toggleRtDropdown('rtDropAdd',event)" title="Add SOP">+</button>
+          <button class="rt-btn" id="rtBtnAdd" onclick="toggleRtDropdown('rtDropAdd',event)" title="Open / Add">+</button>
           <div class="rt-dropdown" id="rtDropAdd">
             <div class="rt-dropdown-item" onclick="rtAction('browse')">&#128269;&nbsp; Browse SOP Database</div>
             <div class="rt-dropdown-item" onclick="rtAction('search')">&#35;&nbsp; Search by Code</div>
+            <div class="rt-dropdown-sep"></div>
+            <div class="rt-dropdown-item" onclick="rtAction('compare')">&#9616;&#9612;&nbsp; Compare: Current vs Suggested</div>
+            <div class="rt-dropdown-item" onclick="rtAction('version')">&#128336;&nbsp; SOP Version History</div>
             <div class="rt-dropdown-sep"></div>
             <div class="rt-dropdown-item rt-disabled">&#8627;&nbsp; Import from file &mdash; coming soon</div>
           </div>
         </div>
         <!-- ... button -->
         <div class="rt-btn-group">
-          <button class="rt-btn" id="rtBtnMore" onclick="toggleRtDropdown('rtDropMore',event)" title="More actions">&middot;&middot;&middot;</button>
+          <button class="rt-btn" id="rtBtnMore" onclick="toggleRtDropdown('rtDropMore',event)" title="Actions">&middot;&middot;&middot;</button>
           <div class="rt-dropdown" id="rtDropMore">
+            <div class="rt-dropdown-item" onclick="rtAction('draft')">&#9998;&nbsp; Draft Amendment</div>
+            <div class="rt-dropdown-item" onclick="rtAction('accept')">&#10003;&nbsp; Accept Change</div>
+            <div class="rt-dropdown-item" onclick="rtAction('reject')">&#10007;&nbsp; Reject Change</div>
+            <div class="rt-dropdown-item" onclick="rtAction('annotate')">&#128172;&nbsp; Add Annotation</div>
+            <div class="rt-dropdown-sep"></div>
             <div class="rt-dropdown-item" onclick="rtAction('undo')">&#8629;&nbsp; Undo Last Change</div>
             <div class="rt-dropdown-sep"></div>
             <div class="rt-dropdown-item" onclick="rtAction('history')">&#8987;&nbsp; Change History</div>
@@ -574,7 +622,7 @@ function openSop(idx){
   activeSopKey=key;
   renderCenter();
   renderSopTabs();
-  showSopContent(key);
+  displayRightContent(key);
   // open right panel if not already open
   const wb=document.getElementById('workbench');
   if(!wb.classList.contains('sop-open')){
@@ -594,7 +642,7 @@ function switchSopTab(key,e){
   if(t && selected && t.subId===selected.id) selSopIdx=t.idx;
   renderSopTabs();
   renderCenter();
-  showSopContent(key);
+  displayRightContent(key);
   if(t) document.getElementById('statusSop').textContent='Viewing '+t.code;
 }
 
@@ -608,7 +656,7 @@ function closeSopTab(key,e){
       activeSopKey=next.key;
       selSopIdx=next.idx;
       renderSopTabs();
-      showSopContent(next.key);
+      displayRightContent(next.key);
       document.getElementById('statusSop').textContent='Viewing '+next.code;
     } else {
       activeSopKey=null; selSopIdx=null;
@@ -628,8 +676,12 @@ function renderSopTabs(){
   }
   document.getElementById('rightTabsInner').innerHTML=sopTabs.map(t=>{
     const active=t.key===activeSopKey;
+    const st=sopTabState[t.key];
+    const badge=st?(st.accepted?'accepted':st.rejected?'rejected':st.draft?'draft':null):null;
+    const modeMark=st&&st.mode!=='view'?' <span style="color:#ffc64d;font-size:9px">\u25cf</span>':'';
     return `<div class="right-tab ${active?'active':''}" onclick="switchSopTab('${t.key}',event)">`+
-      `<span>${t.code} <span style="color:#5a5a5a;font-size:10px">${t.section}</span></span>`+
+      (badge?`<span class="tab-status ${badge}"></span>`:'')+
+      `<span>${t.code} <span style="color:#5a5a5a;font-size:10px">${t.section}</span>${modeMark}</span>`+
       `<button class="right-tab-close" onclick="closeSopTab('${t.key}',event)" title="Close">&#10005;</button>`+
       `</div>`;
   }).join('');
@@ -642,12 +694,32 @@ function showSopContent(key){
   if(!sub) return;
   const sop=sub.sops[t.idx];
   const content=SOP_CONTENT[sop.code]||{current:'Content not available.',suggested:'No suggestion defined.'};
+  const st=getTabState(key);
+  const sugText=st.draft||content.suggested;
+  // status banner
+  const statusBanner=st.accepted
+    ? `<div style="background:rgba(78,201,176,0.12);border:1px solid #4ec9b0;border-radius:2px;padding:8px 12px;font-size:11px;color:#4ec9b0;margin-bottom:12px">&#10003;&nbsp; Change accepted — pending ratification</div>`
+    : st.rejected
+    ? `<div style="background:rgba(244,71,71,0.1);border:1px solid #f44747;border-radius:2px;padding:8px 12px;font-size:11px;color:#f44747;margin-bottom:12px">&#10007;&nbsp; Change rejected${st.rejectReason?' &mdash; '+st.rejectReason:''}</div>`
+    : '';
+  // annotation count
+  const annoCount=st.annotations.length;
+  const annoSummary=annoCount?`<div class="sop-block"><div class="sop-block-label">Annotations (${annoCount})</div><div class="annotation-list">${st.annotations.map(a=>`<div class="annotation-item"><div class="annotation-meta">${a.time} &middot; ${a.author}</div><div class="annotation-text">${a.text}</div></div>`).join('')}</div></div>`:'';
   document.getElementById('rightContent').innerHTML=`<div class="fade-in">
+    <div class="action-bar">
+      <button class="action-btn primary" onclick="rtAction('draft')">&#9998;&nbsp; Draft</button>
+      <button class="action-btn" onclick="rtAction('compare')">&#9616;&#9612;&nbsp; Compare</button>
+      <button class="action-btn success" onclick="rtAction('accept')">&#10003;&nbsp; Accept</button>
+      <button class="action-btn danger"  onclick="rtAction('reject')">&#10007;&nbsp; Reject</button>
+      <button class="action-btn" onclick="rtAction('annotate')">&#128172;&nbsp; Annotate${annoCount?' ('+annoCount+')':''}</button>
+    </div>
+    ${statusBanner}
     <div class="sop-doc-title">${sop.title}</div>
     <div class="sop-doc-meta">${sop.section} &middot; <span style="color:#5a9bc7;font-size:10px">${t.subId}</span> &middot; Rev 4.1 &middot; Last reviewed 2023-09-12</div>
     <div class="sop-block"><div class="sop-block-label">Current Text</div><div class="sop-text">${content.current}</div></div>
     <div class="sop-block"><div class="sop-block-label">Identified Issue</div><div class="sop-highlight">${sop.issue}</div></div>
-    <div class="sop-block"><div class="sop-block-label">Suggested Addition</div><div class="sop-suggested">${content.suggested}</div></div>
+    <div class="sop-block"><div class="sop-block-label">${st.draft?'Draft Amendment':'Suggested Addition'}${st.draft?' <span style="color:#ffc64d;font-size:9px">&#9679; DRAFT</span>':''}</div><div class="sop-suggested">${sugText}</div></div>
+    ${annoSummary}
   </div>`;
 }
 
@@ -677,6 +749,13 @@ function closeRight(){
 })();
 
 // ─── RIGHT TOOLBAR ───────────────────────────────────────
+// Per-tab state: mode, draft text, annotations, accept/reject
+const sopTabState = {}; // key → { mode, draft, annotations, accepted, rejected, rejectReason }
+function getTabState(key){
+  if(!sopTabState[key]) sopTabState[key]={ mode:'view', draft:null, annotations:[], accepted:false, rejected:false, rejectReason:'' };
+  return sopTabState[key];
+}
+
 function toggleRtDropdown(id,e){
   e.stopPropagation();
   const drop=document.getElementById(id);
@@ -686,18 +765,203 @@ function toggleRtDropdown(id,e){
   document.querySelectorAll('.rt-btn').forEach(b=>b.classList.remove('open'));
   if(!wasOpen){ drop.classList.add('visible'); btn.classList.add('open'); }
 }
+
 function rtAction(action){
   document.querySelectorAll('.rt-dropdown').forEach(d=>d.classList.remove('visible'));
   document.querySelectorAll('.rt-btn').forEach(b=>b.classList.remove('open'));
+  if(!activeSopKey && ['compare','version','draft','accept','reject','annotate','undo'].includes(action)){
+    addLog('No SOP tab open — open a SOP first','warn'); return;
+  }
+  const st = activeSopKey ? getTabState(activeSopKey) : null;
   if(action==='browse')      addLog('Browse SOP database \u2014 coming soon','info');
   else if(action==='search') addLog('Search by code \u2014 coming soon','info');
-  else if(action==='undo')   addLog('Undo last change \u2014 coming soon','warn');
-  else if(action==='history')addLog('Change history \u2014 coming soon','info');
+  else if(action==='compare'){ st.mode='compare'; displayRightContent(activeSopKey); addLog('Compare view opened','info'); }
+  else if(action==='version'){ st.mode='history'; displayRightContent(activeSopKey); addLog('Version history opened','info'); }
+  else if(action==='draft'){
+    const t=sopTabs.find(t=>t.key===activeSopKey);
+    const sub=MOCK.find(s=>s.id===t.subId);
+    const sop=sub.sops[t.idx];
+    const content=SOP_CONTENT[sop.code]||{suggested:''};
+    if(!st.draft) st.draft=content.suggested;
+    st.mode='draft'; displayRightContent(activeSopKey); addLog('Draft amendment opened: '+sop.code,'info');
+  }
+  else if(action==='accept'){
+    if(st.rejected){ addLog('Cannot accept — already rejected. Undo first.','warn'); return; }
+    st.accepted=true; st.mode='view'; renderSopTabs(); displayRightContent(activeSopKey);
+    addLog('Change accepted for '+activeSopKey.split(':')[0],'info');
+  }
+  else if(action==='reject'){ st.mode='reject'; displayRightContent(activeSopKey); addLog('Reject form opened','warn'); }
+  else if(action==='annotate'){ st.mode='annotate'; displayRightContent(activeSopKey); addLog('Add annotation','info'); }
+  else if(action==='undo'){
+    const t=sopTabs.find(t=>t.key===activeSopKey);
+    const sub=MOCK.find(s=>s.id===t.subId);
+    const sop=sub.sops[t.idx];
+    const content=SOP_CONTENT[sop.code]||{suggested:''};
+    st.draft=content.suggested; st.accepted=false; st.rejected=false; st.rejectReason='';
+    st.mode='view'; renderSopTabs(); displayRightContent(activeSopKey);
+    addLog('Changes undone: '+sop.code,'warn');
+  }
+  else if(action==='history') addLog('Change history \u2014 coming soon','info');
   else if(action==='actlog'){
     const logTab=document.querySelector('.bottom-tab');
-    switchBottom('log',logTab);
-    addLog('Activity log opened','info');
+    switchBottom('log',logTab); addLog('Activity log opened','info');
   }
+}
+
+// ─── RIGHT PANEL CONTENT RENDERERS ───────────────────────
+function displayRightContent(key){
+  const st=getTabState(key);
+  if(st.mode==='compare')  renderCompare(key);
+  else if(st.mode==='history') renderVersionHistory(key);
+  else if(st.mode==='draft')   renderDraftEditor(key);
+  else if(st.mode==='reject')  renderRejectForm(key);
+  else if(st.mode==='annotate') renderAnnotateForm(key);
+  else showSopContent(key);
+}
+
+function sopMeta(key){
+  const t=sopTabs.find(t=>t.key===key); if(!t) return null;
+  const sub=MOCK.find(s=>s.id===t.subId); if(!sub) return null;
+  const sop=sub.sops[t.idx];
+  const content=SOP_CONTENT[sop.code]||{current:'',suggested:''};
+  return {t, sub, sop, content};
+}
+
+function renderCompare(key){
+  const m=sopMeta(key); if(!m) return;
+  const st=getTabState(key);
+  const currentLines=m.content.current.split('\n');
+  const suggestedLines=(st.draft||m.content.suggested).split('\n');
+  const delLines=currentLines.map((l,i)=>`<div class="diff-line dl-del"><span class="diff-gutter">${i+1}</span><span>- ${l}</span></div>`).join('');
+  const addLines=suggestedLines.map((l,i)=>`<div class="diff-line dl-add"><span class="diff-gutter">${i+1}</span><span>+ ${l}</span></div>`).join('');
+  document.getElementById('rightContent').innerHTML=`<div class="fade-in">
+    <div class="action-bar">
+      <button class="action-btn" onclick="getTabState('${key}').mode='view';displayRightContent('${key}')">&#8592; Back to View</button>
+      <button class="action-btn primary" onclick="rtAction('draft')">&#9998; Edit Draft</button>
+    </div>
+    <div class="sop-block-label" style="margin-bottom:8px">${m.sop.code} &middot; ${m.sop.section} &mdash; Unified Diff</div>
+    <div class="diff-view">
+      <div style="padding:4px 10px;background:#2d2d30;font-size:10px;color:#5a5a5a;letter-spacing:.5px;text-transform:uppercase">Current &nbsp;&#8599; Suggested</div>
+      ${delLines}
+      <div class="diff-line" style="color:#3c3c3c;font-size:10px;padding:4px 10px;">\u00b7\u00b7\u00b7 suggested addition \u00b7\u00b7\u00b7</div>
+      ${addLines}
+    </div>
+  </div>`;
+}
+
+function renderVersionHistory(key){
+  const m=sopMeta(key); if(!m) return;
+  const history=[
+    {v:'Rev 4.1',date:'2023-09-12',author:'Dr. K. Walsh',note:'Updated calibration frequency references'},
+    {v:'Rev 4.0',date:'2023-03-01',author:'Liu Chen',note:'Added manual override logging requirement'},
+    {v:'Rev 3.9',date:'2022-11-14',author:'Aoife Brennan',note:'Revised alarm threshold language for GMP alignment'},
+    {v:'Rev 3.8',date:'2022-04-20',author:'Dr. K. Walsh',note:'Initial GMP rollout version'},
+  ];
+  document.getElementById('rightContent').innerHTML=`<div class="fade-in">
+    <div class="action-bar">
+      <button class="action-btn" onclick="getTabState('${key}').mode='view';displayRightContent('${key}')">&#8592; Back to View</button>
+    </div>
+    <div class="sop-block-label" style="margin-bottom:10px">${m.sop.code} &mdash; Version History</div>
+    <div class="version-list">
+      ${history.map(h=>`<div class="version-item"><div class="version-dot"></div><div><div class="version-meta">${h.v} &middot; ${h.date} &middot; ${h.author}</div><div class="version-label">${h.note}</div></div></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderDraftEditor(key){
+  const m=sopMeta(key); if(!m) return;
+  const st=getTabState(key);
+  const txt=(st.draft||m.content.suggested).replace(/`/g,'&#96;');
+  document.getElementById('rightContent').innerHTML=`<div class="fade-in">
+    <div class="action-bar">
+      <button class="action-btn primary" onclick="saveDraft('${key}')">&#10003;&nbsp; Save Draft</button>
+      <button class="action-btn success" onclick="acceptFromDraft('${key}')">&#10003;&nbsp; Accept &amp; Close</button>
+      <button class="action-btn danger"  onclick="rtAction('reject')">&#10007;&nbsp; Reject</button>
+      <button class="action-btn" onclick="rtAction('compare')">&#9616;&#9612;&nbsp; Compare</button>
+      <button class="action-btn" onclick="getTabState('${key}').mode='view';displayRightContent('${key}')">Cancel</button>
+    </div>
+    <div class="sop-block-label" style="margin-bottom:6px">${m.sop.code} &middot; ${m.sop.section} &mdash; Draft Amendment</div>
+    <textarea class="draft-editor" id="draftTA" rows="14">${txt}</textarea>
+    <div class="draft-status" id="draftStatus">${st.draft?'Unsaved draft':'Original suggested text &mdash; edit above to refine'}</div>
+    ${m.content.current?`<div class="sop-block" style="margin-top:14px"><div class="sop-block-label">Current Text (read-only)</div><div class="sop-text">${m.content.current}</div></div>`:''}
+  </div>`;
+}
+
+function saveDraft(key){
+  const ta=document.getElementById('draftTA');
+  if(!ta) return;
+  getTabState(key).draft=ta.value;
+  renderSopTabs();
+  const stat=document.getElementById('draftStatus');
+  if(stat) stat.textContent='Draft saved \u2014 '+new Date().toLocaleTimeString('en-GB',{hour12:false});
+  const m=sopMeta(key);
+  addLog('Draft saved: '+(m?m.sop.code:key),'info');
+}
+
+function acceptFromDraft(key){
+  const ta=document.getElementById('draftTA');
+  if(ta) getTabState(key).draft=ta.value;
+  getTabState(key).accepted=true; getTabState(key).mode='view';
+  renderSopTabs(); displayRightContent(key);
+  const m=sopMeta(key);
+  addLog('Amendment accepted: '+(m?m.sop.code:key),'info');
+}
+
+function renderRejectForm(key){
+  const m=sopMeta(key); if(!m) return;
+  const st=getTabState(key);
+  document.getElementById('rightContent').innerHTML=`<div class="fade-in">
+    <div class="action-bar">
+      <button class="action-btn" onclick="getTabState('${key}').mode='view';displayRightContent('${key}')">&#8592; Cancel</button>
+    </div>
+    <div class="sop-block-label" style="margin-bottom:8px">${m.sop.code} &mdash; Reject Change</div>
+    <div class="sop-highlight" style="margin-bottom:12px">Provide a reason for rejection. This will be logged to the activity record.</div>
+    <textarea class="annotation-input" id="rejectTA" rows="5" placeholder="Reason for rejection&#8230;">${st.rejectReason||''}</textarea>
+    <div class="action-bar">
+      <button class="action-btn danger" onclick="confirmReject('${key}')">&#10007;&nbsp; Confirm Rejection</button>
+    </div>
+  </div>`;
+}
+
+function confirmReject(key){
+  const ta=document.getElementById('rejectTA');
+  const st=getTabState(key);
+  st.rejectReason=ta?ta.value:'';
+  st.rejected=true; st.accepted=false; st.mode='view';
+  renderSopTabs(); displayRightContent(key);
+  const m=sopMeta(key);
+  addLog('Change rejected: '+(m?m.sop.code:key)+' \u2014 '+(st.rejectReason||'no reason given'),'warn');
+}
+
+function renderAnnotateForm(key){
+  const m=sopMeta(key); if(!m) return;
+  const st=getTabState(key);
+  const existing=st.annotations.map(a=>`<div class="annotation-item"><div class="annotation-meta">${a.time} &middot; ${a.author}</div><div class="annotation-text">${a.text}</div></div>`).join('');
+  document.getElementById('rightContent').innerHTML=`<div class="fade-in">
+    <div class="action-bar">
+      <button class="action-btn" onclick="getTabState('${key}').mode='view';displayRightContent('${key}')">&#8592; Back to View</button>
+    </div>
+    <div class="sop-block-label" style="margin-bottom:8px">${m.sop.code} &mdash; Annotations</div>
+    <textarea class="annotation-input" id="annotateTA" rows="4" placeholder="Add a comment or annotation&#8230;"></textarea>
+    <div class="action-bar">
+      <button class="action-btn primary" onclick="saveAnnotation('${key}')">&#128172;&nbsp; Add Annotation</button>
+    </div>
+    ${existing?`<div class="sop-block-label" style="margin-top:12px;margin-bottom:6px">Existing Annotations</div><div class="annotation-list">${existing}</div>`:''}
+  </div>`;
+}
+
+function saveAnnotation(key){
+  const ta=document.getElementById('annotateTA');
+  if(!ta||!ta.value.trim()) return;
+  const name=localStorage.getItem('vent_name')||'QA';
+  getTabState(key).annotations.push({
+    text: ta.value.trim(),
+    time: new Date().toLocaleTimeString('en-GB',{hour12:false}),
+    author: name
+  });
+  const m=sopMeta(key);
+  addLog('Annotation added: '+(m?m.sop.code:key),'info');
+  renderAnnotateForm(key);
 }
 function toggleRightExpand(){
   const wb=document.getElementById('workbench');
