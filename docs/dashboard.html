@@ -320,6 +320,22 @@ body::before {
 .ca-short { background: var(--gold2); color: var(--gold); }
 .ca-long  { background: var(--blue2); color: var(--blue); }
 
+/* Suggested Changes */
+.sc-list { display: flex; flex-direction: column; gap: 7px; }
+.sc-item {
+  display: flex; gap: 10px; padding: 10px 12px;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 8px;
+}
+.sc-num {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 500; font-family: 'JetBrains Mono', monospace;
+  background: var(--accent2); color: var(--accent); border: 1px solid var(--accent3); margin-top: 1px;
+}
+.sc-text { flex: 1; }
+.sc-title { font-size: 12.5px; color: var(--text); font-weight: 400; margin-bottom: 2px; }
+.sc-desc  { font-size: 11.5px; color: var(--mid); line-height: 1.5; }
+
 /* Contacts */
 .contact-row {
   display: flex; align-items: center; gap: 10px;
@@ -982,42 +998,28 @@ function detailHTML(s) {
         </div>
       </div>` : ''}
 
-      ${sci.summary ? `
+      ${cas.some(c => c.description.includes('SOP') || c.description.includes('BPR') || c.description.includes('Add ')) ? `
       <div class="d-panel">
         <div class="d-head">
-          <div class="d-head-icon phi-blue">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+          <div class="d-head-icon phi-accent">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </div>
-          Scientific &amp; Engineering Evaluation
+          Suggested Changes
         </div>
         <div class="d-body">
-          <div class="sci-summary">${esc(sci.summary)}</div>
-          <div class="sci-grid">${sciItems}</div>
+          <div class="sc-list">
+            ${cas
+              .filter(c => c.description.includes('SOP') || c.description.includes('BPR') || c.description.includes('Add ') || c.description.includes('Define ') || c.description.includes('Update '))
+              .map((c, idx) => `<div class="sc-item">
+                <div class="sc-num">${String(idx + 1).padStart(2, '0')}</div>
+                <div class="sc-text">
+                  <div class="sc-title">${esc(c.title)}</div>
+                  <div class="sc-desc">${esc(c.description)}</div>
+                </div>
+              </div>`)
+              .join('')}
+          </div>
         </div>
-      </div>` : ''}
-
-      ${(cas.length || cts.length) ? `
-      <div class="d-row">
-        ${cas.length ? `
-        <div class="d-panel">
-          <div class="d-head">
-            <div class="d-head-icon phi-accent">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            </div>
-            Corrective Actions
-          </div>
-          <div class="d-body"><div class="ca-list">${caItems}</div></div>
-        </div>` : ''}
-        ${cts.length ? `
-        <div class="d-panel">
-          <div class="d-head">
-            <div class="d-head-icon phi-teal">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            Flagged Contacts
-          </div>
-          <div class="d-body">${ctItems}</div>
-        </div>` : ''}
       </div>` : ''}
 
     </div>`;
