@@ -468,7 +468,7 @@ function transformSub(row){
   const sopRefs = (st.sopRefs || []).concat(st.bprRefs || []);
   const d = new Date(row.created_at);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const dateStr = d.getDate()+' '+months[d.getMonth()]+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  const dateStr = d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear()+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
   const contacts = st.contacts || [];
   const operator = contacts.length ? contacts[0].name : (row.shift || 'Unknown');
   // Build a short title from sciEval summary or raw_text
@@ -648,7 +648,8 @@ function renderLeft(){
         html+=`<div class="sub-card ${isActive?'active':''}" onclick="selectSub('${s.id}')" style="${isOpen?'border-left-color:#555;':''}">`+
           `<div class="card-top"><span class="card-id">${s.id}</span><span class="risk-badge risk-${s.priority}">${s.priority}</span></div>`+
           `<div class="card-title">${s.title}</div>`+
-          `<div class="card-meta">${s.date} &middot; ${s.operator}${isOpen?' &middot; <span style="color:#5a9bc7;font-size:9px">OPEN</span>':''}</div>`+
+          `<div class="card-meta"><span style="color:#569cd6;font-family:monospace;font-size:10px;letter-spacing:0.3px">${s.date}</span></div>`+
+          `<div class="card-meta">${s.area} &middot; ${s.operator}${isOpen?' &middot; <span style="color:#5a9bc7;font-size:9px">OPEN</span>':''}</div>`+
           `</div>`;
       });
       html+=`</div>`;
