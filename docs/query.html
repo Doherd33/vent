@@ -705,7 +705,6 @@ body {
 <div class="topbar">
   <a href="index.html" class="logo">Vent<div class="pip"></div></a>
   <div class="app-nav">
-    <a href="index.html"     class="nav-item">Submit</a>
     <a href="query.html"     class="nav-item on">Query SOPs</a>
     <a href="submissions.html" class="nav-item">Submissions</a>
     <a href="qa.html"        class="nav-item">QA Control</a>
@@ -1562,7 +1561,7 @@ function resetVentPanel() {
   if (!role) return;
   const labels = {operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
   const clrs   = {operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
-  const navRules = {operator:['Query SOPs'],qa:['Submit','Submissions','QA Control'],director:['Submissions','QA Control'],msat:['Submit','Query SOPs','Submissions'],engineering:['Submissions'],admin:['Submit','Query SOPs','Submissions','QA Control']};
+  const navRules = {operator:['Query SOPs'],qa:['Submissions','QA Control'],director:['Submissions','QA Control'],msat:['Query SOPs','Submissions'],engineering:['Submissions'],admin:['Query SOPs','Submissions','QA Control']};
   const right = document.querySelector('.topbar-right');
   if (!right) return;
   const safe = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
