@@ -61,11 +61,12 @@ body {
 .resizer:hover, .resizer.dragging { background: #007acc; }
 .resizer-v {
   cursor: col-resize;
-  grid-row: 1 / 3;
+  grid-row: 1;
 }
 .resizer-h {
   cursor: row-resize;
-  grid-column: 2 / 6;
+  grid-column: 1 / 6;
+  grid-row: 2;
 }
 .resizer::after {
   content: '';
@@ -565,16 +566,27 @@ addLog(MOCK.length+' submissions loaded','info');
     if (newRight > 20) wb.classList.add('sop-open');
   });
 
-  // Main | Bottom
-  let startY, startVal3;
+  // Main | Bottom — standalone handler so it always works regardless of grid state
   document.getElementById('resizerBottom').addEventListener('mousedown', function(e) {
-    startY = e.clientY;
-    // read actual rendered pixel height of the bottom panel element
-    startVal3 = document.querySelector('.bottom-panel').getBoundingClientRect().height;
-  });
-  makeDragger(document.getElementById('resizerBottom'), function(e) {
-    const newBottom = Math.max(40, Math.min(520, startVal3 + (startY - e.clientY)));
-    setRows(newBottom);
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = document.querySelector('.bottom-panel').getBoundingClientRect().height;
+    this.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'row-resize';
+    function onMove(e) {
+      const newH = Math.max(40, Math.min(520, startH + (startY - e.clientY)));
+      wb.style.gridTemplateRows = '1fr 4px ' + newH + 'px';
+    }
+    function onUp() {
+      document.getElementById('resizerBottom').classList.remove('dragging');
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 })();
 </script>
