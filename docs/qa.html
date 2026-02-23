@@ -463,8 +463,8 @@ function openSop(idx){
   document.getElementById('rightTitle').textContent=sop.code+' \u00b7 '+sop.section;
   const wb=document.getElementById('workbench');
   wb.classList.add('sop-open');
-  const curCols=getComputedStyle(wb).gridTemplateColumns.split(' ').map(parseFloat);
-  wb.style.gridTemplateColumns=curCols[0]+'px 4px '+curCols[2]+'px 4px 380px';
+  const leftW=wb.style.gridTemplateColumns ? parseFloat(wb.style.gridTemplateColumns) : 260;
+  wb.style.gridTemplateColumns=leftW+'px 4px 1fr 4px 380px';
   document.getElementById('statusSop').textContent='Viewing '+sop.code;
   document.getElementById('rightContent').innerHTML=`<div class="fade-in">
     <div class="sop-doc-title">${sop.title}</div>
@@ -479,8 +479,8 @@ function openSop(idx){
 function closeRight(){
   const wb=document.getElementById('workbench');
   wb.classList.remove('sop-open');
-  const curCols=getComputedStyle(wb).gridTemplateColumns.split(' ').map(parseFloat);
-  wb.style.gridTemplateColumns=curCols[0]+'px 4px '+curCols[2]+'px 4px 0px';
+  const leftW=wb.style.gridTemplateColumns ? parseFloat(wb.style.gridTemplateColumns) : 260;
+  wb.style.gridTemplateColumns=leftW+'px 4px 1fr 4px 0px';
   document.getElementById('statusSop').textContent='';
   selSopIdx=null;
 }
@@ -512,9 +512,9 @@ addLog(MOCK.length+' submissions loaded','info');
     return getComputedStyle(wb).gridTemplateRows.split(' ').map(parseFloat);
   }
   function setCols(cols) {
-    // col indices: 0=left, 1=resizer, 2=center, 3=resizer, 4=right
+    // only left (index 0) and right (index 4) are variable; center stays 1fr
     wb.style.gridTemplateColumns =
-      cols[0]+'px 4px '+cols[2]+'px 4px '+cols[4]+'px';
+      cols[0]+'px 4px 1fr 4px '+cols[4]+'px';
   }
   function setRows(rows) {
     // row indices: 0=main, 1=resizer, 2=bottom
