@@ -186,6 +186,10 @@ body {
 .right-tab:hover .right-tab-close,
 .right-tab.active .right-tab-close { color: #6c6c6c; }
 .right-tab-close:hover { color: #ffffff !important; background: rgba(255,255,255,0.1); }
+/* tab drag-to-reorder */
+.right-tab.sop-dragging { opacity: 0.35; }
+.right-tab.drop-left  { border-left:  2px solid #007acc !important; }
+.right-tab.drop-right { border-right: 2px solid #007acc !important; }
 .right-tabs-empty { padding: 0 14px; font-size: 11px; color: #5a5a5a; font-style: italic; display: flex; align-items: center; white-space: nowrap; }
 /* right toolbar */
 .right-toolbar { display: flex; align-items: center; flex-shrink: 0; padding: 0 5px; gap: 1px; border-left: 1px solid #3c3c3c; }
@@ -486,6 +490,7 @@ const MOCK = [
 let filter='all', selected=null, selSopIdx=null, logLines=[], curBottom='log';
 let openTabs=[], activeTabId=null;
 let sopTabs=[], activeSopKey=null;
+let dragSopKey=null;
 let rightExpanded=false, preExpandCols=null;
 
 function addLog(msg,level='info'){
@@ -676,6 +681,56 @@ function closeSopTab(key,e){
   renderCenter();
 }
 
+// ─── SOP TAB DRAG-TO-REORDER ────────────────────────────────────────────────
+function sopTabDragStart(key,e){
+  dragSopKey=key;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',key);
+  // defer class so drag ghost captures the normal appearance
+  setTimeout(()=>{
+    document.querySelectorAll('.right-tab[data-key]').forEach(el=>{
+      if(el.dataset.key===key) el.classList.add('sop-dragging');
+    });
+  },0);
+}
+function sopTabDragOver(key,e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.right-tab.drop-left,.right-tab.drop-right').forEach(el=>{
+    el.classList.remove('drop-left','drop-right');
+  });
+  if(key===dragSopKey) return;
+  const el=document.querySelector(`.right-tab[data-key="${CSS.escape(key)}"]`);
+  if(!el) return;
+  const mid=el.getBoundingClientRect().left+el.getBoundingClientRect().width/2;
+  el.classList.add(e.clientX<mid?'drop-left':'drop-right');
+}
+function sopTabDrop(key,e){
+  e.preventDefault();
+  if(!dragSopKey||dragSopKey===key){ _sopDragClean(); return; }
+  const el=document.querySelector(`.right-tab[data-key="${CSS.escape(key)}"]`);
+  const insertBefore=el&&e.clientX<el.getBoundingClientRect().left+el.getBoundingClientRect().width/2;
+  const fromIdx=sopTabs.findIndex(t=>t.key===dragSopKey);
+  if(fromIdx===-1){ _sopDragClean(); return; }
+  const [moved]=sopTabs.splice(fromIdx,1);
+  let toIdx=sopTabs.findIndex(t=>t.key===key);
+  if(toIdx===-1) toIdx=sopTabs.length;
+  else if(!insertBefore) toIdx++;
+  sopTabs.splice(toIdx,0,moved);
+  _sopDragClean();
+  renderSopTabs();
+}
+function sopTabDragEnd(){
+  _sopDragClean();
+}
+function _sopDragClean(){
+  dragSopKey=null;
+  document.querySelectorAll('.right-tab.sop-dragging,.right-tab.drop-left,.right-tab.drop-right').forEach(el=>{
+    el.classList.remove('sop-dragging','drop-left','drop-right');
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function renderSopTabs(){
   if(!sopTabs.length){
     document.getElementById('rightTabsInner').innerHTML='<div class="right-tabs-empty">SOP Viewer</div>';
@@ -686,7 +741,14 @@ function renderSopTabs(){
     const st=sopTabState[t.key];
     const badge=st?(st.accepted?'accepted':st.rejected?'rejected':st.draft?'draft':null):null;
     const modeMark=st&&st.mode!=='view'?' <span style="color:#ffc64d;font-size:9px">\u25cf</span>':'';
-    return `<div class="right-tab ${active?'active':''}" onclick="switchSopTab('${t.key}',event)">`+
+    return `<div class="right-tab ${active?'active':''}" `+
+      `data-key="${t.key}" `+
+      `draggable="true" `+
+      `ondragstart="sopTabDragStart('${t.key}',event)" `+
+      `ondragover="sopTabDragOver('${t.key}',event)" `+
+      `ondrop="sopTabDrop('${t.key}',event)" `+
+      `ondragend="sopTabDragEnd()" `+
+      `onclick="switchSopTab('${t.key}',event)">`+
       (badge?`<span class="tab-status ${badge}"></span>`:'')+
       `<span>${t.code} <span style="color:#5a5a5a;font-size:10px">${t.section}</span>${modeMark}</span>`+
       `<button class="right-tab-close" onclick="closeSopTab('${t.key}',event)" title="Close">&#10005;</button>`+
