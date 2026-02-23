@@ -457,84 +457,84 @@ body {
 </div>
 
 <script>
-const MOCK = [
-  {
-    id:'VNT-0047', priority:'High', area:'Upstream', operator:'Liu Chen', date:'23 Feb 06:42',
-    title:'DO Probe Erratic Fluctuations — N-2 Bioreactor',
-    obs:'Dissolved oxygen probe on N-2 bioreactor (500L) showing erratic fluctuations between 18% and 67% over the past 4 hours. Sparging rate unchanged. Probe last calibrated on Day 0 per SOP. Currently Day 6 of perfusion run with VCD at 45x10^6 cells/mL. DO control loop has been in manual override since 04:15.',
-    sops:[
-      {code:'SOP-UP-001',title:'Bioreactor Setup & Inoculation',section:'§8.2',flag:'gap',      issue:'Probe calibration frequency — no mid-run recalibration protocol defined'},
-      {code:'SOP-UP-003',title:'Perfusion Run Monitoring',       section:'§6.4',flag:'ok',       issue:'DO control loop operation and manual override procedure'},
-      {code:'BPR-UP-001',title:'Batch Production Record',        section:'§4.2',flag:'gap',      issue:'In-process DO monitoring — deviation requires formal documentation'}
-    ],
-    changes:[
-      {title:'Add mid-run probe recalibration to SOP-UP-001',desc:'Add mandatory mid-run probe recalibration step for perfusion runs exceeding 40x10^6 cells/mL. Define acceptance criteria and frequency at VCD checkpoints.'},
-      {title:'Update BPR-UP-001 §4.2 deviation guidance',desc:'Clarify that DO excursion during GMP production run requires formal deviation documentation with timestamps before batch release sign-off.'}
-    ]
-  },
-  {
-    id:'VNT-0046', priority:'High', area:'Upstream', operator:'Liu Chen', date:'23 Feb 11:05',
-    title:'Excessive Foam Formation — N-1 Bioreactor',
-    obs:'Excessive foam formation in N-1 bioreactor (50L) seed train at approximately 6 hours post-inoculation. Antifoam C Emulsion added at standard 0.1% v/v per SOP but foam layer persisting at 8cm depth. No other process parameters outside range. Agitation 120 RPM, DO 40%, pH 7.15.',
-    sops:[
-      {code:'SOP-UP-002',title:'Seed Train Operation',          section:'§5.3',flag:'ambiguous',issue:'Antifoam addition protocol — no escalation dose or maximum cumulative volume defined'},
-      {code:'SOP-UP-001',title:'Bioreactor Setup & Inoculation',section:'§7.1',flag:'ok',       issue:'Inoculation procedure and post-inoculation monitoring parameters'}
-    ],
-    changes:[
-      {title:'Add antifoam escalation guidance to SOP-UP-002',desc:'Define maximum cumulative antifoam volume, escalation steps (0.1% to 0.2% to escalate), and decision criteria for persistent foaming events in seed bioreactors.'}
-    ]
-  },
-  {
-    id:'VNT-0045', priority:'Medium', area:'Media Prep', operator:'Aoife Brennan', date:'22 Feb 15:03',
-    title:'Basal Media Hold Temperature Excursion — MP-04',
-    obs:'Basal media hold temperature in vessel MP-04 measured 22.4C at 14:30. Set point is 20C +/-1C per SOP-UP-004 — deviation is +2.4C above upper limit. Vessel has been in hold for 9 hours. Media is scheduled for use in N-2 production bioreactor at 08:00 tomorrow.',
-    sops:[
-      {code:'SOP-UP-004',title:'Media Preparation & Hold',section:'§3.2',flag:'gap',issue:'Temperature specification for basal media hold — no action guidance if excursion occurs'},
-      {code:'BPR-UP-001',title:'Batch Production Record', section:'§2.4',flag:'gap',issue:'Media preparation sign-off — temperature excursion must be documented before batch release'}
-    ],
-    changes:[
-      {title:'Add temperature excursion response to SOP-UP-004',desc:'Define action limits, notification escalation, and hold vs. discard decision criteria for media temperature deviations. Include OOS assessment trigger.'},
-      {title:'Update BPR-UP-001 §2.4 media sign-off criteria',desc:'Add explicit requirement that temperature excursion during media hold must be documented with QA sign-off before media can be used in production.'}
-    ]
-  },
-  {
-    id:'VNT-0044', priority:'High', area:'Downstream', operator:'Ciarán Murphy', date:'21 Feb 10:45',
-    title:'Harvest Centrifuge Yield Below Threshold — 2nd Batch',
-    obs:'Harvest centrifuge yield for DSP batch 2024-DS-089 calculated at 73% based on pre/post cell counts. SOP specifies >=88% yield for this step. Bowl speed 8,400 RPM and feed rate 12 L/hr were both within specification. This is the second consecutive batch below threshold — batch 2024-DS-086 yielded 79%.',
-    sops:[
-      {code:'SOP-UP-005',title:'Harvest & Primary Clarification',section:'§4.3',flag:'ok', issue:'Centrifuge yield acceptance criteria and in-spec troubleshooting guide'},
-      {code:'SOP-UP-005',title:'Harvest & Primary Clarification',section:'§5.1',flag:'gap',issue:'Feed pump calibration verification requirement — not recorded in recent BPRs'},
-      {code:'BPR-UP-001',title:'Batch Production Record',         section:'§6.1',flag:'gap',issue:'Yield calculation and out-of-specification result handling procedure'}
-    ],
-    changes:[
-      {title:'Update SOP-UP-005 §5.1 — pump calibration requirement',desc:'Make pre-run gravimetric calibration check on harvest feed pump a mandatory recorded step in BPR before each clarification run.'},
-      {title:'Add CAPA trigger criteria to BPR-UP-001 §6.1',desc:'Specify that two or more consecutive OOS yield results triggers mandatory CAPA initiation with MSAT as technical lead.'}
-    ]
-  },
-  {
-    id:'VNT-0043', priority:'Low', area:'QC', operator:'Dr. Sarah Park', date:'19 Feb 09:30',
-    title:'Vi-Cell vs Manual Count Variance — 2.4% Delta',
-    obs:'Vi-Cell XR automated counter gave 94.2% viability vs 91.8% from manual haemocytometer count on the same sample. Delta is 2.4%. Both methods are within the acceptable range (>=85%), but the gap between methods is larger than the typical <=1% variance we normally observe.',
-    sops:[
-      {code:'SOP-UP-003',title:'Perfusion Run Monitoring',section:'§7.2',flag:'ambiguous',issue:'Cell viability measurement method and acceptable inter-method variance — range not defined'}
-    ],
-    changes:[
-      {title:'Define inter-method variance spec in SOP-UP-003',desc:'Update SOP to include acceptable inter-method variance range (suggest <=3%) and escalation criteria if delta is exceeded. Reference both Vi-Cell XR and haemocytometer.'}
-    ]
+const SERVER = 'https://vent-production-8f8a.up.railway.app';
+
+// Live data — loaded from Supabase via Railway
+let MOCK = [];
+
+// Transform a Supabase submission row into internal format
+function transformSub(row){
+  const st = row.structured || {};
+  const sopRefs = (st.sopRefs || []).concat(st.bprRefs || []);
+  const d = new Date(row.created_at);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateStr = d.getDate()+' '+months[d.getMonth()]+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  const contacts = st.contacts || [];
+  const operator = contacts.length ? contacts[0].name : (row.shift || 'Unknown');
+  // Build a short title from sciEval summary or raw_text
+  const summary = (st.sciEval && st.sciEval.summary) || '';
+  const rawShort = (row.raw_text||'').slice(0,80);
+  let title = summary ? summary.split(/[.!?]/)[0].trim() : rawShort;
+  if(title.length > 80) title = title.slice(0,77)+'…';
+  return {
+    id: row.ref_code,
+    priority: row.priority || 'Low',
+    area: row.process_area || 'Unknown',
+    operator: operator,
+    date: dateStr,
+    rawDate: row.created_at,
+    status: row.status || 'new',
+    title: title,
+    obs: row.raw_text || 'No observation text.',
+    sops: sopRefs.map(s=>({
+      code: s.code||'',
+      title: s.title||'',
+      section: '§'+(s.step||s.section||'—'),
+      flag: s.flag||'ok',
+      issue: s.relevance||''
+    })),
+    changes: (st.correctiveActions||[]).map(c=>({
+      title: c.title||'',
+      desc: c.description||''
+    })),
+    sciEval: st.sciEval||null,
+    contacts: contacts,
+    timeline: st.timeline||[]
+  };
+}
+
+async function loadSubmissions(){
+  try {
+    addLog('Fetching live submissions…','info');
+    const res = await fetch(SERVER+'/submissions');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const rows = await res.json();
+    MOCK = rows.map(transformSub);
+    addLog(MOCK.length+' submissions loaded from database','info');
+  } catch(err){
+    addLog('Failed to load submissions: '+err.message,'error');
+    console.error('loadSubmissions error:', err);
   }
-];
+  renderLeft();
+  renderTabs();
+  document.getElementById('statusSubs').textContent = MOCK.length+' submissions loaded';
+}
 
 let filter='all', selected=null, selSopIdx=null, logLines=[], curBottom='log';
 let collapsedGroups={};
 let leftHidden=false, savedLeftW=260;
 
 const _MONTH={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-function _parseSub(s){
+function _parseSub(s, sub){
+  // If we have the raw ISO timestamp from the database, use it
+  if(sub && sub.rawDate) return new Date(sub.rawDate);
+  // Support ISO strings as well as short "23 Feb 06:42" format
+  if(s && s.includes('-')) return new Date(s);
   const [d,m,t]=s.split(' '); const [h,mi]=t.split(':');
   return new Date(2026,_MONTH[m],+d,+h,+mi);
 }
-function _groupLabel(dateStr){
-  const d=_parseSub(dateStr);
+function _groupLabel(dateStr, sub){
+  const d=_parseSub(dateStr, sub);
   const now=new Date();
   const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   const dc=new Date(d.getFullYear(),d.getMonth(),d.getDate());
@@ -581,7 +581,7 @@ function lpAction(action){
     MOCK.sort((a,b)=>({'High':0,'Medium':1,'Low':2}[a.priority]-{'High':0,'Medium':1,'Low':2}[b.priority]));
     renderLeft();
   } else if(action==='sort-date'){
-    MOCK.sort((a,b)=>_parseSub(b.date)-_parseSub(a.date));
+    MOCK.sort((a,b)=>_parseSub(b.date,b)-_parseSub(a.date,a));
     renderLeft();
   }
 }
@@ -629,7 +629,7 @@ function renderLeft(){
   document.getElementById('subCount').textContent=filtered.length;
   document.getElementById('statusSubs').textContent=MOCK.length+' submissions loaded';
   const groups={};
-  filtered.forEach(s=>{ const g=_groupLabel(s.date); if(!groups[g])groups[g]=[]; groups[g].push(s); });
+  filtered.forEach(s=>{ const g=_groupLabel(s.date, s); if(!groups[g])groups[g]=[]; groups[g].push(s); });
   let html='';
   ORDER.forEach(label=>{
     const items=groups[label];
@@ -1271,12 +1271,11 @@ document.addEventListener('click',function(){
   document.querySelectorAll('.rt-btn').forEach(b=>b.classList.remove('open'));
 });
 
-renderLeft();
 renderTabs();
 renderSopTabs();
 renderLog();
 addLog('VENT QA Control ready','info');
-addLog(MOCK.length+' submissions loaded','info');
+loadSubmissions();
 
 // ─────────────────────────────────────────────
 // RESIZE HANDLES
