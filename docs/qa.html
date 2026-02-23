@@ -46,6 +46,7 @@ body {
   grid-template-columns: 260px 4px 1fr 4px 0px;
   grid-template-rows: 1fr 4px 180px;
   overflow: hidden;
+  position: relative;
 }
 .workbench.sop-open {
   grid-template-columns: 260px 4px 1fr 4px 380px;
@@ -84,6 +85,20 @@ body {
   display: flex; flex-direction: column;
   overflow: hidden;
 }
+/* left panel ··· menu */
+.lp-menu-wrap { position: relative; }
+.lp-menu-btn { background: none; border: none; color: #8e8e8e; cursor: pointer; font-size: 13px; padding: 2px 6px; border-radius: 3px; line-height: 1; letter-spacing: 1.5px; transition: background 0.12s, color 0.12s; }
+.lp-menu-btn:hover { background: rgba(255,255,255,0.09); color: #cccccc; }
+.lp-menu-btn.open { background: rgba(255,255,255,0.12); color: #fff; }
+.lp-dropdown { position: absolute; top: calc(100% + 6px); right: 0; background: #252526; border: 1px solid #454545; border-radius: 3px; min-width: 185px; z-index: 300; box-shadow: 0 6px 18px rgba(0,0,0,0.55); display: none; flex-direction: column; padding: 4px 0; }
+.lp-dropdown.visible { display: flex; }
+.lp-drop-item { padding: 7px 16px; font-size: 12px; color: #cccccc; cursor: pointer; white-space: nowrap; transition: background 0.1s; }
+.lp-drop-item:hover { background: #094771; color: #fff; }
+.lp-drop-sep { height: 1px; background: #3c3c3c; margin: 4px 0; }
+/* restore tab — appears on left edge when panel hidden */
+.lp-restore-tab { position: absolute; left: 0; top: 50%; transform: translateY(-50%); z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; width: 16px; height: 56px; background: #2d2d30; border: 1px solid #3c3c3c; border-left: none; border-radius: 0 4px 4px 0; cursor: pointer; color: #6c6c6c; font-size: 11px; transition: color 0.12s, background 0.12s; }
+.lp-restore-tab:hover { background: #3c3c3c; color: #cccccc; }
+.lp-restore-tab.visible { display: flex; }
 .panel-header {
   padding: 8px 12px;
   font-size: 11px; font-weight: 600;
@@ -323,7 +338,21 @@ body {
   <div class="left-panel">
     <div class="panel-header">
       Submissions
-      <span class="panel-badge" id="subCount">0</span>
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span class="panel-badge" id="subCount">0</span>
+        <div class="lp-menu-wrap">
+          <button class="lp-menu-btn" id="lpMenuBtn" onclick="toggleLpMenu(event)" title="Panel options">&middot;&middot;&middot;</button>
+          <div class="lp-dropdown" id="lpMenuDrop">
+            <div class="lp-drop-item" onclick="lpAction('hide')">&#8612;&nbsp; Hide Panel</div>
+            <div class="lp-drop-sep"></div>
+            <div class="lp-drop-item" onclick="lpAction('collapse-all')">&#8964;&nbsp; Collapse All Groups</div>
+            <div class="lp-drop-item" onclick="lpAction('expand-all')">&#8963;&nbsp; Expand All Groups</div>
+            <div class="lp-drop-sep"></div>
+            <div class="lp-drop-item" onclick="lpAction('sort-priority')">&#9650;&nbsp; Sort by Priority</div>
+            <div class="lp-drop-item" onclick="lpAction('sort-date')">&#128337;&nbsp; Sort by Date</div>
+          </div>
+        </div>
+      </span>
     </div>
     <div class="filter-bar">
       <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
@@ -333,6 +362,9 @@ body {
     </div>
     <div class="submission-list" id="subList"></div>
   </div>
+
+  <!-- RESTORE TAB — visible when left panel hidden -->
+  <div class="lp-restore-tab" onclick="restoreLeftPanel()" title="Show panel">&#8250;</div>
 
   <!-- RESIZER: left | center -->
   <div class="resizer resizer-v" id="resizerLC"></div>
@@ -496,6 +528,7 @@ const MOCK = [
 
 let filter='all', selected=null, selSopIdx=null, logLines=[], curBottom='log';
 let collapsedGroups={};
+let leftHidden=false, savedLeftW=260;
 
 const _MONTH={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
 function _parseSub(s){
@@ -517,6 +550,50 @@ function toggleGroup(label,e){
   e.stopPropagation();
   collapsedGroups[label]=!collapsedGroups[label];
   renderLeft();
+}
+
+// ─── LEFT PANEL MENU ──────────────────────────────────────────────────────────
+function toggleLpMenu(e){
+  e.stopPropagation();
+  const btn=document.getElementById('lpMenuBtn');
+  const drop=document.getElementById('lpMenuDrop');
+  const open=drop.classList.toggle('visible');
+  btn.classList.toggle('open',open);
+  if(open) setTimeout(()=>document.addEventListener('click',()=>{ drop.classList.remove('visible'); btn.classList.remove('open'); },{once:true}),0);
+}
+function lpAction(action){
+  document.getElementById('lpMenuDrop').classList.remove('visible');
+  document.getElementById('lpMenuBtn').classList.remove('open');
+  if(action==='hide'){
+    const wb=document.getElementById('workbench');
+    const cols=getComputedStyle(wb).gridTemplateColumns.split(' ');
+    savedLeftW=parseFloat(cols[0])||260;
+    leftHidden=true;
+    wb.style.gridTemplateColumns='0px 0px 1fr 4px '+(parseFloat(cols[4])||0)+'px';
+    document.getElementById('resizerLC').style.display='none';
+    document.querySelector('.lp-restore-tab').classList.add('visible');
+  } else if(action==='collapse-all'){
+    const ORDER=['Today','Yesterday','This Week','Earlier'];
+    ORDER.forEach(l=>collapsedGroups[l]=true);
+    renderLeft();
+  } else if(action==='expand-all'){
+    collapsedGroups={};
+    renderLeft();
+  } else if(action==='sort-priority'){
+    MOCK.sort((a,b)=>({'High':0,'Medium':1,'Low':2}[a.priority]-{'High':0,'Medium':1,'Low':2}[b.priority]));
+    renderLeft();
+  } else if(action==='sort-date'){
+    MOCK.sort((a,b)=>_parseSub(b.date)-_parseSub(a.date));
+    renderLeft();
+  }
+}
+function restoreLeftPanel(){
+  const wb=document.getElementById('workbench');
+  const cols=getComputedStyle(wb).gridTemplateColumns.split(' ');
+  leftHidden=false;
+  wb.style.gridTemplateColumns=savedLeftW+'px 4px 1fr 4px '+(parseFloat(cols[4])||0)+'px';
+  document.getElementById('resizerLC').style.display='';
+  document.querySelector('.lp-restore-tab').classList.remove('visible');
 }
 let openTabs=[], activeTabId=null;
 let sopTabs=[], activeSopKey=null;
