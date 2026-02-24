@@ -11,8 +11,82 @@ const { buildContactsContext } = require('./data/contacts');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ─── AUTH CONFIGURATION ──────────────────────────────────────────────────────
+const TOKEN_SECRET = process.env.TOKEN_SECRET || 'vent-prototype-secret-' + (process.env.SUPABASE_KEY || '').slice(0, 12);
+const TOKEN_EXPIRY_HOURS = 24;
+
+// Create HMAC-signed token
+function createToken(payload) {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const body = Buffer.from(JSON.stringify({
+    ...payload,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + (TOKEN_EXPIRY_HOURS * 3600)
+  })).toString('base64url');
+  const sig = crypto.createHmac('sha256', TOKEN_SECRET).update(header + '.' + body).digest('base64url');
+  return header + '.' + body + '.' + sig;
+}
+
+// Verify token — returns payload or null
+function verifyToken(token) {
+  try {
+    const [header, body, sig] = token.split('.');
+    const expected = crypto.createHmac('sha256', TOKEN_SECRET).update(header + '.' + body).digest('base64url');
+    if (sig !== expected) return null;
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+    return payload;
+  } catch { return null; }
+}
+
+// Hash password with salt
+function hashPassword(password, salt) {
+  salt = salt || crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+  return { hash, salt };
+}
+
+// Verify password
+function verifyPassword(password, hash, salt) {
+  const result = hashPassword(password, salt);
+  return result.hash === hash;
+}
+
+// Auth middleware — extracts user from token, attaches to req.user
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    const user = verifyToken(token);
+    if (user) {
+      req.user = user;
+    }
+  }
+  next();
+}
+
+// Require auth — rejects if no valid token
+function requireAuth(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+}
+
+// Require specific roles
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions. Required: ' + roles.join(' or ') });
+    }
+    next();
+  };
+}
+
 app.use(cors({ origin: '*' }));
 app.use(express.json());
+app.use(authMiddleware); // Parse auth token on every request
 const path = require('path');
 const fs = require('fs');
 // Try both possible docs locations depending on Railway's working directory
@@ -62,7 +136,7 @@ app.get('/debug-rag', async (req, res) => {
 });
 
 // Explicit HTML page routes (more reliable than express.static on Railway)
-['index', 'query', 'qa', 'workflow'].forEach(page => {
+['index', 'query', 'qa', 'workflow', 'dashboard', 'submissions', 'login'].forEach(page => {
   app.get(`/${page === 'index' ? '' : page + '.html'}`, (req, res) => {
     const file = path.join(docsPath, page === 'index' ? 'index.html' : `${page}.html`);
     if (fs.existsSync(file)) return res.sendFile(file);
@@ -74,6 +148,8 @@ app.get('/debug-rag', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({
     message: 'Vent server is running',
+    authenticated: !!req.user,
+    user: req.user ? { name: req.user.name, role: req.user.role } : null,
     env: {
       ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
       SUPABASE_URL:      !!process.env.SUPABASE_URL,
@@ -83,6 +159,172 @@ app.get('/health', (req, res) => {
       VOYAGE_RAW_PREFIX: process.env.VOYAGE_API_KEY ? process.env.VOYAGE_API_KEY.slice(0, 3) : 'MISSING'
     }
   });
+});
+
+// ─── AUTHENTICATION ROUTES ──────────────────────────────────────────────────
+
+// POST /auth/register — create a new user account
+app.post('/auth/register', async (req, res) => {
+  const { email, password, name, role } = req.body;
+  
+  if (!email || !password || !name || !role) {
+    return res.status(400).json({ error: 'email, password, name, and role are required' });
+  }
+  
+  const validRoles = ['operator', 'qa', 'director', 'msat', 'engineering', 'admin'];
+  if (!validRoles.includes(role)) {
+    return res.status(400).json({ error: 'Invalid role. Must be one of: ' + validRoles.join(', ') });
+  }
+  
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  // Check if user already exists
+  const { data: existing } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', email.toLowerCase().trim())
+    .limit(1);
+  
+  if (existing && existing.length) {
+    return res.status(409).json({ error: 'An account with this email already exists' });
+  }
+
+  // Hash password and create user
+  const { hash, salt } = hashPassword(password);
+  const userId = crypto.randomUUID();
+
+  const { error } = await supabase.from('users').insert({
+    id: userId,
+    email: email.toLowerCase().trim(),
+    name: name.trim(),
+    role,
+    password_hash: hash,
+    password_salt: salt
+  });
+
+  if (error) {
+    if (error.message.includes('does not exist')) {
+      return res.status(400).json({ error: 'users table does not exist. Run the setup SQL from GET /admin/setup' });
+    }
+    return res.status(500).json({ error: error.message });
+  }
+
+  // Create token
+  const token = createToken({ id: userId, email: email.toLowerCase().trim(), name: name.trim(), role });
+
+  await auditLog({
+    userId: name.trim(),
+    userRole: role,
+    action: 'user_registered',
+    entityType: 'user',
+    entityId: userId,
+    after: { email, name, role },
+    reason: 'New user account created',
+    req
+  });
+
+  res.json({ ok: true, token, user: { id: userId, email, name: name.trim(), role } });
+});
+
+// POST /auth/login — sign in with email and password
+app.post('/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ error: 'email and password are required' });
+  }
+
+  const { data: users, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', email.toLowerCase().trim())
+    .limit(1);
+
+  if (error) {
+    if (error.message.includes('does not exist')) {
+      return res.status(400).json({ error: 'users table does not exist. Run the setup SQL.' });
+    }
+    return res.status(500).json({ error: error.message });
+  }
+
+  if (!users || !users.length) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  const user = users[0];
+  
+  if (!verifyPassword(password, user.password_hash, user.password_salt)) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  const token = createToken({ id: user.id, email: user.email, name: user.name, role: user.role });
+
+  await auditLog({
+    userId: user.name,
+    userRole: user.role,
+    action: 'user_login',
+    entityType: 'user',
+    entityId: user.id,
+    after: { email: user.email, role: user.role },
+    reason: 'User signed in',
+    req
+  });
+
+  res.json({ ok: true, token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+});
+
+// GET /auth/me — verify token and return current user info
+app.get('/auth/me', requireAuth, (req, res) => {
+  res.json({ user: req.user });
+});
+
+// POST /auth/change-password — change password for current user
+app.post('/auth/change-password', requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'currentPassword and newPassword are required' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  }
+
+  const { data: users } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', req.user.id)
+    .limit(1);
+
+  if (!users || !users.length) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const user = users[0];
+  if (!verifyPassword(currentPassword, user.password_hash, user.password_salt)) {
+    return res.status(401).json({ error: 'Current password is incorrect' });
+  }
+
+  const { hash, salt } = hashPassword(newPassword);
+  const { error } = await supabase
+    .from('users')
+    .update({ password_hash: hash, password_salt: salt, updated_at: new Date().toISOString() })
+    .eq('id', req.user.id);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  await auditLog({
+    userId: user.name,
+    userRole: user.role,
+    action: 'password_changed',
+    entityType: 'user',
+    entityId: user.id,
+    after: {},
+    reason: 'User changed their password',
+    req
+  });
+
+  res.json({ ok: true });
 });
 
 // ─── AUDIT LOG INFRASTRUCTURE ─────────────────────────────────────────────────
@@ -118,10 +360,11 @@ async function auditLog({ userId, userRole, action, entityType, entityId, before
 app.get('/admin/setup', (req, res) => {
   const sql = `
 -- ═══════════════════════════════════════════════════════════════
--- VENT Audit Log Table — 21 CFR Part 11 / EU Annex 11 compliant
+-- VENT Full Database Setup — 21 CFR Part 11 / EU Annex 11
 -- Run this in your Supabase SQL Editor (one-time setup)
 -- ═══════════════════════════════════════════════════════════════
 
+-- ── Audit Log (immutable) ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS audit_log (
   id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   timestamp   TIMESTAMPTZ DEFAULT now() NOT NULL,
@@ -138,23 +381,143 @@ CREATE TABLE IF NOT EXISTS audit_log (
   checksum    TEXT NOT NULL
 );
 
--- Index for fast lookups by entity and by user
 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_user   ON audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_time   ON audit_log(timestamp DESC);
 
--- CRITICAL: Prevent updates and deletes — append-only for regulatory compliance
--- Using RLS policies: only INSERT is allowed via the API
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS audit_insert ON audit_log FOR INSERT TO authenticated, anon WITH CHECK (true);
+CREATE POLICY IF NOT EXISTS audit_select ON audit_log FOR SELECT TO authenticated, anon USING (true);
 
--- Allow inserts from authenticated and service_role
-CREATE POLICY audit_insert ON audit_log FOR INSERT TO authenticated, anon WITH CHECK (true);
-CREATE POLICY audit_select ON audit_log FOR SELECT TO authenticated, anon USING (true);
+COMMENT ON TABLE audit_log IS 'Immutable audit trail — 21 CFR Part 11 / EU Annex 11. No UPDATE or DELETE.';
 
--- Explicitly deny UPDATE and DELETE — no policy = denied by default with RLS enabled
--- This means once a row is written, it can NEVER be modified or removed via the API
+-- ── Users ────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS users (
+  id             UUID PRIMARY KEY,
+  email          TEXT UNIQUE NOT NULL,
+  name           TEXT NOT NULL,
+  role           TEXT NOT NULL DEFAULT 'operator',
+  password_hash  TEXT NOT NULL,
+  password_salt  TEXT NOT NULL,
+  created_at     TIMESTAMPTZ DEFAULT now(),
+  updated_at     TIMESTAMPTZ DEFAULT now()
+);
 
-COMMENT ON TABLE audit_log IS 'Immutable audit trail for 21 CFR Part 11 / EU Annex 11 compliance. No UPDATE or DELETE permitted.';
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role  ON users(role);
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS users_all ON users FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+
+-- ── QA Notes ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS qa_notes (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  content    TEXT NOT NULL DEFAULT '',
+  user_id    TEXT NOT NULL DEFAULT 'unknown',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE qa_notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS qa_notes_all ON qa_notes FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+
+-- ── SOP Change Management ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS sop_changes (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  change_key      TEXT NOT NULL,
+  submission_ref  TEXT NOT NULL,
+  sop_code        TEXT NOT NULL,
+  section         TEXT DEFAULT '',
+  action          TEXT NOT NULL,              -- draft, accepted, rejected
+  draft_text      TEXT,
+  reason          TEXT,
+  user_id         TEXT NOT NULL DEFAULT 'unknown',
+  user_role       TEXT NOT NULL DEFAULT 'unknown',
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sop_changes_sub ON sop_changes(submission_ref);
+CREATE INDEX IF NOT EXISTS idx_sop_changes_key ON sop_changes(change_key);
+
+ALTER TABLE sop_changes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS sop_changes_all ON sop_changes FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+
+-- ── SOP Annotations ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS sop_annotations (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  change_key      TEXT NOT NULL,
+  submission_ref  TEXT NOT NULL,
+  sop_code        TEXT NOT NULL,
+  section         TEXT DEFAULT '',
+  text            TEXT NOT NULL,
+  user_id         TEXT NOT NULL DEFAULT 'unknown',
+  user_role       TEXT NOT NULL DEFAULT 'unknown',
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sop_anno_key ON sop_annotations(change_key);
+CREATE INDEX IF NOT EXISTS idx_sop_anno_sub ON sop_annotations(submission_ref);
+
+ALTER TABLE sop_annotations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS sop_annotations_all ON sop_annotations FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+
+-- ── Notifications ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS notifications (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  user_role       TEXT DEFAULT 'unknown',
+  type            TEXT NOT NULL,               -- submission_routed, status_changed, capa_assigned, etc.
+  title           TEXT NOT NULL,
+  body            TEXT DEFAULT '',
+  entity_type     TEXT DEFAULT 'submission',
+  entity_id       TEXT DEFAULT '',
+  workflow_phase  INT DEFAULT 1,
+  why             TEXT DEFAULT '',
+  read            BOOLEAN DEFAULT false,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notify_user ON notifications(user_id, read);
+CREATE INDEX IF NOT EXISTS idx_notify_entity ON notifications(entity_id);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS notifications_all ON notifications FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+
+-- ── CAPA Tracking ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS capas (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  capa_id         TEXT UNIQUE NOT NULL,
+  submission_ref  TEXT NOT NULL,
+  title           TEXT NOT NULL,
+  description     TEXT DEFAULT '',
+  timing          TEXT DEFAULT 'short',        -- immediate, short, long
+  timing_label    TEXT DEFAULT '',
+  owner           TEXT DEFAULT 'Unassigned',
+  owner_role      TEXT DEFAULT '',
+  due_date        DATE,
+  status          TEXT DEFAULT 'open',          -- open, in_progress, closed, overdue
+  evidence        TEXT,
+  closed_by       TEXT,
+  closed_at       TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_capas_sub ON capas(submission_ref);
+CREATE INDEX IF NOT EXISTS idx_capas_status ON capas(status);
+CREATE INDEX IF NOT EXISTS idx_capas_owner ON capas(owner);
+
+ALTER TABLE capas ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS capas_all ON capas FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+
+-- ── Add status column to submissions if missing ──────────────
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name='submissions' AND column_name='status') THEN
+    ALTER TABLE submissions ADD COLUMN status TEXT DEFAULT 'new';
+  END IF;
+END $$;
   `.trim();
   res.type('text/plain').send(sql);
 });
@@ -190,7 +553,7 @@ app.post('/admin/setup', async (req, res) => {
 });
 
 // GET /audit/:entityId — retrieve full audit trail for a submission or entity
-app.get('/audit/:entityId', async (req, res) => {
+app.get('/audit/:entityId', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('audit_log')
     .select('*')
@@ -207,7 +570,7 @@ app.get('/audit/:entityId', async (req, res) => {
 });
 
 // GET /audit — retrieve recent audit entries (last 100)
-app.get('/audit', async (req, res) => {
+app.get('/audit', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('audit_log')
     .select('*')
@@ -267,8 +630,77 @@ function buildSopContext(chunks) {
     .join('\n\n---\n\n');
 }
 
+// ─── CROSS-SUBMISSION PATTERN DETECTION ──────────────────────────────────────
+
+// Search existing submissions for similar observations
+async function findSimilarSubmissions(observation, area) {
+  try {
+    // Text-based similarity search against existing submissions
+    const words = observation.toLowerCase().split(/\s+/)
+      .filter(w => w.length > 4)
+      .slice(0, 5);
+    if (!words.length) return { matches: [], count: 0 };
+
+    const { data, error } = await supabase
+      .from('submissions')
+      .select('ref_code, process_area, priority, raw_text, created_at, status, structured')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error || !data) return { matches: [], count: 0 };
+
+    // Score each submission by keyword overlap
+    const scored = data.map(row => {
+      const text = (row.raw_text || '').toLowerCase();
+      const matchedWords = words.filter(w => text.includes(w));
+      const areaMatch = (row.process_area || '').toLowerCase() === (area || '').toLowerCase();
+      const score = matchedWords.length + (areaMatch ? 1.5 : 0);
+      return { ...row, score, matchedWords };
+    }).filter(r => r.score >= 2)  // At least 2 keyword matches to be considered similar
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
+    return {
+      matches: scored.map(s => ({
+        ref: s.ref_code,
+        area: s.process_area,
+        priority: s.priority,
+        status: s.status || 'new',
+        date: s.created_at,
+        excerpt: (s.raw_text || '').slice(0, 150),
+        matchedWords: s.matchedWords,
+        score: s.score
+      })),
+      count: scored.length,
+      totalSubmissions: data.length
+    };
+  } catch (err) {
+    console.warn('Pattern detection failed:', err.message);
+    return { matches: [], count: 0 };
+  }
+}
+
+// Build pattern context string for Claude
+function buildPatternContext(patterns) {
+  if (!patterns.matches.length) {
+    return 'No similar previous submissions found in the database.';
+  }
+  const lines = patterns.matches.map((m, i) =>
+    `${i + 1}. ${m.ref} (${m.area}, ${m.priority}, ${m.status}) — ${m.date.slice(0, 10)}\n   "${m.excerpt}"`
+  );
+  return `${patterns.count} similar submission(s) found out of ${patterns.totalSubmissions} total:\n\n${lines.join('\n\n')}`;
+}
+
+// GET /patterns?observation=...&area=... — standalone pattern search endpoint
+app.get('/patterns', requireAuth, async (req, res) => {
+  const { observation, area } = req.query;
+  if (!observation) return res.status(400).json({ error: 'observation query param required' });
+  const patterns = await findSimilarSubmissions(observation, area);
+  res.json(patterns);
+});
+
 // Submit route
-app.post('/submit', async (req, res) => {
+app.post('/submit', requireAuth, async (req, res) => {
   const { observation, area, shift, willingToConsult } = req.body;
 
   if (!observation || observation.length < 10) {
@@ -287,7 +719,12 @@ app.post('/submit', async (req, res) => {
     // Step 2: Build the contacts directory for this submission
     const contactsContext = buildContactsContext();
 
-    // Step 3: Send to Claude with real SOP content and real contacts as grounding
+    // Step 2.5: Search for similar past submissions (pattern detection)
+    const patterns = await findSimilarSubmissions(observation, area);
+    const patternContext = buildPatternContext(patterns);
+    console.log(`[${refCode}] Pattern detection: ${patterns.count} similar submission(s) found`);
+
+    // Step 3: Send to Claude with real SOP content, real contacts, and real patterns as grounding
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
@@ -312,6 +749,10 @@ ${sopContext}
 ${contactsContext}
 ════════════════════════════
 
+════ SIMILAR PAST SUBMISSIONS ════
+${patternContext}
+══════════════════════════════════
+
 Process area: ${area}
 Shift: ${shift}
 Operator observation: "${observation}"
@@ -326,7 +767,7 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
   "correctiveActions": [{ "title": "action title", "description": "specific description referencing actual SOP steps where possible", "timing": "immediate or short or long", "timingLabel": "e.g. Within 24 hours" }],
   "contacts": [{ "name": "exact name from directory", "role": "exact role from directory", "dept": "exact dept from directory", "deptLabel": "exact deptLabel from directory", "avatarClass": "exact avatarClass from directory", "initials": "exact initials from directory", "workflowPhase": 1, "why": "one sentence specific to this observation explaining why this person needs to act" }],
   "timeline": [{ "state": "done or now or next or later", "when": "timeframe", "event": "event title", "detail": "one sentence" }],
-  "pattern": { "summary": "two sentences on whether this is a recurring pattern", "currentCount": 1, "threshold": 3 }
+  "pattern": { "summary": "two sentences on whether this is a recurring pattern based on the SIMILAR PAST SUBMISSIONS data above", "currentCount": ${patterns.count + 1}, "threshold": 3 }
 }`
       }]
     });
@@ -363,6 +804,38 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
         reason: 'Operator submitted observation via Query page',
         req
       });
+
+      // Notify routed contacts
+      await notifyContacts(
+        { refCode, priority: feedback.priority, observation },
+        feedback.contacts || []
+      );
+
+      // Auto-create CAPAs from corrective actions
+      for (const ca of (feedback.correctiveActions || [])) {
+        try {
+          const capaId = 'CAPA-' + Math.floor(1000 + Math.random() * 8999);
+          // Find the best matching contact to assign as owner
+          const matchContact = (feedback.contacts || [])
+            .sort((a, b) => (a.workflowPhase || 99) - (b.workflowPhase || 99))
+            .find(c => c.workflowPhase >= 2) || (feedback.contacts || [])[0];
+          await supabase.from('capas').insert({
+            capa_id: capaId,
+            submission_ref: refCode,
+            title: ca.title,
+            description: ca.description || '',
+            timing: ca.timing || 'short',
+            timing_label: ca.timingLabel || '',
+            owner: matchContact ? matchContact.name : 'Unassigned',
+            owner_role: matchContact ? matchContact.role : '',
+            due_date: ca.timing === 'immediate' ? new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+                     : ca.timing === 'short' ? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+                     : new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+            status: 'open'
+          }).then(() => console.log(`[${refCode}] CAPA ${capaId} created: ${ca.title}`))
+            .catch(e => console.warn(`[${refCode}] CAPA creation skipped:`, e.message));
+        } catch (e) { /* table may not exist yet */ }
+      }
     }
 
     res.json({ ...feedback, refCode });
@@ -374,7 +847,7 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
 });
 
 // GET /sop/:docId — fetch all chunks for a document
-app.get('/sop/:docId', async (req, res) => {
+app.get('/sop/:docId', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('sop_chunks')
     .select('section_title, content')
@@ -389,7 +862,7 @@ app.get('/sop/:docId', async (req, res) => {
 });
 
 // GET /sop/:docId/chunk?section=8.6.1 — fetch the best-matching chunk for a section reference
-app.get('/sop/:docId/chunk', async (req, res) => {
+app.get('/sop/:docId/chunk', requireAuth, async (req, res) => {
   const section = (req.query.section || '').trim();
 
   const { data, error } = await supabase
@@ -420,7 +893,7 @@ app.get('/sop/:docId/chunk', async (req, res) => {
 });
 
 // GET /submissions — fetch all for the dashboard
-app.get('/submissions', async (req, res) => {
+app.get('/submissions', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('submissions')
     .select('*')
@@ -434,7 +907,7 @@ app.get('/submissions', async (req, res) => {
 });
 
 // GET /submissions/:refCode — fetch a single submission
-app.get('/submissions/:refCode', async (req, res) => {
+app.get('/submissions/:refCode', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('submissions')
     .select('*')
@@ -448,7 +921,7 @@ app.get('/submissions/:refCode', async (req, res) => {
 });
 
 // PATCH /submissions/:refCode/status — update workflow status with audit trail
-app.patch('/submissions/:refCode/status', async (req, res) => {
+app.patch('/submissions/:refCode/status', requireRole('qa', 'director', 'admin'), async (req, res) => {
   const { status, userId, userRole, reason, meaning } = req.body;
   const validStatuses = ['new', 'acknowledged', 'under_review', 'corrective_action', 'qa_approved', 'director_signoff', 'closed', 'rejected'];
   
@@ -505,7 +978,7 @@ app.patch('/submissions/:refCode/status', async (req, res) => {
 });
 
 // POST /query — operator SOP knowledge search
-app.post('/query', async (req, res) => {
+app.post('/query', requireAuth, async (req, res) => {
   const { question, area } = req.body;
 
   if (!question || question.length < 5) {
@@ -567,7 +1040,7 @@ Return ONLY valid JSON — no markdown, no preamble.
 });
 
 // ─── SOP INGEST ROUTE ──────────────────────────────────────────────────────
-app.post('/ingest', async (req, res) => {
+app.post('/ingest', requireRole('admin'), async (req, res) => {
   const DOCS_DIR = path.join(__dirname, 'docs/sops');
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   try {
@@ -615,6 +1088,442 @@ app.post('/ingest', async (req, res) => {
     res.json({ success: true, totalChunks: total, documents: details });
   } catch (err) {
     console.error('Ingest error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── NOTES ──────────────────────────────────────────────────────────────────
+// Simple session notes persisted to Supabase (qa_notes table)
+app.get('/notes', requireAuth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('qa_notes')
+    .select('*')
+    .order('updated_at', { ascending: false })
+    .limit(1);
+  if (error) {
+    // Table may not exist yet — return empty
+    if (error.message.includes('does not exist')) return res.json([]);
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(data || []);
+});
+
+app.post('/notes', requireAuth, async (req, res) => {
+  const { content, userId } = req.body;
+  // Upsert: update the single notes row or create it
+  const { data: existing } = await supabase
+    .from('qa_notes')
+    .select('id')
+    .limit(1);
+  
+  if (existing && existing.length) {
+    const { error } = await supabase
+      .from('qa_notes')
+      .update({ content, user_id: userId || 'unknown', updated_at: new Date().toISOString() })
+      .eq('id', existing[0].id);
+    if (error) return res.status(500).json({ error: error.message });
+  } else {
+    const { error } = await supabase
+      .from('qa_notes')
+      .insert({ content, user_id: userId || 'unknown' });
+    if (error) {
+      if (error.message.includes('does not exist')) {
+        return res.status(400).json({ error: 'qa_notes table does not exist. Run the setup SQL.' });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+  }
+  res.json({ ok: true });
+});
+
+// ─── SOP CHANGE MANAGEMENT ──────────────────────────────────────────────────
+// Persist drafts, acceptances, rejections, and annotations for SOP changes
+
+// GET /sop-changes/:submissionRef — get all changes for a submission
+app.get('/sop-changes/:submissionRef', requireAuth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('sop_changes')
+    .select('*')
+    .eq('submission_ref', req.params.submissionRef)
+    .order('created_at', { ascending: true });
+  if (error) {
+    if (error.message.includes('does not exist')) return res.json([]);
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(data || []);
+});
+
+// POST /sop-changes — create or update an SOP change record
+app.post('/sop-changes', requireRole('qa', 'director', 'admin'), async (req, res) => {
+  const { submissionRef, sopCode, section, action, draft, reason, userId, userRole } = req.body;
+  if (!submissionRef || !sopCode || !action) {
+    return res.status(400).json({ error: 'submissionRef, sopCode, and action are required' });
+  }
+
+  const key = `${submissionRef}:${sopCode}:${section || ''}`;
+  
+  // Check for existing record with this key
+  const { data: existing } = await supabase
+    .from('sop_changes')
+    .select('id')
+    .eq('change_key', key)
+    .limit(1);
+  
+  const record = {
+    change_key: key,
+    submission_ref: submissionRef,
+    sop_code: sopCode,
+    section: section || '',
+    action, // 'draft', 'accepted', 'rejected'
+    draft_text: draft || null,
+    reason: reason || null,
+    user_id: userId || 'unknown',
+    user_role: userRole || 'unknown'
+  };
+
+  let error;
+  if (existing && existing.length) {
+    ({ error } = await supabase
+      .from('sop_changes')
+      .update({ ...record, updated_at: new Date().toISOString() })
+      .eq('id', existing[0].id));
+  } else {
+    ({ error } = await supabase.from('sop_changes').insert(record));
+  }
+
+  if (error) {
+    if (error.message.includes('does not exist')) {
+      return res.status(400).json({ error: 'sop_changes table does not exist. Run the setup SQL.' });
+    }
+    return res.status(500).json({ error: error.message });
+  }
+
+  // Audit log the change
+  await auditLog({
+    userId: userId || 'unknown',
+    userRole: userRole || 'unknown',
+    action: 'sop_change_' + action,
+    entityType: 'sop_change',
+    entityId: key,
+    after: { sopCode, section, action, draft: draft ? draft.slice(0, 200) : null },
+    reason: reason || `SOP change ${action} for ${sopCode}`,
+    req
+  });
+
+  res.json({ ok: true, action });
+});
+
+// POST /sop-annotations — add an annotation to an SOP change
+app.post('/sop-annotations', requireAuth, async (req, res) => {
+  const { submissionRef, sopCode, section, text, userId, userRole } = req.body;
+  if (!submissionRef || !sopCode || !text) {
+    return res.status(400).json({ error: 'submissionRef, sopCode, and text are required' });
+  }
+
+  const changeKey = `${submissionRef}:${sopCode}:${section || ''}`;
+
+  const { error } = await supabase.from('sop_annotations').insert({
+    change_key: changeKey,
+    submission_ref: submissionRef,
+    sop_code: sopCode,
+    section: section || '',
+    text,
+    user_id: userId || 'unknown',
+    user_role: userRole || 'unknown'
+  });
+
+  if (error) {
+    if (error.message.includes('does not exist')) {
+      return res.status(400).json({ error: 'sop_annotations table does not exist. Run the setup SQL.' });
+    }
+    return res.status(500).json({ error: error.message });
+  }
+
+  await auditLog({
+    userId: userId || 'unknown',
+    userRole: userRole || 'unknown',
+    action: 'sop_annotation_added',
+    entityType: 'sop_annotation',
+    entityId: changeKey,
+    after: { sopCode, section, text: text.slice(0, 200) },
+    reason: 'Annotation added to SOP change',
+    req
+  });
+
+  res.json({ ok: true });
+});
+
+// GET /sop-annotations/:submissionRef — get all annotations
+app.get('/sop-annotations/:submissionRef', requireAuth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('sop_annotations')
+    .select('*')
+    .eq('submission_ref', req.params.submissionRef)
+    .order('created_at', { ascending: true });
+  if (error) {
+    if (error.message.includes('does not exist')) return res.json([]);
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(data || []);
+});
+
+// ─── NOTIFICATIONS ──────────────────────────────────────────────────────────
+
+// GET /notifications/:userId — get notifications for a user
+app.get('/notifications/:userId', requireAuth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', req.params.userId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) {
+    if (error.message.includes('does not exist')) return res.json([]);
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(data || []);
+});
+
+// PATCH /notifications/:id/read — mark a notification as read
+app.patch('/notifications/:id/read', requireAuth, async (req, res) => {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// POST /notifications/read-all — mark all as read for a user
+app.post('/notifications/read-all', requireAuth, async (req, res) => {
+  const { userId } = req.body;
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('user_id', userId)
+    .eq('read', false);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// Internal helper: create notifications for contacts when a submission is created
+async function notifyContacts(submission, contacts) {
+  if (!contacts || !contacts.length) return;
+  const notifications = contacts.map(c => ({
+    user_id: c.name, // using contact name as user_id for now
+    user_role: c.dept || 'unknown',
+    type: 'submission_routed',
+    title: `New ${submission.priority} priority observation routed to you`,
+    body: `${submission.refCode}: ${(submission.observation || '').slice(0, 120)}...`,
+    entity_type: 'submission',
+    entity_id: submission.refCode,
+    workflow_phase: c.workflowPhase || 1,
+    why: c.why || '',
+    read: false
+  }));
+  
+  try {
+    const { error } = await supabase.from('notifications').insert(notifications);
+    if (error) console.error('[NOTIFY] Insert error:', error.message);
+    else console.log(`[NOTIFY] Sent ${notifications.length} notifications for ${submission.refCode}`);
+  } catch (err) {
+    console.error('[NOTIFY] Failed:', err.message);
+  }
+}
+
+// ─── CAPA TRACKING ──────────────────────────────────────────────────────────
+
+// GET /capas — list all CAPAs
+app.get('/capas', requireAuth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('capas')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) {
+    if (error.message.includes('does not exist')) return res.json([]);
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(data || []);
+});
+
+// GET /capas/:submissionRef — list CAPAs for a specific submission
+app.get('/capas/:submissionRef', requireAuth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('capas')
+    .select('*')
+    .eq('submission_ref', req.params.submissionRef)
+    .order('created_at', { ascending: true });
+  if (error) {
+    if (error.message.includes('does not exist')) return res.json([]);
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(data || []);
+});
+
+// POST /capas — create a CAPA from a corrective action
+app.post('/capas', requireRole('qa', 'director', 'admin'), async (req, res) => {
+  const { submissionRef, title, description, timing, timingLabel, owner, ownerRole, dueDate } = req.body;
+  if (!submissionRef || !title) {
+    return res.status(400).json({ error: 'submissionRef and title are required' });
+  }
+
+  const capaId = 'CAPA-' + Math.floor(1000 + Math.random() * 8999);
+
+  const { error } = await supabase.from('capas').insert({
+    capa_id: capaId,
+    submission_ref: submissionRef,
+    title,
+    description: description || '',
+    timing: timing || 'short',
+    timing_label: timingLabel || '',
+    owner: owner || 'Unassigned',
+    owner_role: ownerRole || '',
+    due_date: dueDate || null,
+    status: 'open',
+    evidence: null,
+    closed_by: null,
+    closed_at: null
+  });
+
+  if (error) {
+    if (error.message.includes('does not exist')) {
+      return res.status(400).json({ error: 'capas table does not exist. Run the setup SQL.' });
+    }
+    return res.status(500).json({ error: error.message });
+  }
+
+  await auditLog({
+    userId: owner || 'system',
+    userRole: ownerRole || 'system',
+    action: 'capa_created',
+    entityType: 'capa',
+    entityId: capaId,
+    after: { submissionRef, title, timing, owner, dueDate },
+    reason: `CAPA created from submission ${submissionRef}`,
+    req
+  });
+
+  res.json({ ok: true, capaId });
+});
+
+// PATCH /capas/:capaId — update a CAPA (status, owner, evidence, etc.)
+app.patch('/capas/:capaId', requireRole('qa', 'director', 'admin'), async (req, res) => {
+  const { status, owner, ownerRole, evidence, dueDate, userId, reason } = req.body;
+  
+  const { data: current, error: fetchErr } = await supabase
+    .from('capas')
+    .select('*')
+    .eq('capa_id', req.params.capaId)
+    .single();
+  if (fetchErr || !current) return res.status(404).json({ error: 'CAPA not found' });
+
+  const updates = {};
+  if (status) updates.status = status;
+  if (owner) updates.owner = owner;
+  if (ownerRole) updates.owner_role = ownerRole;
+  if (evidence) updates.evidence = evidence;
+  if (dueDate) updates.due_date = dueDate;
+  if (status === 'closed') {
+    updates.closed_by = userId || 'unknown';
+    updates.closed_at = new Date().toISOString();
+  }
+  updates.updated_at = new Date().toISOString();
+
+  const { error } = await supabase
+    .from('capas')
+    .update(updates)
+    .eq('capa_id', req.params.capaId);
+  if (error) return res.status(500).json({ error: error.message });
+
+  await auditLog({
+    userId: userId || 'unknown',
+    userRole: ownerRole || current.owner_role || 'unknown',
+    action: 'capa_updated',
+    entityType: 'capa',
+    entityId: req.params.capaId,
+    before: { status: current.status, owner: current.owner },
+    after: updates,
+    reason: reason || `CAPA updated: ${Object.keys(updates).join(', ')}`,
+    req
+  });
+
+  res.json({ ok: true, capaId: req.params.capaId, updates });
+});
+
+// ─── ANALYTICS / DASHBOARD ──────────────────────────────────────────────────
+
+// GET /analytics — aggregate stats for the director dashboard
+app.get('/analytics', requireRole('qa', 'director', 'admin'), async (req, res) => {
+  try {
+    // Fetch all submissions
+    const { data: subs, error: subErr } = await supabase
+      .from('submissions')
+      .select('ref_code, process_area, priority, status, created_at, structured')
+      .order('created_at', { ascending: false });
+
+    if (subErr) return res.status(500).json({ error: subErr.message });
+
+    // Fetch CAPAs
+    let capas = [];
+    const { data: capaData, error: capaErr } = await supabase
+      .from('capas')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!capaErr && capaData) capas = capaData;
+
+    const now = new Date();
+    const submissions = subs || [];
+
+    // Summary stats
+    const total = submissions.length;
+    const byPriority = { High: 0, Medium: 0, Low: 0 };
+    const byStatus = {};
+    const byArea = {};
+    const byMonth = {};
+
+    submissions.forEach(s => {
+      byPriority[s.priority] = (byPriority[s.priority] || 0) + 1;
+      const st = s.status || 'new';
+      byStatus[st] = (byStatus[st] || 0) + 1;
+      byArea[s.process_area] = (byArea[s.process_area] || 0) + 1;
+      const month = s.created_at.slice(0, 7); // YYYY-MM
+      byMonth[month] = (byMonth[month] || 0) + 1;
+    });
+
+    // Open vs closed
+    const openStatuses = ['new', 'acknowledged', 'under_review', 'corrective_action'];
+    const openCount = submissions.filter(s => openStatuses.includes(s.status || 'new')).length;
+    const closedCount = submissions.filter(s => ['closed', 'rejected'].includes(s.status)).length;
+    const inReview = submissions.filter(s => ['qa_approved', 'director_signoff'].includes(s.status)).length;
+
+    // CAPA stats
+    const openCapas = capas.filter(c => c.status === 'open' || c.status === 'in_progress').length;
+    const overdueCapas = capas.filter(c => {
+      if (c.status === 'closed') return false;
+      return c.due_date && new Date(c.due_date) < now;
+    }).length;
+    const closedCapas = capas.filter(c => c.status === 'closed').length;
+
+    // Recent trends (last 7 days vs previous 7 days)
+    const weekAgo = new Date(now - 7 * 86400000);
+    const twoWeeksAgo = new Date(now - 14 * 86400000);
+    const thisWeek = submissions.filter(s => new Date(s.created_at) >= weekAgo).length;
+    const lastWeek = submissions.filter(s => { const d = new Date(s.created_at); return d >= twoWeeksAgo && d < weekAgo; }).length;
+    const trend = lastWeek ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : 0;
+
+    res.json({
+      total, byPriority, byStatus, byArea, byMonth,
+      openCount, closedCount, inReview,
+      capas: { total: capas.length, open: openCapas, overdue: overdueCapas, closed: closedCapas },
+      trend: { thisWeek, lastWeek, percentChange: trend },
+      recentSubmissions: submissions.slice(0, 10).map(s => ({
+        ref: s.ref_code, area: s.process_area, priority: s.priority,
+        status: s.status || 'new', date: s.created_at
+      })),
+      recentCapas: capas.slice(0, 10)
+    });
+  } catch (err) {
+    console.error('Analytics error:', err);
     res.status(500).json({ error: err.message });
   }
 });

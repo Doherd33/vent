@@ -366,6 +366,8 @@ body {
       <a href="query.html"       class="nav-tab">Query SOPs</a>
       <a href="submissions.html" class="nav-tab">Submissions</a>
       <a href="qa.html"          class="nav-tab active">QA Control</a>
+      <a href="workflow.html"    class="nav-tab">Workflow</a>
+      <a href="dashboard.html"   class="nav-tab">Dashboard</a>
     </nav>
   </div>
   <div class="title-bar-right">
@@ -506,6 +508,32 @@ body {
 <script>
 const SERVER = 'https://vent-production-8f8a.up.railway.app';
 
+// ─── AUTH HELPERS ─────────────────────────────────────────────────────────────
+function getAuthHeaders(extra) {
+  const token = localStorage.getItem('vent_token');
+  const h = Object.assign({}, extra || {});
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  return h;
+}
+function authFetch(url, opts) {
+  opts = opts || {};
+  opts.headers = getAuthHeaders(opts.headers);
+  return fetch(url, opts);
+}
+// Auth guard — verify token on page load
+(async function authGuard() {
+  const token = localStorage.getItem('vent_token');
+  if (!token) { window.location.replace('login.html'); return; }
+  try {
+    const res = await fetch(SERVER + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) throw new Error('expired');
+  } catch {
+    localStorage.removeItem('vent_token'); localStorage.removeItem('vent_role');
+    localStorage.removeItem('vent_name'); localStorage.removeItem('vent_user_id');
+    window.location.replace('login.html');
+  }
+})();
+
 // Live data — loaded from Supabase via Railway
 let MOCK = [];
 
@@ -553,7 +581,7 @@ function transformSub(row){
 async function loadSubmissions(){
   try {
     addLog('Fetching live submissions…','info');
-    const res = await fetch(SERVER+'/submissions');
+    const res = await authFetch(SERVER+'/submissions');
     if(!res.ok) throw new Error('HTTP '+res.status);
     const rows = await res.json();
     MOCK = rows.map(transformSub);
@@ -664,8 +692,112 @@ function switchBottom(tab,el){
   el.classList.add('active');
   const bc=document.getElementById('bottomContent');
   if(tab==='log'){renderLog();}
-  else if(tab==='notes'){bc.innerHTML='<textarea placeholder="Notes for this session..." style="width:100%;height:100%;background:transparent;border:none;color:#cccccc;font-size:11px;font-family:inherit;resize:none;outline:none;line-height:1.7;"></textarea>';}
-  else if(tab==='export'){bc.innerHTML='<div style="display:flex;gap:8px;padding:4px 0;"><button onclick="doExport(\'json\')" style="padding:4px 14px;background:#007acc;color:#fff;border:none;border-radius:2px;font-size:11px;cursor:pointer;">Export JSON</button><button onclick="doExport(\'csv\')" style="padding:4px 14px;background:#007acc;color:#fff;border:none;border-radius:2px;font-size:11px;cursor:pointer;">Export CSV</button><button style="padding:4px 14px;background:#3c3c3c;color:#6c6c6c;border:none;border-radius:2px;font-size:11px;cursor:default;">PDF (coming soon)</button></div>';}
+  else if(tab==='notes'){renderNotesTab();}
+  else if(tab==='export'){renderExportTab();}
+}
+
+// ─── NOTES PERSISTENCE ───────────────────────────────────────────────────────
+let notesContent = '';
+let notesSaveTimer = null;
+let notesLoaded = false;
+
+async function loadNotes(){
+  if(notesLoaded) return;
+  try {
+    const res = await authFetch(SERVER+'/notes');
+    if(res.ok){
+      const data = await res.json();
+      notesContent = (data && data.length) ? data[0].content : '';
+      notesLoaded = true;
+    }
+  } catch(e){ console.warn('Notes load failed:', e.message); }
+}
+
+function renderNotesTab(){
+  const bc=document.getElementById('bottomContent');
+  bc.innerHTML='<textarea id="notesTA" placeholder="Session notes — auto-saved to database..." style="width:100%;height:100%;background:transparent;border:none;color:#cccccc;font-size:11px;font-family:inherit;resize:none;outline:none;line-height:1.7;"></textarea><div id="noteStatus" style="position:absolute;bottom:4px;right:12px;font-size:9px;color:#5a5a5a"></div>';
+  const ta = document.getElementById('notesTA');
+  loadNotes().then(()=>{ if(ta) ta.value = notesContent; });
+  ta.addEventListener('input', function(){
+    notesContent = ta.value;
+    if(notesSaveTimer) clearTimeout(notesSaveTimer);
+    const status = document.getElementById('noteStatus');
+    if(status) status.textContent = 'Saving...';
+    notesSaveTimer = setTimeout(()=> saveNotes(), 1500);
+  });
+}
+
+async function saveNotes(){
+  const userName = localStorage.getItem('vent_name') || 'unknown';
+  try {
+    const res = await authFetch(SERVER+'/notes', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ content: notesContent, userId: userName })
+    });
+    const status = document.getElementById('noteStatus');
+    if(res.ok && status) status.textContent = 'Saved ' + new Date().toLocaleTimeString('en-GB',{hour12:false});
+    else if(status) status.textContent = 'Save failed';
+  } catch(e){
+    const status = document.getElementById('noteStatus');
+    if(status) status.textContent = 'Save failed';
+  }
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+function renderExportTab(){
+  const bc=document.getElementById('bottomContent');
+  const hasSel = !!selected;
+  bc.innerHTML=`<div style="display:flex;gap:8px;padding:4px 0;flex-wrap:wrap;align-items:center">
+    <span style="font-size:11px;color:#8e8e8e;margin-right:4px">All submissions:</span>
+    <button onclick="doExport('json','all')" style="padding:4px 14px;background:#007acc;color:#fff;border:none;border-radius:2px;font-size:11px;cursor:pointer;">Export JSON</button>
+    <button onclick="doExport('csv','all')" style="padding:4px 14px;background:#007acc;color:#fff;border:none;border-radius:2px;font-size:11px;cursor:pointer;">Export CSV</button>
+    <span style="width:1px;height:16px;background:#3c3c3c;margin:0 4px"></span>
+    <span style="font-size:11px;color:#8e8e8e;margin-right:4px">Selected:</span>
+    <button onclick="doExport('json','single')" ${hasSel?'':'disabled'} style="padding:4px 14px;background:${hasSel?'#007acc':'#3c3c3c'};color:${hasSel?'#fff':'#6c6c6c'};border:none;border-radius:2px;font-size:11px;cursor:${hasSel?'pointer':'default'};">JSON</button>
+    <button onclick="doExport('csv','single')" ${hasSel?'':'disabled'} style="padding:4px 14px;background:${hasSel?'#007acc':'#3c3c3c'};color:${hasSel?'#fff':'#6c6c6c'};border:none;border-radius:2px;font-size:11px;cursor:${hasSel?'pointer':'default'};">CSV</button>
+    <span id="exportStatus" style="font-size:10px;color:#4ec9b0;margin-left:8px"></span>
+  </div>`;
+}
+
+function doExport(format, scope){
+  const data = scope==='single' && selected ? [selected] : MOCK;
+  if(!data.length){ addLog('Nothing to export','warn'); return; }
+  
+  let blob, filename;
+  const ts = new Date().toISOString().slice(0,10);
+  
+  if(format==='json'){
+    const exportData = data.map(s=>({
+      ref: s.id, priority: s.priority, area: s.area, status: s.status,
+      operator: s.operator, date: s.date, observation: s.obs,
+      sops: s.sops, changes: s.changes, sciEval: s.sciEval,
+      contacts: s.contacts, timeline: s.timeline
+    }));
+    blob = new Blob([JSON.stringify(exportData, null, 2)], {type:'application/json'});
+    filename = `vent-export-${scope==='single'?data[0].id:'all'}-${ts}.json`;
+  } else {
+    // CSV
+    const headers = ['Ref','Priority','Area','Status','Operator','Date','Observation','SOP Refs','Corrective Actions'];
+    const rows = data.map(s=>[
+      s.id, s.priority, s.area, s.status||'new', s.operator, s.date,
+      '"'+s.obs.replace(/"/g,'""')+'"',
+      '"'+(s.sops||[]).map(r=>r.code+' '+r.section).join('; ')+'"',
+      '"'+(s.changes||[]).map(c=>c.title).join('; ')+'"'
+    ]);
+    const csv = [headers.join(','), ...rows.map(r=>r.join(','))].join('\n');
+    blob = new Blob([csv], {type:'text/csv'});
+    filename = `vent-export-${scope==='single'?data[0].id:'all'}-${ts}.csv`;
+  }
+  
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  
+  const status = document.getElementById('exportStatus');
+  if(status) status.textContent = `\u2713 Downloaded ${filename}`;
+  addLog(`Exported ${data.length} submission(s) as ${format.toUpperCase()}`,'info');
 }
 
 function doExport(fmt){addLog('Export requested: '+fmt.toUpperCase(),'info');}
@@ -821,7 +953,7 @@ async function quickStatusChange(refCode, newStatus){
   const userName = localStorage.getItem('vent_name') || 'QA User';
   const userRole = localStorage.getItem('vent_role') || 'qa';
   try {
-    const res = await fetch(SERVER+'/submissions/'+refCode+'/status', {
+    const res = await authFetch(SERVER+'/submissions/'+refCode+'/status', {
       method:'PATCH',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ status:newStatus, userId:userName, userRole:userRole, reason:'Status advanced to '+newStatus })
@@ -888,7 +1020,7 @@ async function submitEsig(refCode, targetStatus){
   }
   closeEsigModal();
   try {
-    const res = await fetch(SERVER+'/submissions/'+refCode+'/status', {
+    const res = await authFetch(SERVER+'/submissions/'+refCode+'/status', {
       method:'PATCH',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ status:targetStatus, userId:name, userRole:role, meaning:meaning, reason:reason })
@@ -910,7 +1042,7 @@ async function loadAuditTrail(refCode){
   const container = document.getElementById('auditTrailContent');
   container.innerHTML = '<div style="color:#5a5a5a;font-size:11px;padding:8px 0">Loading audit trail…</div>';
   try {
-    const res = await fetch(SERVER+'/audit/'+refCode);
+    const res = await authFetch(SERVER+'/audit/'+refCode);
     const entries = await res.json();
     if(!entries.length){
       container.innerHTML = '<div style="color:#5a5a5a;font-size:11px;padding:8px 0">No audit entries yet. <span style="color:#569cd6">Set up audit table via /admin/setup</span></div>';
@@ -947,14 +1079,27 @@ async function loadAuditTrail(refCode){
   }
 }
 
-const SOP_CONTENT={
-  'SOP-UP-001':{current:`8.2 Probe Calibration\n\nCalibrate DO probe prior to sterilisation using\ntwo-point calibration (0% N2 sparge, 100% air).\nRecord calibration data in BPR before inoculation.\nNo further calibration steps defined for ongoing run.`,suggested:`ADD: 8.2.1 Mid-Run Recalibration\n\nFor perfusion runs where VCD exceeds 40x10^6 cells/mL,\nperform in-situ 2-point recalibration at Day 4 and Day 6.\nDocument result in BPR. If drift >5% from baseline,\ninitiate probe replacement and raise deviation report.`},
-  'SOP-UP-002':{current:`5.3 Antifoam Addition\n\nAdd Antifoam C Emulsion at 0.1% v/v as required\nto control foaming during seed train operation.\nRecord each addition volume and time in BPR.`,suggested:`ADD: Escalation Protocol\n\nIf foaming persists after initial 0.1% v/v addition:\n  Step 1: Increase to 0.2% v/v after 15 minutes\n  Step 2: If foam >10cm, notify shift lead\n  Step 3: Max cumulative dose = 0.5% v/v\nExceedance requires QA notification before continuing.`},
-  'SOP-UP-003':{current:`6.4 DO Control Loop\n\nMaintain DO setpoint at 40% via PID-controlled\ncascaded sparging and agitation.\nManual override permitted if control loop is unstable.\nRecord all overrides in BPR with timestamp.`,suggested:`ADD: 6.4.1 Manual Override Criteria\n\nManual override must not exceed 4 hours without:\n  (1) Process engineer notification\n  (2) Documented root cause assessment in BPR\n  (3) QA notification if override extends beyond 8h\nReturn to auto control must be documented.`},
-  'SOP-UP-004':{current:`3.2 Media Hold Temperature\n\nHold basal media at 20C +/-1C in temperature-controlled\nvessels. Monitor via calibrated inline probe.\nRecord temperature at 4-hour intervals in BPR.`,suggested:`ADD: 3.2.1 Temperature Excursion Response\n\nIf hold temperature exceeds +/-1C specification:\n  < 2h excursion:  Document, notify supervisor\n  2-8h excursion: QA notification, OOS assessment\n  > 8h excursion: Quarantine media, QA disposition required\nMedia may not be used without QA sign-off.`},
-  'SOP-UP-005':{current:`4.3 Centrifuge Yield Acceptance\n\nMinimum acceptable harvest yield: >=88% based on\npre/post cell count. Yield calculated per BPR 6.1.\nOut-of-specification result must be investigated.`,suggested:`ADD: 5.1 Pre-Run Pump Calibration (mandatory)\n\nBefore each clarification run, perform gravimetric\ncalibration check on harvest feed pump. Record actual\nvs set-point flow rate across operating range.\nPump must be within +/-2% of set-point before proceeding.`},
-  'BPR-UP-001':{current:`Standard batch production record fields apply.\nAll deviations must be noted with timestamp\nand operator initials. QA review at batch close.`,suggested:`ADD: Mandatory deviation documentation fields:\n  - Deviation type and timestamp\n  - Immediate corrective action taken\n  - Process engineer sign-off\n  - QA notification timestamp (if applicable)\nMust be complete before batch release sign-off.`}
-};
+// SOP content cache — populated live from the database via /sop/:docId/chunk
+const SOP_CONTENT_CACHE = {};
+
+async function fetchSopContent(docId, section) {
+  const cacheKey = docId + ':' + (section || '');
+  if (SOP_CONTENT_CACHE[cacheKey]) return SOP_CONTENT_CACHE[cacheKey];
+  try {
+    const sectionNum = (section || '').replace(/^§/, '');
+    const url = SERVER + '/sop/' + docId + '/chunk' + (sectionNum ? '?section=' + encodeURIComponent(sectionNum) : '');
+    const res = await authFetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const chunk = await res.json();
+    if (chunk && chunk.content) {
+      SOP_CONTENT_CACHE[cacheKey] = { current: chunk.content, section_title: chunk.section_title };
+      return SOP_CONTENT_CACHE[cacheKey];
+    }
+  } catch (err) {
+    console.warn('SOP fetch failed for ' + docId + ':', err.message);
+  }
+  return { current: 'Content not available — SOP not found in database.', section_title: '' };
+}
 
 function sopKey(subId,idx){ return subId+':'+idx; }
 
@@ -1112,15 +1257,20 @@ function renderSopTabs(){
   }).join('');
 }
 
-function showSopContent(key){
+async function showSopContent(key){
   const t=sopTabs.find(t=>t.key===key);
   if(!t) return;
   const sub=MOCK.find(s=>s.id===t.subId);
   if(!sub) return;
   const sop=sub.sops[t.idx];
-  const content=SOP_CONTENT[sop.code]||{current:'Content not available.',suggested:'No suggestion defined.'};
+  
+  // Show loading state
+  document.getElementById('rightContent').innerHTML='<div class="empty-state" style="height:100%"><p>Loading SOP content\u2026</p></div>';
+  
+  // Fetch live content from database
+  const content = await fetchSopContent(sop.code, sop.section);
   const st=getTabState(key);
-  const sugText=st.draft||content.suggested;
+  const sugText=st.draft||'No suggested amendment yet.';
   // status banner
   const statusBanner=st.accepted
     ? `<div style="background:rgba(78,201,176,0.12);border:1px solid #4ec9b0;border-radius:2px;padding:8px 12px;font-size:11px;color:#4ec9b0;margin-bottom:12px">&#10003;&nbsp; Change accepted — pending ratification</div>`
@@ -1143,7 +1293,7 @@ function showSopContent(key){
     <div class="sop-doc-meta">${sop.section} &middot; <span style="color:#5a9bc7;font-size:10px">${t.subId}</span> &middot; Rev 4.1 &middot; Last reviewed 2023-09-12</div>
     <div class="sop-block"><div class="sop-block-label">Current Text</div><div class="sop-text">${content.current}</div></div>
     <div class="sop-block"><div class="sop-block-label">Identified Issue</div><div class="sop-highlight">${sop.issue}</div></div>
-    <div class="sop-block"><div class="sop-block-label">${st.draft?'Draft Amendment':'Suggested Addition'}${st.draft?' <span style="color:#ffc64d;font-size:9px">&#9679; DRAFT</span>':''}</div><div class="sop-suggested">${sugText}</div></div>
+    <div class="sop-block"><div class="sop-block-label">${st.draft?'Draft Amendment':'Suggested Amendment'}${st.draft?' <span style="color:#ffc64d;font-size:9px">&#9679; DRAFT</span>':''}</div><div class="sop-suggested">${sugText}</div></div>
     ${annoSummary}
   </div>`;
 }
@@ -1290,29 +1440,29 @@ function rtAction(action){
 }
 
 // ─── RIGHT PANEL CONTENT RENDERERS ───────────────────────
-function displayRightContent(key){
+async function displayRightContent(key){
   const st=getTabState(key);
-  if(st.mode==='compare')  renderCompare(key);
-  else if(st.mode==='history') renderVersionHistory(key);
-  else if(st.mode==='draft')   renderDraftEditor(key);
-  else if(st.mode==='reject')  renderRejectForm(key);
-  else if(st.mode==='annotate') renderAnnotateForm(key);
-  else showSopContent(key);
+  if(st.mode==='compare')  await renderCompare(key);
+  else if(st.mode==='history') await renderVersionHistory(key);
+  else if(st.mode==='draft')   await renderDraftEditor(key);
+  else if(st.mode==='reject')  await renderRejectForm(key);
+  else if(st.mode==='annotate') await renderAnnotateForm(key);
+  else await showSopContent(key);
 }
 
-function sopMeta(key){
+async function sopMeta(key){
   const t=sopTabs.find(t=>t.key===key); if(!t) return null;
   const sub=MOCK.find(s=>s.id===t.subId); if(!sub) return null;
   const sop=sub.sops[t.idx];
-  const content=SOP_CONTENT[sop.code]||{current:'',suggested:''};
+  const content = await fetchSopContent(sop.code, sop.section);
   return {t, sub, sop, content};
 }
 
-function renderCompare(key){
-  const m=sopMeta(key); if(!m) return;
+async function renderCompare(key){
+  const m=await sopMeta(key); if(!m) return;
   const st=getTabState(key);
   const currentLines=m.content.current.split('\n');
-  const suggestedLines=(st.draft||m.content.suggested).split('\n');
+  const suggestedLines=(st.draft||'No draft amendment yet.').split('\n');
   const delLines=currentLines.map((l,i)=>`<div class="diff-line dl-del"><span class="diff-gutter">${i+1}</span><span>- ${l}</span></div>`).join('');
   const addLines=suggestedLines.map((l,i)=>`<div class="diff-line dl-add"><span class="diff-gutter">${i+1}</span><span>+ ${l}</span></div>`).join('');
   document.getElementById('rightContent').innerHTML=`<div class="fade-in">
@@ -1330,8 +1480,8 @@ function renderCompare(key){
   </div>`;
 }
 
-function renderVersionHistory(key){
-  const m=sopMeta(key); if(!m) return;
+async function renderVersionHistory(key){
+  const m=await sopMeta(key); if(!m) return;
   const history=[
     {v:'Rev 4.1',date:'2023-09-12',author:'Dr. K. Walsh',note:'Updated calibration frequency references'},
     {v:'Rev 4.0',date:'2023-03-01',author:'Liu Chen',note:'Added manual override logging requirement'},
@@ -1349,10 +1499,10 @@ function renderVersionHistory(key){
   </div>`;
 }
 
-function renderDraftEditor(key){
-  const m=sopMeta(key); if(!m) return;
+async function renderDraftEditor(key){
+  const m=await sopMeta(key); if(!m) return;
   const st=getTabState(key);
-  const txt=(st.draft||m.content.suggested).replace(/`/g,'&#96;');
+  const txt=(st.draft||'Draft your amendment here...').replace(/`/g,'&#96;');
   document.getElementById('rightContent').innerHTML=`<div class="fade-in">
     <div class="action-bar">
       <button class="action-btn primary" onclick="saveDraft('${key}')">&#10003;&nbsp; Save Draft</button>
@@ -1374,22 +1524,44 @@ function saveDraft(key){
   getTabState(key).draft=ta.value;
   renderSopTabs();
   const stat=document.getElementById('draftStatus');
-  if(stat) stat.textContent='Draft saved \u2014 '+new Date().toLocaleTimeString('en-GB',{hour12:false});
-  const m=sopMeta(key);
-  addLog('Draft saved: '+(m?m.sop.code:key),'info');
+  if(stat) stat.textContent='Saving\u2026';
+  
+  // Persist to database
+  const t=sopTabs.find(t=>t.key===key);
+  if(t){
+    const userName = localStorage.getItem('vent_name')||'unknown';
+    const userRole = localStorage.getItem('vent_role')||'unknown';
+    authFetch(SERVER+'/sop-changes',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ submissionRef:t.subId, sopCode:t.code, section:t.section, action:'draft', draft:ta.value, userId:userName, userRole:userRole })
+    }).then(r=>{
+      if(stat) stat.textContent = r.ok ? 'Saved \u2014 '+new Date().toLocaleTimeString('en-GB',{hour12:false}) : 'Save failed';
+    }).catch(()=>{ if(stat) stat.textContent='Save failed (offline)'; });
+  }
+  addLog('Draft saved: '+key,'info');
 }
 
-function acceptFromDraft(key){
+async function acceptFromDraft(key){
   const ta=document.getElementById('draftTA');
   if(ta) getTabState(key).draft=ta.value;
   getTabState(key).accepted=true; getTabState(key).mode='view';
   renderSopTabs(); displayRightContent(key);
-  const m=sopMeta(key);
-  addLog('Amendment accepted: '+(m?m.sop.code:key),'info');
+  
+  // Persist acceptance
+  const t=sopTabs.find(t=>t.key===key);
+  if(t){
+    const userName = localStorage.getItem('vent_name')||'unknown';
+    const userRole = localStorage.getItem('vent_role')||'unknown';
+    authFetch(SERVER+'/sop-changes',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ submissionRef:t.subId, sopCode:t.code, section:t.section, action:'accepted', draft:getTabState(key).draft, userId:userName, userRole:userRole })
+    }).catch(()=>{});
+  }
+  addLog('Amendment accepted: '+key,'info');
 }
 
-function renderRejectForm(key){
-  const m=sopMeta(key); if(!m) return;
+async function renderRejectForm(key){
+  const m=await sopMeta(key); if(!m) return;
   const st=getTabState(key);
   document.getElementById('rightContent').innerHTML=`<div class="fade-in">
     <div class="action-bar">
@@ -1410,12 +1582,22 @@ function confirmReject(key){
   st.rejectReason=ta?ta.value:'';
   st.rejected=true; st.accepted=false; st.mode='view';
   renderSopTabs(); displayRightContent(key);
-  const m=sopMeta(key);
-  addLog('Change rejected: '+(m?m.sop.code:key)+' \u2014 '+(st.rejectReason||'no reason given'),'warn');
+  
+  // Persist rejection
+  const t=sopTabs.find(t=>t.key===key);
+  if(t){
+    const userName = localStorage.getItem('vent_name')||'unknown';
+    const userRole = localStorage.getItem('vent_role')||'unknown';
+    authFetch(SERVER+'/sop-changes',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ submissionRef:t.subId, sopCode:t.code, section:t.section, action:'rejected', reason:st.rejectReason, userId:userName, userRole:userRole })
+    }).catch(()=>{});
+  }
+  addLog('Change rejected: '+key+' \u2014 '+(st.rejectReason||'no reason given'),'warn');
 }
 
-function renderAnnotateForm(key){
-  const m=sopMeta(key); if(!m) return;
+async function renderAnnotateForm(key){
+  const m=await sopMeta(key); if(!m) return;
   const st=getTabState(key);
   const existing=st.annotations.map(a=>renderAnnotationHTML(a)).join('');
   const name=localStorage.getItem('vent_name')||'QA Reviewer';
@@ -1449,17 +1631,27 @@ function saveAnnotation(key){
   if(!ta||!ta.value.trim()) return;
   const name=localStorage.getItem('vent_name')||'QA Reviewer';
   const role=localStorage.getItem('vent_role')||'qa';
+  const text = ta.value.trim();
   getTabState(key).annotations.push({
     _id: Date.now().toString(36),
-    text: ta.value.trim(),
+    text: text,
     time: new Date().toLocaleTimeString('en-GB',{hour12:false}),
     date: new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),
     author: name,
     role: role,
     reactions: []
   });
-  const m=sopMeta(key);
-  addLog('Annotation added: '+(m?m.sop.code:key),'info');
+  
+  // Persist to database
+  const t=sopTabs.find(t=>t.key===key);
+  if(t){
+    authFetch(SERVER+'/sop-annotations',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ submissionRef:t.subId, sopCode:t.code, section:t.section, text:text, userId:name, userRole:role })
+    }).catch(()=>{});
+  }
+  
+  addLog('Annotation added: '+key,'info');
   renderAnnotateForm(key);
 }
 function toggleRightExpand(){

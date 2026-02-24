@@ -279,8 +279,21 @@ body {
 }
 </style>
 <script>
-  const _r = localStorage.getItem('vent_role');
-  if (!_r || _r === 'operator') window.location.replace('login.html');
+  const SERVER = 'https://vent-production-8f8a.up.railway.app';
+  // Auth guard
+  (async function authGuard() {
+    const token = localStorage.getItem('vent_token');
+    const _r = localStorage.getItem('vent_role');
+    if (!token || !_r || _r === 'operator') { window.location.replace('login.html'); return; }
+    try {
+      const res = await fetch(SERVER + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!res.ok) throw new Error('expired');
+    } catch {
+      localStorage.removeItem('vent_token'); localStorage.removeItem('vent_role');
+      localStorage.removeItem('vent_name'); localStorage.removeItem('vent_user_id');
+      window.location.replace('login.html');
+    }
+  })();
 </script>
 </head>
 <body>
@@ -292,6 +305,8 @@ body {
     <a href="query.html"       class="nav-item">Query SOPs</a>
     <a href="submissions.html" class="nav-item on">Submissions</a>
     <a href="qa.html"          class="nav-item">QA Control</a>
+    <a href="workflow.html"    class="nav-item">Workflow</a>
+    <a href="dashboard.html"   class="nav-item">Dashboard</a>
   </div>
   <div class="topbar-right" id="topbarRight"></div>
 </div>
@@ -720,7 +735,7 @@ function renderStats() {
   const safe = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
   const d = document.createElement('div');
   d.style.cssText = 'display:flex;align-items:center;gap:8px;border-left:1px solid var(--border);padding-left:12px;flex-shrink:0;';
-  d.innerHTML = `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${clrs[role]||'var(--mid)'};background:var(--s3);border:1px solid var(--border);padding:3px 8px;border-radius:5px;letter-spacing:.05em;">${labels[role]||role.toUpperCase()}</span>${name?`<span style="font-size:12px;color:var(--mid);font-weight:300">${safe(name)}</span>`:''}<button onclick="localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');window.location.replace('login.html')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--borderhi)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">Sign out</button>`;
+  d.innerHTML = `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${clrs[role]||'var(--mid)'};background:var(--s3);border:1px solid var(--border);padding:3px 8px;border-radius:5px;letter-spacing:.05em;">${labels[role]||role.toUpperCase()}</span>${name?`<span style="font-size:12px;color:var(--mid);font-weight:300">${safe(name)}</span>`:''}<button onclick="localStorage.removeItem('vent_token');localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');localStorage.removeItem('vent_user_id');window.location.replace('login.html')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--borderhi)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">Sign out</button>`;
   right.appendChild(d);
   const allowed = navRules[role] || [];
   document.querySelectorAll('.nav-item').forEach(l => { if (!allowed.some(a => l.textContent.trim().includes(a))) l.style.display = 'none'; });

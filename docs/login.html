@@ -189,8 +189,13 @@ body::before {
 }
 
 /* ── PANE VISIBILITY ── */
-.staff-pane, .admin-pane { display: none; }
-.staff-pane.show, .admin-pane.show { display: block; }
+.login-pane, .register-pane { display: none; }
+.login-pane.show, .register-pane.show { display: block; }
+
+/* ── LOADING SPINNER ── */
+.btn-loading { pointer-events: none; opacity: .6; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .5s linear infinite; }
 
 /* ── FOOTER ── */
 .login-footer {
@@ -213,16 +218,44 @@ body::before {
   </div>
 
   <div class="tabs">
-    <button class="tab on" onclick="switchTab('staff', this)">Staff Access</button>
-    <button class="tab"    onclick="switchTab('admin', this)">Admin</button>
+    <button class="tab on" onclick="switchTab('login', this)">Sign In</button>
+    <button class="tab"    onclick="switchTab('register', this)">Register</button>
   </div>
 
-  <!-- ── STAFF PANE ── -->
-  <div class="staff-pane show" id="staffPane">
+  <!-- ── SIGN IN PANE ── -->
+  <div class="login-pane show" id="loginPane">
 
     <div class="heading">
-      <h1>Who are you today?</h1>
-      <p class="sub">Select your role to be taken to the right view.</p>
+      <h1>Welcome back</h1>
+      <p class="sub">Sign in with your email and password.</p>
+    </div>
+
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="email"
+             onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="err-msg" id="loginErr"></div>
+
+    <button class="continue-btn" onclick="doLogin()" id="loginBtn">
+      Sign in
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+
+  </div><!-- /login-pane -->
+
+  <!-- ── REGISTER PANE ── -->
+  <div class="register-pane" id="registerPane">
+
+    <div class="heading">
+      <h1>Create your account</h1>
+      <p class="sub">Select your role and create your credentials.</p>
     </div>
 
     <div class="role-list">
@@ -295,45 +328,28 @@ body::before {
     </div>
 
     <div class="field">
-      <label>First name <span style="text-transform:none;letter-spacing:0;font-size:10px">(optional)</span></label>
-      <input type="text" id="nameInput" placeholder="e.g. Liu, Sinéad, Robert…" autocomplete="off">
+      <label>Full name</label>
+      <input type="text" id="regName" placeholder="e.g. Liu Wei, Sinéad Murphy…" autocomplete="name">
     </div>
 
     <div class="field">
-      <label>Password</label>
-      <input type="password" id="staffPass" placeholder="••••••••" autocomplete="current-password"
-             onkeydown="if(event.key==='Enter')doStaffLogin()">
+      <label>Email</label>
+      <input type="email" id="regEmail" placeholder="you@company.com" autocomplete="email">
     </div>
-    <div class="err-msg" id="staffErr"></div>
 
-    <button class="continue-btn" id="continueBtn" onclick="doStaffLogin()" disabled>
-      Continue
+    <div class="field">
+      <label>Password <span style="text-transform:none;letter-spacing:0;font-size:10px">(min 6 characters)</span></label>
+      <input type="password" id="regPass" placeholder="••••••••" autocomplete="new-password"
+             onkeydown="if(event.key==='Enter')doRegister()">
+    </div>
+    <div class="err-msg" id="regErr"></div>
+
+    <button class="continue-btn" id="regBtn" onclick="doRegister()" disabled>
+      Create account
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
     </button>
 
-  </div><!-- /staff-pane -->
-
-  <!-- ── ADMIN PANE ── -->
-  <div class="admin-pane" id="adminPane">
-
-    <div class="heading">
-      <h1>Admin access</h1>
-      <p class="sub">Enter your password to access the full system.</p>
-    </div>
-
-    <div class="field" style="margin-top:24px">
-      <label>Password</label>
-      <input type="password" id="adminPass" placeholder="••••••••" autocomplete="current-password"
-             onkeydown="if(event.key==='Enter')doAdminLogin()">
-    </div>
-
-    <button class="continue-btn" onclick="doAdminLogin()">
-      Sign in
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-    </button>
-    <div class="err-msg" id="adminErr"></div>
-
-  </div><!-- /admin-pane -->
+  </div><!-- /register-pane -->
 
   <div class="login-footer">
     <em>Anonymous by design. Intelligent by necessity.</em>
@@ -342,68 +358,141 @@ body::before {
 </div><!-- /card -->
 
 <script>
-const ADMIN_PASSWORD = 'vent2026';
-const STAFF_PASSWORD = 'vent2026';
+const SERVER = 'https://vent-production-8f8a.up.railway.app';
 
 const ROLE_ROUTES = {
   operator:    'query.html',
   qa:          'qa.html',
   director:    'dashboard.html',
   msat:        'query.html',
-  engineering: 'dashboard.html',
+  engineering: 'qa.html',
   admin:       'dashboard.html'
 };
 
-// Already signed in? Redirect straight away.
-const _existing = localStorage.getItem('vent_role');
-if (_existing) window.location.replace(ROLE_ROUTES[_existing] || 'dashboard.html');
+// Already signed in? Verify token then redirect.
+(async function checkExisting() {
+  const token = localStorage.getItem('vent_token');
+  const role  = localStorage.getItem('vent_role');
+  if (!token || !role) return;
+  try {
+    const res = await fetch(SERVER + '/auth/me', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (res.ok) {
+      window.location.replace(ROLE_ROUTES[role] || 'dashboard.html');
+    } else {
+      // Token expired or invalid — clear and show login
+      localStorage.removeItem('vent_token');
+      localStorage.removeItem('vent_role');
+      localStorage.removeItem('vent_name');
+      localStorage.removeItem('vent_user_id');
+    }
+  } catch {
+    // Server unreachable — let them stay on login
+  }
+})();
 
 let selectedRole = null;
 
 function switchTab(tab, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
   btn.classList.add('on');
-  document.getElementById('staffPane').classList.toggle('show', tab === 'staff');
-  document.getElementById('adminPane').classList.toggle('show', tab === 'admin');
+  document.getElementById('loginPane').classList.toggle('show', tab === 'login');
+  document.getElementById('registerPane').classList.toggle('show', tab === 'register');
 }
 
 function selectRole(item) {
   document.querySelectorAll('.role-item').forEach(i => i.classList.remove('selected'));
   item.classList.add('selected');
   selectedRole = item.dataset.role;
-  document.getElementById('continueBtn').disabled = false;
+  document.getElementById('regBtn').disabled = false;
 }
 
-function doStaffLogin() {
-  if (!selectedRole) return;
-  const pass = document.getElementById('staffPass').value;
-  if (pass !== STAFF_PASSWORD) {
-    const err = document.getElementById('staffErr');
-    err.textContent = 'Incorrect password.';
-    document.getElementById('staffPass').value = '';
-    document.getElementById('staffPass').focus();
-    setTimeout(() => { err.textContent = ''; }, 3500);
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  setTimeout(() => { el.textContent = ''; }, 5000);
+}
+
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (loading) {
+    btn.classList.add('btn-loading');
+    btn.dataset.origHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> Please wait…';
+  } else {
+    btn.classList.remove('btn-loading');
+    if (btn.dataset.origHtml) btn.innerHTML = btn.dataset.origHtml;
+  }
+}
+
+function handleAuthSuccess(data) {
+  localStorage.setItem('vent_token', data.token);
+  localStorage.setItem('vent_role', data.user.role);
+  localStorage.setItem('vent_name', data.user.name);
+  localStorage.setItem('vent_user_id', data.user.id);
+  window.location.href = ROLE_ROUTES[data.user.role] || 'dashboard.html';
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPass').value;
+
+  if (!email || !password) {
+    showError('loginErr', 'Please enter your email and password.');
     return;
   }
-  const name = document.getElementById('nameInput').value.trim();
-  localStorage.setItem('vent_role', selectedRole);
-  if (name) localStorage.setItem('vent_name', name);
-  else localStorage.removeItem('vent_name');
-  window.location.href = ROLE_ROUTES[selectedRole];
+
+  setLoading('loginBtn', true);
+  try {
+    const res = await fetch(SERVER + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showError('loginErr', data.error || 'Sign in failed.');
+      setLoading('loginBtn', false);
+      return;
+    }
+    handleAuthSuccess(data);
+  } catch (e) {
+    showError('loginErr', 'Unable to reach server. Please try again.');
+    setLoading('loginBtn', false);
+  }
 }
 
-function doAdminLogin() {
-  const pass = document.getElementById('adminPass').value;
-  if (pass === ADMIN_PASSWORD) {
-    localStorage.setItem('vent_role', 'admin');
-    localStorage.setItem('vent_name', 'Admin');
-    window.location.replace('dashboard.html');
-  } else {
-    const err = document.getElementById('adminErr');
-    err.textContent = 'Incorrect password. Try again.';
-    document.getElementById('adminPass').value = '';
-    document.getElementById('adminPass').focus();
-    setTimeout(() => { err.textContent = ''; }, 3500);
+async function doRegister() {
+  if (!selectedRole) {
+    showError('regErr', 'Please select a role.');
+    return;
+  }
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPass').value;
+
+  if (!name) { showError('regErr', 'Please enter your name.'); return; }
+  if (!email) { showError('regErr', 'Please enter your email.'); return; }
+  if (password.length < 6) { showError('regErr', 'Password must be at least 6 characters.'); return; }
+
+  setLoading('regBtn', true);
+  try {
+    const res = await fetch(SERVER + '/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name, role: selectedRole })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showError('regErr', data.error || 'Registration failed.');
+      setLoading('regBtn', false);
+      return;
+    }
+    handleAuthSuccess(data);
+  } catch (e) {
+    showError('regErr', 'Unable to reach server. Please try again.');
+    setLoading('regBtn', false);
   }
 }
 </script>

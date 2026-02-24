@@ -705,9 +705,11 @@ body {
 <div class="topbar">
   <a href="index.html" class="logo">Vent<div class="pip"></div></a>
   <div class="app-nav">
-    <a href="query.html"     class="nav-item on">Query SOPs</a>
+    <a href="query.html"       class="nav-item on">Query SOPs</a>
     <a href="submissions.html" class="nav-item">Submissions</a>
-    <a href="qa.html"        class="nav-item">QA Control</a>
+    <a href="qa.html"          class="nav-item">QA Control</a>
+    <a href="workflow.html"    class="nav-item">Workflow</a>
+    <a href="dashboard.html"   class="nav-item">Dashboard</a>
   </div>
   <div class="topbar-right" id="topbarRight"></div>
 </div>
@@ -876,6 +878,32 @@ body {
 <script>
 const SERVER = 'https://vent-production-8f8a.up.railway.app';
 
+// ─── AUTH HELPERS ─────────────────────────────────────────────────────────────
+function getAuthHeaders(extra) {
+  const token = localStorage.getItem('vent_token');
+  const h = Object.assign({}, extra || {});
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  return h;
+}
+function authFetch(url, opts) {
+  opts = opts || {};
+  opts.headers = getAuthHeaders(opts.headers);
+  return fetch(url, opts);
+}
+// Auth guard
+(async function authGuard() {
+  const token = localStorage.getItem('vent_token');
+  if (!token) { window.location.replace('login.html'); return; }
+  try {
+    const res = await fetch(SERVER + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) throw new Error('expired');
+  } catch {
+    localStorage.removeItem('vent_token'); localStorage.removeItem('vent_role');
+    localStorage.removeItem('vent_name'); localStorage.removeItem('vent_user_id');
+    window.location.replace('login.html');
+  }
+})();
+
 // Auto-resize textarea
 const qInput = document.getElementById('qInput');
 qInput.addEventListener('input', () => {
@@ -928,7 +956,7 @@ async function runQuery() {
   const thinkId = turn.querySelector('[id^="thinking-"]').id;
 
   try {
-    const res  = await fetch(`${SERVER}/query`, {
+    const res  = await authFetch(`${SERVER}/query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: q, area })
@@ -1067,7 +1095,7 @@ async function toggleSrc(btn, docId, section, uid) {
 
   try {
     const url = `${SERVER}/sop/${encodeURIComponent(docId)}/chunk?section=${encodeURIComponent(section)}`;
-    const res  = await fetch(url);
+    const res  = await authFetch(url);
     const data = await res.json();
 
     if (!data || !data.content) {
@@ -1509,7 +1537,7 @@ async function submitVent() {
 
   try {
     // POST to server — triggers Voyage embed + Claude analysis + Supabase store
-    const res = await fetch(SERVER + '/submit', {
+    const res = await authFetch(SERVER + '/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1590,7 +1618,7 @@ function resetVentPanel() {
   const safe = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
   const d = document.createElement('div');
   d.style.cssText = 'display:flex;align-items:center;gap:8px;border-left:1px solid var(--border);padding-left:12px;flex-shrink:0;';
-  d.innerHTML = `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${clrs[role]||'var(--mid)'};background:var(--s3);border:1px solid var(--border);padding:3px 8px;border-radius:5px;letter-spacing:.05em;">${labels[role]||role.toUpperCase()}</span>${name?`<span style="font-size:12px;color:var(--mid);font-weight:300">${safe(name)}</span>`:''}<button onclick="localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');window.location.replace('login.html')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--borderhi)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">Sign out</button>`;
+  d.innerHTML = `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${clrs[role]||'var(--mid)'};background:var(--s3);border:1px solid var(--border);padding:3px 8px;border-radius:5px;letter-spacing:.05em;">${labels[role]||role.toUpperCase()}</span>${name?`<span style="font-size:12px;color:var(--mid);font-weight:300">${safe(name)}</span>`:''}<button onclick="localStorage.removeItem('vent_token');localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');localStorage.removeItem('vent_user_id');window.location.replace('login.html')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--borderhi)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">Sign out</button>`;
   right.appendChild(d);
   const allowed = navRules[role] || [];
   document.querySelectorAll('.nav-item').forEach(l => { if (!allowed.some(a => l.textContent.trim().includes(a))) l.style.display = 'none'; });

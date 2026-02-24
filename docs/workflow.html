@@ -406,8 +406,7 @@ body {
     <div class="app-nav">
       <a href="query.html"     class="nav-item">Query SOPs</a>
     <a href="submissions.html" class="nav-item">Submissions</a>
-      <a href="qa.html"        class="nav-item">QA Control</a>
-    </div>
+      <a href="qa.html"        class="nav-item">QA Control</a>    <a href="dashboard.html"   class="nav-item">Dashboard</a>    </div>
     <div class="topbar-right">
       <div class="ref-chip" id="topRefCode">—</div>
       <div class="priority-pill" id="topPriority"></div>
@@ -498,6 +497,32 @@ body {
 <script>
 const SERVER_URL = 'https://vent-production-8f8a.up.railway.app';
 
+// ─── AUTH HELPERS ─────────────────────────────────────────────────────────────
+function getAuthHeaders(extra) {
+  const token = localStorage.getItem('vent_token');
+  const h = Object.assign({}, extra || {});
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  return h;
+}
+function authFetch(url, opts) {
+  opts = opts || {};
+  opts.headers = getAuthHeaders(opts.headers);
+  return fetch(url, opts);
+}
+// Auth guard
+(async function authGuard() {
+  const token = localStorage.getItem('vent_token');
+  if (!token) { window.location.replace('login.html'); return; }
+  try {
+    const res = await fetch(SERVER_URL + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) throw new Error('expired');
+  } catch {
+    localStorage.removeItem('vent_token'); localStorage.removeItem('vent_role');
+    localStorage.removeItem('vent_name'); localStorage.removeItem('vent_user_id');
+    window.location.replace('login.html');
+  }
+})();
+
 const PHASE_DEFS = [
   { num: 1, label: 'Immediate Response',  timing: '0 – 4 hours',  desc: 'Operational notification — floor-level awareness and immediate response initiated.' },
   { num: 2, label: 'Document & Notify',   timing: 'Same day',     desc: 'Quality documentation — deviation or change control raised in the QMS.' },
@@ -533,7 +558,7 @@ async function loadData(ref) {
     if (raw) return normaliseLocal(JSON.parse(raw));
   } catch (_) {}
   // Fall back to API
-  const res = await fetch(`${SERVER_URL}/submissions/${ref}`);
+  const res = await authFetch(`${SERVER_URL}/submissions/${ref}`);
   if (!res.ok) throw new Error('Not found');
   return normaliseApi(await res.json());
 }
