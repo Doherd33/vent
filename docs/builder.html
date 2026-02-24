@@ -494,6 +494,114 @@ body {
 .right-tab[draggable] { cursor: grab; }
 .right-tab[draggable]:active { cursor: grabbing; }
 .right-tab.tab-dragging { opacity: 0.4; }
+.right-tab.sop-tab { border-top-color: var(--green); }
+.right-tab.sop-tab.active { border-top-color: var(--green); }
+.right-tab.sop-tab .sop-tab-num { color: var(--green); }
+
+.sop-search-btn {
+  width: 35px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: none; background: none;
+  color: var(--dim); transition: color .15s, background .15s;
+  border-left: 1px solid var(--border);
+}
+.sop-search-btn:hover { color: var(--accent); background: var(--accent2); }
+
+.sop-search-overlay {
+  padding: 16px;
+}
+.sop-search-overlay .search-row {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.sop-search-overlay input {
+  flex: 1; background: var(--s2); border: 1px solid var(--border);
+  color: var(--text); font-size: 12px; padding: 8px 10px;
+  border-radius: 6px; font-family: 'DM Sans', sans-serif;
+  outline: none; transition: border-color .15s;
+}
+.sop-search-overlay input:focus { border-color: var(--accent); }
+.sop-search-overlay .search-go {
+  padding: 8px 14px; background: var(--accent); color: #fff;
+  border: none; border-radius: 6px; font-size: 11px;
+  cursor: pointer; font-weight: 500; white-space: nowrap;
+}
+.sop-search-overlay .search-go:hover { background: #0088e0; }
+.sop-search-overlay .search-go:disabled { opacity: .5; cursor: default; }
+.sop-search-overlay .search-hint {
+  font-size: 11px; color: var(--dim); margin-bottom: 14px; line-height: 1.5;
+}
+.sop-search-overlay .search-status {
+  font-size: 11px; color: var(--mid); padding: 10px 0;
+  display: flex; align-items: center; gap: 8px;
+}
+.sop-search-overlay .search-status .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); animation: breathe 1.5s ease-in-out infinite;
+}
+
+/* SOP result card in right panel */
+.sop-result-card { animation: fadeUp .25s ease; }
+.sop-result-card .sop-r-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.sop-result-card .sop-r-cat {
+  width: 22px; height: 22px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; flex-shrink: 0;
+}
+.sop-r-cat.cat-proc { background: var(--accent2); color: var(--accent); }
+.sop-r-cat.cat-spec { background: var(--gold2); color: var(--gold); }
+.sop-r-cat.cat-fault { background: var(--red2); color: var(--red); }
+.sop-r-cat.cat-gen { background: var(--teal2); color: var(--teal); }
+.sop-result-card .sop-r-label { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; }
+.sop-result-card .sop-r-summary {
+  font-size: 12.5px; color: var(--mid); line-height: 1.7;
+  margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 14px;
+}
+.sop-result-card .sop-r-section-head {
+  font-size: 10px; color: var(--dim); text-transform: uppercase;
+  letter-spacing: .04em; margin: 14px 0 8px; display: flex; align-items: center; gap: 6px;
+}
+.sop-result-card .sop-r-step {
+  display: flex; gap: 8px; margin-bottom: 6px;
+}
+.sop-result-card .sop-r-step-n {
+  width: 18px; height: 18px; border-radius: 4px;
+  background: var(--accent2); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; flex-shrink: 0; margin-top: 1px;
+}
+.sop-result-card .sop-r-step-n.crit { background: var(--red2); color: var(--red); }
+.sop-result-card .sop-r-step-text { font-size: 12px; color: var(--text); line-height: 1.6; }
+.sop-result-card .sop-r-step-detail { font-size: 11px; color: var(--dim); margin-top: 2px; }
+.sop-result-card .sop-r-step-val { font-size: 10px; color: var(--green); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+.sop-result-card .sop-r-warn {
+  background: var(--red2); border-left: 2px solid var(--red);
+  padding: 8px 10px; border-radius: 4px;
+  font-size: 11px; color: var(--red); margin-bottom: 6px;
+  display: flex; align-items: flex-start; gap: 6px;
+}
+.sop-result-card .sop-r-param {
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 10px; margin-bottom: 6px;
+}
+.sop-result-card .sop-r-param-name { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: .03em; }
+.sop-result-card .sop-r-param-val { font-size: 14px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.sop-result-card .sop-r-param-unit { font-size: 10px; color: var(--mid); }
+.sop-result-card .sop-r-param-range { font-size: 10px; color: var(--dim); margin-top: 2px; }
+.sop-result-card .sop-r-note {
+  font-size: 11px; color: var(--mid); display: flex; gap: 6px; margin-bottom: 4px;
+}
+.sop-result-card .sop-r-src {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; padding: 4px 0;
+}
+.sop-result-card .sop-r-src-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--accent); background: var(--accent2);
+  padding: 2px 6px; border-radius: 4px;
+}
+.sop-result-card .sop-r-src-section { color: var(--dim); font-size: 10px; }
 
 .right-content {
   flex: 1; overflow-y: auto; padding: 16px;
@@ -821,6 +929,9 @@ if(!localStorage.getItem('vent_role')) window.location.replace('login.html');
         <div class="right-tab" data-tab="ai" onclick="switchRightTab(this)">AI Assist</div>
         <div class="right-tab" data-tab="versions" onclick="switchRightTab(this)">Versions</div>
       </div>
+      <button class="sop-search-btn" title="Search SOPs" onclick="openSopSearch()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
     </div>
     <div class="right-content" id="rightContent">
       <div class="empty-state" style="height:100%">
@@ -1440,6 +1551,251 @@ async function loadRightStepMedia(docId, stepId) {
     }
   });
   container.innerHTML = html;
+}
+
+// ── SOP SEARCH ──
+let openSopTabs = []; // {id, query, data}
+let activeSopTab = null;
+
+function authFetch(url, opts = {}) {
+  const token = localStorage.getItem('vent_token');
+  opts.headers = opts.headers || {};
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  return fetch(url, opts);
+}
+
+function openSopSearch() {
+  // Build context hint from active step/doc
+  let hint = '';
+  if (activeStepTab && activeDocId) {
+    const doc = documents.find(d => d.id === activeDocId);
+    if (doc) {
+      const step = doc.steps.find(s => s.id === activeStepTab);
+      if (step) hint = step.title + (step.content ? ' — ' + step.content.substring(0, 80) : '');
+    }
+  } else if (activeDocId) {
+    const doc = documents.find(d => d.id === activeDocId);
+    if (doc) hint = doc.title;
+  }
+
+  const rc = document.getElementById('rightContent');
+  rc.innerHTML = '<div class="sop-search-overlay fade-in">' +
+    '<div class="search-hint">Search SOPs for procedures, specifications, or troubleshooting relevant to your document.</div>' +
+    '<div class="search-row">' +
+      '<input id="sopSearchInput" type="text" placeholder="e.g. bioreactor inoculation procedure…" value="' + esc(hint) + '" ' +
+        'onkeydown="if(event.key===\'Enter\')runSopSearch()">' +
+      '<button class="search-go" id="sopSearchBtn" onclick="runSopSearch()">Search</button>' +
+    '</div>' +
+    '<div id="sopSearchResults"></div>' +
+  '</div>';
+
+  // Render SOP tabs + a "+" active indicator
+  const tabBar = document.querySelector('.right-panel-header .right-tabs');
+  let html = '';
+  openSopTabs.forEach(t => {
+    html += '<div class="right-tab sop-tab' + (t.id === activeSopTab ? ' active' : '') + '" ' +
+      'onclick="switchToSopTab(\'' + t.id + '\')" style="gap:6px">' +
+        '<span class="sop-tab-num" style="font-family:JetBrains Mono,monospace;font-size:10px">§</span>' +
+        esc(t.query.length > 18 ? t.query.substring(0,18) + '…' : t.query) +
+        '<button onclick="event.stopPropagation();closeSopTab(\'' + t.id + '\')" ' +
+          'style="background:none;border:none;color:' + (t.id === activeSopTab ? '#6c6c6c' : 'transparent') + ';cursor:pointer;font-size:11px;padding:0 2px;line-height:1;margin-left:2px">×</button>' +
+    '</div>';
+  });
+  html += '<div class="right-tab active" style="gap:4px;color:var(--accent)">' +
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+      'Search' +
+  '</div>';
+  tabBar.innerHTML = html;
+
+  // Focus the input
+  setTimeout(() => {
+    const inp = document.getElementById('sopSearchInput');
+    if (inp) { inp.focus(); inp.select(); }
+  }, 50);
+}
+
+async function runSopSearch() {
+  const inp = document.getElementById('sopSearchInput');
+  const btn = document.getElementById('sopSearchBtn');
+  const results = document.getElementById('sopSearchResults');
+  if (!inp || !btn || !results) return;
+  const q = inp.value.trim();
+  if (q.length < 3) return;
+
+  btn.disabled = true;
+  results.innerHTML = '<div class="search-status"><div class="dot"></div> Searching SOPs…</div>';
+
+  try {
+    const res = await authFetch(SERVER + '/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q, area: 'Upstream' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Query failed');
+
+    // Create a SOP tab for this result
+    const tabId = 'sop_' + Date.now();
+    openSopTabs.push({ id: tabId, query: q, data });
+    activeSopTab = tabId;
+
+    // Clear step tabs since we're in SOP mode now
+    openStepTabs = [];
+    activeStepTab = null;
+    document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
+
+    renderSopTabs();
+    renderSopResult(tabId);
+    logActivity('SOP search: "' + q + '"', 'info');
+
+  } catch (err) {
+    results.innerHTML = '<div style="color:var(--red);font-size:12px;padding:8px 0">Error: ' + esc(err.message) + '</div>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSopTabs() {
+  const tabBar = document.querySelector('.right-panel-header .right-tabs');
+  let html = '';
+  openSopTabs.forEach(t => {
+    const isActive = t.id === activeSopTab;
+    html += '<div class="right-tab sop-tab' + (isActive ? ' active' : '') + '" ' +
+      'onclick="switchToSopTab(\'' + t.id + '\')" style="gap:6px">' +
+        '<span class="sop-tab-num" style="font-family:JetBrains Mono,monospace;font-size:10px">§</span>' +
+        esc(t.query.length > 18 ? t.query.substring(0,18) + '…' : t.query) +
+        '<button onclick="event.stopPropagation();closeSopTab(\'' + t.id + '\')" ' +
+          'style="background:none;border:none;color:' + (isActive ? '#6c6c6c' : 'transparent') + ';cursor:pointer;font-size:11px;padding:0 2px;line-height:1;margin-left:2px">×</button>' +
+    '</div>';
+  });
+  tabBar.innerHTML = html;
+}
+
+function switchToSopTab(tabId) {
+  activeSopTab = tabId;
+  renderSopTabs();
+  renderSopResult(tabId);
+}
+
+function closeSopTab(tabId) {
+  openSopTabs = openSopTabs.filter(t => t.id !== tabId);
+  if (activeSopTab === tabId) {
+    if (openSopTabs.length) {
+      activeSopTab = openSopTabs[openSopTabs.length - 1].id;
+      renderSopTabs();
+      renderSopResult(activeSopTab);
+    } else {
+      activeSopTab = null;
+      const doc = documents.find(d => d.id === activeDocId);
+      if (doc) renderRightPanel(doc);
+      else {
+        document.querySelector('.right-panel-header .right-tabs').innerHTML =
+          '<div class="right-tab active" data-tab="edit" onclick="switchRightTab(this)">Edit</div>' +
+          '<div class="right-tab" data-tab="ai" onclick="switchRightTab(this)">AI Assist</div>' +
+          '<div class="right-tab" data-tab="versions" onclick="switchRightTab(this)">Versions</div>';
+        document.getElementById('rightContent').innerHTML =
+          '<div class="empty-state" style="height:100%"><div class="ei">✏️</div><p>Open a document to start editing</p></div>';
+      }
+    }
+  } else {
+    renderSopTabs();
+  }
+}
+
+function renderSopResult(tabId) {
+  const tab = openSopTabs.find(t => t.id === tabId);
+  if (!tab) return;
+  const d = tab.data;
+  const rc = document.getElementById('rightContent');
+
+  const catMap = {
+    procedure:      { label: 'Step-by-step procedure', cls: 'cat-proc',  icon: '≡' },
+    specification:  { label: 'Specification / parameter', cls: 'cat-spec', icon: '◈' },
+    troubleshooting:{ label: 'Troubleshooting guide',   cls: 'cat-fault', icon: '⚡' },
+    general:        { label: 'General information',     cls: 'cat-gen',   icon: '○' }
+  };
+  const cat = catMap[d.category] || catMap.general;
+
+  let html = '<div class="sop-result-card">';
+
+  // Header
+  html += '<div class="sop-r-head">' +
+    '<div class="sop-r-cat ' + cat.cls + '">' + cat.icon + '</div>' +
+    '<div><div class="sop-r-label">' + cat.label + '</div></div>' +
+    '<button class="step-action-btn" style="margin-left:auto;font-size:10px;padding:4px 8px" onclick="openSopSearch()" title="New search">' +
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Search' +
+    '</button>' +
+  '</div>';
+
+  // Summary
+  html += '<div class="sop-r-summary">' + esc(d.summary) + '</div>';
+
+  // Warnings
+  if (d.warnings && d.warnings.length) {
+    d.warnings.forEach(w => {
+      html += '<div class="sop-r-warn">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+        esc(w) + '</div>';
+    });
+  }
+
+  // Steps
+  if (d.steps && d.steps.length) {
+    html += '<div class="sop-r-section-head">' +
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
+      'Procedure steps</div>';
+    d.steps.forEach(s => {
+      html += '<div class="sop-r-step">' +
+        '<div class="sop-r-step-n' + (s.critical ? ' crit' : '') + '">' + s.n + '</div>' +
+        '<div>' +
+          '<div class="sop-r-step-text">' + esc(s.action) + (s.critical ? ' <span style="color:var(--red);font-size:10px">⚠ Critical</span>' : '') + '</div>' +
+          (s.detail ? '<div class="sop-r-step-detail">' + esc(s.detail) + '</div>' : '') +
+          (s.value ? '<div class="sop-r-step-val">Target: ' + esc(s.value) + '</div>' : '') +
+        '</div>' +
+      '</div>';
+    });
+  }
+
+  // Parameters
+  if (d.params && d.params.length) {
+    html += '<div class="sop-r-section-head">' +
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>' +
+      'Process parameters</div>';
+    d.params.forEach(p => {
+      html += '<div class="sop-r-param">' +
+        '<div class="sop-r-param-name">' + esc(p.name) + '</div>' +
+        '<div><span class="sop-r-param-val">' + esc(p.value) + '</span> <span class="sop-r-param-unit">' + esc(p.unit || '') + '</span></div>' +
+        (p.range ? '<div class="sop-r-param-range">Range: ' + esc(p.range) + '</div>' : '') +
+      '</div>';
+    });
+  }
+
+  // Notes
+  if (d.notes && d.notes.length) {
+    html += '<div class="sop-r-section-head">' +
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+      'Notes</div>';
+    d.notes.forEach(n => {
+      html += '<div class="sop-r-note"><span style="color:var(--dim)">–</span> ' + esc(n) + '</div>';
+    });
+  }
+
+  // Sources
+  if (d.sources && d.sources.length) {
+    html += '<div class="sop-r-section-head" style="margin-top:16px">' +
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+      'Sources</div>';
+    d.sources.forEach(s => {
+      html += '<div class="sop-r-src">' +
+        '<span class="sop-r-src-code">' + esc(s.code) + '</span>' +
+        '<span style="color:var(--mid);font-size:11px">' + esc(s.title) + '</span>' +
+        '<span class="sop-r-src-section">§ ' + esc(s.section) + '</span>' +
+      '</div>';
+    });
+  }
+
+  html += '</div>';
+  rc.innerHTML = html;
 }
 
 // ── STEP MANAGEMENT ──
