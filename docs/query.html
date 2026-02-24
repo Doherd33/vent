@@ -333,15 +333,32 @@ body {
 
 /* ── MOBILE ── */
 @media (max-width: 640px) {
-  .topbar { padding: 0 14px; }
+  .topbar { padding: 0 10px; gap: 6px; height: 48px; }
+  .logo { font-size: 19px; }
+  .nav-item { font-size: 12px; padding: 5px 8px; }
+  .topbar-right { gap: 6px; }
   .chat-inner { padding: 0 14px; }
   .input-bar { padding: 10px 14px 14px; }
   .params-grid { grid-template-columns: 1fr 1fr; }
   .input-footer { flex-direction: column; align-items: stretch; }
   .send-btn { justify-content: center; }
+  .empty-state { padding: 24px 16px; }
+  .empty-title { font-size: 22px; }
+  .empty-sub { font-size: 13px; }
+  .sug-chips { gap: 6px; }
+  .sug-chip { font-size: 11px; padding: 6px 12px; }
 }
 
-/* ── VENT FAB ── */
+/* ── VENT FAB MOBILE ── */
+@media (max-width: 640px) {
+  .vent-fab { bottom: 90px; right: 16px; width: 44px; height: 44px; }
+  .vent-fab-label { right: 72px; font-size: 10.5px; }
+  .vent-panel { right: 12px; left: 12px; width: auto; bottom: 148px; max-height: calc(100vh - 200px); }
+  .subs-drawer { width: 100%; }
+  .subs-trigger { font-size: 11px; padding: 4px 9px; }
+  .subs-count { font-size: 8.5px; padding: 1px 6px; }
+  .user-name-label { display: none; }
+}
 .vent-fab {
   position: fixed; bottom: 136px; right: 28px; z-index: 200;
   width: 48px; height: 48px; border-radius: 50%;
@@ -1620,7 +1637,7 @@ function resetVentPanel() {
   const safe = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
   const d = document.createElement('div');
   d.style.cssText = 'display:flex;align-items:center;gap:8px;border-left:1px solid var(--border);padding-left:12px;flex-shrink:0;';
-  d.innerHTML = `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${clrs[role]||'var(--mid)'};background:var(--s3);border:1px solid var(--border);padding:3px 8px;border-radius:5px;letter-spacing:.05em;">${labels[role]||role.toUpperCase()}</span>${name?`<span style="font-size:12px;color:var(--mid);font-weight:300">${safe(name)}</span>`:''}<button onclick="localStorage.removeItem('vent_token');localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');localStorage.removeItem('vent_user_id');window.location.replace('login.html')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--borderhi)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">Sign out</button>`;
+  d.innerHTML = `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${clrs[role]||'var(--mid)'};background:var(--s3);border:1px solid var(--border);padding:3px 8px;border-radius:5px;letter-spacing:.05em;">${labels[role]||role.toUpperCase()}</span>${name?`<span class="user-name-label" style="font-size:12px;color:var(--mid);font-weight:300">${safe(name)}</span>`:''}<button onclick="localStorage.removeItem('vent_token');localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');localStorage.removeItem('vent_user_id');window.location.replace('login.html')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--borderhi)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">Sign out</button>`;
   right.appendChild(d);
   const allowed = navRules[role] || [];
   document.querySelectorAll('.nav-item').forEach(l => { if (!allowed.some(a => l.textContent.trim().includes(a))) l.style.display = 'none'; });
