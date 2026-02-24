@@ -96,13 +96,10 @@ body {
 /* ── WORKBENCH ── */
 .workbench {
   display: grid;
-  grid-template-columns: 240px 6px 1fr 6px 0px;
+  grid-template-columns: 240px 6px 1fr 6px 300px;
   grid-template-rows: 1fr 6px 160px;
   overflow: hidden;
   position: relative;
-}
-.workbench.edit-open {
-  grid-template-columns: 240px 6px 1fr 6px 340px;
 }
 
 /* ── RESIZE HANDLES ── */
@@ -612,7 +609,7 @@ body {
     grid-template-columns: 1fr !important;
     grid-template-rows: auto 1fr auto !important;
   }
-  .workbench.edit-open { grid-template-columns: 1fr !important; }
+
   .resizer { display: none; }
 
   .left-panel {
@@ -915,9 +912,6 @@ function openDoc(id) {
   // Add to open tabs if not already
   if (!openTabs.includes(id)) openTabs.push(id);
 
-  // Show right panel
-  document.getElementById('workbench').classList.add('edit-open');
-
   renderDocList();
   renderEditorTabs();
   renderDocView(doc);
@@ -954,7 +948,6 @@ function closeTab(id) {
   if (activeDocId) {
     openDoc(activeDocId);
   } else {
-    document.getElementById('workbench').classList.remove('edit-open');
     renderEditorTabs();
     document.getElementById('centerContent').innerHTML =
       '<div class="empty-state"><div class="ei">📄</div><p>Select a document from the left panel<br>or create a new one to get started.</p><span class="hint">Your workflow documents will appear here</span></div>';
@@ -1334,7 +1327,7 @@ function esc(s) {
   const bp   = wb.querySelector('.bottom-panel');
 
   let leftW  = 240;
-  let rightW = 0;
+  let rightW = 300;
   let botH   = 160;
 
   function applyCols() {
