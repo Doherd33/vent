@@ -1624,23 +1624,20 @@ async function runSopSearch() {
   const results = document.getElementById('sopSearchResults');
   if (!inp || !btn || !results) return;
   const q = inp.value.trim();
-  if (q.length < 3) return;
-
+  if (q.length < 2) {
+    results.innerHTML = '<div style="color:var(--red);font-size:12px;padding:8px 0">Please enter at least 2 characters.</div>';
+    return;
+  }
   btn.disabled = true;
   results.innerHTML = '<div class="search-status"><div class="dot"></div> Searching SOPs…</div>';
-
   try {
-    // New: search SOPs by title/content
     const res = await authFetch(SERVER + '/sop/search?q=' + encodeURIComponent(q));
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Query failed');
-
     if (!data.length) {
       results.innerHTML = '<div class="search-status">No SOPs found matching your query.</div>';
       return;
     }
-
-    // Show clickable list of SOPs
     results.innerHTML = data.map(row =>
       `<div class="sop-search-result" style="padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="openSopDocTab('${row.doc_id}','${esc(row.section_title)}')">
         <div style="font-size:13px;color:var(--accent);font-weight:500">${esc(row.doc_id)}</div>
