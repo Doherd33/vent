@@ -358,6 +358,9 @@ body::before {
 </div><!-- /card -->
 
 <script>
+// Dev bypass — ?dev in URL auto-sets admin and skips login
+if(new URLSearchParams(window.location.search).has('dev')){localStorage.setItem('vent_role','admin');localStorage.setItem('vent_name','Dev Admin');localStorage.setItem('vent_token','dev');window.location.replace('index.html');}
+
 const SERVER = 'https://vent-production-8f8a.up.railway.app';
 
 const ROLE_ROUTES = {
