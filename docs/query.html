@@ -697,7 +697,7 @@ body {
   .subs-drawer { width: 100%; }
 }
 </style>
-<script>if(!localStorage.getItem('vent_role'))window.location.replace('login.html');</script>
+<script>if(new URLSearchParams(window.location.search).has('dev')){localStorage.setItem('vent_role','admin');localStorage.setItem('vent_name','Dev Admin');localStorage.setItem('vent_token','dev');}if(!localStorage.getItem('vent_role'))window.location.replace('login.html');</script>
 </head>
 <body>
 

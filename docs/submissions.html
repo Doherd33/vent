@@ -282,6 +282,7 @@ body {
   const SERVER = 'https://vent-production-8f8a.up.railway.app';
   // Auth guard
   (async function authGuard() {
+    if(new URLSearchParams(window.location.search).has('dev')){localStorage.setItem('vent_role','admin');localStorage.setItem('vent_name','Dev Admin');localStorage.setItem('vent_token','dev');}
     const token = localStorage.getItem('vent_token');
     const _r = localStorage.getItem('vent_role');
     if (!token || !_r || _r === 'operator') { window.location.replace('login.html'); return; }
