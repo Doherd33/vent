@@ -458,6 +458,97 @@ body {
   background: var(--accent2);
 }
 
+/* ── AI COMPARISON VIEW ── */
+.ai-compare {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: var(--border); border-radius: 6px;
+  overflow: hidden; margin-top: 10px;
+}
+.ai-compare-col {
+  background: var(--s1); padding: 12px;
+  font-size: 12px; line-height: 1.7; color: var(--text);
+}
+.ai-compare-label {
+  font-size: 9px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.ai-compare-label.original { color: var(--dim); }
+.ai-compare-label.ai { color: var(--accent); }
+.ai-compare-text {
+  white-space: pre-wrap; font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px; line-height: 1.8;
+}
+.ai-changes-list {
+  margin-top: 12px; padding: 10px 12px;
+  background: var(--accent2); border: 1px solid var(--accent3);
+  border-radius: 6px;
+}
+.ai-changes-list h4 {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--accent); margin-bottom: 8px;
+}
+.ai-changes-list ul {
+  padding-left: 16px; margin: 0;
+}
+.ai-changes-list li {
+  font-size: 11px; color: var(--text); margin-bottom: 4px;
+  line-height: 1.5;
+}
+.ai-sop-refs {
+  margin-top: 10px; font-size: 10px; color: var(--mid);
+  font-family: 'JetBrains Mono', monospace; line-height: 1.6;
+}
+.ai-sop-refs span {
+  display: inline-block; background: var(--teal2);
+  color: var(--teal); padding: 2px 7px; border-radius: 3px;
+  margin: 2px 3px 2px 0; font-size: 9px;
+}
+.ai-confidence {
+  display: inline-block; font-size: 9px; font-weight: 600;
+  padding: 2px 8px; border-radius: 10px;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.ai-confidence.high { background: var(--green2); color: var(--green); }
+.ai-confidence.medium { background: var(--gold2); color: var(--gold); }
+.ai-confidence.low { background: var(--red2); color: var(--red); }
+.ai-notes {
+  margin-top: 10px; font-size: 11px; color: var(--mid);
+  font-style: italic; line-height: 1.6;
+  padding: 8px 12px; background: var(--s2);
+  border-radius: 4px; border-left: 3px solid var(--dim);
+}
+.ai-loading {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px; padding: 40px 20px;
+  color: var(--mid); font-size: 12px;
+}
+.ai-spinner {
+  width: 28px; height: 28px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ai-step-selector {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 10px; color: var(--text);
+  font-size: 12px; font-family: inherit; cursor: pointer;
+  outline: none; transition: border-color .15s;
+}
+.ai-step-selector:focus { border-color: var(--accent); }
+.ai-step-selector option { background: var(--s1); }
+.ai-mode-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;
+}
+.ai-mode-btn {
+  padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--s2); color: var(--text); font-size: 11px;
+  cursor: pointer; transition: all .15s; font-family: inherit;
+  text-align: left; display: flex; align-items: center; gap: 6px;
+}
+.ai-mode-btn:hover { border-color: var(--accent); background: var(--accent2); }
+.ai-mode-btn.active { border-color: var(--accent); background: var(--accent2); color: #fff; }
+
 /* ── RIGHT PANEL — Edit & Revise ── */
 .right-panel {
   grid-column: 5; grid-row: 1;
@@ -1405,26 +1496,210 @@ function renderRightPanelEdit(doc, focusStep) {
   '</div>';
 }
 
+let aiSelectedStepId = null;
+let aiSelectedMode = 'clarity';
+let aiLastResult = null;
+
 function renderRightPanelAI(doc) {
   const rc = document.getElementById('rightContent');
+
+  // Step selector
+  let stepOptions = '<option value="">— Select a step —</option>';
+  doc.steps.forEach((s, i) => {
+    const sel = s.id === aiSelectedStepId ? ' selected' : '';
+    stepOptions += '<option value="' + s.id + '"' + sel + '>' + (i + 1) + '. ' + esc(s.title) + '</option>';
+  });
+
   rc.innerHTML = '<div class="fade-in">' +
-    '<div class="ai-suggestion">' +
-      '<div class="ai-suggestion-header">' +
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
-        'AI Suggestions' +
-      '</div>' +
-      '<div class="ai-suggestion-text">AI-powered document assistance will help you refine and improve your workflow documentation. Select a step and click "Improve with AI" to get started.</div>' +
-    '</div>' +
     '<div class="edit-section">' +
-      '<div class="edit-label">Quick Actions</div>' +
-      '<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">' +
-        '<button class="edit-btn" onclick="aiRewrite(\'' + doc.id + '\')"><span style="margin-right:6px">✨</span> Rewrite for Clarity</button>' +
-        '<button class="edit-btn" onclick="aiExpand(\'' + doc.id + '\')"><span style="margin-right:6px">📝</span> Expand Details</button>' +
-        '<button class="edit-btn" onclick="aiSafety(\'' + doc.id + '\')"><span style="margin-right:6px">⚠️</span> Add Safety Notes</button>' +
-        '<button class="edit-btn" onclick="aiFormat(\'' + doc.id + '\')"><span style="margin-right:6px">📋</span> Format as SOP</button>' +
+      '<div class="edit-label">AI Document Assistant</div>' +
+      '<p style="font-size:11px;color:var(--mid);margin-bottom:12px;line-height:1.5">Select a step and a refinement mode. The AI will compare your version against the facility SOPs and suggest improvements.</p>' +
+      '<div class="modal-field" style="margin-bottom:10px">' +
+        '<label>Step to Refine</label>' +
+        '<select class="ai-step-selector" id="aiStepSelect" onchange="aiSelectedStepId=this.value">' + stepOptions + '</select>' +
       '</div>' +
+      '<div class="modal-field">' +
+        '<label>Refinement Mode</label>' +
+        '<div class="ai-mode-grid">' +
+          '<button class="ai-mode-btn' + (aiSelectedMode === 'clarity' ? ' active' : '') + '" onclick="setAiMode(\'clarity\',this)">✨ Clarity</button>' +
+          '<button class="ai-mode-btn' + (aiSelectedMode === 'expand' ? ' active' : '') + '" onclick="setAiMode(\'expand\',this)">📝 Expand</button>' +
+          '<button class="ai-mode-btn' + (aiSelectedMode === 'safety' ? ' active' : '') + '" onclick="setAiMode(\'safety\',this)">⚠️ Safety</button>' +
+          '<button class="ai-mode-btn' + (aiSelectedMode === 'sop' ? ' active' : '') + '" onclick="setAiMode(\'sop\',this)">📋 SOP Format</button>' +
+          '<button class="ai-mode-btn' + (aiSelectedMode === 'compare' ? ' active' : '') + '" onclick="setAiMode(\'compare\',this)" style="grid-column:1/3">🔍 Compare with SOPs</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="edit-actions">' +
+      '<button class="edit-btn primary" id="aiRunBtn" onclick="runAiRefine(\'' + doc.id + '\')">✨ Refine with AI</button>' +
+    '</div>' +
+    '<div id="aiResultArea"></div>' +
+  '</div>';
+
+  // If there's a previous result cached, show it
+  if (aiLastResult && aiSelectedStepId) {
+    renderAiResult(doc);
+  }
+}
+
+function setAiMode(mode, btn) {
+  aiSelectedMode = mode;
+  document.querySelectorAll('.ai-mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function runAiRefine(docId) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+
+  const stepId = document.getElementById('aiStepSelect')?.value;
+  if (!stepId) { alert('Please select a step to refine.'); return; }
+
+  const step = doc.steps.find(s => s.id === stepId);
+  if (!step) return;
+
+  aiSelectedStepId = stepId;
+  const area = document.getElementById('aiResultArea');
+  area.innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div>Analysing against SOPs…<span style="font-size:10px;color:var(--dim)">Retrieving relevant SOP sections via VoyageAI and refining with Claude</span></div>';
+
+  const runBtn = document.getElementById('aiRunBtn');
+  if (runBtn) { runBtn.disabled = true; runBtn.textContent = 'Analysing…'; }
+
+  try {
+    const token = localStorage.getItem('vent_token');
+    const resp = await fetch(SERVER + '/ai/refine-step', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        stepTitle: step.title,
+        stepContent: step.content,
+        area: doc.area,
+        mode: aiSelectedMode
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || 'Request failed');
+    }
+
+    aiLastResult = await resp.json();
+    aiLastResult._originalTitle = step.title;
+    aiLastResult._originalContent = step.content;
+    aiLastResult._stepId = stepId;
+    aiLastResult._docId = docId;
+
+    renderAiResult(doc);
+    logActivity('AI refined step "' + step.title + '" (mode: ' + aiSelectedMode + ')', 'action');
+
+  } catch (err) {
+    area.innerHTML = '<div class="ai-suggestion" style="border-color:var(--red);background:var(--red2)">' +
+      '<div class="ai-suggestion-header" style="color:var(--red)">Error</div>' +
+      '<div class="ai-suggestion-text" style="color:var(--text)">' + esc(err.message) + '</div>' +
+    '</div>';
+  } finally {
+    if (runBtn) { runBtn.disabled = false; runBtn.textContent = '✨ Refine with AI'; }
+  }
+}
+
+function renderAiResult(doc) {
+  const r = aiLastResult;
+  if (!r) return;
+  const area = document.getElementById('aiResultArea');
+  if (!area) return;
+
+  let html = '<div style="margin-top:16px" class="fade-in">';
+
+  // Confidence badge
+  html += '<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">' +
+    '<span class="ai-confidence ' + (r.confidence || 'medium') + '">' + (r.confidence || 'medium') + ' confidence</span>' +
+  '</div>';
+
+  // Side-by-side title comparison
+  if (r.refinedTitle && r.refinedTitle !== r._originalTitle) {
+    html += '<div class="edit-section">' +
+      '<div class="edit-label">Title Comparison</div>' +
+      '<div class="ai-compare">' +
+        '<div class="ai-compare-col"><div class="ai-compare-label original">Your Version</div><div class="ai-compare-text">' + esc(r._originalTitle) + '</div></div>' +
+        '<div class="ai-compare-col"><div class="ai-compare-label ai">AI Version</div><div class="ai-compare-text">' + esc(r.refinedTitle) + '</div></div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // Side-by-side content comparison
+  html += '<div class="edit-section" style="margin-top:14px">' +
+    '<div class="edit-label">Content Comparison</div>' +
+    '<div class="ai-compare">' +
+      '<div class="ai-compare-col"><div class="ai-compare-label original">Your Version</div><div class="ai-compare-text">' + esc(r._originalContent) + '</div></div>' +
+      '<div class="ai-compare-col"><div class="ai-compare-label ai">AI Version</div><div class="ai-compare-text">' + esc(r.refinedContent) + '</div></div>' +
     '</div>' +
   '</div>';
+
+  // Changes list
+  if (r.changes && r.changes.length) {
+    html += '<div class="ai-changes-list">' +
+      '<h4>Changes Made</h4><ul>' +
+      r.changes.map(c => '<li>' + esc(c) + '</li>').join('') +
+      '</ul></div>';
+  }
+
+  // SOP references
+  if (r.sopReferences && r.sopReferences.length) {
+    html += '<div class="ai-sop-refs" style="margin-top:10px">SOP References: ' +
+      r.sopReferences.map(ref => '<span>' + esc(ref) + '</span>').join('') +
+    '</div>';
+  }
+
+  // Notes
+  if (r.notes) {
+    html += '<div class="ai-notes">' + esc(r.notes) + '</div>';
+  }
+
+  // Action buttons
+  html += '<div class="edit-actions" style="margin-top:14px">' +
+    '<button class="edit-btn primary" onclick="acceptAiRefinement()">Accept AI Version</button>' +
+    '<button class="edit-btn" onclick="acceptAiTitle()">Accept Title Only</button>' +
+    '<button class="edit-btn" onclick="acceptAiContent()">Accept Content Only</button>' +
+  '</div>';
+
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+function acceptAiRefinement() {
+  if (!aiLastResult) return;
+  applyAiToStep(aiLastResult._docId, aiLastResult._stepId, aiLastResult.refinedTitle, aiLastResult.refinedContent);
+}
+
+function acceptAiTitle() {
+  if (!aiLastResult) return;
+  applyAiToStep(aiLastResult._docId, aiLastResult._stepId, aiLastResult.refinedTitle, null);
+}
+
+function acceptAiContent() {
+  if (!aiLastResult) return;
+  applyAiToStep(aiLastResult._docId, aiLastResult._stepId, null, aiLastResult.refinedContent);
+}
+
+function applyAiToStep(docId, stepId, newTitle, newContent) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+  const step = doc.steps.find(s => s.id === stepId);
+  if (!step) return;
+
+  const changes = [];
+  if (newTitle && newTitle !== step.title) { step.title = newTitle; changes.push('title'); }
+  if (newContent && newContent !== step.content) { step.content = newContent; changes.push('content'); }
+
+  if (changes.length) {
+    doc.updated = new Date().toISOString();
+    doc.versions.push({ time: doc.updated, label: 'Applied AI refinement to "' + step.title + '" (' + changes.join(' & ') + ')', user: userName });
+    saveDocs(documents);
+    renderDocView(doc);
+    renderDocList();
+    logActivity('Applied AI refinement (' + changes.join(' & ') + ') to step "' + step.title + '"', 'action');
+  }
+
+  aiLastResult = null;
 }
 
 function renderRightPanelVersions(doc) {
@@ -1700,10 +1975,7 @@ async function downloadMedia(mediaId) {
 }
 
 // ── AI PLACEHOLDER ACTIONS ──
-function aiRewrite(docId)  { alert('AI Rewrite coming soon — this will refine your document language for clarity and consistency.'); }
-function aiExpand(docId)   { alert('AI Expand coming soon — this will add detail and context to brief steps.'); }
-function aiSafety(docId)   { alert('AI Safety coming soon — this will scan for missing safety/PPE/hazard warnings.'); }
-function aiFormat(docId)   { alert('AI Format coming soon — this will restructure your document to match SOP formatting standards.'); }
+/* AI action stubs removed — replaced by runAiRefine() and mode selector */
 
 // ── MODAL ──
 function showNewDocModal() {

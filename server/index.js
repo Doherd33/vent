@@ -1051,6 +1051,76 @@ Return ONLY valid JSON — no markdown, no preamble.
   }
 });
 
+// ─── AI STEP REFINEMENT ────────────────────────────────────────────────────
+// Takes a step's title + content + optional area context, retrieves relevant SOPs,
+// and returns an AI-refined version for side-by-side comparison.
+app.post('/ai/refine-step', requireAuth, async (req, res) => {
+  const { stepTitle, stepContent, area, mode } = req.body;
+
+  if (!stepContent || stepContent.length < 5) {
+    return res.status(400).json({ error: 'Step content too short to refine' });
+  }
+
+  const refineModes = {
+    clarity:  'Rewrite for maximum clarity and readability. Use plain, direct language suitable for manufacturing floor operators. Keep the meaning identical but make it easier to follow.',
+    expand:   'Expand this step with additional detail, context, and practical guidance. Add specifics like parameter values, equipment references, timing, and technique tips where appropriate. Draw from the SOP context provided.',
+    sop:      'Restructure this step to follow formal SOP formatting standards. Use numbered sub-steps, include preconditions, specify acceptance criteria where relevant, and add references to the relevant SOP sections.',
+    safety:   'Review this step and add all relevant safety warnings, PPE requirements, hazard alerts, and critical quality notes. Flag anything that could affect product quality, operator safety, or regulatory compliance.',
+    compare:  'Provide an improved version of this step that incorporates best practices from the relevant SOPs. Highlight where the original wording differs from the official SOP language and suggest the SOP-aligned alternative.'
+  };
+
+  const modeInstruction = refineModes[mode] || refineModes.clarity;
+
+  try {
+    // Retrieve relevant SOP context
+    const searchText = `${stepTitle || ''} ${stepContent}`;
+    const chunks = await getRelevantChunks(searchText, area || 'Upstream');
+    const sopContext = buildSopContext(chunks);
+
+    console.log(`[AI REFINE] "${(stepTitle || '').slice(0, 40)}" mode=${mode || 'clarity'} — ${chunks.length} chunks`);
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: `You are the Document Quality Assistant for a biologics manufacturing facility. An operator is writing a workflow document step and wants AI assistance to improve it.
+
+TASK: ${modeInstruction}
+
+════ RELEVANT SOP SECTIONS ════
+${sopContext}
+═══════════════════════════════
+
+ORIGINAL STEP TITLE: ${stepTitle || 'Untitled Step'}
+ORIGINAL STEP CONTENT:
+${stepContent}
+
+Return ONLY valid JSON — no markdown, no preamble.
+
+{
+  "refinedTitle": "improved step title (or same if already good)",
+  "refinedContent": "the improved/rewritten step content",
+  "changes": ["brief description of each change made"],
+  "sopReferences": ["SOP-XX-XXX §X.X — relevant section title"],
+  "confidence": "high or medium or low — how confident you are the refinement improves the original",
+  "notes": "any additional context or suggestions for the author"
+}`
+      }]
+    });
+
+    const raw = message.content[0].text;
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('AI refine error:', error);
+    res.status(500).json({ error: 'AI refinement failed' });
+  }
+});
+
 // ─── SOP INGEST ROUTE ──────────────────────────────────────────────────────
 app.post('/ingest', requireRole('admin'), async (req, res) => {
   const DOCS_DIR = path.join(__dirname, 'docs/sops');
