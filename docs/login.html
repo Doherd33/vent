@@ -309,10 +309,7 @@ body::before {
     <div class="pip"></div>
   </div>
 
-  <div class="tabs">
-    <button class="tab on" onclick="switchTab('login', this)">Sign In</button>
-    <button class="tab"    onclick="switchTab('register', this)">Register</button>
-  </div>
+  <!-- Registration disabled — admin creates accounts directly -->
 
   <!-- ── SIGN IN PANE ── -->
   <div class="login-pane show" id="loginPane">
@@ -348,8 +345,8 @@ body::before {
 
   </div><!-- /login-pane -->
 
-  <!-- ── REGISTER PANE ── -->
-  <div class="register-pane" id="registerPane">
+  <!-- ── REGISTER PANE (disabled — admin only) ── -->
+  <div class="register-pane" id="registerPane" style="display:none!important">
 
     <!-- STEP 1: Choose path -->
     <div id="regStep1">

@@ -164,7 +164,19 @@ app.get('/health', (req, res) => {
 // ─── AUTHENTICATION ROUTES ──────────────────────────────────────────────────
 
 // POST /auth/register — create a new user account
+// Registration is disabled for public access. Only admin can create accounts.
 app.post('/auth/register', async (req, res) => {
+  // ── ADMIN-ONLY GATE ──────────────────────────────────────────────────
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(403).json({ error: 'Registration is disabled. Contact your administrator.' });
+  }
+  const decoded = verifyToken(authHeader.split(' ')[1]);
+  if (!decoded || decoded.role !== 'admin') {
+    return res.status(403).json({ error: 'Only administrators can create accounts.' });
+  }
+  // ────────────────────────────────────────────────────────────────────
+
   const { email, password, name, role } = req.body;
   
   if (!email || !password || !name || !role) {
