@@ -498,14 +498,15 @@ body {
 .right-tab.sop-tab.active { border-top-color: var(--green); }
 .right-tab.sop-tab .sop-tab-num { color: var(--green); }
 
-.sop-search-btn {
+.sop-search-btn, .panel-expand-btn {
   width: 35px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; border: none; background: none;
   color: var(--dim); transition: color .15s, background .15s;
   border-left: 1px solid var(--border);
 }
-.sop-search-btn:hover { color: var(--accent); background: var(--accent2); }
+.sop-search-btn:hover, .panel-expand-btn:hover { color: var(--accent); background: var(--accent2); }
+.panel-expand-btn.expanded { color: var(--accent); }
 
 .sop-search-overlay {
   padding: 16px;
@@ -931,6 +932,9 @@ if(!localStorage.getItem('vent_role')) window.location.replace('login.html');
       </div>
       <button class="sop-search-btn" title="Search SOPs" onclick="openSopSearch()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="panel-expand-btn" id="expandRightBtn" title="Expand panel" onclick="toggleExpandRight()">
+        <svg id="expandIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
       </button>
     </div>
     <div class="right-content" id="rightContent">
@@ -2366,6 +2370,41 @@ function esc(s) {
 }
 
 // ── RESIZE LOGIC ──
+let _rightExpanded = false;
+let _savedRightW = 300;
+let _savedLeftW = 240;
+
+function toggleExpandRight() {
+  const wb   = document.getElementById('workbench');
+  const btn  = document.getElementById('expandRightBtn');
+  const icon = document.getElementById('expandIcon');
+
+  if (!_rightExpanded) {
+    // Save current widths
+    _savedLeftW  = wb.querySelector('.left-panel').getBoundingClientRect().width;
+    _savedRightW = wb.querySelector('.right-panel').getBoundingClientRect().width;
+    // Expand: hide left panel + centre, give all space to right
+    wb.style.gridTemplateColumns = '0px 0px 0px 0px 1fr';
+    wb.querySelector('.left-panel').style.overflow = 'hidden';
+    document.getElementById('resizerV1').style.display = 'none';
+    document.getElementById('resizerV2').style.display = 'none';
+    btn.classList.add('expanded');
+    btn.title = 'Collapse panel';
+    icon.innerHTML = '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>';
+    _rightExpanded = true;
+  } else {
+    // Restore
+    wb.style.gridTemplateColumns = _savedLeftW + 'px 6px 1fr 6px ' + _savedRightW + 'px';
+    wb.querySelector('.left-panel').style.overflow = '';
+    document.getElementById('resizerV1').style.display = '';
+    document.getElementById('resizerV2').style.display = '';
+    btn.classList.remove('expanded');
+    btn.title = 'Expand panel';
+    icon.innerHTML = '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>';
+    _rightExpanded = false;
+  }
+}
+
 (function initResizers() {
   const wb   = document.getElementById('workbench');
   const r1   = document.getElementById('resizerV1');
@@ -2381,6 +2420,9 @@ function esc(s) {
 
   function applyCols() {
     wb.style.gridTemplateColumns = leftW + 'px 6px 1fr 6px ' + rightW + 'px';
+    _rightExpanded = false; // collapse state if user drags
+    const btn = document.getElementById('expandRightBtn');
+    if (btn) { btn.classList.remove('expanded'); btn.title = 'Expand panel'; }
   }
   function applyRows() {
     wb.style.gridTemplateRows = '1fr 6px ' + botH + 'px';
