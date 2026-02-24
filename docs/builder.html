@@ -489,6 +489,11 @@ body {
 .right-tab:hover { background: #2a2a2a; color: var(--text); }
 .right-tab:hover button { color: #6c6c6c !important; }
 .right-tab.active { background: var(--s1); color: #fff; border-top: 2px solid var(--accent); }
+.right-tab.drag-over-left { box-shadow: -2px 0 0 0 var(--accent); }
+.right-tab.drag-over-right { box-shadow: 2px 0 0 0 var(--accent); }
+.right-tab[draggable] { cursor: grab; }
+.right-tab[draggable]:active { cursor: grabbing; }
+.right-tab.tab-dragging { opacity: 0.4; }
 
 .right-content {
   flex: 1; overflow-y: auto; padding: 16px;
@@ -1292,15 +1297,18 @@ function closeStepTab(stepId) {
   }
 }
 
+let _dragStepId = null;
+
 function renderStepTabs(doc) {
   const tabBar = document.querySelector('.right-panel-header .right-tabs');
   let html = '';
-  openStepTabs.forEach(t => {
+  openStepTabs.forEach((t, i) => {
     const step = doc.steps.find(s => s.id === t.stepId);
     if (!step) return;
     const idx = doc.steps.indexOf(step);
     const isActive = t.stepId === activeStepTab;
     html += '<div class="right-tab' + (isActive ? ' active' : '') + '" ' +
+      'draggable="true" data-step-id="' + t.stepId + '" data-doc-id="' + t.docId + '" data-tab-idx="' + i + '" ' +
       'onclick="switchToStepTab(\'' + t.docId + '\',\'' + t.stepId + '\')" ' +
       'style="gap:6px">' +
         '<span style="font-family:JetBrains Mono,monospace;font-size:10px;color:' + (isActive ? 'var(--accent)' : 'var(--dim)') + '">' + (idx + 1) + '</span>' +
@@ -1310,6 +1318,52 @@ function renderStepTabs(doc) {
     '</div>';
   });
   tabBar.innerHTML = html;
+  initStepTabDrag(tabBar);
+}
+
+function initStepTabDrag(tabBar) {
+  const tabs = tabBar.querySelectorAll('.right-tab[draggable]');
+  tabs.forEach(tab => {
+    tab.addEventListener('dragstart', e => {
+      _dragStepId = tab.dataset.stepId;
+      tab.classList.add('tab-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', tab.dataset.tabIdx);
+    });
+    tab.addEventListener('dragend', () => {
+      _dragStepId = null;
+      tab.classList.remove('tab-dragging');
+      tabBar.querySelectorAll('.right-tab').forEach(t => t.classList.remove('drag-over-left', 'drag-over-right'));
+    });
+    tab.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (tab.dataset.stepId === _dragStepId) return;
+      const rect = tab.getBoundingClientRect();
+      const mid = rect.left + rect.width / 2;
+      tab.classList.remove('drag-over-left', 'drag-over-right');
+      tab.classList.add(e.clientX < mid ? 'drag-over-left' : 'drag-over-right');
+    });
+    tab.addEventListener('dragleave', () => {
+      tab.classList.remove('drag-over-left', 'drag-over-right');
+    });
+    tab.addEventListener('drop', e => {
+      e.preventDefault();
+      tab.classList.remove('drag-over-left', 'drag-over-right');
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      let toIdx = parseInt(tab.dataset.tabIdx, 10);
+      if (fromIdx === toIdx) return;
+      const rect = tab.getBoundingClientRect();
+      const mid = rect.left + rect.width / 2;
+      if (e.clientX >= mid && toIdx < openStepTabs.length - 1) toIdx++;
+      // Reorder
+      const [moved] = openStepTabs.splice(fromIdx, 1);
+      if (fromIdx < toIdx) toIdx--;
+      openStepTabs.splice(toIdx, 0, moved);
+      const doc = documents.find(d => d.id === activeDocId);
+      if (doc) renderStepTabs(doc);
+    });
+  });
 }
 
 function switchToStepTab(docId, stepId) {
