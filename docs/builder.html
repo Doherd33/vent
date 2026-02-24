@@ -1226,6 +1226,7 @@ function selectStep(docId, stepId) {
   if (!doc) return;
   const step = doc.steps.find(s => s.id === stepId);
   if (!step) return;
+  const idx = doc.steps.indexOf(step);
 
   // Toggle body open (ensure it's visible)
   const el = document.getElementById('step-' + stepId);
@@ -1238,12 +1239,61 @@ function selectStep(docId, stepId) {
   document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
   if (el) el.classList.add('editing');
 
-  // Load into right panel
-  activeRightTab = 'edit';
-  document.querySelectorAll('.right-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.tab === 'edit');
+  // Show read-only view in right panel
+  const rc = document.getElementById('rightContent');
+  rc.innerHTML = '<div class="fade-in">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div class="step-number">' + (idx + 1) + '</div>' +
+        '<span style="font-size:14px;color:var(--text);font-weight:400">' + esc(step.title) + '</span>' +
+      '</div>' +
+      '<button class="edit-btn" style="font-size:10px;padding:4px 10px" onclick="editStep(\'' + docId + '\',\'' + stepId + '\')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>' +
+    '</div>' +
+    '<div style="border-bottom:1px solid var(--border);margin-bottom:14px"></div>' +
+    '<div style="font-size:12.5px;color:var(--mid);line-height:1.7;margin-bottom:14px">' +
+      '<p>' + esc(step.content).replace(/\n/g, '</p><p>') + '</p>' +
+    '</div>' +
+    (step.note ? '<div class="step-note" style="margin-bottom:14px">⚠ ' + esc(step.note) + '</div>' : '') +
+    '<div id="rightStepMedia"></div>' +
+    '<div style="margin-top:16px;display:flex;gap:6px">' +
+      '<button class="step-attach-btn" onclick="triggerStepUpload(\'' + docId + '\',\'' + stepId + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Attach File</button>' +
+      '<button class="step-action-btn" style="font-size:10px;padding:4px 8px" onclick="deleteStep(\'' + docId + '\',\'' + stepId + '\')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>' +
+    '</div>' +
+  '</div>';
+
+  // Load media into right panel view
+  loadRightStepMedia(docId, stepId);
+}
+
+async function loadRightStepMedia(docId, stepId) {
+  const container = document.getElementById('rightStepMedia');
+  if (!container) return;
+  const items = await getMediaForStep(docId, stepId);
+  if (!items.length) { container.innerHTML = ''; return; }
+
+  let html = '<div class="edit-label" style="margin-bottom:8px">Attachments</div>';
+  items.forEach(m => {
+    const type = getMediaType(m.mimeType);
+    if (type === 'image') {
+      html += '<div style="margin-bottom:8px;cursor:pointer" onclick="openLightbox(\'' + m.id + '\')">' +
+        '<img src="' + m.data + '" style="max-width:100%;border-radius:6px;border:1px solid var(--border)" alt="' + esc(m.name) + '">' +
+        '<div style="font-size:10px;color:var(--dim);margin-top:3px">' + esc(m.name) + ' · ' + formatFileSize(m.size) + '</div>' +
+      '</div>';
+    } else if (type === 'video') {
+      html += '<div style="margin-bottom:8px">' +
+        '<video controls preload="metadata" style="max-width:100%;border-radius:6px;background:#000"><source src="' + m.data + '" type="' + m.mimeType + '"></video>' +
+        '<div style="font-size:10px;color:var(--dim);margin-top:3px">' + esc(m.name) + ' · ' + formatFileSize(m.size) + '</div>' +
+      '</div>';
+    } else {
+      const icon = type === 'audio' ? '🎵' : '📄';
+      html += '<div class="media-upload-item" onclick="downloadMedia(\'' + m.id + '\')" style="cursor:pointer;margin-bottom:4px">' +
+        '<span>' + icon + '</span>' +
+        '<span class="media-upload-item-name">' + esc(m.name) + '</span>' +
+        '<span class="media-upload-item-size">' + formatFileSize(m.size) + '</span>' +
+      '</div>';
+    }
   });
-  renderRightPanelEdit(doc, step);
+  container.innerHTML = html;
 }
 
 // ── STEP MANAGEMENT ──
