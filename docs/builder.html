@@ -487,6 +487,7 @@ body {
   user-select: none; transition: background 0.1s, color 0.1s;
 }
 .right-tab:hover { background: #2a2a2a; color: var(--text); }
+.right-tab:hover button { color: #6c6c6c !important; }
 .right-tab.active { background: var(--s1); color: #fff; border-top: 2px solid var(--accent); }
 
 .right-content {
@@ -1118,6 +1119,11 @@ function openDoc(id) {
 
   activeDocId = id;
 
+  // Clear step tabs from previous doc
+  openStepTabs = [];
+  activeStepTab = null;
+  document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
+
   // Add to open tabs if not already
   if (!openTabs.includes(id)) openTabs.push(id);
 
@@ -1221,25 +1227,112 @@ function toggleStep(stepId) {
   body.style.display = body.style.display === 'none' ? '' : 'none';
 }
 
+let openStepTabs = []; // array of {docId, stepId}
+let activeStepTab = null; // stepId
+
 function selectStep(docId, stepId) {
   const doc = documents.find(d => d.id === docId);
   if (!doc) return;
   const step = doc.steps.find(s => s.id === stepId);
   if (!step) return;
-  const idx = doc.steps.indexOf(step);
 
-  // Toggle body open (ensure it's visible)
+  // Toggle body open
   const el = document.getElementById('step-' + stepId);
   if (el) {
     const body = el.querySelector('.step-body');
     if (body && body.style.display === 'none') body.style.display = '';
   }
 
-  // Highlight selected step
+  // Add to open step tabs if not already there
+  if (!openStepTabs.find(t => t.stepId === stepId)) {
+    openStepTabs.push({ docId, stepId });
+  }
+  activeStepTab = stepId;
+
+  // Highlight in centre
   document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
   if (el) el.classList.add('editing');
 
-  // Show read-only view in right panel
+  renderStepTabs(doc);
+  renderStepView(docId, stepId);
+}
+
+function closeStepTab(stepId) {
+  openStepTabs = openStepTabs.filter(t => t.stepId !== stepId);
+
+  // Unhighlight
+  const el = document.getElementById('step-' + stepId);
+  if (el) el.classList.remove('editing');
+
+  if (activeStepTab === stepId) {
+    if (openStepTabs.length) {
+      activeStepTab = openStepTabs[openStepTabs.length - 1].stepId;
+      const doc = documents.find(d => d.id === openStepTabs[openStepTabs.length - 1].docId);
+      if (doc) {
+        renderStepTabs(doc);
+        renderStepView(openStepTabs[openStepTabs.length - 1].docId, activeStepTab);
+        const sel = document.getElementById('step-' + activeStepTab);
+        if (sel) sel.classList.add('editing');
+      }
+    } else {
+      activeStepTab = null;
+      // Restore default right panel
+      const doc = documents.find(d => d.id === activeDocId);
+      document.querySelector('.right-panel-header .right-tabs').innerHTML =
+        '<div class="right-tab active" data-tab="edit" onclick="switchRightTab(this)">Edit</div>' +
+        '<div class="right-tab" data-tab="ai" onclick="switchRightTab(this)">AI Assist</div>' +
+        '<div class="right-tab" data-tab="versions" onclick="switchRightTab(this)">Versions</div>';
+      if (doc) renderRightPanel(doc);
+      else document.getElementById('rightContent').innerHTML =
+        '<div class="empty-state" style="height:100%"><div class="ei">✏️</div><p>Open a document to start editing</p></div>';
+    }
+  } else {
+    const doc = documents.find(d => d.id === activeDocId);
+    if (doc) renderStepTabs(doc);
+  }
+}
+
+function renderStepTabs(doc) {
+  const tabBar = document.querySelector('.right-panel-header .right-tabs');
+  let html = '';
+  openStepTabs.forEach(t => {
+    const step = doc.steps.find(s => s.id === t.stepId);
+    if (!step) return;
+    const idx = doc.steps.indexOf(step);
+    const isActive = t.stepId === activeStepTab;
+    html += '<div class="right-tab' + (isActive ? ' active' : '') + '" ' +
+      'onclick="switchToStepTab(\'' + t.docId + '\',\'' + t.stepId + '\')" ' +
+      'style="gap:6px">' +
+        '<span style="font-family:JetBrains Mono,monospace;font-size:10px;color:' + (isActive ? 'var(--accent)' : 'var(--dim)') + '">' + (idx + 1) + '</span>' +
+        esc(step.title) +
+        '<button onclick="event.stopPropagation();closeStepTab(\'' + t.stepId + '\')" ' +
+          'style="background:none;border:none;color:' + (isActive ? '#6c6c6c' : 'transparent') + ';cursor:pointer;font-size:11px;padding:0 2px;line-height:1;margin-left:2px">×</button>' +
+    '</div>';
+  });
+  tabBar.innerHTML = html;
+}
+
+function switchToStepTab(docId, stepId) {
+  activeStepTab = stepId;
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+
+  // Highlight in centre
+  document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
+  const el = document.getElementById('step-' + stepId);
+  if (el) el.classList.add('editing');
+
+  renderStepTabs(doc);
+  renderStepView(docId, stepId);
+}
+
+function renderStepView(docId, stepId) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+  const step = doc.steps.find(s => s.id === stepId);
+  if (!step) return;
+  const idx = doc.steps.indexOf(step);
+
   const rc = document.getElementById('rightContent');
   rc.innerHTML = '<div class="fade-in">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
@@ -1261,7 +1354,6 @@ function selectStep(docId, stepId) {
     '</div>' +
   '</div>';
 
-  // Load media into right panel view
   loadRightStepMedia(docId, stepId);
 }
 
@@ -1325,8 +1417,11 @@ function deleteStep(docId, stepId) {
   doc.updated = new Date().toISOString();
   doc.versions.push({ time: doc.updated, label: 'Deleted "' + title + '"', user: userName });
   saveDocs(documents);
+
+  // Remove from step tabs
+  closeStepTab(stepId);
+
   renderDocView(doc);
-  renderRightPanel(doc);
   renderDocList();
   logActivity('Deleted step "' + title + '" from "' + doc.title + '"', 'warn');
 }
@@ -1337,8 +1432,16 @@ function editStep(docId, stepId) {
   const step = doc.steps.find(s => s.id === stepId);
   if (!step) return;
 
+  // Clear step tabs — going into edit mode
+  openStepTabs = [];
+  activeStepTab = null;
+
   // Switch right panel to edit tab and populate
   activeRightTab = 'edit';
+  document.querySelector('.right-panel-header .right-tabs').innerHTML =
+    '<div class="right-tab active" data-tab="edit" onclick="switchRightTab(this)">Edit</div>' +
+    '<div class="right-tab" data-tab="ai" onclick="switchRightTab(this)">AI Assist</div>' +
+    '<div class="right-tab" data-tab="versions" onclick="switchRightTab(this)">Versions</div>';
   renderRightPanelEdit(doc, step);
 
   // Highlight the step
@@ -1359,6 +1462,11 @@ function switchRightTab(tabEl) {
 
 function renderRightPanel(doc) {
   if (!doc) return;
+  // Restore default right panel tabs
+  document.querySelector('.right-panel-header .right-tabs').innerHTML =
+    '<div class="right-tab' + (activeRightTab === 'edit' ? ' active' : '') + '" data-tab="edit" onclick="switchRightTab(this)">Edit</div>' +
+    '<div class="right-tab' + (activeRightTab === 'ai' ? ' active' : '') + '" data-tab="ai" onclick="switchRightTab(this)">AI Assist</div>' +
+    '<div class="right-tab' + (activeRightTab === 'versions' ? ' active' : '') + '" data-tab="versions" onclick="switchRightTab(this)">Versions</div>';
   if (activeRightTab === 'edit') {
     renderRightPanelEdit(doc);
   } else if (activeRightTab === 'ai') {
