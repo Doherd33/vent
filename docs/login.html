@@ -407,7 +407,12 @@ body::before {
 
       <div class="field">
         <label>Password <span style="text-transform:none;letter-spacing:0;font-size:10px">(min 6 characters)</span></label>
-        <input type="password" id="regPass" placeholder="••••••••" autocomplete="new-password"
+        <input type="password" id="regPass" placeholder="••••••••" autocomplete="new-password">
+      </div>
+
+      <div class="field">
+        <label>Confirm password</label>
+        <input type="password" id="regPassConfirm" placeholder="••••••••" autocomplete="new-password"
                onkeydown="if(event.key==='Enter')doRegister()">
       </div>
       <div class="err-msg" id="regErr"></div>
@@ -587,10 +592,12 @@ async function doRegister() {
   const name = document.getElementById('regName').value.trim();
   const email = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPass').value;
+  const confirmPassword = document.getElementById('regPassConfirm').value;
 
   if (!name) { showError('regErr', 'Please enter your name.'); return; }
   if (!email) { showError('regErr', 'Please enter your email.'); return; }
   if (password.length < 6) { showError('regErr', 'Password must be at least 6 characters.'); return; }
+  if (password !== confirmPassword) { showError('regErr', 'Passwords do not match.'); return; }
 
   setLoading('regBtn', true);
   try {
