@@ -118,6 +118,8 @@ body {
 }
 .resizer:hover::before, .resizer.dragging::before { background: var(--accent); }
 .resizer-v { cursor: col-resize; grid-row: 1 / 4; }
+#resizerV1 { grid-column: 2; }
+#resizerV2 { grid-column: 4; }
 .resizer-v::before { top: 0; bottom: 0; left: 50%; width: 1px; transform: translateX(-50%); }
 .resizer-h { cursor: row-resize; grid-column: 1 / 6; grid-row: 2; }
 .resizer-h::before { left: 0; right: 0; top: 50%; height: 1px; transform: translateY(-50%); }
