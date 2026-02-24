@@ -96,13 +96,13 @@ body {
 /* ── WORKBENCH ── */
 .workbench {
   display: grid;
-  grid-template-columns: 240px 4px 1fr 4px 0px;
-  grid-template-rows: 1fr 4px 160px;
+  grid-template-columns: 240px 1px 1fr 1px 0px;
+  grid-template-rows: 1fr 1px 160px;
   overflow: hidden;
   position: relative;
 }
 .workbench.edit-open {
-  grid-template-columns: 240px 4px 1fr 4px 340px;
+  grid-template-columns: 240px 1px 1fr 1px 340px;
 }
 
 /* ── RESIZE HANDLES ── */
@@ -113,11 +113,11 @@ body {
   position: relative;
 }
 .resizer:hover, .resizer.dragging { background: var(--accent); }
-.resizer-v { cursor: col-resize; grid-row: 1; }
+.resizer-v { cursor: col-resize; grid-row: 1 / 4; }
 .resizer-h { cursor: row-resize; grid-column: 1 / 6; grid-row: 2; }
 .resizer::after { content: ''; position: absolute; inset: 0; }
-.resizer-v::after { left: -4px; right: -4px; }
-.resizer-h::after { top: -4px; bottom: -4px; }
+.resizer-v::after { left: -3px; right: -3px; }
+.resizer-h::after { top: -3px; bottom: -3px; }
 
 /* ── LEFT PANEL — Document List ── */
 .left-panel {
@@ -1325,29 +1325,36 @@ function esc(s) {
   const r2 = document.getElementById('resizerV2');
   const rh = document.getElementById('resizerH');
 
+  function getParts(prop) {
+    return (wb.style[prop] || getComputedStyle(wb)[prop]).split(/\s+/);
+  }
+
   function makeDragV(resizer, colIndex) {
     resizer.addEventListener('mousedown', e => {
       e.preventDefault();
       resizer.classList.add('dragging');
-      const startX = e.clientX;
-      const cols = wb.style.gridTemplateColumns || getComputedStyle(wb).gridTemplateColumns;
-      const parts = cols.split(/\s+/);
-
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+      let lastX = e.clientX;
 
       function onMove(ev) {
-        const dx = ev.clientX - startX;
+        const dx = ev.clientX - lastX;
+        lastX = ev.clientX;
+        const parts = getParts('gridTemplateColumns');
         const current = parseFloat(parts[colIndex]) || 240;
-        const newW = Math.max(160, current + dx);
+        const newW = Math.max(120, Math.min(current + dx, wb.clientWidth - 200));
         parts[colIndex] = newW + 'px';
         wb.style.gridTemplateColumns = parts.join(' ');
       }
       function onUp() {
         resizer.classList.remove('dragging');
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
       }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
     });
   }
 
@@ -1357,25 +1364,28 @@ function esc(s) {
   rh.addEventListener('mousedown', e => {
     e.preventDefault();
     rh.classList.add('dragging');
-    const startY = e.clientY;
-    const rows = wb.style.gridTemplateRows || getComputedStyle(wb).gridTemplateRows;
-    const parts = rows.split(/\s+/);
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'row-resize';
+    let lastY = e.clientY;
 
     function onMove(ev) {
-      const dy = ev.clientY - startY;
+      const dy = ev.clientY - lastY;
+      lastY = ev.clientY;
+      const parts = getParts('gridTemplateRows');
       const current = parseFloat(parts[2]) || 160;
-      const newH = Math.max(80, current - dy);
+      const newH = Math.max(60, Math.min(current - dy, wb.clientHeight - 200));
       parts[2] = newH + 'px';
       wb.style.gridTemplateRows = parts.join(' ');
     }
     function onUp() {
       rh.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
     }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 })();
 
