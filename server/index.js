@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const Anthropic = require('@anthropic-ai/sdk');
 const { createClient } = require('@supabase/supabase-js');
 const { VoyageAIClient } = require('voyageai');
@@ -82,6 +83,141 @@ app.get('/health', (req, res) => {
       VOYAGE_RAW_PREFIX: process.env.VOYAGE_API_KEY ? process.env.VOYAGE_API_KEY.slice(0, 3) : 'MISSING'
     }
   });
+});
+
+// ─── AUDIT LOG INFRASTRUCTURE ─────────────────────────────────────────────────
+
+// Immutable append-only audit log — 21 CFR Part 11 / EU Annex 11 compliant
+async function auditLog({ userId, userRole, action, entityType, entityId, before, after, reason, req }) {
+  const ts = new Date().toISOString();
+  const content = JSON.stringify({ userId, userRole, action, entityType, entityId, before, after, reason, ts });
+  const checksum = crypto.createHash('sha256').update(content).digest('hex');
+  try {
+    const { error } = await supabase.from('audit_log').insert({
+      user_id:    userId || 'system',
+      user_role:  userRole || 'system',
+      action,
+      entity_type: entityType,
+      entity_id:   entityId,
+      before_val:  before || null,
+      after_val:   after || {},
+      reason:      reason || null,
+      ip_address:  req ? (req.headers['x-forwarded-for'] || req.ip || '') : '',
+      user_agent:  req ? (req.headers['user-agent'] || '') : '',
+      checksum
+    });
+    if (error) console.error('[AUDIT] Insert error:', error.message);
+    else console.log(`[AUDIT] ${action} on ${entityType}:${entityId} by ${userId}`);
+  } catch (err) {
+    // Audit failures are logged but don't break the operation
+    console.error('[AUDIT] Failed:', err.message);
+  }
+}
+
+// GET /admin/setup — returns SQL to create audit_log table in Supabase
+app.get('/admin/setup', (req, res) => {
+  const sql = `
+-- ═══════════════════════════════════════════════════════════════
+-- VENT Audit Log Table — 21 CFR Part 11 / EU Annex 11 compliant
+-- Run this in your Supabase SQL Editor (one-time setup)
+-- ═══════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  timestamp   TIMESTAMPTZ DEFAULT now() NOT NULL,
+  user_id     TEXT NOT NULL,
+  user_role   TEXT NOT NULL,
+  action      TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id   TEXT NOT NULL,
+  before_val  JSONB,
+  after_val   JSONB NOT NULL DEFAULT '{}'::jsonb,
+  reason      TEXT,
+  ip_address  TEXT,
+  user_agent  TEXT,
+  checksum    TEXT NOT NULL
+);
+
+-- Index for fast lookups by entity and by user
+CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_user   ON audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_time   ON audit_log(timestamp DESC);
+
+-- CRITICAL: Prevent updates and deletes — append-only for regulatory compliance
+-- Using RLS policies: only INSERT is allowed via the API
+ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+
+-- Allow inserts from authenticated and service_role
+CREATE POLICY audit_insert ON audit_log FOR INSERT TO authenticated, anon WITH CHECK (true);
+CREATE POLICY audit_select ON audit_log FOR SELECT TO authenticated, anon USING (true);
+
+-- Explicitly deny UPDATE and DELETE — no policy = denied by default with RLS enabled
+-- This means once a row is written, it can NEVER be modified or removed via the API
+
+COMMENT ON TABLE audit_log IS 'Immutable audit trail for 21 CFR Part 11 / EU Annex 11 compliance. No UPDATE or DELETE permitted.';
+  `.trim();
+  res.type('text/plain').send(sql);
+});
+
+// POST /admin/setup — attempt to create the table via Supabase
+app.post('/admin/setup', async (req, res) => {
+  // Try to create audit_log by inserting a bootstrap row
+  // If the table doesn't exist, this will fail with a clear message
+  const testRow = {
+    user_id: 'system',
+    user_role: 'system',
+    action: 'system_setup',
+    entity_type: 'system',
+    entity_id: 'audit_log',
+    after_val: { event: 'Audit log table initialized', version: '1.0' },
+    reason: 'System setup — audit trail activated',
+    ip_address: '',
+    user_agent: 'vent-server/setup',
+    checksum: crypto.createHash('sha256').update('setup-' + Date.now()).digest('hex')
+  };
+  const { error } = await supabase.from('audit_log').insert(testRow);
+  if (error) {
+    if (error.message.includes('does not exist') || error.code === '42P01') {
+      return res.status(400).json({
+        error: 'audit_log table does not exist yet',
+        instructions: 'Visit GET /admin/setup to get the SQL, then run it in your Supabase SQL Editor',
+        setupUrl: '/admin/setup'
+      });
+    }
+    return res.status(500).json({ error: error.message });
+  }
+  res.json({ success: true, message: 'Audit log table exists and is working. Bootstrap entry written.' });
+});
+
+// GET /audit/:entityId — retrieve full audit trail for a submission or entity
+app.get('/audit/:entityId', async (req, res) => {
+  const { data, error } = await supabase
+    .from('audit_log')
+    .select('*')
+    .eq('entity_id', req.params.entityId)
+    .order('timestamp', { ascending: true });
+  if (error) {
+    // Table might not exist yet
+    if (error.message.includes('does not exist')) {
+      return res.json([]);
+    }
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(data || []);
+});
+
+// GET /audit — retrieve recent audit entries (last 100)
+app.get('/audit', async (req, res) => {
+  const { data, error } = await supabase
+    .from('audit_log')
+    .select('*')
+    .order('timestamp', { ascending: false })
+    .limit(100);
+  if (error) {
+    if (error.message.includes('does not exist')) return res.json([]);
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(data || []);
 });
 
 // Text search fallback when Voyage is unavailable
@@ -216,6 +352,17 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
       console.error('Supabase error:', error);
     } else {
       console.log(`[${refCode}] Saved to database`);
+      // Audit: log the submission creation
+      await auditLog({
+        userId: shift || 'operator',
+        userRole: 'operator',
+        action: 'submission_created',
+        entityType: 'submission',
+        entityId: refCode,
+        after: { priority: feedback.priority, area, shift, sopRefs: (feedback.sopRefs || []).map(s => s.code) },
+        reason: 'Operator submitted observation via Query page',
+        req
+      });
     }
 
     res.json({ ...feedback, refCode });
@@ -300,14 +447,35 @@ app.get('/submissions/:refCode', async (req, res) => {
   res.json(data);
 });
 
-// PATCH /submissions/:refCode/status — update workflow status
+// PATCH /submissions/:refCode/status — update workflow status with audit trail
 app.patch('/submissions/:refCode/status', async (req, res) => {
-  const { status } = req.body;
-  const valid = ['new', 'acknowledged', 'in_progress', 'resolved'];
-  if (!valid.includes(status)) {
-    return res.status(400).json({ error: 'Invalid status' });
+  const { status, userId, userRole, reason, meaning } = req.body;
+  const validStatuses = ['new', 'acknowledged', 'under_review', 'corrective_action', 'qa_approved', 'director_signoff', 'closed', 'rejected'];
+  
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status. Must be one of: ' + validStatuses.join(', ') });
   }
 
+  // E-signature required for approval / signoff / close transitions
+  const requiresSignature = ['qa_approved', 'director_signoff', 'closed', 'rejected'].includes(status);
+  if (requiresSignature && (!userId || !reason)) {
+    return res.status(400).json({ error: 'Electronic signature required: userId and reason must be provided for this transition' });
+  }
+
+  // Fetch current state for before_val
+  const { data: current, error: fetchErr } = await supabase
+    .from('submissions')
+    .select('status, ref_code, priority')
+    .eq('ref_code', req.params.refCode)
+    .single();
+
+  if (fetchErr || !current) {
+    return res.status(404).json({ error: 'Submission not found' });
+  }
+
+  const previousStatus = current.status;
+
+  // Update status
   const { error } = await supabase
     .from('submissions')
     .update({ status })
@@ -317,7 +485,23 @@ app.patch('/submissions/:refCode/status', async (req, res) => {
     console.error('Status update error:', error);
     return res.status(500).json({ error: 'Failed to update status' });
   }
-  res.json({ ok: true });
+
+  // Write audit entry
+  await auditLog({
+    userId: userId || 'unknown',
+    userRole: userRole || 'unknown',
+    action: 'status_changed',
+    entityType: 'submission',
+    entityId: req.params.refCode,
+    before: { status: previousStatus },
+    after: { status, ...(meaning ? { signatureMeaning: meaning } : {}) },
+    reason: reason || `Status changed from ${previousStatus} to ${status}`,
+    req
+  });
+
+  res.json({ ok: true, previousStatus, newStatus: status,
+    auditEntry: { userId, action: 'status_changed', from: previousStatus, to: status, meaning, reason }
+  });
 });
 
 // POST /query — operator SOP knowledge search

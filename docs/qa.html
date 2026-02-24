@@ -196,6 +196,53 @@ body {
 .change-title { font-size: 12px; font-weight: 600; color: #e0e0e0; margin-bottom: 3px; }
 .change-desc  { font-size: 11px; color: #8e8e8e; line-height: 1.5; }
 
+/* ── STATUS WORKFLOW ── */
+.status-bar { display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap; }
+.status-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:3px; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+.status-new            { background:rgba(0,122,204,.18); color:#4fc1ff; }
+.status-acknowledged   { background:rgba(78,201,176,.15); color:#4ec9b0; }
+.status-under_review   { background:rgba(255,198,77,.15); color:#ffc64d; }
+.status-corrective_action { background:rgba(206,145,255,.15); color:#ce91ff; }
+.status-qa_approved    { background:rgba(77,200,110,.15); color:#4dc86e; }
+.status-director_signoff { background:rgba(77,200,110,.2); color:#3ddc84; }
+.status-closed         { background:rgba(100,100,100,.18); color:#8e8e8e; }
+.status-rejected       { background:rgba(244,71,71,.15); color:#f44747; }
+.wf-btn { padding:4px 12px; border:1px solid #3c3c3c; border-radius:3px; background:#2d2d30; color:#ccc; font-size:11px; cursor:pointer; transition:all .15s; font-family:inherit; }
+.wf-btn:hover { background:#3c3c3c; color:#fff; }
+.wf-btn.wf-primary { border-color:#007acc; color:#4fc1ff; }
+.wf-btn.wf-primary:hover { background:#007acc; color:#fff; }
+.wf-btn.wf-danger  { border-color:#f44747; color:#f44747; }
+.wf-btn.wf-danger:hover  { background:#f44747; color:#fff; }
+
+/* ── E-SIGNATURE MODAL ── */
+.esig-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:900; display:flex; align-items:center; justify-content:center; }
+.esig-modal { background:#252526; border:1px solid #3c3c3c; border-radius:6px; width:400px; max-width:92vw; box-shadow:0 12px 40px rgba(0,0,0,.5); }
+.esig-header { padding:14px 18px 10px; border-bottom:1px solid #3c3c3c; }
+.esig-header h3 { margin:0; font-size:13px; color:#e0e0e0; font-weight:600; }
+.esig-header p  { margin:4px 0 0; font-size:11px; color:#8e8e8e; }
+.esig-body { padding:14px 18px; display:flex; flex-direction:column; gap:10px; }
+.esig-body label { font-size:11px; color:#8e8e8e; display:flex; flex-direction:column; gap:3px; }
+.esig-body input, .esig-body select, .esig-body textarea { background:#1e1e1e; border:1px solid #3c3c3c; border-radius:3px; padding:6px 8px; color:#e0e0e0; font-size:12px; font-family:inherit; }
+.esig-body textarea { resize:vertical; min-height:48px; }
+.esig-body input:focus, .esig-body select:focus, .esig-body textarea:focus { border-color:#007acc; outline:none; }
+.esig-footer { padding:10px 18px 14px; display:flex; justify-content:flex-end; gap:8px; border-top:1px solid #3c3c3c; }
+
+/* ── AUDIT TRAIL ── */
+.audit-section { margin-top:4px; }
+.audit-toggle { background:none; border:none; color:#569cd6; font-size:11px; cursor:pointer; padding:2px 0; font-family:inherit; display:flex; align-items:center; gap:4px; }
+.audit-toggle:hover { color:#4fc1ff; }
+.audit-list { display:flex; flex-direction:column; gap:0; margin-top:6px; position:relative; padding-left:14px; border-left:1px solid #3c3c3c; }
+.audit-entry { padding:6px 0 6px 12px; font-size:11px; position:relative; }
+.audit-entry::before { content:''; position:absolute; left:-5px; top:11px; width:8px; height:8px; border-radius:50%; background:#3c3c3c; border:1px solid #252526; }
+.audit-entry.ae-create::before { background:#007acc; }
+.audit-entry.ae-status::before { background:#ffc64d; }
+.audit-entry.ae-esig::before   { background:#4dc86e; }
+.audit-time  { color:#5a5a5a; font-size:10px; font-family:monospace; }
+.audit-action { color:#e0e0e0; margin:1px 0; }
+.audit-user  { color:#8e8e8e; font-size:10px; }
+.audit-reason { color:#569cd6; font-size:10px; font-style:italic; margin-top:1px; }
+.audit-hash  { color:#3c3c3c; font-size:9px; font-family:monospace; letter-spacing:.3px; cursor:help; }
+
 /* ── RIGHT PANEL ── */
 .right-panel { grid-column: 5; grid-row: 1; background: #252526; border-left: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .right-panel-header { display: flex; align-items: stretch; background: #2d2d30; border-bottom: 1px solid #3c3c3c; height: 35px; flex-shrink: 0; }
@@ -645,8 +692,10 @@ function renderLeft(){
       items.forEach(s=>{
         const isActive=activeTabId===s.id;
         const isOpen=openTabs.includes(s.id)&&!isActive;
+        const stLabel = {new:'NEW',acknowledged:'ACK',under_review:'REVIEW',corrective_action:'CAPA',qa_approved:'QA ✓',director_signoff:'DIR ✓',closed:'CLOSED',rejected:'REJ'};
+        const stBadge = s.status && s.status!=='new' ? `<span class="status-badge status-${s.status}" style="font-size:8px;padding:1px 5px;margin-left:4px">${stLabel[s.status]||s.status}</span>` : '';
         html+=`<div class="sub-card ${isActive?'active':''}" onclick="selectSub('${s.id}')" style="${isOpen?'border-left-color:#555;':''}">`+
-          `<div class="card-top"><span class="card-id">${s.id}</span><span class="risk-badge risk-${s.priority}">${s.priority}</span></div>`+
+          `<div class="card-top"><span class="card-id">${s.id}</span>${stBadge}<span class="risk-badge risk-${s.priority}">${s.priority}</span></div>`+
           `<div class="card-title">${s.title}</div>`+
           `<div class="card-meta"><span style="color:#569cd6;font-family:monospace;font-size:10px;letter-spacing:0.3px">${s.date}</span></div>`+
           `<div class="card-meta">${s.area} &middot; ${s.operator}${isOpen?' &middot; <span style="color:#5a9bc7;font-size:9px">OPEN</span>':''}</div>`+
@@ -730,11 +779,172 @@ function renderCenter(){
   const tagCls={gap:'tag-gap',ambiguous:'tag-ambiguous',missing:'tag-missing',ok:'tag-ok'};
   const sopRows=s.sops.map((r,i)=>`<tr onclick="openSop(${i})" class="${selSopIdx===i?'sop-selected':''}"><td><span class="sop-code">${r.code}</span></td><td style="font-size:11.5px">${r.title}</td><td style="color:#9cdcfe;font-family:monospace;font-size:11px">${r.section}</td><td><span class="issue-tag ${tagCls[r.flag]||''}">${r.flag}</span></td><td style="font-size:11px;color:#8e8e8e">${r.issue}</td></tr>`).join('');
   const changes=s.changes.map((c,i)=>`<div class="change-item"><div class="change-num">${i+1}</div><div><div class="change-title">${c.title}</div><div class="change-desc">${c.desc}</div></div></div>`).join('');
+
+  // Status workflow bar
+  const st = s.status || 'new';
+  const statusLabel = {new:'New',acknowledged:'Acknowledged',under_review:'Under Review',corrective_action:'Corrective Action',qa_approved:'QA Approved',director_signoff:'Director Sign-off',closed:'Closed',rejected:'Rejected'};
+  const nextStatus = {new:'acknowledged',acknowledged:'under_review',under_review:'corrective_action',corrective_action:'qa_approved',qa_approved:'director_signoff',director_signoff:'closed'};
+  const esigStatuses = ['qa_approved','director_signoff','closed','rejected'];
+  const next = nextStatus[st];
+  let wfBtns = '';
+  if(next && !['closed','rejected'].includes(st)){
+    const needsSig = esigStatuses.includes(next);
+    if(needsSig){
+      wfBtns += `<button class="wf-btn wf-primary" onclick="openEsigModal('${s.id}','${next}')">&#x1F4DD; ${statusLabel[next]||next}</button>`;
+    } else {
+      wfBtns += `<button class="wf-btn wf-primary" onclick="quickStatusChange('${s.id}','${next}')">&#x25B6; ${statusLabel[next]||next}</button>`;
+    }
+    if(st!=='new') wfBtns += `<button class="wf-btn wf-danger" onclick="openEsigModal('${s.id}','rejected')">&#x2716; Reject</button>`;
+  }
+
   document.getElementById('centerContent').innerHTML=`<div class="fade-in">
-    <div class="detail-section"><div class="section-label">Raw Observation &middot; ${s.area} &middot; ${s.operator} &middot; ${s.date}</div><div class="obs-text">${s.obs}</div></div>
+    <div class="detail-section">
+      <div class="status-bar">
+        <span class="status-badge status-${st}">${statusLabel[st]||st}</span>
+        ${wfBtns}
+        <span style="flex:1"></span>
+        <span style="font-size:10px;color:#5a5a5a">${s.id}</span>
+      </div>
+      <div class="section-label" style="margin-top:8px">Raw Observation &middot; ${s.area} &middot; ${s.operator} &middot; ${s.date}</div><div class="obs-text">${s.obs}</div>
+    </div>
     <div class="detail-section"><div class="section-label">SOP &amp; Document References &mdash; click a row to open SOP viewer</div><table class="sop-table"><thead><tr><th>Doc</th><th>Title</th><th>Section</th><th>Flag</th><th>Issue</th></tr></thead><tbody>${sopRows}</tbody></table></div>
     <div class="detail-section"><div class="section-label">Suggested Changes</div><div class="changes-list">${changes}</div></div>
+    <div class="detail-section audit-section">
+      <button class="audit-toggle" onclick="loadAuditTrail('${s.id}')">&#x1F50D; Audit Trail</button>
+      <div id="auditTrailContent"></div>
+    </div>
   </div>`;
+}
+
+// ─── STATUS WORKFLOW ──────────────────────────────────────────────────────────
+async function quickStatusChange(refCode, newStatus){
+  const userName = localStorage.getItem('vent_name') || 'QA User';
+  const userRole = localStorage.getItem('vent_role') || 'qa';
+  try {
+    const res = await fetch(SERVER+'/submissions/'+refCode+'/status', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ status:newStatus, userId:userName, userRole:userRole, reason:'Status advanced to '+newStatus })
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const result = await res.json();
+    // Update local data
+    const sub = MOCK.find(s=>s.id===refCode);
+    if(sub) sub.status = newStatus;
+    renderCenter();
+    renderLeft();
+    addLog(`${refCode} → ${newStatus}`,'info');
+  } catch(err){
+    addLog('Status update failed: '+err.message,'error');
+  }
+}
+
+function openEsigModal(refCode, targetStatus){
+  const statusLabel = {qa_approved:'QA Approved',director_signoff:'Director Sign-off',closed:'Closed',rejected:'Rejected',corrective_action:'Corrective Action'};
+  const meanings = targetStatus==='rejected'
+    ? ['Rejected — insufficient evidence','Rejected — not a valid observation','Rejected — duplicate']
+    : ['Approved','Reviewed','Verified','Authorized'];
+  const meaningOpts = meanings.map(m=>`<option value="${m}">${m}</option>`).join('');
+  const userName = localStorage.getItem('vent_name') || '';
+  const userRole = localStorage.getItem('vent_role') || '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'esig-overlay';
+  overlay.id = 'esigOverlay';
+  overlay.innerHTML = `
+    <div class="esig-modal">
+      <div class="esig-header">
+        <h3>&#x1F513; Electronic Signature Required</h3>
+        <p>Action: <strong>${statusLabel[targetStatus]||targetStatus}</strong> for <strong>${refCode}</strong></p>
+      </div>
+      <div class="esig-body">
+        <label>Full Name<input type="text" id="esigName" value="${userName}" placeholder="e.g. Sinéad Kelly"></label>
+        <label>Role<input type="text" id="esigRole" value="${userRole}" readonly style="color:#569cd6"></label>
+        <label>Meaning<select id="esigMeaning">${meaningOpts}</select></label>
+        <label>Reason / Justification<textarea id="esigReason" placeholder="Required — document the basis for this decision"></textarea></label>
+      </div>
+      <div class="esig-footer">
+        <button class="wf-btn" onclick="closeEsigModal()">Cancel</button>
+        <button class="wf-btn wf-primary" onclick="submitEsig('${refCode}','${targetStatus}')">&#x270D; Sign &amp; Submit</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById('esigReason').focus(),100);
+}
+
+function closeEsigModal(){
+  const ov = document.getElementById('esigOverlay');
+  if(ov) ov.remove();
+}
+
+async function submitEsig(refCode, targetStatus){
+  const name = document.getElementById('esigName').value.trim();
+  const role = document.getElementById('esigRole').value.trim();
+  const meaning = document.getElementById('esigMeaning').value;
+  const reason = document.getElementById('esigReason').value.trim();
+  if(!name || !reason){
+    document.getElementById('esigReason').style.borderColor='#f44747';
+    return;
+  }
+  closeEsigModal();
+  try {
+    const res = await fetch(SERVER+'/submissions/'+refCode+'/status', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ status:targetStatus, userId:name, userRole:role, meaning:meaning, reason:reason })
+    });
+    if(!res.ok){ const d=await res.json().catch(()=>({})); throw new Error(d.error||'HTTP '+res.status); }
+    const result = await res.json();
+    const sub = MOCK.find(s=>s.id===refCode);
+    if(sub) sub.status = targetStatus;
+    renderCenter();
+    renderLeft();
+    addLog(`E-Sig: ${name} → ${refCode} ${targetStatus} (${meaning})`,'info');
+  } catch(err){
+    addLog('E-Sig failed: '+err.message,'error');
+  }
+}
+
+// ─── AUDIT TRAIL ──────────────────────────────────────────────────────────────
+async function loadAuditTrail(refCode){
+  const container = document.getElementById('auditTrailContent');
+  container.innerHTML = '<div style="color:#5a5a5a;font-size:11px;padding:8px 0">Loading audit trail…</div>';
+  try {
+    const res = await fetch(SERVER+'/audit/'+refCode);
+    const entries = await res.json();
+    if(!entries.length){
+      container.innerHTML = '<div style="color:#5a5a5a;font-size:11px;padding:8px 0">No audit entries yet. <span style="color:#569cd6">Set up audit table via /admin/setup</span></div>';
+      return;
+    }
+    const actionLabels = {
+      submission_created:'Submission Created',
+      status_changed:'Status Changed',
+      sop_annotation_added:'Annotation Added',
+      system_setup:'System Initialized'
+    };
+    let html = '<div class="audit-list">';
+    entries.forEach(e=>{
+      const d = new Date(e.timestamp);
+      const ts = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const cls = e.action==='submission_created'?'ae-create': (e.after_val&&e.after_val.signatureMeaning)?'ae-esig':'ae-status';
+      const sig = (e.after_val&&e.after_val.signatureMeaning) ? `<div style="color:#4dc86e;font-size:10px">&#x270D; ${e.after_val.signatureMeaning}</div>` : '';
+      const fromTo = (e.before_val&&e.before_val.status && e.after_val&&e.after_val.status)
+        ? `<span style="color:#f44747">${e.before_val.status}</span> → <span style="color:#4dc86e">${e.after_val.status}</span>`
+        : (actionLabels[e.action]||e.action);
+      html += `<div class="audit-entry ${cls}">
+        <div class="audit-time">${ts}</div>
+        <div class="audit-action">${fromTo}</div>
+        <div class="audit-user">${e.user_id} (${e.user_role})</div>
+        ${e.reason ? '<div class="audit-reason">&ldquo;'+e.reason+'&rdquo;</div>' : ''}
+        ${sig}
+        <div class="audit-hash" title="SHA-256 integrity hash">#${e.checksum.slice(0,12)}</div>
+      </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  } catch(err){
+    container.innerHTML = '<div style="color:#f44747;font-size:11px;padding:8px 0">Failed to load audit trail: '+err.message+'</div>';
+  }
 }
 
 const SOP_CONTENT={
