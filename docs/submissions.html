@@ -302,6 +302,7 @@ body {
 <div class="topbar">
   <a href="index.html" class="logo">Vent<div class="pip"></div></a>
   <div class="app-nav">
+    <a href="index.html"       class="nav-item">Submit</a>
     <a href="query.html"       class="nav-item">Query SOPs</a>
     <a href="submissions.html" class="nav-item on">Submissions</a>
     <a href="qa.html"          class="nav-item">QA Control</a>
@@ -724,11 +725,11 @@ function renderStats() {
   const clrs   = {operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
   const navRules = {
     operator:    [],
-    qa:          ['Submissions','QA Control'],
+    qa:          ['Submit','Submissions','QA Control'],
     director:    ['Submissions','QA Control'],
-    msat:        ['Query SOPs','Submissions'],
+    msat:        ['Submit','Query SOPs','Submissions'],
     engineering: ['Submissions'],
-    admin:       ['Query SOPs','Submissions','QA Control']
+    admin:       ['Submit','Query SOPs','Submissions','QA Control']
   };
   const right = document.querySelector('.topbar-right');
   if (!right) return;
