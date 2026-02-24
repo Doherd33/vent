@@ -267,15 +267,39 @@ body {
 }
 .empty-list strong { color: var(--mid); display: block; margin-bottom: 6px; font-size: 14px; }
 
+/* ── HAMBURGER ── */
+.hamburger { display: none; background: none; border: 1px solid var(--border); color: var(--mid); cursor: pointer; padding: 6px; border-radius: 7px; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+.hamburger:hover { color: var(--text); background: var(--s3); }
+.hamburger svg { display: block; }
+
 /* ── MOBILE ── */
 @media (max-width: 768px) {
-  .topbar { padding: 0 14px; }
+  .hamburger { display: flex; align-items: center; justify-content: center; }
+  .app-nav { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--s1); border-bottom: 1px solid var(--border); flex-direction: column; padding: 8px 12px; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,.3); z-index: 200; }
+  .app-nav.open { display: flex; }
+  .topbar { position: relative; padding: 0 12px; gap: 8px; }
+  .nav-item { padding: 12px 16px; font-size: 14px; width: 100%; border-radius: 8px; }
   .page-header { padding: 16px 14px; }
+  .ph-title { font-size: 20px; }
   .filter-bar { padding: 10px 14px; }
+  .filter-inner { gap: 8px; }
+  .status-pills { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+  .status-pills::-webkit-scrollbar { display: none; }
+  .filter-right { width: 100%; margin-left: 0; }
   .list-inner { padding: 12px 14px 28px; }
   .sr-date { display: none; }
-  .stat-strip { display: none; }
-  .f-search { width: 140px; }
+  .stat-strip { gap: 6px; }
+  .stat-chip { padding: 6px 10px; min-width: 58px; }
+  .sc-n { font-size: 20px; }
+  .f-search { width: 100%; min-width: 0; }
+  .search-wrap { flex: 1; }
+  .sr-preview { -webkit-line-clamp: 1; font-size: 12px; }
+  .sr-top { gap: 5px; }
+  .sr-main { padding: 10px 12px 9px; }
+  .sr-submitter { font-size: 12px; }
+  .sub-row-body { padding: 14px 14px 16px 16px; }
+  .full-text { font-size: 13px; }
+  .pl-stage { font-size: 12px; }
 }
 </style>
 <script>
@@ -303,6 +327,7 @@ body {
 <!-- TOPBAR -->
 <div class="topbar">
   <a href="index.html" class="logo">Vent<div class="pip"></div></a>
+  <button class="hamburger" onclick="document.querySelector('.app-nav').classList.toggle('open')" aria-label="Menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
   <div class="app-nav">
     <a href="index.html"       class="nav-item">Submit</a>
     <a href="query.html"       class="nav-item">Query SOPs</a>

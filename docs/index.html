@@ -488,18 +488,35 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 
 @keyframes up { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 
+/* ── HAMBURGER ── */
+.hamburger { display: none; background: none; border: 1px solid var(--border); color: var(--mid); cursor: pointer; padding: 6px; border-radius: 7px; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+.hamburger:hover { color: var(--text); background: var(--s3); }
+.hamburger svg { display: block; }
+
 @media (max-width: 640px) {
-  .topbar { padding: 0 10px; gap: 6px; height: 48px; }
-  .t-logo { font-size: 19px; margin-right: 4px; }
-  .nav-item { font-size: 12px; padding: 5px 8px; }
+  .hamburger { display: flex; align-items: center; justify-content: center; }
+  .app-nav { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--s1); border-bottom: 1px solid var(--border); flex-direction: column; padding: 8px 12px; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,.3); z-index: 200; }
+  .app-nav.open { display: flex; }
+  .topbar { position: relative; padding: 0 12px; gap: 8px; height: 48px; }
+  .t-logo { font-size: 19px; margin-right: 0; }
+  .nav-item { padding: 12px 16px; font-size: 14px; width: 100%; border-radius: 8px; }
+  .topbar-right { gap: 6px; }
   #submitScreen { padding: 24px 14px; min-height: auto; }
   .submit-wrap { max-width: 100%; }
   .s-headline { font-size: 24px; }
   .s-subhead { font-size: 13px; margin-bottom: 24px; }
-  .dashboard { grid-template-columns: 1fr; padding: 16px 16px 0; }
+  .dashboard { grid-template-columns: 1fr; padding: 16px 14px 0; }
   .panel.left, .panel.right { grid-column: 1; }
-  .fb-hero { padding: 24px 16px 20px; }
-  .fb-topbar { padding: 12px 16px; }
+  .fb-hero { padding: 20px 14px 16px; }
+  .fb-topbar { padding: 10px 14px; gap: 10px; }
+  .fb-topbar .logo { font-size: 18px; }
+  .fb-status { font-size: 11px; }
+  .fb-status span { display: none; }
+  .topbar-right .ref-code { font-size: 10px; padding: 3px 8px; }
+  .new-sub-btn { font-size: 11px; padding: 5px 10px; }
+  .hero-title { font-size: 22px; }
+  .hero-meta { font-size: 11px; gap: 8px; }
+  .obs-echo { font-size: 12px; padding: 11px 14px; }
   .sci-grid { grid-template-columns: 1fr; }
   .anon-note { display: none; }
   .section-card { padding: 22px 16px; }
@@ -508,16 +525,26 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
   .sc-icon svg { width: 20px; height: 20px; }
   .sc-title { font-size: 18px; }
   .sc-desc { font-size: 12.5px; }
-  .build-search input { font-size: 13px; padding: 12px 14px 12px 40px; }
+  .build-search input { font-size: 16px; padding: 12px 14px 12px 40px; }
   .build-search .bs-icon { left: 12px; }
   .build-search .bs-icon svg { width: 16px; height: 16px; }
   .build-search .bs-go { font-size: 11px; padding: 7px 14px; }
   .section-or { margin-bottom: 20px; }
   .area-row { gap: 1px; }
   .atab { font-size: 11px; padding: 7px 10px; }
-  textarea { min-height: 120px; padding: 16px 16px 10px; font-size: 14px; }
+  textarea { min-height: 120px; padding: 16px 16px 10px; font-size: 16px; }
   .box-foot { padding: 8px 12px 12px; }
+  .go-btn { padding: 11px 18px; font-size: 14px; }
   .s-hint { font-size: 10px; }
+  .sop-table th, .sop-table td { font-size: 11px; padding: 7px 8px; }
+  .ca-item { flex-wrap: wrap; }
+  .ca-type { margin-top: 6px; }
+  .contact-item { flex-wrap: wrap; }
+  .contact-dept { margin-top: 0; }
+  .panel-head { padding: 12px 14px; }
+  .panel-body { padding: 14px; }
+  .ph-title { font-size: 12px; }
+  .p-step { padding: 10px 0; }
 }
 
 /* ── SECTION CARDS ── */
@@ -595,6 +622,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 <!-- TOPBAR -->
 <div class="topbar">
   <a href="index.html" class="t-logo">Vent<div class="pip"></div></a>
+  <button class="hamburger" onclick="document.querySelector('.app-nav').classList.toggle('open')" aria-label="Menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
   <div class="app-nav">
     <a href="index.html"     class="nav-item on">Submit</a>
     <a href="query.html"     class="nav-item">Query SOPs</a>

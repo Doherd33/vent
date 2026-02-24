@@ -353,6 +353,68 @@ body {
 
 @keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
 .fade-in { animation: fadeUp 0.2s ease forwards; }
+
+/* ── MOBILE HAMBURGER ── */
+.mobile-hamburger { display: none; background: none; border: 1px solid #3c3c3c; color: #8e8e8e; cursor: pointer; padding: 4px 6px; border-radius: 3px; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+.mobile-hamburger:hover { color: #cccccc; background: #404040; }
+.mobile-hamburger svg { display: block; }
+
+/* ── MOBILE OVERLAY ── */
+.mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 400; }
+.mobile-overlay.show { display: block; }
+
+/* ── QA MOBILE ── */
+@media (max-width: 768px) {
+  .mobile-hamburger { display: flex; align-items: center; justify-content: center; }
+  .title-nav { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #252526; border-bottom: 1px solid #3c3c3c; flex-direction: column; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.4); z-index: 500; }
+  .title-nav.open { display: flex; }
+  .nav-tab { padding: 10px 14px; font-size: 13px; border-radius: 3px; }
+  .title-bar { position: relative; padding: 0 8px; }
+  .title-bar-right { font-size: 10px; gap: 6px; }
+  .title-bar-right .s-sep { display: none; }
+
+  body { grid-template-rows: 35px 1fr 22px; }
+  .workbench {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto 1fr auto !important;
+  }
+  .workbench.sop-open { grid-template-columns: 1fr !important; }
+  .resizer { display: none; }
+
+  .left-panel {
+    grid-column: 1 !important; grid-row: 1 !important;
+    max-height: 200px; border-right: none; border-bottom: 1px solid #3c3c3c;
+  }
+  .center-panel { grid-column: 1 !important; grid-row: 2 !important; }
+  .right-panel {
+    grid-column: 1 !important; grid-row: 3 !important;
+    border-left: none; border-top: 1px solid #3c3c3c;
+    max-height: 280px;
+  }
+  .bottom-panel { display: none; }
+
+  .lp-restore-tab { display: none !important; }
+
+  .center-content { padding: 14px 12px; }
+  .right-content { padding: 12px; }
+  .obs-text { font-size: 12px; padding: 10px 12px; }
+  .sop-table { font-size: 11px; }
+  .sop-table th, .sop-table td { padding: 5px 6px; }
+  .change-item { flex-direction: column; gap: 8px; padding: 10px 12px; }
+  .change-num { margin: 0; }
+
+  .editor-tabs { height: 30px; }
+  .editor-tab { font-size: 11px; padding: 0 8px 0 10px; }
+  .right-tabs-scroll { overflow-x: auto; }
+  .right-tab { font-size: 10px; padding: 0 6px 0 10px; }
+
+  .esig-modal { width: 92vw; }
+  .annotation-text { padding-left: 0; }
+  .annotation-reactions { padding-left: 0; }
+
+  .status-bar { font-size: 10px; gap: 8px; padding: 0 6px; }
+  .s-right { gap: 8px; }
+}
 </style>
 <script>if(new URLSearchParams(window.location.search).has('dev')){localStorage.setItem('vent_role','admin');localStorage.setItem('vent_name','Dev Admin');localStorage.setItem('vent_token','dev');}if(!localStorage.getItem('vent_role'))window.location.replace('login.html');</script>
 </head>
@@ -362,6 +424,7 @@ body {
 <div class="title-bar">
   <div class="title-bar-left">
     <span class="app-name">&#11041; VENT</span>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
     <nav class="title-nav">
       <a href="index.html"       class="nav-tab">Submit</a>
       <a href="query.html"       class="nav-tab">Query SOPs</a>
