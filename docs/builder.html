@@ -96,28 +96,31 @@ body {
 /* ── WORKBENCH ── */
 .workbench {
   display: grid;
-  grid-template-columns: 240px 1px 1fr 1px 0px;
-  grid-template-rows: 1fr 1px 160px;
+  grid-template-columns: 240px 6px 1fr 6px 0px;
+  grid-template-rows: 1fr 6px 160px;
   overflow: hidden;
   position: relative;
 }
 .workbench.edit-open {
-  grid-template-columns: 240px 1px 1fr 1px 340px;
+  grid-template-columns: 240px 6px 1fr 6px 340px;
 }
 
 /* ── RESIZE HANDLES ── */
 .resizer {
-  background: var(--border);
+  background: transparent;
   z-index: 10;
-  transition: background 0.15s;
   position: relative;
 }
-.resizer:hover, .resizer.dragging { background: var(--accent); }
+.resizer::before {
+  content: ''; position: absolute;
+  background: var(--border);
+  transition: background 0.15s;
+}
+.resizer:hover::before, .resizer.dragging::before { background: var(--accent); }
 .resizer-v { cursor: col-resize; grid-row: 1 / 4; }
+.resizer-v::before { top: 0; bottom: 0; left: 50%; width: 1px; transform: translateX(-50%); }
 .resizer-h { cursor: row-resize; grid-column: 1 / 6; grid-row: 2; }
-.resizer::after { content: ''; position: absolute; inset: 0; }
-.resizer-v::after { left: -3px; right: -3px; }
-.resizer-h::after { top: -3px; bottom: -3px; }
+.resizer-h::before { left: 0; right: 0; top: 50%; height: 1px; transform: translateY(-50%); }
 
 /* ── LEFT PANEL — Document List ── */
 .left-panel {
