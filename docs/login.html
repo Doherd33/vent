@@ -217,6 +217,29 @@ body::before {
 .field input:focus { border-color: var(--borderhi); background: var(--s1); }
 .field input::placeholder { color: var(--dim); }
 
+/* ── PASSWORD WRAPPER ── */
+.pw-wrap {
+  position: relative;
+}
+.pw-wrap input { padding-right: 42px; }
+.pw-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; padding: 4px;
+  color: var(--dim); transition: color .15s; display: flex;
+}
+.pw-toggle:hover { color: var(--text); }
+.pw-toggle svg { width: 18px; height: 18px; }
+
+/* ── MATCH TAG ── */
+.match-tag {
+  display: inline-block; font-size: 10px; font-weight: 500;
+  padding: 2px 8px; border-radius: 4px; margin-left: 8px;
+  vertical-align: middle; transition: opacity .2s;
+}
+.match-tag.ok   { background: var(--green2); color: var(--green); }
+.match-tag.no   { background: var(--red2); color: var(--red); }
+.match-tag.hide { opacity: 0; }
+
 /* ── BUTTON ── */
 .continue-btn {
   width: 100%; background: var(--accent); border: none; border-radius: 9px;
@@ -283,8 +306,14 @@ body::before {
 
     <div class="field">
       <label>Password</label>
-      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"
-             onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="pw-wrap">
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')doLogin()">
+        <button type="button" class="pw-toggle" onclick="togglePw('loginPass',this)" tabindex="-1" aria-label="Show password">
+          <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="eye-shut" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
     </div>
     <div class="err-msg" id="loginErr"></div>
 
@@ -407,13 +436,26 @@ body::before {
 
       <div class="field">
         <label>Password <span style="text-transform:none;letter-spacing:0;font-size:10px">(min 6 characters)</span></label>
-        <input type="password" id="regPass" placeholder="••••••••" autocomplete="new-password">
+        <div class="pw-wrap">
+          <input type="password" id="regPass" placeholder="••••••••" autocomplete="new-password"
+                 oninput="checkMatch()">
+          <button type="button" class="pw-toggle" onclick="togglePw('regPass',this)" tabindex="-1" aria-label="Show password">
+            <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-shut" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
       </div>
 
       <div class="field">
-        <label>Confirm password</label>
-        <input type="password" id="regPassConfirm" placeholder="••••••••" autocomplete="new-password"
-               onkeydown="if(event.key==='Enter')doRegister()">
+        <label>Confirm password <span class="match-tag hide" id="matchTag"></span></label>
+        <div class="pw-wrap">
+          <input type="password" id="regPassConfirm" placeholder="••••••••" autocomplete="new-password"
+                 oninput="checkMatch()" onkeydown="if(event.key==='Enter')doRegister()">
+          <button type="button" class="pw-toggle" onclick="togglePw('regPassConfirm',this)" tabindex="-1" aria-label="Show password">
+            <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-shut" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
       </div>
       <div class="err-msg" id="regErr"></div>
 
@@ -471,6 +513,34 @@ const ROLE_ROUTES = {
 
 let selectedRole = null;
 let selectedPath = null;
+
+/* ── Password visibility toggle ── */
+function togglePw(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.querySelector('.eye-open').style.display = show ? 'none' : '';
+  btn.querySelector('.eye-shut').style.display = show ? '' : 'none';
+}
+
+/* ── Real-time password match indicator ── */
+function checkMatch() {
+  const pw  = document.getElementById('regPass').value;
+  const cpw = document.getElementById('regPassConfirm').value;
+  const tag = document.getElementById('matchTag');
+  if (!cpw) {
+    tag.className = 'match-tag hide';
+    tag.textContent = '';
+    return;
+  }
+  if (pw === cpw) {
+    tag.className = 'match-tag ok';
+    tag.textContent = 'Passwords match ✓';
+  } else {
+    tag.className = 'match-tag no';
+    tag.textContent = 'Does not match';
+  }
+}
 
 function switchTab(tab, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
