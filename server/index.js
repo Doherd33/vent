@@ -1,3 +1,25 @@
+// GET /sop/search?q=... — search SOPs by title/content
+app.get('/sop/search', requireAuth, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q || q.length < 2) return res.status(400).json({ error: 'Query too short' });
+  try {
+    // Search by title or content (case-insensitive)
+    const { data, error } = await supabase
+      .from('sop_chunks')
+      .select('doc_id, section_title, content')
+      .ilike('content', `%${q}%`);
+    if (error) throw error;
+    // Group by doc_id, show first section_title per doc
+    const grouped = {};
+    (data || []).forEach(row => {
+      if (!grouped[row.doc_id]) grouped[row.doc_id] = row;
+    });
+    res.json(Object.values(grouped));
+  } catch (err) {
+    console.error('SOP search error:', err);
+    res.status(500).json({ error: 'Failed to search SOPs' });
+  }
+});
 require('dotenv').config();
 
 const express = require('express');

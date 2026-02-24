@@ -1630,33 +1630,62 @@ async function runSopSearch() {
   results.innerHTML = '<div class="search-status"><div class="dot"></div> Searching SOPs…</div>';
 
   try {
-    const res = await authFetch(SERVER + '/query', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: q, area: 'Upstream' })
-    });
+    // New: search SOPs by title/content
+    const res = await authFetch(SERVER + '/sop/search?q=' + encodeURIComponent(q));
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Query failed');
 
-    // Create a SOP tab for this result
-    const tabId = 'sop_' + Date.now();
-    openSopTabs.push({ id: tabId, query: q, data });
-    activeSopTab = tabId;
+    if (!data.length) {
+      results.innerHTML = '<div class="search-status">No SOPs found matching your query.</div>';
+      return;
+    }
 
-    // Clear step tabs since we're in SOP mode now
-    openStepTabs = [];
-    activeStepTab = null;
-    document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
-
-    renderSopTabs();
-    renderSopResult(tabId);
+    // Show clickable list of SOPs
+    results.innerHTML = data.map(row =>
+      `<div class="sop-search-result" style="padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="openSopDocTab('${row.doc_id}','${esc(row.section_title)}')">
+        <div style="font-size:13px;color:var(--accent);font-weight:500">${esc(row.doc_id)}</div>
+        <div style="font-size:12px;color:var(--text);margin-bottom:2px">${esc(row.section_title)}</div>
+        <div style="font-size:11px;color:var(--mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(row.content.substring(0, 80))}</div>
+      </div>`
+    ).join('');
     logActivity('SOP search: "' + q + '"', 'info');
-
   } catch (err) {
     results.innerHTML = '<div style="color:var(--red);font-size:12px;padding:8px 0">Error: ' + esc(err.message) + '</div>';
   } finally {
     btn.disabled = false;
   }
+}
+
+// Open full SOP doc in a new tab
+async function openSopDocTab(docId, sectionTitle) {
+  const res = await authFetch(SERVER + '/sop/' + encodeURIComponent(docId));
+  const data = await res.json();
+  if (!Array.isArray(data) || !data.length) return;
+  const tabId = 'sopdoc_' + docId + '_' + Date.now();
+  openSopTabs.push({ id: tabId, query: docId, data: { docId, sections: data } });
+  activeSopTab = tabId;
+  openStepTabs = [];
+  activeStepTab = null;
+  document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
+  renderSopTabs();
+  renderSopDoc(tabId);
+}
+
+function renderSopDoc(tabId) {
+  const tab = openSopTabs.find(t => t.id === tabId);
+  if (!tab) return;
+  const d = tab.data;
+  const rc = document.getElementById('rightContent');
+  let html = `<div class="sop-result-card"><div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px">${esc(d.docId)}</div>`;
+  d.sections.forEach(sec => {
+    html += `<div style="margin-bottom:18px">
+      <div style="font-size:12px;color:var(--gold);font-weight:500;margin-bottom:2px">${esc(sec.section_title)}</div>
+      <div style="font-size:12px;color:var(--text);white-space:pre-line">${esc(sec.content)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  rc.innerHTML = html;
+}
 }
 
 function renderSopTabs() {
