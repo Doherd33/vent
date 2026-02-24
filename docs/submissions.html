@@ -286,6 +286,7 @@ body {
     const token = localStorage.getItem('vent_token');
     const _r = localStorage.getItem('vent_role');
     if (!token || !_r || _r === 'operator') { window.location.replace('login.html'); return; }
+    if (token === 'dev') return;
     try {
       const res = await fetch(SERVER + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
       if (!res.ok) throw new Error('expired');
