@@ -331,17 +331,118 @@ body {
   padding: 8px 12px; border-radius: 0 4px 4px 0;
   font-size: 11px; color: var(--gold); margin-top: 8px;
 }
+
+/* Step media gallery */
 .step-media {
-  display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+  display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;
 }
-.media-thumb {
-  width: 64px; height: 48px; border-radius: 4px;
+.media-item {
+  position: relative; border-radius: 6px;
   background: var(--s3); border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--dim); font-size: 10px; cursor: pointer;
-  transition: border-color .15s;
+  overflow: hidden; cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
 }
-.media-thumb:hover { border-color: var(--accent); }
+.media-item:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(0,122,204,.18); }
+.media-item img {
+  display: block; max-width: 220px; max-height: 160px;
+  object-fit: cover; border-radius: 5px;
+}
+.media-item video {
+  display: block; max-width: 320px; max-height: 200px;
+  border-radius: 5px; background: #000;
+}
+.media-item-file {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; min-width: 140px;
+}
+.media-item-file-icon { color: var(--accent); flex-shrink: 0; }
+.media-item-file-info { min-width: 0; }
+.media-item-file-name {
+  font-size: 11px; color: var(--text); font-weight: 400;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 160px;
+}
+.media-item-file-size { font-size: 9px; color: var(--dim); margin-top: 2px; }
+.media-delete {
+  position: absolute; top: 4px; right: 4px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(0,0,0,.7); border: none;
+  color: #fff; font-size: 12px; cursor: pointer;
+  display: none; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.media-item:hover .media-delete { display: flex; }
+.media-delete:hover { background: var(--red); }
+
+/* Media lightbox */
+.media-lightbox {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.85);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; animation: fadeUp .15s ease;
+}
+.media-lightbox img, .media-lightbox video {
+  max-width: 90vw; max-height: 85vh;
+  border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,.6);
+}
+.media-lightbox-close {
+  position: absolute; top: 16px; right: 20px;
+  background: none; border: none; color: #fff;
+  font-size: 28px; cursor: pointer; opacity: .7;
+  transition: opacity .15s;
+}
+.media-lightbox-close:hover { opacity: 1; }
+.media-lightbox-name {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.6); color: #fff; padding: 6px 16px;
+  border-radius: 6px; font-size: 12px; max-width: 80vw;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Upload dropzone in step editor */
+.media-upload-zone {
+  border: 2px dashed var(--border); border-radius: 8px;
+  padding: 16px; text-align: center; cursor: pointer;
+  transition: all .15s; margin-top: 8px;
+  color: var(--dim); font-size: 12px;
+}
+.media-upload-zone:hover, .media-upload-zone.dragover {
+  border-color: var(--accent); color: var(--accent);
+  background: var(--accent2);
+}
+.media-upload-zone-icon { font-size: 24px; margin-bottom: 6px; }
+.media-upload-list { margin-top: 10px; }
+.media-upload-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; background: var(--s2);
+  border: 1px solid var(--border); border-radius: 4px;
+  margin-bottom: 4px; font-size: 11px;
+}
+.media-upload-item-name {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text);
+}
+.media-upload-item-size { color: var(--dim); flex-shrink: 0; font-size: 10px; }
+.media-upload-item-del {
+  background: none; border: none; color: var(--dim);
+  cursor: pointer; font-size: 14px; padding: 0 2px;
+  transition: color .12s;
+}
+.media-upload-item-del:hover { color: var(--red); }
+
+/* Attach button on step header */
+.step-attach-btn {
+  background: none; border: 1px solid var(--border); border-radius: 3px;
+  color: var(--dim); cursor: pointer; padding: 3px 6px; font-size: 10px;
+  transition: all .12s; display: flex; align-items: center; gap: 3px;
+}
+.step-attach-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent2); }
+.step-media-count {
+  background: var(--accent); color: #fff; font-size: 8px;
+  padding: 1px 5px; border-radius: 8px; font-weight: 700;
+  margin-left: 2px;
+}
 
 /* Add step button */
 .add-step-btn {
@@ -795,6 +896,114 @@ const userRole = localStorage.getItem('vent_role') || 'operator';
 document.getElementById('titleUser').textContent = userName;
 document.getElementById('statusUser').textContent = userName;
 
+// ── INDEXEDDB MEDIA STORE ──
+const MEDIA_DB_NAME = 'vent_media';
+const MEDIA_DB_VER  = 1;
+const MEDIA_STORE   = 'files';
+let mediaDB = null;
+
+function openMediaDB() {
+  return new Promise((resolve, reject) => {
+    if (mediaDB) return resolve(mediaDB);
+    const req = indexedDB.open(MEDIA_DB_NAME, MEDIA_DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(MEDIA_STORE)) {
+        const store = db.createObjectStore(MEDIA_STORE, { keyPath: 'id' });
+        store.createIndex('stepId', 'stepId', { unique: false });
+        store.createIndex('docId', 'docId', { unique: false });
+      }
+    };
+    req.onsuccess = e => { mediaDB = e.target.result; resolve(mediaDB); };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function saveMedia(mediaEntry) {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MEDIA_STORE, 'readwrite');
+    tx.objectStore(MEDIA_STORE).put(mediaEntry);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function getMediaForStep(docId, stepId) {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MEDIA_STORE, 'readonly');
+    const store = tx.objectStore(MEDIA_STORE);
+    const idx = store.index('stepId');
+    const req = idx.getAll(stepId);
+    req.onsuccess = () => {
+      resolve((req.result || []).filter(m => m.docId === docId));
+    };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function getMediaForDoc(docId) {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MEDIA_STORE, 'readonly');
+    const idx = tx.objectStore(MEDIA_STORE).index('docId');
+    const req = idx.getAll(docId);
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function deleteMedia(mediaId) {
+  const db = await openMediaDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MEDIA_STORE, 'readwrite');
+    tx.objectStore(MEDIA_STORE).delete(mediaId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function deleteMediaForDoc(docId) {
+  const items = await getMediaForDoc(docId);
+  for (const m of items) await deleteMedia(m.id);
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function getMediaType(mimeType) {
+  if (mimeType.startsWith('image/')) return 'image';
+  if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.startsWith('audio/')) return 'audio';
+  return 'file';
+}
+
+// Hidden file input for uploads
+const _fileInput = document.createElement('input');
+_fileInput.type = 'file';
+_fileInput.multiple = true;
+_fileInput.accept = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv';
+_fileInput.style.display = 'none';
+document.body.appendChild(_fileInput);
+let _fileInputCallback = null;
+_fileInput.addEventListener('change', () => {
+  if (_fileInputCallback) _fileInputCallback(_fileInput.files);
+  _fileInput.value = '';
+});
+
 // ── DOCUMENT STORE (localStorage-backed) ──
 const STORE_KEY = 'vent_builder_docs';
 
@@ -962,6 +1171,7 @@ function renderDocView(doc) {
   const el = document.getElementById('centerContent');
   const statusClass = 'status-' + doc.status;
 
+  // Build steps — media loaded async
   let stepsHtml = '';
   doc.steps.forEach((step, i) => {
     stepsHtml += '<div class="doc-step" id="step-' + step.id + '">' +
@@ -969,6 +1179,7 @@ function renderDocView(doc) {
         '<div class="step-number">' + (i + 1) + '</div>' +
         '<div class="step-title">' + esc(step.title) + '</div>' +
         '<div class="step-actions">' +
+          '<button class="step-attach-btn" title="Attach media" onclick="event.stopPropagation();triggerStepUpload(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Attach</button>' +
           '<button class="step-action-btn" title="Edit step" onclick="event.stopPropagation();editStep(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
           '<button class="step-action-btn" title="Delete step" onclick="event.stopPropagation();deleteStep(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
         '</div>' +
@@ -976,6 +1187,7 @@ function renderDocView(doc) {
       '<div class="step-body">' +
         '<p>' + esc(step.content).replace(/\n/g, '</p><p>') + '</p>' +
         (step.note ? '<div class="step-note">⚠ ' + esc(step.note) + '</div>' : '') +
+        '<div class="step-media" id="media-' + step.id + '"></div>' +
       '</div>' +
     '</div>';
   });
@@ -997,6 +1209,9 @@ function renderDocView(doc) {
       'Add Step' +
     '</button>' +
   '</div>';
+
+  // Load media for each step asynchronously
+  doc.steps.forEach(step => loadStepMedia(doc.id, step.id));
 }
 
 function toggleStep(stepId) {
@@ -1098,12 +1313,56 @@ function renderRightPanelEdit(doc, focusStep) {
           '<label>Note / Warning (optional)</label>' +
           '<input type="text" id="editStepNote" value="' + esc(focusStep.note || '') + '" placeholder="e.g. Critical: wear PPE">' +
         '</div>' +
+        '<div class="modal-field">' +
+          '<label>Attachments</label>' +
+          '<div class="media-upload-zone" id="stepDropZone" onclick="triggerStepUpload(\'' + doc.id + '\',\'' + focusStep.id + '\')">' +
+            '<div class="media-upload-zone-icon">📎</div>' +
+            'Drop files here or click to attach<br>' +
+            '<span style="font-size:10px;color:var(--dim)">Images, videos, PDFs, documents</span>' +
+          '</div>' +
+          '<div class="media-upload-list" id="stepMediaList"></div>' +
+        '</div>' +
       '</div>' +
       '<div class="edit-actions">' +
         '<button class="edit-btn primary" onclick="saveStepEdit(\'' + doc.id + '\',\'' + focusStep.id + '\')">Save Changes</button>' +
         '<button class="edit-btn" onclick="renderRightPanelEdit(documents.find(d=>d.id===\'' + doc.id + '\'))">Cancel</button>' +
       '</div>' +
     '</div>';
+
+    // Load existing media into the list
+    loadStepMediaList(doc.id, focusStep.id);
+
+    // Setup drag-and-drop on the drop zone
+    setTimeout(() => {
+      const dz = document.getElementById('stepDropZone');
+      if (!dz) return;
+      dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+      dz.addEventListener('drop', async e => {
+        e.preventDefault();
+        dz.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (!files.length) return;
+        for (const file of files) {
+          const data = await readFileAsDataURL(file);
+          await saveMedia({
+            id: 'media-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+            docId: doc.id, stepId: focusStep.id,
+            name: file.name, mimeType: file.type || 'application/octet-stream',
+            size: file.size, data,
+            uploadedBy: userName, uploadedAt: new Date().toISOString()
+          });
+          logActivity('Attached "' + file.name + '" (' + formatFileSize(file.size) + ')', 'action');
+        }
+        doc.updated = new Date().toISOString();
+        doc.versions.push({ time: doc.updated, label: 'Added ' + files.length + ' attachment(s)', user: userName });
+        saveDocs(documents);
+        renderDocList();
+        loadStepMedia(doc.id, focusStep.id);
+        loadStepMediaList(doc.id, focusStep.id);
+      });
+    }, 0);
+
     return;
   }
 
@@ -1236,11 +1495,208 @@ function deleteDoc(docId) {
   if (!doc) return;
   if (!confirm('Delete "' + doc.title + '"? This cannot be undone.')) return;
 
+  // Clean up media from IndexedDB
+  deleteMediaForDoc(docId);
+
   documents = documents.filter(d => d.id !== docId);
   saveDocs(documents);
   closeTab(docId);
   updateCounts();
   logActivity('Deleted document: "' + doc.title + '"', 'warn');
+}
+
+// ── MEDIA FUNCTIONS ──
+
+// Load and render media for a step in the doc viewer
+async function loadStepMedia(docId, stepId) {
+  const container = document.getElementById('media-' + stepId);
+  if (!container) return;
+  
+  const items = await getMediaForStep(docId, stepId);
+  if (!items.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  items.forEach(m => {
+    const type = getMediaType(m.mimeType);
+    if (type === 'image') {
+      html += '<div class="media-item" onclick="openLightbox(\'' + m.id + '\')" title="' + esc(m.name) + '">' +
+        '<img src="' + m.data + '" alt="' + esc(m.name) + '">' +
+        '<button class="media-delete" onclick="event.stopPropagation();removeMedia(\'' + m.id + '\',\'' + docId + '\',\'' + stepId + '\')" title="Remove">×</button>' +
+      '</div>';
+    } else if (type === 'video') {
+      html += '<div class="media-item" title="' + esc(m.name) + '">' +
+        '<video controls preload="metadata" onclick="event.stopPropagation()"><source src="' + m.data + '" type="' + m.mimeType + '"></video>' +
+        '<button class="media-delete" onclick="event.stopPropagation();removeMedia(\'' + m.id + '\',\'' + docId + '\',\'' + stepId + '\')" title="Remove">×</button>' +
+      '</div>';
+    } else if (type === 'audio') {
+      html += '<div class="media-item media-item-file" title="' + esc(m.name) + '">' +
+        '<div class="media-item-file-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>' +
+        '<div class="media-item-file-info">' +
+          '<div class="media-item-file-name">' + esc(m.name) + '</div>' +
+          '<div class="media-item-file-size">' + formatFileSize(m.size) + '</div>' +
+          '<audio controls style="width:100%;height:28px;margin-top:4px" onclick="event.stopPropagation()"><source src="' + m.data + '" type="' + m.mimeType + '"></audio>' +
+        '</div>' +
+        '<button class="media-delete" onclick="event.stopPropagation();removeMedia(\'' + m.id + '\',\'' + docId + '\',\'' + stepId + '\')" title="Remove">×</button>' +
+      '</div>';
+    } else {
+      html += '<div class="media-item media-item-file" onclick="downloadMedia(\'' + m.id + '\')" title="' + esc(m.name) + '">' +
+        '<div class="media-item-file-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
+        '<div class="media-item-file-info">' +
+          '<div class="media-item-file-name">' + esc(m.name) + '</div>' +
+          '<div class="media-item-file-size">' + formatFileSize(m.size) + '</div>' +
+        '</div>' +
+        '<button class="media-delete" onclick="event.stopPropagation();removeMedia(\'' + m.id + '\',\'' + docId + '\',\'' + stepId + '\')" title="Remove">×</button>' +
+      '</div>';
+    }
+  });
+
+  container.innerHTML = html;
+}
+
+// Load media list in the right-panel step editor
+async function loadStepMediaList(docId, stepId) {
+  const container = document.getElementById('stepMediaList');
+  if (!container) return;
+
+  const items = await getMediaForStep(docId, stepId);
+  if (!items.length) {
+    container.innerHTML = '<div style="font-size:11px;color:var(--dim);padding:6px 0">No attachments yet</div>';
+    return;
+  }
+
+  let html = '';
+  items.forEach(m => {
+    const type = getMediaType(m.mimeType);
+    const icon = type === 'image' ? '🖼' : type === 'video' ? '🎬' : type === 'audio' ? '🎵' : '📄';
+    html += '<div class="media-upload-item">' +
+      '<span>' + icon + '</span>' +
+      '<span class="media-upload-item-name">' + esc(m.name) + '</span>' +
+      '<span class="media-upload-item-size">' + formatFileSize(m.size) + '</span>' +
+      '<button class="media-upload-item-del" onclick="removeMediaFromEditor(\'' + m.id + '\',\'' + docId + '\',\'' + stepId + '\')" title="Remove">×</button>' +
+    '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// Remove media from editor panel (same as removeMedia but refreshes editor list)
+async function removeMediaFromEditor(mediaId, docId, stepId) {
+  if (!confirm('Remove this attachment?')) return;
+  await deleteMedia(mediaId);
+  logActivity('Removed attachment', 'warn');
+
+  const doc = documents.find(d => d.id === docId);
+  if (doc) {
+    doc.updated = new Date().toISOString();
+    doc.versions.push({ time: doc.updated, label: 'Removed an attachment', user: userName });
+    saveDocs(documents);
+    renderDocList();
+  }
+
+  loadStepMedia(docId, stepId);
+  loadStepMediaList(docId, stepId);
+}
+
+// Trigger file picker for a step
+function triggerStepUpload(docId, stepId) {
+  _fileInputCallback = async (files) => {
+    if (!files || !files.length) return;
+    
+    for (const file of files) {
+      const data = await readFileAsDataURL(file);
+      const entry = {
+        id: 'media-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        docId,
+        stepId,
+        name: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        size: file.size,
+        data,
+        uploadedBy: userName,
+        uploadedAt: new Date().toISOString()
+      };
+      await saveMedia(entry);
+      logActivity('Attached "' + file.name + '" (' + formatFileSize(file.size) + ')', 'action');
+    }
+
+    // Update doc timestamp and version
+    const doc = documents.find(d => d.id === docId);
+    if (doc) {
+      doc.updated = new Date().toISOString();
+      doc.versions.push({ time: doc.updated, label: 'Added ' + files.length + ' attachment(s)', user: userName });
+      saveDocs(documents);
+      renderDocList();
+    }
+
+    // Reload media for this step
+    loadStepMedia(docId, stepId);
+
+    // Refresh right panel if editing this step
+    if (doc && activeRightTab === 'edit') renderRightPanel(doc);
+  };
+  _fileInput.click();
+}
+
+// Remove a media item
+async function removeMedia(mediaId, docId, stepId) {
+  if (!confirm('Remove this attachment?')) return;
+  await deleteMedia(mediaId);
+  logActivity('Removed attachment', 'warn');
+
+  const doc = documents.find(d => d.id === docId);
+  if (doc) {
+    doc.updated = new Date().toISOString();
+    doc.versions.push({ time: doc.updated, label: 'Removed an attachment', user: userName });
+    saveDocs(documents);
+    renderDocList();
+  }
+
+  loadStepMedia(docId, stepId);
+  if (doc && activeRightTab === 'edit') renderRightPanel(doc);
+}
+
+// Lightbox for images
+async function openLightbox(mediaId) {
+  const db = await openMediaDB();
+  const tx = db.transaction(MEDIA_STORE, 'readonly');
+  const req = tx.objectStore(MEDIA_STORE).get(mediaId);
+  req.onsuccess = () => {
+    const m = req.result;
+    if (!m) return;
+    const type = getMediaType(m.mimeType);
+    const overlay = document.createElement('div');
+    overlay.className = 'media-lightbox';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+    let content = '';
+    if (type === 'image') {
+      content = '<img src="' + m.data + '" alt="' + esc(m.name) + '">';
+    } else if (type === 'video') {
+      content = '<video controls autoplay><source src="' + m.data + '" type="' + m.mimeType + '"></video>';
+    }
+
+    overlay.innerHTML = content +
+      '<button class="media-lightbox-close" onclick="this.parentElement.remove()">×</button>' +
+      '<div class="media-lightbox-name">' + esc(m.name) + ' · ' + formatFileSize(m.size) + '</div>';
+    document.body.appendChild(overlay);
+  };
+}
+
+// Download a file attachment
+async function downloadMedia(mediaId) {
+  const db = await openMediaDB();
+  const tx = db.transaction(MEDIA_STORE, 'readonly');
+  const req = tx.objectStore(MEDIA_STORE).get(mediaId);
+  req.onsuccess = () => {
+    const m = req.result;
+    if (!m) return;
+    const a = document.createElement('a');
+    a.href = m.data;
+    a.download = m.name;
+    a.click();
+  };
 }
 
 // ── AI PLACEHOLDER ACTIONS ──
