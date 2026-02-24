@@ -1323,62 +1323,93 @@ function esc(s) {
 
 // ── RESIZE LOGIC ──
 (function initResizers() {
-  const wb = document.getElementById('workbench');
-  const r1 = document.getElementById('resizerV1');
-  const r2 = document.getElementById('resizerV2');
-  const rh = document.getElementById('resizerH');
+  const wb   = document.getElementById('workbench');
+  const r1   = document.getElementById('resizerV1');
+  const r2   = document.getElementById('resizerV2');
+  const rh   = document.getElementById('resizerH');
+  const lp   = wb.querySelector('.left-panel');
+  const rp   = wb.querySelector('.right-panel');
+  const bp   = wb.querySelector('.bottom-panel');
 
-  function getParts(prop) {
-    return (wb.style[prop] || getComputedStyle(wb)[prop]).split(/\s+/);
+  let leftW  = 240;
+  let rightW = 0;
+  let botH   = 160;
+
+  function applyCols() {
+    wb.style.gridTemplateColumns = leftW + 'px 6px 1fr 6px ' + rightW + 'px';
+  }
+  function applyRows() {
+    wb.style.gridTemplateRows = '1fr 6px ' + botH + 'px';
   }
 
-  function makeDragV(resizer, colIndex) {
-    resizer.addEventListener('mousedown', e => {
-      e.preventDefault();
-      resizer.classList.add('dragging');
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'col-resize';
-      let lastX = e.clientX;
+  // Left resizer
+  r1.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    r1.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+    leftW = lp.getBoundingClientRect().width;
+    rightW = rp.getBoundingClientRect().width;
+    var lastX = e.clientX;
 
-      function onMove(ev) {
-        const dx = ev.clientX - lastX;
-        lastX = ev.clientX;
-        const parts = getParts('gridTemplateColumns');
-        const current = parseFloat(parts[colIndex]) || 240;
-        const newW = Math.max(120, Math.min(current + dx, wb.clientWidth - 200));
-        parts[colIndex] = newW + 'px';
-        wb.style.gridTemplateColumns = parts.join(' ');
-      }
-      function onUp() {
-        resizer.classList.remove('dragging');
-        document.body.style.userSelect = '';
-        document.body.style.cursor = '';
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-      }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-  }
+    function onMove(ev) {
+      var dx = ev.clientX - lastX;
+      lastX = ev.clientX;
+      leftW = Math.max(140, Math.min(leftW + dx, wb.clientWidth - 250));
+      applyCols();
+    }
+    function onUp() {
+      r1.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
 
-  makeDragV(r1, 0);
-  makeDragV(r2, 4);
+  // Right resizer
+  r2.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    r2.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+    leftW = lp.getBoundingClientRect().width;
+    rightW = rp.getBoundingClientRect().width;
+    var lastX = e.clientX;
 
-  rh.addEventListener('mousedown', e => {
+    function onMove(ev) {
+      var dx = ev.clientX - lastX;
+      lastX = ev.clientX;
+      rightW = Math.max(0, Math.min(rightW - dx, wb.clientWidth - 350));
+      applyCols();
+    }
+    function onUp() {
+      r2.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // Horizontal resizer
+  rh.addEventListener('mousedown', function(e) {
     e.preventDefault();
     rh.classList.add('dragging');
     document.body.style.userSelect = 'none';
     document.body.style.cursor = 'row-resize';
-    let lastY = e.clientY;
+    botH = bp.getBoundingClientRect().height;
+    var lastY = e.clientY;
 
     function onMove(ev) {
-      const dy = ev.clientY - lastY;
+      var dy = ev.clientY - lastY;
       lastY = ev.clientY;
-      const parts = getParts('gridTemplateRows');
-      const current = parseFloat(parts[2]) || 160;
-      const newH = Math.max(60, Math.min(current - dy, wb.clientHeight - 200));
-      parts[2] = newH + 'px';
-      wb.style.gridTemplateRows = parts.join(' ');
+      botH = Math.max(40, Math.min(botH - dy, wb.clientHeight - 200));
+      applyRows();
     }
     function onUp() {
       rh.classList.remove('dragging');
