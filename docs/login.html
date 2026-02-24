@@ -112,50 +112,95 @@ body::before {
   font-size: 13px; color: var(--mid); margin-top: 6px; line-height: 1.65;
 }
 
-/* ── ROLE LIST ── */
-.role-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 22px; }
+/* ── PATH CARDS (Step 1) ── */
+.path-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
 
-.role-item {
-  display: flex; align-items: center; gap: 14px;
+.path-card {
+  position: relative;
   background: var(--s2); border: 1.5px solid var(--border);
-  border-radius: 11px; padding: 12px 16px;
-  cursor: pointer; transition: all .15s;
+  border-radius: 14px; padding: 22px 20px 18px;
+  cursor: pointer; transition: all .18s;
   user-select: none;
 }
-.role-item:hover { border-color: var(--borderhi); background: var(--s1); }
-.role-item.selected { border-color: var(--accent); background: var(--accent2); }
-.role-item.selected[data-role="operator"]    { border-color: var(--teal);   background: var(--teal2); }
-.role-item.selected[data-role="qa"]          { border-color: var(--accent); background: var(--accent2); }
-.role-item.selected[data-role="director"]    { border-color: var(--gold);   background: var(--gold2); }
-.role-item.selected[data-role="msat"]        { border-color: var(--green);  background: var(--green2); }
-.role-item.selected[data-role="engineering"] { border-color: var(--borderhi); background: var(--s3); }
+.path-card:hover { border-color: var(--borderhi); background: var(--s1); }
+.path-card.selected[data-path="floor"]      { border-color: var(--teal);   background: var(--teal2); }
+.path-card.selected[data-path="management"] { border-color: var(--accent); background: var(--accent2); }
 
-.ri-icon {
-  width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+.path-icon {
+  width: 48px; height: 48px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--s3); color: var(--dim); transition: all .15s;
+  margin-bottom: 14px; transition: all .15s;
+  background: var(--s3); color: var(--dim);
 }
-.role-item.selected[data-role="operator"]    .ri-icon { background: rgba(26,144,128,.14); color: var(--teal); }
-.role-item.selected[data-role="qa"]          .ri-icon { background: var(--accent2); color: var(--accent); }
-.role-item.selected[data-role="director"]    .ri-icon { background: var(--gold2);   color: var(--gold); }
-.role-item.selected[data-role="msat"]        .ri-icon { background: var(--green2);  color: var(--green); }
-.role-item.selected[data-role="engineering"] .ri-icon { background: var(--s3);      color: var(--mid); }
+.path-card.selected[data-path="floor"]      .path-icon { background: rgba(78,201,176,.12); color: var(--teal); }
+.path-card.selected[data-path="management"] .path-icon { background: var(--accent2); color: var(--accent); }
 
-.ri-text { flex: 1; }
-.ri-title { font-size: 13px; font-weight: 400; color: var(--text); margin-bottom: 2px; }
-.ri-desc  { font-size: 11.5px; color: var(--mid); line-height: 1.4; }
+.path-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 19px; font-weight: 400; color: var(--text);
+  margin-bottom: 4px; letter-spacing: -.01em;
+}
+.path-desc { font-size: 12px; color: var(--mid); line-height: 1.5; margin-bottom: 12px; }
 
-.ri-check {
-  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+.path-access { display: flex; flex-wrap: wrap; gap: 5px; }
+.access-tag {
+  font-size: 10px; font-weight: 500; letter-spacing: .03em;
+  padding: 3px 9px; border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.teal-tag   { background: rgba(78,201,176,.1);  color: var(--teal); }
+.accent-tag { background: rgba(0,122,204,.1);   color: var(--accent); }
+
+.path-check {
+  position: absolute; top: 18px; right: 18px;
+  width: 22px; height: 22px; border-radius: 50%;
   border: 1.5px solid var(--border); background: transparent;
   display: flex; align-items: center; justify-content: center;
   transition: all .15s;
 }
-.role-item.selected                          .ri-check { background: var(--accent); border-color: var(--accent); }
-.role-item.selected[data-role="operator"]    .ri-check { background: var(--teal);   border-color: var(--teal); }
-.role-item.selected[data-role="director"]    .ri-check { background: var(--gold);   border-color: var(--gold); }
-.role-item.selected[data-role="msat"]        .ri-check { background: var(--green);  border-color: var(--green); }
-.role-item.selected[data-role="engineering"] .ri-check { background: var(--mid);    border-color: var(--mid); }
+.path-card.selected[data-path="floor"]      .path-check { background: var(--teal);   border-color: var(--teal); }
+.path-card.selected[data-path="management"] .path-check { background: var(--accent); border-color: var(--accent); }
+
+/* ── BACK LINK ── */
+.back-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; color: var(--mid); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; cursor: pointer; padding: 0; margin-bottom: 18px;
+  transition: color .15s;
+}
+.back-link:hover { color: var(--text); }
+
+/* ── DEPARTMENT PICKER (Step 2 — management path) ── */
+.field-label {
+  display: block; font-size: 10.5px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 8px; font-weight: 400;
+}
+.dept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 20px; }
+
+.dept-item {
+  background: var(--s2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 12px 14px;
+  cursor: pointer; transition: all .15s;
+  user-select: none;
+}
+.dept-item:hover { border-color: var(--borderhi); background: var(--s1); }
+.dept-item.selected { border-color: var(--accent); background: var(--accent2); }
+.dept-item.selected[data-role="qa"]          { border-color: var(--accent); background: var(--accent2); }
+.dept-item.selected[data-role="director"]    { border-color: var(--gold);   background: var(--gold2); }
+.dept-item.selected[data-role="msat"]        { border-color: var(--green);  background: var(--green2); }
+.dept-item.selected[data-role="engineering"] { border-color: var(--borderhi); background: var(--s3); }
+
+.dept-dot {
+  width: 8px; height: 8px; border-radius: 50%; margin-bottom: 8px;
+  background: var(--dim); transition: background .15s;
+}
+.dept-item.selected .qa-dot  { background: var(--accent); }
+.dept-item.selected .dir-dot { background: var(--gold); }
+.dept-item.selected .msat-dot { background: var(--green); }
+.dept-item.selected .eng-dot { background: var(--mid); }
+
+.dept-name { font-size: 12.5px; font-weight: 400; color: var(--text); margin-bottom: 2px; }
+.dept-hint { font-size: 10.5px; color: var(--dim); line-height: 1.4; }
 
 /* ── FIELDS ── */
 .field { margin-bottom: 16px; }
@@ -253,101 +298,125 @@ body::before {
   <!-- ── REGISTER PANE ── -->
   <div class="register-pane" id="registerPane">
 
-    <div class="heading">
-      <h1>Create your account</h1>
-      <p class="sub">Select your role and create your credentials.</p>
+    <!-- STEP 1: Choose path -->
+    <div id="regStep1">
+      <div class="heading">
+        <h1>Which best describes you?</h1>
+        <p class="sub">This determines what you'll have access to in Vent.</p>
+      </div>
+
+      <div class="path-cards">
+
+        <div class="path-card" data-path="floor" onclick="selectPath(this)">
+          <div class="path-icon floor-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <line x1="10" y1="9" x2="8" y2="9"/>
+            </svg>
+          </div>
+          <div class="path-title">I'm on the floor</div>
+          <div class="path-desc">Manufacturing associates, bioprocess technicians, lab ops</div>
+          <div class="path-access">
+            <span class="access-tag teal-tag">Submit observations</span>
+            <span class="access-tag teal-tag">Query SOPs</span>
+          </div>
+          <div class="path-check">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+
+        <div class="path-card" data-path="management" onclick="selectPath(this)">
+          <div class="path-icon mgmt-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
+          <div class="path-title">I manage the process</div>
+          <div class="path-desc">Shift leads, QA, MSAT, directors, engineering</div>
+          <div class="path-access">
+            <span class="access-tag accent-tag">Review &amp; approve</span>
+            <span class="access-tag accent-tag">QA control</span>
+            <span class="access-tag accent-tag">Dashboard</span>
+          </div>
+          <div class="path-check">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="continue-btn" id="step1Btn" onclick="goToStep2()" disabled>
+        Continue
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
     </div>
 
-    <div class="role-list">
+    <!-- STEP 2: Department (management only) + credentials -->
+    <div id="regStep2" style="display:none">
 
-      <div class="role-item" data-role="operator" onclick="selectRole(this)">
-        <div class="ri-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </div>
-        <div class="ri-text">
-          <div class="ri-title">Operator</div>
-          <div class="ri-desc">Submit floor observations and query SOPs</div>
-        </div>
-        <div class="ri-check">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      <button class="back-link" onclick="backToStep1()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </button>
+
+      <div class="heading" id="step2Heading">
+        <h1 id="step2Title">Create your account</h1>
+        <p class="sub" id="step2Sub">Enter your details below.</p>
+      </div>
+
+      <!-- Department picker (management path only) -->
+      <div id="deptPicker" style="display:none">
+        <label class="field-label">Department</label>
+        <div class="dept-grid">
+          <div class="dept-item" data-role="qa" onclick="selectDept(this)">
+            <div class="dept-dot qa-dot"></div>
+            <div class="dept-name">Quality Assurance</div>
+            <div class="dept-hint">QA leads, QMS, document control</div>
+          </div>
+          <div class="dept-item" data-role="director" onclick="selectDept(this)">
+            <div class="dept-dot dir-dot"></div>
+            <div class="dept-name">Operations Leadership</div>
+            <div class="dept-hint">Directors, associate directors, shift leads</div>
+          </div>
+          <div class="dept-item" data-role="msat" onclick="selectDept(this)">
+            <div class="dept-dot msat-dot"></div>
+            <div class="dept-name">MSAT / Process Science</div>
+            <div class="dept-hint">Technical services, process development</div>
+          </div>
+          <div class="dept-item" data-role="engineering" onclick="selectDept(this)">
+            <div class="dept-dot eng-dot"></div>
+            <div class="dept-name">Engineering</div>
+            <div class="dept-hint">Automation, facilities, maintenance</div>
+          </div>
         </div>
       </div>
 
-      <div class="role-item" data-role="qa" onclick="selectRole(this)">
-        <div class="ri-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        </div>
-        <div class="ri-text">
-          <div class="ri-title">QA</div>
-          <div class="ri-desc">Document control, deviation management &amp; CAPA oversight</div>
-        </div>
-        <div class="ri-check">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
+      <div class="field">
+        <label>Full name</label>
+        <input type="text" id="regName" placeholder="e.g. Liu Wei, Sinéad Murphy…" autocomplete="name">
       </div>
 
-      <div class="role-item" data-role="director" onclick="selectRole(this)">
-        <div class="ri-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        </div>
-        <div class="ri-text">
-          <div class="ri-title">Director</div>
-          <div class="ri-desc">Strategic oversight, intelligence dashboard &amp; escalations</div>
-        </div>
-        <div class="ri-check">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="regEmail" placeholder="you@company.com" autocomplete="email">
       </div>
 
-      <div class="role-item" data-role="msat" onclick="selectRole(this)">
-        <div class="ri-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
-        </div>
-        <div class="ri-text">
-          <div class="ri-title">MSAT</div>
-          <div class="ri-desc">Process science, SOP knowledge base &amp; technical services</div>
-        </div>
-        <div class="ri-check">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
+      <div class="field">
+        <label>Password <span style="text-transform:none;letter-spacing:0;font-size:10px">(min 6 characters)</span></label>
+        <input type="password" id="regPass" placeholder="••••••••" autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')doRegister()">
       </div>
+      <div class="err-msg" id="regErr"></div>
 
-      <div class="role-item" data-role="engineering" onclick="selectRole(this)">
-        <div class="ri-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-        </div>
-        <div class="ri-text">
-          <div class="ri-title">Engineering</div>
-          <div class="ri-desc">Facilities, automation, maintenance &amp; utilities</div>
-        </div>
-        <div class="ri-check">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-      </div>
-
+      <button class="continue-btn" id="regBtn" onclick="doRegister()">
+        Create account
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
     </div>
-
-    <div class="field">
-      <label>Full name</label>
-      <input type="text" id="regName" placeholder="e.g. Liu Wei, Sinéad Murphy…" autocomplete="name">
-    </div>
-
-    <div class="field">
-      <label>Email</label>
-      <input type="email" id="regEmail" placeholder="you@company.com" autocomplete="email">
-    </div>
-
-    <div class="field">
-      <label>Password <span style="text-transform:none;letter-spacing:0;font-size:10px">(min 6 characters)</span></label>
-      <input type="password" id="regPass" placeholder="••••••••" autocomplete="new-password"
-             onkeydown="if(event.key==='Enter')doRegister()">
-    </div>
-    <div class="err-msg" id="regErr"></div>
-
-    <button class="continue-btn" id="regBtn" onclick="doRegister()" disabled>
-      Create account
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-    </button>
 
   </div><!-- /register-pane -->
 
@@ -396,19 +465,63 @@ const ROLE_ROUTES = {
 })();
 
 let selectedRole = null;
+let selectedPath = null;
 
 function switchTab(tab, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
   btn.classList.add('on');
   document.getElementById('loginPane').classList.toggle('show', tab === 'login');
   document.getElementById('registerPane').classList.toggle('show', tab === 'register');
+  // Reset registration state when switching tabs
+  if (tab === 'register') {
+    backToStep1();
+  }
+}
+
+function selectPath(card) {
+  document.querySelectorAll('.path-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedPath = card.dataset.path;
+  document.getElementById('step1Btn').disabled = false;
+}
+
+function goToStep2() {
+  if (!selectedPath) return;
+  document.getElementById('regStep1').style.display = 'none';
+  document.getElementById('regStep2').style.display = 'block';
+
+  if (selectedPath === 'floor') {
+    // Floor operators — no department choice needed
+    selectedRole = 'operator';
+    document.getElementById('deptPicker').style.display = 'none';
+    document.getElementById('step2Title').textContent = 'Almost there';
+    document.getElementById('step2Sub').textContent = 'Enter your details to start submitting observations.';
+  } else {
+    // Management — show department picker
+    selectedRole = null;
+    document.getElementById('deptPicker').style.display = 'block';
+    document.getElementById('step2Title').textContent = 'Your department';
+    document.getElementById('step2Sub').textContent = 'Select your department and create your credentials.';
+  }
+}
+
+function backToStep1() {
+  document.getElementById('regStep1').style.display = 'block';
+  document.getElementById('regStep2').style.display = 'none';
+  // Reset department selection
+  selectedRole = selectedPath === 'floor' ? 'operator' : null;
+  document.querySelectorAll('.dept-item').forEach(d => d.classList.remove('selected'));
+}
+
+function selectDept(item) {
+  document.querySelectorAll('.dept-item').forEach(d => d.classList.remove('selected'));
+  item.classList.add('selected');
+  selectedRole = item.dataset.role;
 }
 
 function selectRole(item) {
-  document.querySelectorAll('.role-item').forEach(i => i.classList.remove('selected'));
-  item.classList.add('selected');
+  // Legacy compat — not used in new flow but kept for safety
   selectedRole = item.dataset.role;
-  document.getElementById('regBtn').disabled = false;
 }
 
 function showError(id, msg) {
@@ -468,7 +581,7 @@ async function doLogin() {
 
 async function doRegister() {
   if (!selectedRole) {
-    showError('regErr', 'Please select a role.');
+    showError('regErr', selectedPath === 'management' ? 'Please select your department.' : 'Please select a path first.');
     return;
   }
   const name = document.getElementById('regName').value.trim();
