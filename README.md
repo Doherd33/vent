@@ -96,7 +96,24 @@ Operators can query the SOP database directly — ask a plain-language question 
 
 Every new submission is compared against historical submissions using keyword overlap and process area matching. Recurring patterns are flagged automatically, helping QA identify systemic issues before they become deviations.
 
-### 9. Notification System
+### 9. Document Builder
+
+A full IDE-style document authoring environment for creating, editing, and versioning controlled workflow documents — SOPs, work instructions, batch record templates, and more.
+
+- **Three-panel layout** — document list (left), document viewer (centre), and edit/AI/versions panel (right), with a resizable activity log at the bottom
+- **Drag-to-resize panels** — VS Code-style resizers between all panels for a customisable workspace
+- **Step-based document structure** — documents are composed of ordered steps with titles, detailed instructions, and collapsible sections
+- **Version history** — every save creates a timestamped snapshot; previous versions can be viewed at any time
+- **Grouped by process area** — documents are automatically organised by upstream area (Media Prep, Bioreactor Ops, Sampling, etc.)
+- **Status tracking** — Draft → In Review → Approved lifecycle with visual badges
+- **Activity log** — real-time log of all document operations (create, edit, delete, version)
+- **Search and filter** — instant filtering across all documents by title or content
+- **Local-first storage** — documents persist in localStorage for fast, offline-capable access
+- **AI Assist tab** — placeholder for future AI-powered document drafting and review
+
+The Document Builder gives operators and QA a structured tool to author the documents that drive manufacturing — living alongside the observation and SOP systems rather than sitting in separate, disconnected tools.
+
+### 10. Notification System
 
 When a submission is created, all routed contacts receive notifications with:
 
@@ -112,7 +129,7 @@ When a submission is created, all routed contacts receive notifications with:
 ┌────────────────────────────────────────────────────────────────┐
 │                        Frontend (docs/)                        │
 │  query.html · qa.html · workflow.html · dashboard.html         │
-│  submissions.html · login.html                                 │
+│  submissions.html · builder.html · login.html                  │
 │  Static HTML/CSS/JS — served by Express                        │
 └────────────────────────┬───────────────────────────────────────┘
                          │ REST API
@@ -170,7 +187,7 @@ When a submission is created, all routed contacts receive notifications with:
 
 | Role | Access |
 |---|---|
-| `operator` | Submit observations, query SOPs, view own notifications |
+| `operator` | Query SOPs, build documents, view own notifications |
 | `qa` | All operator access + QA control centre, status transitions, SOP changes, CAPAs |
 | `director` | All QA access + dashboard analytics, director sign-off |
 | `msat` | Specialist access for investigation phase |
@@ -314,8 +331,9 @@ Start the server and visit `GET /admin/setup` to get the full SQL schema. Run it
 ```
 vent/
 ├── docs/                          # Frontend (static HTML/CSS/JS)
-│   ├── index.html                 # Redirect to query page
+│   ├── index.html                 # Observation submission
 │   ├── query.html                 # Operator SOP knowledge search
+│   ├── builder.html               # Document Builder (IDE-style editor)
 │   ├── qa.html                    # QA Control Centre
 │   ├── workflow.html              # Observation submission workflow
 │   ├── dashboard.html             # Director analytics dashboard
