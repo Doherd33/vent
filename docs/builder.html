@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Document Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #1e1e1e;
+  --s1:       #252526;
+  --s2:       #2d2d30;
+  --s3:       #333337;
+  --border:   #3c3c3c;
+  --borderhi: #5a5a5a;
+  --text:     #cccccc;
+  --mid:      #8e8e8e;
+  --dim:      #5a5a5a;
+  --accent:   #007acc;
+  --accent2:  rgba(0,122,204,0.15);
+  --accent3:  rgba(0,122,204,0.28);
+  --gold:     #ffc64d;
+  --gold2:    rgba(255,198,77,0.15);
+  --green:    #4ec9b0;
+  --green2:   rgba(78,201,176,0.15);
+  --red:      #f44747;
+  --red2:     rgba(244,71,71,0.15);
+  --teal:     #4ec9b0;
+  --teal2:    rgba(78,201,176,0.12);
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── TITLE BAR ── */
+.title-bar {
+  background: #323233;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid #111;
+  user-select: none;
+}
+.title-bar-left { display: flex; align-items: center; gap: 16px; }
+.app-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 16px; color: var(--text);
+  display: flex; align-items: center; gap: 7px;
+  text-decoration: none; letter-spacing: -.02em;
+}
+.pip {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  animation: breathe 3s ease-in-out infinite;
+}
+@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+.title-nav { display: flex; gap: 2px; }
+.nav-tab {
+  padding: 4px 14px; font-size: 12px; color: var(--mid);
+  cursor: pointer; border-radius: 5px; text-decoration: none;
+  transition: all 0.15s; font-weight: 300;
+}
+.nav-tab:hover { color: var(--text); background: #404040; }
+.nav-tab.active { color: #ffffff; background: var(--accent); font-weight: 400; }
+
+.title-bar-right {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--mid);
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  animation: breathe 2.5s infinite;
+}
+.user-name { font-weight: 400; }
+.sign-out-btn {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--dim); font-size: 10px; padding: 2px 8px; cursor: pointer;
+  font-family: inherit; transition: all .15s;
+}
+.sign-out-btn:hover { color: var(--text); border-color: var(--borderhi); }
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 240px 4px 1fr 4px 0px;
+  grid-template-rows: 1fr 4px 160px;
+  overflow: hidden;
+  position: relative;
+}
+.workbench.edit-open {
+  grid-template-columns: 240px 4px 1fr 4px 340px;
+}
+
+/* ── RESIZE HANDLES ── */
+.resizer {
+  background: var(--border);
+  z-index: 10;
+  transition: background 0.15s;
+  position: relative;
+}
+.resizer:hover, .resizer.dragging { background: var(--accent); }
+.resizer-v { cursor: col-resize; grid-row: 1; }
+.resizer-h { cursor: row-resize; grid-column: 1 / 6; grid-row: 2; }
+.resizer::after { content: ''; position: absolute; inset: 0; }
+.resizer-v::after { left: -4px; right: -4px; }
+.resizer-h::after { top: -4px; bottom: -4px; }
+
+/* ── LEFT PANEL — Document List ── */
+.left-panel {
+  grid-column: 1; grid-row: 1 / 2;
+  background: var(--s1);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 10px 12px;
+  font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #bbbbbb; background: var(--s2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.panel-badge {
+  background: var(--accent); color: #fff;
+  font-size: 10px; padding: 1px 7px;
+  border-radius: 10px; font-weight: 700;
+}
+.new-doc-btn {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--mid); font-size: 11px; padding: 3px 10px; cursor: pointer;
+  font-family: inherit; transition: all .15s;
+  display: flex; align-items: center; gap: 4px;
+}
+.new-doc-btn:hover { color: var(--text); border-color: var(--accent); background: var(--accent2); }
+
+.doc-search-wrap {
+  padding: 8px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.doc-search {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text); font-family: inherit;
+  font-size: 12px; padding: 6px 8px 6px 28px; outline: none;
+  transition: border-color .15s;
+}
+.doc-search:focus { border-color: var(--accent); }
+.doc-search::placeholder { color: var(--dim); }
+.doc-search-wrap { position: relative; }
+.doc-search-icon {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  color: var(--dim); display: flex; pointer-events: none;
+}
+
+.doc-list { flex: 1; overflow-y: auto; padding: 4px; }
+.doc-list::-webkit-scrollbar { width: 4px; }
+.doc-list::-webkit-scrollbar-thumb { background: #424242; border-radius: 2px; }
+
+.doc-group-header {
+  display: flex; align-items: center; padding: 10px 10px 4px 8px;
+  cursor: pointer; user-select: none; color: var(--dim);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.7px;
+  text-transform: uppercase; gap: 6px; transition: color 0.12s;
+}
+.doc-group-header:hover { color: var(--text); }
+.doc-group-chevron {
+  font-size: 8px; transition: transform 0.15s ease;
+  display: inline-block; color: var(--dim); flex-shrink: 0;
+}
+.doc-group-chevron.collapsed { transform: rotate(-90deg); }
+.doc-group-count {
+  margin-left: auto; background: var(--s3); color: var(--mid);
+  border-radius: 8px; padding: 1px 7px; font-size: 9px;
+  font-weight: 600; flex-shrink: 0;
+}
+.doc-group-items { margin-bottom: 4px; }
+
+.doc-card {
+  padding: 8px 10px; border-radius: 4px; margin-bottom: 1px;
+  cursor: pointer; transition: background 0.1s;
+  border-left: 2px solid transparent;
+}
+.doc-card:hover { background: #2a2d2e; }
+.doc-card.active { background: rgba(0,122,204,.18); border-left-color: var(--accent); }
+
+.doc-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+.doc-card-icon { color: var(--accent); flex-shrink: 0; }
+.doc-card-status { font-size: 9px; padding: 1px 6px; border-radius: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.status-draft    { background: var(--gold2); color: var(--gold); }
+.status-active   { background: var(--green2); color: var(--green); }
+.status-archived { background: rgba(100,100,100,.18); color: var(--mid); }
+
+.doc-card-title { font-size: 12px; color: var(--text); margin-bottom: 3px; line-height: 1.3; font-weight: 400; }
+.doc-card-meta  { font-size: 10px; color: var(--dim); }
+
+/* ── CENTER PANEL — Document Viewer/Builder ── */
+.center-panel {
+  grid-column: 3; grid-row: 1;
+  display: flex; flex-direction: column;
+  overflow: hidden; background: var(--bg);
+}
+.editor-tabs {
+  display: flex; align-items: center; background: var(--s2);
+  border-bottom: 1px solid var(--border);
+  height: 35px; flex-shrink: 0;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+}
+.editor-tabs::-webkit-scrollbar { display: none; }
+.editor-tab {
+  padding: 0 10px 0 16px; height: 100%;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--mid);
+  border-right: 1px solid var(--border);
+  white-space: nowrap; cursor: pointer; flex-shrink: 0;
+  user-select: none; transition: background 0.1s, color 0.1s;
+}
+.editor-tab:hover { background: #2a2a2a; color: var(--text); }
+.editor-tab.active { background: var(--bg); color: #fff; border-top: 2px solid var(--accent); }
+.editor-tab-placeholder {
+  padding: 0 16px; font-size: 12px; color: var(--dim);
+  font-style: italic; flex-shrink: 0;
+}
+.tab-close {
+  background: none; border: none; color: transparent;
+  cursor: pointer; font-size: 11px; padding: 2px 3px;
+  border-radius: 2px; line-height: 1;
+  transition: color 0.1s, background 0.1s; flex-shrink: 0;
+}
+.editor-tab:hover .tab-close,
+.editor-tab.active .tab-close { color: #6c6c6c; }
+.tab-close:hover { color: #ffffff !important; background: rgba(255,255,255,0.1); }
+
+.center-content {
+  flex: 1; overflow-y: auto; padding: 24px 28px;
+}
+.center-content::-webkit-scrollbar { width: 6px; }
+.center-content::-webkit-scrollbar-track { background: var(--bg); }
+.center-content::-webkit-scrollbar-thumb { background: #424242; border-radius: 3px; }
+
+/* Empty state */
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; gap: 12px; user-select: none;
+}
+.empty-state .ei { font-size: 40px; opacity: .6; }
+.empty-state p { font-size: 13px; color: var(--dim); text-align: center; line-height: 1.6; }
+.empty-state .hint { font-size: 11px; color: var(--dim); margin-top: 4px; }
+
+/* Document view */
+.doc-view { animation: fadeUp 0.2s ease forwards; }
+.doc-view-header { margin-bottom: 28px; }
+.doc-view-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px; color: var(--text); font-weight: 400;
+  letter-spacing: -.01em; margin-bottom: 6px;
+}
+.doc-view-meta {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 11px; color: var(--dim); flex-wrap: wrap;
+}
+.doc-view-meta span { display: flex; align-items: center; gap: 4px; }
+.doc-meta-pill {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  font-weight: 500; text-transform: uppercase; letter-spacing: .04em;
+}
+
+/* Step blocks */
+.doc-steps { display: flex; flex-direction: column; gap: 2px; }
+.doc-step {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+  transition: border-color .15s;
+}
+.doc-step:hover { border-color: var(--borderhi); }
+.doc-step.editing { border-color: var(--accent); }
+
+.step-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; cursor: pointer; user-select: none;
+}
+.step-number {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent2); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+.step-title {
+  font-size: 13px; color: var(--text); font-weight: 400;
+  flex: 1;
+}
+.step-actions {
+  display: flex; gap: 4px; opacity: 0;
+  transition: opacity .15s;
+}
+.doc-step:hover .step-actions { opacity: 1; }
+.step-action-btn {
+  background: none; border: 1px solid var(--border); border-radius: 3px;
+  color: var(--dim); cursor: pointer; padding: 3px 6px; font-size: 10px;
+  transition: all .12s; display: flex; align-items: center;
+}
+.step-action-btn:hover { color: var(--text); border-color: var(--borderhi); background: var(--s3); }
+
+.step-body {
+  padding: 0 16px 14px 52px;
+  font-size: 12.5px; color: var(--mid);
+  line-height: 1.7;
+}
+.step-body p { margin-bottom: 8px; }
+.step-body ul { padding-left: 18px; margin-bottom: 8px; }
+.step-body li { margin-bottom: 3px; }
+.step-note {
+  background: var(--gold2); border-left: 3px solid var(--gold);
+  padding: 8px 12px; border-radius: 0 4px 4px 0;
+  font-size: 11px; color: var(--gold); margin-top: 8px;
+}
+.step-media {
+  display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+}
+.media-thumb {
+  width: 64px; height: 48px; border-radius: 4px;
+  background: var(--s3); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--dim); font-size: 10px; cursor: pointer;
+  transition: border-color .15s;
+}
+.media-thumb:hover { border-color: var(--accent); }
+
+/* Add step button */
+.add-step-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 12px;
+  background: transparent; border: 1px dashed var(--border);
+  border-radius: 8px; color: var(--dim); font-size: 12px;
+  cursor: pointer; transition: all .15s; font-family: inherit;
+  margin-top: 4px;
+}
+.add-step-btn:hover {
+  border-color: var(--accent); color: var(--accent);
+  background: var(--accent2);
+}
+
+/* ── RIGHT PANEL — Edit & Revise ── */
+.right-panel {
+  grid-column: 5; grid-row: 1;
+  background: var(--s1);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden; min-width: 0;
+}
+.right-panel-header {
+  display: flex; align-items: stretch;
+  background: var(--s2);
+  border-bottom: 1px solid var(--border);
+  height: 35px; flex-shrink: 0;
+}
+.right-tabs {
+  flex: 1; display: flex; align-items: stretch;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; min-width: 0;
+}
+.right-tabs::-webkit-scrollbar { display: none; }
+.right-tab {
+  padding: 0 14px; height: 100%;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--mid);
+  border-right: 1px solid var(--border);
+  white-space: nowrap; cursor: pointer; flex-shrink: 0;
+  user-select: none; transition: background 0.1s, color 0.1s;
+}
+.right-tab:hover { background: #2a2a2a; color: var(--text); }
+.right-tab.active { background: var(--s1); color: #fff; border-top: 2px solid var(--accent); }
+
+.right-content {
+  flex: 1; overflow-y: auto; padding: 16px;
+}
+.right-content::-webkit-scrollbar { width: 4px; }
+.right-content::-webkit-scrollbar-thumb { background: #424242; border-radius: 2px; }
+
+/* Edit section */
+.edit-section { margin-bottom: 20px; }
+.edit-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--dim); margin-bottom: 8px;
+  padding-bottom: 4px; border-bottom: 1px solid var(--border);
+}
+.edit-textarea {
+  width: 100%; min-height: 100px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  font-size: 12px; font-family: 'JetBrains Mono', monospace;
+  padding: 10px 12px; resize: vertical;
+  line-height: 1.7; outline: none;
+  transition: border-color .15s;
+}
+.edit-textarea:focus { border-color: var(--accent); }
+
+.edit-actions {
+  display: flex; gap: 6px; margin-top: 8px;
+  flex-wrap: wrap;
+}
+.edit-btn {
+  padding: 5px 14px; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--s2);
+  color: var(--text); font-size: 11px; cursor: pointer;
+  transition: all 0.12s; font-family: inherit;
+}
+.edit-btn:hover { background: var(--s3); border-color: var(--borderhi); }
+.edit-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.edit-btn.primary:hover { background: #1a8ad4; }
+
+/* AI suggestions */
+.ai-suggestion {
+  background: var(--accent2); border: 1px solid var(--accent3);
+  border-radius: 6px; padding: 12px 14px; margin-bottom: 10px;
+}
+.ai-suggestion-header {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 600; color: var(--accent);
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+}
+.ai-suggestion-text {
+  font-size: 12px; color: var(--text); line-height: 1.6;
+}
+.ai-suggestion-actions {
+  display: flex; gap: 6px; margin-top: 10px;
+}
+
+/* Version list */
+.version-item {
+  padding: 9px 12px; background: var(--s2);
+  border: 1px solid var(--border); border-radius: 4px;
+  display: flex; align-items: flex-start; gap: 10px;
+  cursor: pointer; transition: background 0.1s;
+  margin-bottom: 4px;
+}
+.version-item:hover { background: #2a2d2e; }
+.version-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); border: 2px solid var(--accent);
+  flex-shrink: 0; margin-top: 4px;
+}
+.version-meta { font-size: 10px; color: var(--dim); margin-bottom: 2px; font-family: 'JetBrains Mono', monospace; }
+.version-label { font-size: 11px; color: var(--text); }
+
+/* ── BOTTOM PANEL — Activity Log ── */
+.bottom-panel {
+  grid-column: 1 / 6; grid-row: 3;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.bottom-tabs {
+  display: flex; align-items: center;
+  background: var(--s2);
+  border-bottom: 1px solid var(--border);
+  height: 28px; flex-shrink: 0;
+}
+.bottom-tab {
+  padding: 0 16px; height: 100%;
+  display: flex; align-items: center;
+  font-size: 11px; color: var(--mid);
+  cursor: pointer; border-right: 1px solid var(--border);
+  transition: color 0.15s; user-select: none;
+}
+.bottom-tab:hover { color: var(--text); }
+.bottom-tab.active { color: #fff; border-bottom: 1px solid var(--accent); }
+
+.bottom-content {
+  flex: 1; overflow-y: auto;
+  padding: 6px 12px; font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+}
+.bottom-content::-webkit-scrollbar { width: 4px; }
+.bottom-content::-webkit-scrollbar-thumb { background: #424242; }
+
+.log-line {
+  display: flex; gap: 12px; padding: 2px 0;
+  border-bottom: 1px solid var(--s1); line-height: 1.6;
+}
+.log-time  { color: var(--dim); flex-shrink: 0; font-size: 10px; }
+.log-info  { color: var(--green); }
+.log-warn  { color: var(--gold); }
+.log-action { color: var(--accent); }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: var(--accent); display: flex;
+  align-items: center; padding: 0 10px;
+  gap: 14px; font-size: 11px;
+  color: rgba(255,255,255,0.85); user-select: none;
+}
+.s-sep { color: rgba(255,255,255,0.35); }
+.s-right { margin-left: auto; display: flex; gap: 14px; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.fade-in { animation: fadeUp 0.2s ease forwards; }
+
+/* ── NEW DOC MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 900; display: none;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 10px; width: 420px; max-width: 92vw;
+  box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  animation: fadeUp .2s ease;
+}
+.modal-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h3 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px; color: var(--text); font-weight: 400;
+  margin-bottom: 4px;
+}
+.modal-header p { font-size: 12px; color: var(--mid); }
+.modal-body {
+  padding: 16px 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal-field label {
+  display: block; font-size: 10px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--dim);
+  margin-bottom: 6px; font-weight: 500;
+}
+.modal-field input, .modal-field textarea, .modal-field select {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 9px 12px; color: var(--text);
+  font-size: 13px; font-family: inherit; outline: none;
+  transition: border-color .15s;
+}
+.modal-field input:focus, .modal-field textarea:focus, .modal-field select:focus {
+  border-color: var(--accent);
+}
+.modal-field input::placeholder, .modal-field textarea::placeholder {
+  color: var(--dim); font-style: italic;
+}
+.modal-field textarea { resize: vertical; min-height: 60px; }
+.modal-field select { cursor: pointer; }
+.modal-field select option { background: var(--s1); }
+.modal-footer {
+  padding: 12px 20px 16px;
+  display: flex; justify-content: flex-end; gap: 8px;
+  border-top: 1px solid var(--border);
+}
+.modal-btn {
+  padding: 7px 18px; border-radius: 6px; font-size: 12px;
+  font-family: inherit; cursor: pointer; transition: all .15s;
+  border: 1px solid var(--border); background: var(--s2); color: var(--text);
+}
+.modal-btn:hover { background: var(--s3); }
+.modal-btn.primary {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.modal-btn.primary:hover { background: #1a8ad4; }
+.modal-btn.primary:disabled { opacity: .4; cursor: default; }
+
+/* ── MOBILE HAMBURGER ── */
+.mobile-hamburger {
+  display: none; background: none;
+  border: 1px solid var(--border); color: var(--mid);
+  cursor: pointer; padding: 4px 6px; border-radius: 3px;
+  -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+}
+.mobile-hamburger:hover { color: var(--text); background: #404040; }
+.mobile-hamburger svg { display: block; }
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .mobile-hamburger { display: flex; align-items: center; justify-content: center; }
+  .title-nav {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--s1); border-bottom: 1px solid var(--border);
+    flex-direction: column; padding: 6px; z-index: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  }
+  .title-nav.open { display: flex; }
+  .nav-tab { padding: 10px 14px; font-size: 13px; border-radius: 5px; }
+  .title-bar { position: relative; padding: 0 8px; }
+  .title-bar-right { font-size: 10px; gap: 6px; }
+  .title-bar-right .s-sep { display: none; }
+
+  .workbench {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto 1fr auto !important;
+  }
+  .workbench.edit-open { grid-template-columns: 1fr !important; }
+  .resizer { display: none; }
+
+  .left-panel {
+    grid-column: 1 !important; grid-row: 1 !important;
+    max-height: 180px; border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .center-panel { grid-column: 1 !important; grid-row: 2 !important; }
+  .right-panel {
+    grid-column: 1 !important; grid-row: 3 !important;
+    border-left: none; border-top: 1px solid var(--border);
+    max-height: 260px;
+  }
+  .bottom-panel { display: none; }
+
+  .center-content { padding: 14px 12px; }
+  .right-content { padding: 12px; }
+  .status-bar { font-size: 10px; gap: 8px; padding: 0 6px; }
+  .s-right { gap: 8px; }
+}
+</style>
+<script>
+if(new URLSearchParams(window.location.search).has('dev')){
+  localStorage.setItem('vent_role','admin');
+  localStorage.setItem('vent_name','Dev Admin');
+  localStorage.setItem('vent_token','dev');
+}
+if(!localStorage.getItem('vent_role')) window.location.replace('login.html');
+</script>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="index.html" class="app-name">Vent<div class="pip"></div></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <nav class="title-nav">
+      <a href="index.html"       class="nav-tab">Submit</a>
+      <a href="query.html"       class="nav-tab">Query SOPs</a>
+      <a href="submissions.html" class="nav-tab">Submissions</a>
+      <a href="builder.html"     class="nav-tab active">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab">QA Control</a>
+      <a href="workflow.html"    class="nav-tab">Workflow</a>
+      <a href="dashboard.html"   class="nav-tab">Dashboard</a>
+    </nav>
+  </div>
+  <div class="title-bar-right">
+    <div class="live-dot"></div>
+    <span id="titleUser" class="user-name"></span>
+    <span class="s-sep">|</span>
+    <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'">Sign out</button>
+  </div>
+</div>
+
+<!-- WORKBENCH -->
+<div class="workbench" id="workbench">
+
+  <!-- LEFT PANEL — Documents -->
+  <div class="left-panel">
+    <div class="panel-header">
+      <span>Documents <span class="panel-badge" id="docCount">0</span></span>
+      <button class="new-doc-btn" onclick="showNewDocModal()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New
+      </button>
+    </div>
+    <div class="doc-search-wrap">
+      <svg class="doc-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="doc-search" type="text" placeholder="Filter documents…" oninput="filterDocs(this.value)">
+    </div>
+    <div class="doc-list" id="docList"></div>
+  </div>
+
+  <!-- RESIZER V1 -->
+  <div class="resizer resizer-v" id="resizerV1"></div>
+
+  <!-- CENTER PANEL — Document View -->
+  <div class="center-panel">
+    <div class="editor-tabs" id="editorTabs">
+      <span class="editor-tab-placeholder">No document open</span>
+    </div>
+    <div class="center-content" id="centerContent">
+      <div class="empty-state">
+        <div class="ei">📄</div>
+        <p>Select a document from the left panel<br>or create a new one to get started.</p>
+        <span class="hint">Your workflow documents will appear here</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZER V2 -->
+  <div class="resizer resizer-v" id="resizerV2"></div>
+
+  <!-- RIGHT PANEL — Edit & Revise -->
+  <div class="right-panel" id="rightPanel">
+    <div class="right-panel-header">
+      <div class="right-tabs">
+        <div class="right-tab active" data-tab="edit" onclick="switchRightTab(this)">Edit</div>
+        <div class="right-tab" data-tab="ai" onclick="switchRightTab(this)">AI Assist</div>
+        <div class="right-tab" data-tab="versions" onclick="switchRightTab(this)">Versions</div>
+      </div>
+    </div>
+    <div class="right-content" id="rightContent">
+      <div class="empty-state" style="height:100%">
+        <div class="ei">✏️</div>
+        <p>Open a document to start editing</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZER H -->
+  <div class="resizer resizer-h" id="resizerH"></div>
+
+  <!-- BOTTOM PANEL — Activity Log -->
+  <div class="bottom-panel">
+    <div class="bottom-tabs">
+      <div class="bottom-tab active">Activity Log</div>
+      <div class="bottom-tab">Output</div>
+    </div>
+    <div class="bottom-content" id="activityLog">
+      <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Document Builder initialised. Ready.</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>📄 Document Builder</span>
+  <span class="s-sep">|</span>
+  <span id="statusDocCount">0 documents</span>
+  <div class="s-right">
+    <span id="statusUser"></span>
+    <span class="s-sep">|</span>
+    <span>Vent v1.0</span>
+  </div>
+</div>
+
+<!-- NEW DOC MODAL -->
+<div class="modal-overlay" id="newDocModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>New Document</h3>
+      <p>Create a new workflow document from scratch or start with a template.</p>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label>Document Title</label>
+        <input type="text" id="newDocTitle" placeholder="e.g. Bioreactor Inoculation SOP" oninput="validateNewDoc()">
+      </div>
+      <div class="modal-field">
+        <label>Process Area</label>
+        <select id="newDocArea">
+          <option value="Upstream">Upstream</option>
+          <option value="Downstream">Downstream</option>
+          <option value="Media Prep">Media Prep</option>
+          <option value="QC">QC</option>
+          <option value="Facilities">Facilities</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Description (optional)</label>
+        <textarea id="newDocDesc" placeholder="Brief summary of what this document covers…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" onclick="hideNewDocModal()">Cancel</button>
+      <button class="modal-btn primary" id="createDocBtn" onclick="createDocument()" disabled>Create Document</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SERVER = 'https://vent-production-8f8a.up.railway.app';
+const userName = localStorage.getItem('vent_name') || 'Operator';
+const userRole = localStorage.getItem('vent_role') || 'operator';
+
+// Set user display
+document.getElementById('titleUser').textContent = userName;
+document.getElementById('statusUser').textContent = userName;
+
+// ── DOCUMENT STORE (localStorage-backed) ──
+const STORE_KEY = 'vent_builder_docs';
+
+function loadDocs() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+  catch { return []; }
+}
+function saveDocs(docs) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(docs));
+}
+
+let documents = loadDocs();
+let activeDocId = null;
+let activeRightTab = 'edit';
+let openTabs = []; // array of doc ids
+
+// ── INIT ──
+function init() {
+  renderDocList();
+  updateCounts();
+
+  // Check if launched with a title from index.html
+  const params = new URLSearchParams(window.location.search);
+  const initTitle = params.get('title');
+  if (initTitle) {
+    // Create a new doc with this title
+    const doc = makeDoc(initTitle, params.get('area') || 'Upstream', '');
+    documents.push(doc);
+    saveDocs(documents);
+    renderDocList();
+    openDoc(doc.id);
+    logActivity('Created document from Submit page: "' + initTitle + '"', 'action');
+    // Clean URL
+    history.replaceState(null, '', 'builder.html');
+  }
+}
+
+function makeDoc(title, area, description) {
+  return {
+    id: 'doc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    title: title.trim(),
+    area,
+    description: description.trim(),
+    status: 'draft',
+    created: new Date().toISOString(),
+    updated: new Date().toISOString(),
+    steps: [
+      { id: 's1', title: 'Purpose & Scope', content: 'Define the purpose of this workflow and where it applies.', note: '' },
+      { id: 's2', title: 'Materials & Equipment', content: 'List all materials, equipment, and prerequisites needed.', note: '' },
+      { id: 's3', title: 'Procedure', content: 'Describe the step-by-step procedure here.', note: '' }
+    ],
+    versions: [
+      { time: new Date().toISOString(), label: 'Document created', user: userName }
+    ]
+  };
+}
+
+// ── RENDER DOCUMENT LIST ──
+function renderDocList(filter) {
+  const list = document.getElementById('docList');
+  const fl = (filter || '').toLowerCase();
+  const filtered = fl ? documents.filter(d => d.title.toLowerCase().includes(fl) || d.area.toLowerCase().includes(fl)) : documents;
+
+  // Group by area
+  const groups = {};
+  filtered.forEach(d => {
+    if (!groups[d.area]) groups[d.area] = [];
+    groups[d.area].push(d);
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px;">' +
+      (fl ? 'No documents match your search.' : 'No documents yet.<br>Click <strong>+ New</strong> to create one.') + '</div>';
+    return;
+  }
+
+  let html = '';
+  Object.keys(groups).sort().forEach(area => {
+    const docs = groups[area].sort((a,b) => new Date(b.updated) - new Date(a.updated));
+    html += '<div class="doc-group-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.doc-group-chevron\').classList.toggle(\'collapsed\')">' +
+      '<span class="doc-group-chevron">▼</span>' +
+      area +
+      '<span class="doc-group-count">' + docs.length + '</span>' +
+      '</div>' +
+      '<div class="doc-group-items">';
+    docs.forEach(d => {
+      const isActive = d.id === activeDocId;
+      const statusClass = 'status-' + d.status;
+      const ago = timeAgo(d.updated);
+      html += '<div class="doc-card' + (isActive ? ' active' : '') + '" onclick="openDoc(\'' + d.id + '\')">' +
+        '<div class="doc-card-top">' +
+          '<svg class="doc-card-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+          '<span class="doc-card-status ' + statusClass + '">' + d.status + '</span>' +
+        '</div>' +
+        '<div class="doc-card-title">' + esc(d.title) + '</div>' +
+        '<div class="doc-card-meta">' + ago + ' · ' + d.steps.length + ' steps</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  });
+
+  list.innerHTML = html;
+  document.getElementById('docCount').textContent = documents.length;
+}
+
+function filterDocs(val) { renderDocList(val); }
+
+// ── OPEN DOCUMENT ──
+function openDoc(id) {
+  const doc = documents.find(d => d.id === id);
+  if (!doc) return;
+
+  activeDocId = id;
+
+  // Add to open tabs if not already
+  if (!openTabs.includes(id)) openTabs.push(id);
+
+  // Show right panel
+  document.getElementById('workbench').classList.add('edit-open');
+
+  renderDocList();
+  renderEditorTabs();
+  renderDocView(doc);
+  renderRightPanel(doc);
+  logActivity('Opened document: "' + doc.title + '"', 'info');
+}
+
+// ── RENDER EDITOR TABS ──
+function renderEditorTabs() {
+  const cont = document.getElementById('editorTabs');
+  if (!openTabs.length) {
+    cont.innerHTML = '<span class="editor-tab-placeholder">No document open</span>';
+    return;
+  }
+  let html = '';
+  openTabs.forEach(id => {
+    const doc = documents.find(d => d.id === id);
+    if (!doc) return;
+    const isActive = id === activeDocId;
+    html += '<div class="editor-tab' + (isActive ? ' active' : '') + '" onclick="openDoc(\'' + id + '\')">' +
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+      esc(doc.title) +
+      '<button class="tab-close" onclick="event.stopPropagation();closeTab(\'' + id + '\')">×</button>' +
+    '</div>';
+  });
+  cont.innerHTML = html;
+}
+
+function closeTab(id) {
+  openTabs = openTabs.filter(t => t !== id);
+  if (activeDocId === id) {
+    activeDocId = openTabs.length ? openTabs[openTabs.length - 1] : null;
+  }
+  if (activeDocId) {
+    openDoc(activeDocId);
+  } else {
+    document.getElementById('workbench').classList.remove('edit-open');
+    renderEditorTabs();
+    document.getElementById('centerContent').innerHTML =
+      '<div class="empty-state"><div class="ei">📄</div><p>Select a document from the left panel<br>or create a new one to get started.</p><span class="hint">Your workflow documents will appear here</span></div>';
+    document.getElementById('rightContent').innerHTML =
+      '<div class="empty-state" style="height:100%"><div class="ei">✏️</div><p>Open a document to start editing</p></div>';
+    renderDocList();
+  }
+}
+
+// ── RENDER DOCUMENT VIEW ──
+function renderDocView(doc) {
+  const el = document.getElementById('centerContent');
+  const statusClass = 'status-' + doc.status;
+
+  let stepsHtml = '';
+  doc.steps.forEach((step, i) => {
+    stepsHtml += '<div class="doc-step" id="step-' + step.id + '">' +
+      '<div class="step-header" onclick="toggleStep(\'' + step.id + '\')">' +
+        '<div class="step-number">' + (i + 1) + '</div>' +
+        '<div class="step-title">' + esc(step.title) + '</div>' +
+        '<div class="step-actions">' +
+          '<button class="step-action-btn" title="Edit step" onclick="event.stopPropagation();editStep(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+          '<button class="step-action-btn" title="Delete step" onclick="event.stopPropagation();deleteStep(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="step-body">' +
+        '<p>' + esc(step.content).replace(/\n/g, '</p><p>') + '</p>' +
+        (step.note ? '<div class="step-note">⚠ ' + esc(step.note) + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  });
+
+  el.innerHTML = '<div class="doc-view">' +
+    '<div class="doc-view-header">' +
+      '<div class="doc-view-title">' + esc(doc.title) + '</div>' +
+      '<div class="doc-view-meta">' +
+        '<span class="doc-meta-pill ' + statusClass + '">' + doc.status.toUpperCase() + '</span>' +
+        '<span>📁 ' + doc.area + '</span>' +
+        '<span>📝 ' + doc.steps.length + ' steps</span>' +
+        '<span>🕐 Updated ' + timeAgo(doc.updated) + '</span>' +
+      '</div>' +
+      (doc.description ? '<p style="font-size:13px;color:var(--mid);margin-top:10px;line-height:1.6">' + esc(doc.description) + '</p>' : '') +
+    '</div>' +
+    '<div class="doc-steps">' + stepsHtml + '</div>' +
+    '<button class="add-step-btn" onclick="addStep(\'' + doc.id + '\')">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+      'Add Step' +
+    '</button>' +
+  '</div>';
+}
+
+function toggleStep(stepId) {
+  const el = document.getElementById('step-' + stepId);
+  if (!el) return;
+  const body = el.querySelector('.step-body');
+  body.style.display = body.style.display === 'none' ? '' : 'none';
+}
+
+// ── STEP MANAGEMENT ──
+function addStep(docId) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+  const num = doc.steps.length + 1;
+  doc.steps.push({
+    id: 's' + Date.now(),
+    title: 'Step ' + num,
+    content: 'Describe this step…',
+    note: ''
+  });
+  doc.updated = new Date().toISOString();
+  doc.versions.push({ time: doc.updated, label: 'Added step ' + num, user: userName });
+  saveDocs(documents);
+  renderDocView(doc);
+  renderRightPanel(doc);
+  renderDocList();
+  logActivity('Added step ' + num + ' to "' + doc.title + '"', 'action');
+}
+
+function deleteStep(docId, stepId) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc || doc.steps.length <= 1) return;
+  const idx = doc.steps.findIndex(s => s.id === stepId);
+  const title = doc.steps[idx]?.title || 'Step';
+  doc.steps = doc.steps.filter(s => s.id !== stepId);
+  doc.updated = new Date().toISOString();
+  doc.versions.push({ time: doc.updated, label: 'Deleted "' + title + '"', user: userName });
+  saveDocs(documents);
+  renderDocView(doc);
+  renderRightPanel(doc);
+  renderDocList();
+  logActivity('Deleted step "' + title + '" from "' + doc.title + '"', 'warn');
+}
+
+function editStep(docId, stepId) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+  const step = doc.steps.find(s => s.id === stepId);
+  if (!step) return;
+
+  // Switch right panel to edit tab and populate
+  activeRightTab = 'edit';
+  renderRightPanelEdit(doc, step);
+
+  // Highlight the step
+  document.querySelectorAll('.doc-step').forEach(el => el.classList.remove('editing'));
+  const el = document.getElementById('step-' + stepId);
+  if (el) el.classList.add('editing');
+}
+
+// ── RIGHT PANEL ──
+function switchRightTab(tabEl) {
+  activeRightTab = tabEl.dataset.tab;
+  document.querySelectorAll('.right-tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+
+  const doc = documents.find(d => d.id === activeDocId);
+  if (doc) renderRightPanel(doc);
+}
+
+function renderRightPanel(doc) {
+  if (!doc) return;
+  if (activeRightTab === 'edit') {
+    renderRightPanelEdit(doc);
+  } else if (activeRightTab === 'ai') {
+    renderRightPanelAI(doc);
+  } else if (activeRightTab === 'versions') {
+    renderRightPanelVersions(doc);
+  }
+}
+
+function renderRightPanelEdit(doc, focusStep) {
+  const rc = document.getElementById('rightContent');
+
+  // If a specific step is selected, show its editor
+  if (focusStep) {
+    rc.innerHTML = '<div class="fade-in">' +
+      '<div class="edit-section">' +
+        '<div class="edit-label">Editing: ' + esc(focusStep.title) + '</div>' +
+        '<div class="modal-field" style="margin-bottom:10px">' +
+          '<label>Step Title</label>' +
+          '<input type="text" id="editStepTitle" value="' + esc(focusStep.title) + '">' +
+        '</div>' +
+        '<div class="modal-field">' +
+          '<label>Content</label>' +
+          '<textarea class="edit-textarea" id="editStepContent" style="min-height:140px">' + esc(focusStep.content) + '</textarea>' +
+        '</div>' +
+        '<div class="modal-field">' +
+          '<label>Note / Warning (optional)</label>' +
+          '<input type="text" id="editStepNote" value="' + esc(focusStep.note || '') + '" placeholder="e.g. Critical: wear PPE">' +
+        '</div>' +
+      '</div>' +
+      '<div class="edit-actions">' +
+        '<button class="edit-btn primary" onclick="saveStepEdit(\'' + doc.id + '\',\'' + focusStep.id + '\')">Save Changes</button>' +
+        '<button class="edit-btn" onclick="renderRightPanelEdit(documents.find(d=>d.id===\'' + doc.id + '\'))">Cancel</button>' +
+      '</div>' +
+    '</div>';
+    return;
+  }
+
+  // Default: show doc-level edit
+  rc.innerHTML = '<div class="fade-in">' +
+    '<div class="edit-section">' +
+      '<div class="edit-label">Document Settings</div>' +
+      '<div class="modal-field" style="margin-bottom:10px">' +
+        '<label>Title</label>' +
+        '<input type="text" id="editDocTitle" value="' + esc(doc.title) + '">' +
+      '</div>' +
+      '<div class="modal-field" style="margin-bottom:10px">' +
+        '<label>Description</label>' +
+        '<textarea class="edit-textarea" id="editDocDesc" style="min-height:60px">' + esc(doc.description || '') + '</textarea>' +
+      '</div>' +
+      '<div class="modal-field" style="margin-bottom:10px">' +
+        '<label>Status</label>' +
+        '<select id="editDocStatus" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:6px 8px;color:var(--text);font-size:12px;font-family:inherit">' +
+          '<option value="draft"' + (doc.status==='draft' ? ' selected' : '') + '>Draft</option>' +
+          '<option value="active"' + (doc.status==='active' ? ' selected' : '') + '>Active</option>' +
+          '<option value="archived"' + (doc.status==='archived' ? ' selected' : '') + '>Archived</option>' +
+        '</select>' +
+      '</div>' +
+    '</div>' +
+    '<div class="edit-actions">' +
+      '<button class="edit-btn primary" onclick="saveDocEdit(\'' + doc.id + '\')">Save</button>' +
+      '<button class="edit-btn" style="border-color:var(--red);color:var(--red)" onclick="deleteDoc(\'' + doc.id + '\')">Delete Document</button>' +
+    '</div>' +
+    '<div class="edit-section" style="margin-top:24px">' +
+      '<div class="edit-label">Steps — click a step\'s ✏️ icon to edit it</div>' +
+      '<div style="font-size:12px;color:var(--mid);line-height:1.6">' +
+        doc.steps.map((s, i) =>
+          '<div style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;cursor:pointer" onclick="editStep(\'' + doc.id + '\',\'' + s.id + '\')">' +
+            '<span style="color:var(--accent);font-size:11px;font-weight:600;font-family:JetBrains Mono,monospace">' + (i+1) + '</span>' +
+            '<span>' + esc(s.title) + '</span>' +
+          '</div>'
+        ).join('') +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderRightPanelAI(doc) {
+  const rc = document.getElementById('rightContent');
+  rc.innerHTML = '<div class="fade-in">' +
+    '<div class="ai-suggestion">' +
+      '<div class="ai-suggestion-header">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+        'AI Suggestions' +
+      '</div>' +
+      '<div class="ai-suggestion-text">AI-powered document assistance will help you refine and improve your workflow documentation. Select a step and click "Improve with AI" to get started.</div>' +
+    '</div>' +
+    '<div class="edit-section">' +
+      '<div class="edit-label">Quick Actions</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">' +
+        '<button class="edit-btn" onclick="aiRewrite(\'' + doc.id + '\')"><span style="margin-right:6px">✨</span> Rewrite for Clarity</button>' +
+        '<button class="edit-btn" onclick="aiExpand(\'' + doc.id + '\')"><span style="margin-right:6px">📝</span> Expand Details</button>' +
+        '<button class="edit-btn" onclick="aiSafety(\'' + doc.id + '\')"><span style="margin-right:6px">⚠️</span> Add Safety Notes</button>' +
+        '<button class="edit-btn" onclick="aiFormat(\'' + doc.id + '\')"><span style="margin-right:6px">📋</span> Format as SOP</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderRightPanelVersions(doc) {
+  const rc = document.getElementById('rightContent');
+  let html = '<div class="fade-in"><div class="edit-label" style="margin-bottom:12px">Version History</div>';
+  if (doc.versions.length === 0) {
+    html += '<p style="font-size:12px;color:var(--dim)">No versions recorded yet.</p>';
+  } else {
+    doc.versions.slice().reverse().forEach(v => {
+      html += '<div class="version-item">' +
+        '<div class="version-dot"></div>' +
+        '<div>' +
+          '<div class="version-meta">' + formatTime(v.time) + '</div>' +
+          '<div class="version-label">' + esc(v.label) + '</div>' +
+          '<div style="font-size:10px;color:var(--dim);margin-top:2px">by ' + esc(v.user) + '</div>' +
+        '</div>' +
+      '</div>';
+    });
+  }
+  html += '</div>';
+  rc.innerHTML = html;
+}
+
+// ── SAVE OPERATIONS ──
+function saveStepEdit(docId, stepId) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+  const step = doc.steps.find(s => s.id === stepId);
+  if (!step) return;
+
+  const oldTitle = step.title;
+  step.title = document.getElementById('editStepTitle').value.trim() || step.title;
+  step.content = document.getElementById('editStepContent').value.trim() || step.content;
+  step.note = document.getElementById('editStepNote').value.trim();
+  doc.updated = new Date().toISOString();
+  doc.versions.push({ time: doc.updated, label: 'Edited step "' + step.title + '"', user: userName });
+
+  saveDocs(documents);
+  renderDocView(doc);
+  renderRightPanelEdit(doc);
+  renderDocList();
+  logActivity('Saved changes to step "' + step.title + '" in "' + doc.title + '"', 'action');
+}
+
+function saveDocEdit(docId) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+
+  const newTitle = document.getElementById('editDocTitle').value.trim();
+  const newDesc = document.getElementById('editDocDesc').value.trim();
+  const newStatus = document.getElementById('editDocStatus').value;
+
+  if (newTitle) doc.title = newTitle;
+  doc.description = newDesc;
+  doc.status = newStatus;
+  doc.updated = new Date().toISOString();
+  doc.versions.push({ time: doc.updated, label: 'Updated document settings', user: userName });
+
+  saveDocs(documents);
+  renderDocView(doc);
+  renderEditorTabs();
+  renderDocList();
+  logActivity('Updated document settings for "' + doc.title + '"', 'action');
+}
+
+function deleteDoc(docId) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+  if (!confirm('Delete "' + doc.title + '"? This cannot be undone.')) return;
+
+  documents = documents.filter(d => d.id !== docId);
+  saveDocs(documents);
+  closeTab(docId);
+  updateCounts();
+  logActivity('Deleted document: "' + doc.title + '"', 'warn');
+}
+
+// ── AI PLACEHOLDER ACTIONS ──
+function aiRewrite(docId)  { alert('AI Rewrite coming soon — this will refine your document language for clarity and consistency.'); }
+function aiExpand(docId)   { alert('AI Expand coming soon — this will add detail and context to brief steps.'); }
+function aiSafety(docId)   { alert('AI Safety coming soon — this will scan for missing safety/PPE/hazard warnings.'); }
+function aiFormat(docId)   { alert('AI Format coming soon — this will restructure your document to match SOP formatting standards.'); }
+
+// ── MODAL ──
+function showNewDocModal() {
+  document.getElementById('newDocModal').classList.add('show');
+  document.getElementById('newDocTitle').value = '';
+  document.getElementById('newDocDesc').value = '';
+  document.getElementById('createDocBtn').disabled = true;
+  setTimeout(() => document.getElementById('newDocTitle').focus(), 100);
+}
+function hideNewDocModal() {
+  document.getElementById('newDocModal').classList.remove('show');
+}
+function validateNewDoc() {
+  document.getElementById('createDocBtn').disabled = !document.getElementById('newDocTitle').value.trim();
+}
+function createDocument() {
+  const title = document.getElementById('newDocTitle').value.trim();
+  const area = document.getElementById('newDocArea').value;
+  const desc = document.getElementById('newDocDesc').value.trim();
+  if (!title) return;
+
+  const doc = makeDoc(title, area, desc);
+  documents.push(doc);
+  saveDocs(documents);
+  hideNewDocModal();
+  renderDocList();
+  updateCounts();
+  openDoc(doc.id);
+  logActivity('Created new document: "' + title + '"', 'action');
+}
+
+// ── UTILITIES ──
+function updateCounts() {
+  document.getElementById('docCount').textContent = documents.length;
+  document.getElementById('statusDocCount').textContent = documents.length + ' document' + (documents.length !== 1 ? 's' : '');
+}
+
+function logActivity(message, type) {
+  const log = document.getElementById('activityLog');
+  const now = new Date();
+  const ts = now.toTimeString().slice(0, 8);
+  const cls = type === 'warn' ? 'log-warn' : type === 'action' ? 'log-action' : 'log-info';
+  log.innerHTML += '<div class="log-line"><span class="log-time">' + ts + '</span><span class="' + cls + '">' + esc(message) + '</span></div>';
+  log.scrollTop = log.scrollHeight;
+}
+
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  return days + 'd ago';
+}
+
+function formatTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + d.toTimeString().slice(0, 5);
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// ── RESIZE LOGIC ──
+(function initResizers() {
+  const wb = document.getElementById('workbench');
+  const r1 = document.getElementById('resizerV1');
+  const r2 = document.getElementById('resizerV2');
+  const rh = document.getElementById('resizerH');
+
+  function makeDragV(resizer, colIndex) {
+    resizer.addEventListener('mousedown', e => {
+      e.preventDefault();
+      resizer.classList.add('dragging');
+      const startX = e.clientX;
+      const cols = wb.style.gridTemplateColumns || getComputedStyle(wb).gridTemplateColumns;
+      const parts = cols.split(/\s+/);
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+
+      function onMove(ev) {
+        const dx = ev.clientX - startX;
+        const current = parseFloat(parts[colIndex]) || 240;
+        const newW = Math.max(160, current + dx);
+        parts[colIndex] = newW + 'px';
+        wb.style.gridTemplateColumns = parts.join(' ');
+      }
+      function onUp() {
+        resizer.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+    });
+  }
+
+  makeDragV(r1, 0);
+  makeDragV(r2, 4);
+
+  rh.addEventListener('mousedown', e => {
+    e.preventDefault();
+    rh.classList.add('dragging');
+    const startY = e.clientY;
+    const rows = wb.style.gridTemplateRows || getComputedStyle(wb).gridTemplateRows;
+    const parts = rows.split(/\s+/);
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+
+    function onMove(ev) {
+      const dy = ev.clientY - startY;
+      const current = parseFloat(parts[2]) || 160;
+      const newH = Math.max(80, current - dy);
+      parts[2] = newH + 'px';
+      wb.style.gridTemplateRows = parts.join(' ');
+    }
+    function onUp() {
+      rh.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+  });
+})();
+
+// ── ROLE-BASED NAV FILTERING ──
+(function filterNav() {
+  const role = localStorage.getItem('vent_role') || 'operator';
+  const allowed = {
+    operator: ['index.html', 'query.html', 'submissions.html', 'builder.html'],
+    qa: ['index.html', 'query.html', 'submissions.html', 'qa.html', 'workflow.html', 'builder.html'],
+    director: ['submissions.html', 'qa.html', 'dashboard.html', 'workflow.html', 'builder.html'],
+    msat: ['query.html', 'submissions.html', 'builder.html'],
+    engineering: ['query.html', 'submissions.html', 'qa.html', 'builder.html'],
+    admin: null // all
+  };
+  const list = allowed[role];
+  if (list) {
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      const href = tab.getAttribute('href');
+      if (!list.includes(href)) tab.style.display = 'none';
+    });
+  }
+})();
+
+// ── BOOT ──
+init();
+</script>
+</body>
+</html>

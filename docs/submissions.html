@@ -332,6 +332,7 @@ body {
     <a href="index.html"       class="nav-item">Submit</a>
     <a href="query.html"       class="nav-item">Query SOPs</a>
     <a href="submissions.html" class="nav-item on">Submissions</a>
+    <a href="builder.html"     class="nav-item">Doc Builder</a>
     <a href="qa.html"          class="nav-item">QA Control</a>
     <a href="workflow.html"    class="nav-item">Workflow</a>
     <a href="dashboard.html"   class="nav-item">Dashboard</a>
@@ -751,12 +752,12 @@ function renderStats() {
   const labels = {operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
   const clrs   = {operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
   const navRules = {
-    operator:    ['Submit','Query SOPs'],
-    qa:          ['Submit','Submissions','QA Control'],
-    director:    ['Submissions','QA Control'],
-    msat:        ['Submit','Query SOPs','Submissions'],
-    engineering: ['Submissions'],
-    admin:       ['Submit','Query SOPs','Submissions','QA Control']
+    operator:    ['Submit','Query SOPs','Doc Builder'],
+    qa:          ['Submit','Submissions','Doc Builder','QA Control'],
+    director:    ['Submissions','Doc Builder','QA Control'],
+    msat:        ['Submit','Query SOPs','Submissions','Doc Builder'],
+    engineering: ['Submissions','Doc Builder'],
+    admin:       ['Submit','Query SOPs','Submissions','Doc Builder','QA Control']
   };
   const right = document.querySelector('.topbar-right');
   if (!right) return;
