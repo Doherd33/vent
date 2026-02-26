@@ -85,7 +85,7 @@ function requireRole(...roles) {
 }
 
 app.use(cors({ origin: '*' }));
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 app.use(authMiddleware); // Parse auth token on every request
 const path = require('path');
 const fs = require('fs');
@@ -1622,6 +1622,131 @@ app.get('/analytics', requireRole('qa', 'director', 'admin'), async (req, res) =
   } catch (err) {
     console.error('Analytics error:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── VISUAL SOP QUERY (Image/Video Analysis) ─────────────────────────────────
+
+app.post('/query/visual', requireAuth, async (req, res) => {
+  const { image, mimeType, area, context } = req.body;
+
+  if (!image) {
+    return res.status(400).json({ error: 'No image data provided' });
+  }
+
+  const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const mediaType = mimeType || 'image/jpeg';
+  if (!validTypes.includes(mediaType)) {
+    return res.status(400).json({ error: 'Unsupported image type. Use JPEG, PNG, GIF, or WebP.' });
+  }
+
+  try {
+    // Step 1: Send image to Claude Vision to identify equipment, errors, readings
+    console.log(`[VISUAL-QUERY] Analysing image (${mediaType}, ${Math.round(image.length / 1024)}KB)…`);
+
+    const visionMessage = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mediaType,
+              data: image
+            }
+          },
+          {
+            type: 'text',
+            text: `You are an equipment specialist in a GMP biologics manufacturing facility running upstream perfusion processes.
+
+Analyse this image and identify:
+1. What equipment, instrument, or system is shown
+2. Any error codes, alarm messages, or abnormal readings visible
+3. The current state or condition of what's shown
+4. Any visible parameters, values, or display readings
+${context ? '\nOperator context: "' + context + '"' : ''}
+
+Return ONLY valid JSON — no markdown fences:
+{
+  "equipment": "name of equipment/instrument identified",
+  "error": "error code or alarm message if visible, or null",
+  "condition": "brief description of what's shown and its state",
+  "readings": [{"parameter": "name", "value": "reading", "unit": "unit"}],
+  "searchQuery": "the best SOP search query to find procedures relevant to this equipment/situation — be specific, include equipment name and error/condition"
+}`
+          }
+        ]
+      }]
+    });
+
+    const visionRaw = visionMessage.content[0].text;
+    const visionClean = visionRaw.replace(/```json|```/g, '').trim();
+    const vision = JSON.parse(visionClean);
+
+    console.log(`[VISUAL-QUERY] Identified: ${vision.equipment} | Error: ${vision.error || 'none'} | Query: "${vision.searchQuery}"`);
+
+    // Step 2: Use the vision analysis to search SOPs via RAG
+    const searchText = vision.searchQuery || vision.equipment + ' ' + (vision.error || '') + ' ' + (vision.condition || '');
+    const chunks = await getRelevantChunks(searchText, area || 'Upstream');
+    const sopContext = buildSopContext(chunks);
+
+    // Step 3: Send to Claude with SOP context for a complete answer
+    const queryMessage = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: `You are the SOP Knowledge Assistant for a biologics manufacturing facility. An operator has taken a photo of equipment on the manufacturing floor. The image has been analysed and the following was identified:
+
+Equipment: ${vision.equipment}
+${vision.error ? 'Error/Alarm: ' + vision.error : 'No error code visible'}
+Condition: ${vision.condition}
+${vision.readings && vision.readings.length ? 'Readings: ' + vision.readings.map(r => r.parameter + ': ' + r.value + ' ' + (r.unit || '')).join(', ') : ''}
+${context ? 'Operator note: "' + context + '"' : ''}
+
+Using the SOP sections below, provide the relevant procedure, troubleshooting steps, and any critical parameters. Be practical — this is for an operator on the floor who needs help right now.
+
+RULES:
+- Answer only from the SOP content provided. Do not invent steps or values.
+- If the image shows an error or alarm, prioritise troubleshooting procedures.
+- If the question cannot be answered from the provided SOP content, say so clearly.
+- Always cite the exact SOP section numbers.
+
+════ RELEVANT SOP SECTIONS ════
+${sopContext}
+═══════════════════════════════
+
+Return ONLY valid JSON — no markdown, no preamble:
+{
+  "category": "procedure or specification or troubleshooting or general",
+  "summary": "2–3 sentences describing what was identified and the relevant SOP guidance",
+  "steps": [{ "n": 1, "action": "step instruction", "detail": "additional detail or null", "critical": false, "value": "specific value or target if relevant, else null" }],
+  "params": [{ "name": "parameter name", "value": "target value", "unit": "unit string", "range": "acceptable range or null", "flag": "critical or normal" }],
+  "warnings": ["warning text — only genuine safety or quality critical cautions"],
+  "notes": ["general procedural note"],
+  "sources": [{ "code": "doc_id", "title": "document title", "section": "section number" }]
+}`
+      }]
+    });
+
+    const queryRaw = queryMessage.content[0].text;
+    const queryClean = queryRaw.replace(/```json|```/g, '').trim();
+    const answer = JSON.parse(queryClean);
+
+    // Return both the vision analysis and the SOP answer
+    res.json({
+      vision,
+      answer
+    });
+
+    console.log(`[VISUAL-QUERY] Complete — ${answer.steps?.length || 0} steps, ${answer.sources?.length || 0} sources`);
+
+  } catch (error) {
+    console.error('Visual query error:', error);
+    res.status(500).json({ error: 'Visual query failed: ' + error.message });
   }
 });
 

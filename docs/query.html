@@ -324,6 +324,63 @@ body {
 .send-btn:hover { opacity: .88; }
 .send-btn:disabled { opacity: .45; cursor: default; }
 
+/* ── VISUAL QUERY ── */
+.cam-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--s2); color: var(--mid); border: 1px solid var(--border);
+  border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 12px;
+  font-weight: 400; padding: 7px 12px; cursor: pointer; transition: all .15s;
+}
+.cam-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(0,122,204,.08); }
+.cam-btn:disabled { opacity: .4; cursor: default; }
+.cam-preview {
+  position: relative; display: none; margin-top: 10px;
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  background: var(--s2); max-width: 280px;
+}
+.cam-preview img {
+  display: block; max-width: 100%; max-height: 160px; object-fit: cover;
+  border-radius: 7px;
+}
+.cam-preview-info {
+  padding: 6px 10px; font-size: 11px; color: var(--mid);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cam-preview-remove {
+  background: none; border: none; color: var(--dim); cursor: pointer;
+  font-size: 14px; padding: 0 2px; transition: color .12s;
+}
+.cam-preview-remove:hover { color: var(--red); }
+.cam-context {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; padding: 6px 10px; outline: none; margin-top: 6px;
+  transition: border-color .15s;
+}
+.cam-context:focus { border-color: var(--accent); }
+.cam-context::placeholder { color: var(--dim); }
+.vision-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(78,201,176,.12); color: var(--teal);
+  border: 1px solid rgba(78,201,176,.25); border-radius: 6px;
+  font-size: 10px; font-weight: 500; padding: 4px 10px;
+  margin-bottom: 10px; letter-spacing: .03em;
+}
+.vision-detail {
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+  font-size: 12px; line-height: 1.6;
+}
+.vision-detail-label {
+  font-size: 10px; color: var(--teal); text-transform: uppercase;
+  letter-spacing: .05em; font-weight: 600; margin-bottom: 4px;
+}
+.vision-detail-row {
+  display: flex; gap: 8px; margin-bottom: 4px; color: var(--mid);
+}
+.vision-detail-key { color: var(--dim); flex-shrink: 0; min-width: 70px; }
+.vision-detail-val { color: var(--text); }
+
 /* ── HAMBURGER ── */
 .hamburger { display: none; background: none; border: 1px solid var(--border); color: var(--mid); cursor: pointer; padding: 6px; border-radius: 7px; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
 .hamburger:hover { color: var(--text); background: var(--s3); }
@@ -779,6 +836,14 @@ body {
 <div class="input-bar">
   <div class="input-inner">
     <textarea id="qInput" class="q-textarea" placeholder="Ask a question about any SOP procedure, parameter, or step…" rows="1"></textarea>
+    <div class="cam-preview" id="camPreview">
+      <img id="camPreviewImg" src="" alt="Preview">
+      <div class="cam-preview-info">
+        <span id="camPreviewName">image.jpg</span>
+        <button class="cam-preview-remove" onclick="clearCamImage()" title="Remove">×</button>
+      </div>
+      <input type="text" class="cam-context" id="camContext" placeholder="Optional: describe what you're looking at…">
+    </div>
     <div class="input-footer">
       <select id="areaSelect" class="area-select">
         <option value="Upstream">Upstream Bioreactor</option>
@@ -788,6 +853,11 @@ body {
         <option value="QC">QC / In-process</option>
         <option value="General">General</option>
       </select>
+      <button class="cam-btn" id="camBtn" onclick="triggerCamUpload()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Photo
+      </button>
+      <input type="file" id="camFileInput" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" style="display:none">
       <span class="input-hint">Cmd+Enter to send</span>
       <button id="sendBtn" class="send-btn" onclick="runQuery()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -954,7 +1024,167 @@ function fillAndSend(q) {
   runQuery();
 }
 
+// ── VISUAL QUERY (Camera/Photo) ──
+let _camImageData = null; // base64 string (no prefix)
+let _camMimeType = null;
+
+function triggerCamUpload() {
+  document.getElementById('camFileInput').click();
+}
+
+document.getElementById('camFileInput').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+
+  // Validate size (max 10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    alert('Image too large. Maximum 10MB.');
+    this.value = '';
+    return;
+  }
+
+  _camMimeType = file.type || 'image/jpeg';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    // Extract base64 data (remove "data:image/...;base64," prefix)
+    _camImageData = dataUrl.split(',')[1];
+
+    // Show preview
+    const preview = document.getElementById('camPreview');
+    document.getElementById('camPreviewImg').src = dataUrl;
+    document.getElementById('camPreviewName').textContent = file.name + ' (' + formatSize(file.size) + ')';
+    preview.style.display = 'block';
+
+    // Update placeholder
+    qInput.placeholder = 'Add a note about what you see (optional), then hit Send…';
+
+    // Update button text
+    document.getElementById('camBtn').innerHTML =
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Change';
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+function clearCamImage() {
+  _camImageData = null;
+  _camMimeType = null;
+  document.getElementById('camPreview').style.display = 'none';
+  document.getElementById('camPreviewImg').src = '';
+  document.getElementById('camContext').value = '';
+  qInput.placeholder = 'Ask a question about any SOP procedure, parameter, or step…';
+  document.getElementById('camBtn').innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Photo';
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+async function runVisualQuery() {
+  const area = document.getElementById('areaSelect').value;
+  const context = document.getElementById('camContext').value.trim() || qInput.value.trim();
+  const imagePreviewSrc = document.getElementById('camPreviewImg').src;
+
+  // Clear state
+  const savedImage = _camImageData;
+  const savedMime = _camMimeType;
+  clearCamImage();
+  qInput.value = '';
+  qInput.style.height = 'auto';
+
+  // Hide empty state
+  document.getElementById('emptyState').style.display = 'none';
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+
+  // Build question bubble with image thumbnail
+  const turn = document.createElement('div');
+  turn.className = 'chat-turn';
+  const thinkId = 'thinking-' + Date.now();
+  turn.innerHTML = `
+    <div class="turn-q-meta">${area} · Visual Query</div>
+    <div class="turn-q">
+      <div class="turn-q-bubble">
+        <img src="${imagePreviewSrc}" style="max-width:200px;max-height:120px;border-radius:6px;margin-bottom:8px;display:block">
+        ${context ? escHtml(context) : '<span style="color:var(--dim);font-style:italic">Analyse this image and find relevant SOPs</span>'}
+      </div>
+    </div>
+    <div class="thinking" id="${thinkId}">
+      <div class="think-dots">
+        <div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div>
+      </div>
+      Analysing image &amp; searching SOPs…
+    </div>`;
+
+  const inner = document.getElementById('chatInner');
+  inner.appendChild(turn);
+  scrollToBottom();
+
+  try {
+    const res = await authFetch(`${SERVER}/query/visual`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: savedImage,
+        mimeType: savedMime,
+        area,
+        context: context || null
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Visual query failed');
+
+    // Build the response: vision card + SOP answer
+    const visionHtml = buildVisionHtml(data.vision);
+    const answerHtml = buildAnswerHtml(data.answer);
+
+    document.getElementById(thinkId).outerHTML = visionHtml + answerHtml;
+
+  } catch (err) {
+    document.getElementById(thinkId).outerHTML =
+      `<div class="answer-card"><div class="answer-body"><div class="answer-summary" style="color:var(--red)">Error: ${escHtml(err.message)}</div></div></div>`;
+  } finally {
+    btn.disabled = false;
+    scrollToBottom();
+  }
+}
+
+function buildVisionHtml(v) {
+  if (!v) return '';
+  let html = '<div class="vision-detail">';
+  html += '<div class="vision-detail-label">Image Analysis</div>';
+
+  if (v.equipment) {
+    html += '<div class="vision-detail-row"><span class="vision-detail-key">Equipment</span><span class="vision-detail-val">' + escHtml(v.equipment) + '</span></div>';
+  }
+  if (v.error) {
+    html += '<div class="vision-detail-row"><span class="vision-detail-key">Error</span><span class="vision-detail-val" style="color:var(--red)">' + escHtml(v.error) + '</span></div>';
+  }
+  if (v.condition) {
+    html += '<div class="vision-detail-row"><span class="vision-detail-key">Condition</span><span class="vision-detail-val">' + escHtml(v.condition) + '</span></div>';
+  }
+  if (v.readings && v.readings.length) {
+    v.readings.forEach(r => {
+      html += '<div class="vision-detail-row"><span class="vision-detail-key">' + escHtml(r.parameter) + '</span><span class="vision-detail-val" style="font-family:JetBrains Mono,monospace;color:var(--teal)">' + escHtml(r.value) + ' ' + escHtml(r.unit || '') + '</span></div>';
+    });
+  }
+
+  html += '</div>';
+  return html;
+}
+
 async function runQuery() {
+  // If there's an image attached, route to visual query
+  if (_camImageData) {
+    return runVisualQuery();
+  }
+
   const q    = qInput.value.trim();
   const area = document.getElementById('areaSelect').value;
   if (!q) return;
