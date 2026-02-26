@@ -148,6 +148,7 @@ body {
 .cat-spec  { background: var(--teal2);  color: var(--teal); }
 .cat-fault { background: var(--gold2);  color: var(--gold); }
 .cat-gen   { background: var(--s3);     color: var(--dim); }
+.cat-diag  { background: #e8f0fe;     color: #4285f4; }
 .answer-cat-label {
   font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
   color: var(--dim); font-family: 'JetBrains Mono', monospace;
@@ -222,6 +223,23 @@ body {
   padding: 6px 0; border-bottom: 1px solid var(--border);
 }
 .note-row:last-child { border-bottom: none; }
+
+/* ── MANUAL REFERENCE ── */
+.manual-ref-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border: 1px solid #d0d7de; border-left: 3px solid #4285f4;
+  border-radius: 9px; background: #f6f9ff; margin-bottom: 8px;
+}
+.manual-ref-info { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.manual-ref-section { font-size: 13px; font-weight: 600; color: var(--fg); }
+.manual-ref-desc { font-size: 12px; color: var(--mid); line-height: 1.4; }
+.manual-ref-link {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  padding: 7px 14px; border-radius: 7px; font-size: 12px; font-weight: 600;
+  background: #4285f4; color: #fff; text-decoration: none; white-space: nowrap;
+  transition: background .15s;
+}
+.manual-ref-link:hover { background: #3367d6; }
 
 /* ── SOURCE VIEWER ── */
 .source-section { border-top: 1px solid var(--border); padding: 14px 20px; }
@@ -1246,6 +1264,7 @@ function buildAnswerHtml(d) {
     procedure:      { label: 'Step-by-step procedure', cls: 'cat-proc',  icon: '≡' },
     specification:  { label: 'Specification / parameter', cls: 'cat-spec', icon: '◈' },
     troubleshooting:{ label: 'Troubleshooting guide',   cls: 'cat-fault', icon: '⚡' },
+    diagram:        { label: 'Diagram / visual reference', cls: 'cat-diag', icon: '◲' },
     general:        { label: 'General information',     cls: 'cat-gen',   icon: '○' }
   };
   const cat = catMap[d.category] || catMap.general;
@@ -1298,6 +1317,24 @@ function buildAnswerHtml(d) {
   if (d.notes && d.notes.length) {
     body += `<div class="section-head"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Notes</div>`;
     body += d.notes.map(n => `<div class="note-row"><span style="color:var(--dim);flex-shrink:0">–</span>${escHtml(n)}</div>`).join('');
+  }
+
+  // Manual references (diagrams / figures)
+  if (d.manualRef && d.manualRef.length) {
+    body += `<div class="section-head"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Manual diagrams</div>`;
+    body += d.manualRef.map(r => {
+      const pdfUrl = `${SERVER}/manuals/${encodeURIComponent(r.docId)}.pdf`;
+      return `<div class="manual-ref-row">
+        <div class="manual-ref-info">
+          <span class="manual-ref-section">${escHtml(r.section)}</span>
+          <span class="manual-ref-desc">${escHtml(r.description)}</span>
+        </div>
+        <a href="${pdfUrl}" target="_blank" class="manual-ref-link" title="Open PDF manual">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          View in Manual
+        </a>
+      </div>`;
+    }).join('');
   }
 
   // Sources section

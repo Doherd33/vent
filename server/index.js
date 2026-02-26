@@ -99,6 +99,13 @@ console.log('[STATIC] docs path:', docsPath, '| exists:', fs.existsSync(docsPath
 try { console.log('[STATIC] files:', fs.readdirSync(docsPath).join(', ')); } catch(e) { console.log('[STATIC] readdir error:', e.message); }
 app.use(express.static(docsPath, { etag: false, lastModified: false, setHeaders: (res) => { res.setHeader('Cache-Control', 'no-store'); } }));
 
+// Serve PDF manuals from server/manuals/
+const manualsPath = path.join(__dirname, 'manuals');
+if (!fs.existsSync(manualsPath)) fs.mkdirSync(manualsPath, { recursive: true });
+app.use('/manuals', express.static(manualsPath, { setHeaders: (res, filePath) => {
+  if (filePath.endsWith('.pdf')) res.setHeader('Content-Type', 'application/pdf');
+}}));
+
 const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 // Read voyage key lazily so Railway env vars are always current
@@ -1093,15 +1100,14 @@ app.post('/query', requireAuth, async (req, res) => {
       max_tokens: 1500,
       messages: [{
         role: 'user',
-        content: `You are the SOP Knowledge Assistant for a biologics manufacturing facility running upstream perfusion processes. An operator on the manufacturing floor has asked a question. You have the relevant SOP sections below. Answer clearly and practically.
+        content: `You are the SOP Knowledge Assistant for a biologics manufacturing facility. An operator has asked a question. Answer from the SOP content below.
 
 RULES:
-- Answer only from the SOP content provided. Do not invent steps or values.
-- If the question is procedural, return numbered steps.
-- If the question is about a specification or parameter value, populate the params array.
-- If the question cannot be answered from the provided SOP content, say so clearly in the summary.
+- Answer ONLY from the SOP content provided. Do not invent steps or values.
+- Be CONCISE. Keep summary to 2–3 sentences max. Keep steps to 6 or fewer — summarise if needed.
+- If the operator asks for images, pictures, photos, or diagrams: describe what the relevant manual section shows in plain language and populate the "manualRef" field with the section name/number and document ID so they can look it up. The system will provide a link to the PDF.
 - Keep language plain and direct — this is for a floor operator, not a regulator.
-- Always cite the exact SOP section numbers you drew from.
+- Always cite the exact SOP document and section you drew from.
 
 ════ RELEVANT SOP SECTIONS ════
 ${sopContext}
@@ -1113,12 +1119,13 @@ Operator question: "${question}"
 Return ONLY valid JSON — no markdown, no preamble.
 
 {
-  "category": "procedure or specification or troubleshooting or general",
-  "summary": "2–3 sentences answering the question in plain language",
+  "category": "procedure or specification or troubleshooting or general or diagram",
+  "summary": "2–3 sentences answering the question in plain language. Be concise.",
   "steps": [{ "n": 1, "action": "step instruction", "detail": "additional detail or null", "critical": false, "value": "specific value or target if relevant, else null" }],
   "params": [{ "name": "parameter name", "value": "target value", "unit": "unit string", "range": "acceptable range or null", "flag": "critical or normal" }],
-  "warnings": ["warning text — only include genuine safety or quality critical cautions"],
-  "notes": ["general procedural note"],
+  "warnings": ["only genuine safety or quality critical cautions"],
+  "notes": ["general procedural note — keep brief"],
+  "manualRef": [{ "docId": "document ID e.g. CEDEX-BHT-UM-001", "section": "section name/number with diagram or image", "description": "what the figure/diagram shows" }],
   "sources": [{ "code": "doc_id e.g. WX-SOP-1001-03", "title": "document title", "section": "section number e.g. 8.6.1" }]
 }`
       }]
