@@ -608,7 +608,10 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
   content: ''; flex: 1; height: 1px; background: var(--border);
 }
 </style>
-<script>if(!localStorage.getItem('vent_token'))window.location.replace('login.html');</script>
+<script>
+if(!localStorage.getItem('vent_token'))window.location.replace('login.html');
+if(localStorage.getItem('vent_role')==='operator')window.location.replace('builder.html');
+</script>
 </head>
 <body>
 
@@ -1113,7 +1116,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
   (function(){
     var role=localStorage.getItem('vent_role')||'operator';
     var name=localStorage.getItem('vent_name')||'';
-    var rules={operator:['Submit','Query SOPs','Doc Builder'],qa:['Submit','Query SOPs','Submissions','Doc Builder','QA Control'],director:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Dashboard'],msat:['Submit','Query SOPs','Submissions','Doc Builder'],engineering:['Submit','Query SOPs','Submissions','Doc Builder'],admin:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Workflow','Dashboard']};
+    var rules={operator:['Query SOPs','Doc Builder'],qa:['Submit','Query SOPs','Submissions','Doc Builder','QA Control'],director:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Dashboard'],msat:['Submit','Query SOPs','Submissions','Doc Builder'],engineering:['Submit','Query SOPs','Submissions','Doc Builder'],admin:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Workflow','Dashboard']};
     var colors={operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
     var labels={operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
     var badge=document.getElementById('roleBadge');

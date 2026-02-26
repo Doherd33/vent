@@ -18,3 +18,5 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
+      - key: RENDER_EXTERNAL_URL
+        sync: false
