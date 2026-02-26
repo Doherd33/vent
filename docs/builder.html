@@ -701,6 +701,98 @@ body {
 @keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
 .fade-in { animation: fadeUp 0.2s ease forwards; }
 
+/* ── RATIONALE ("WHY?") PANEL ── */
+.why-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--teal2); color: var(--teal);
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  border: 1px solid transparent; flex-shrink: 0;
+  transition: all .15s; font-family: 'JetBrains Mono', monospace;
+  line-height: 1; margin-left: 6px; vertical-align: middle;
+}
+.why-icon:hover {
+  background: var(--teal); color: #fff;
+  border-color: var(--teal);
+  box-shadow: 0 0 8px rgba(78,201,176,.35);
+  transform: scale(1.1);
+}
+.right-tab.why-tab { border-top-color: var(--teal); }
+.right-tab.why-tab.active { border-top-color: var(--teal); }
+.right-tab.why-tab .why-tab-icon { color: var(--teal); }
+
+.rationale-panel { animation: fadeUp .2s ease; }
+.rationale-panel .rat-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.rationale-panel .rat-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--teal2); color: var(--teal);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+.rationale-panel .rat-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px; color: var(--text); font-weight: 400;
+  letter-spacing: -.01em; line-height: 1.3;
+}
+.rationale-panel .rat-section-label {
+  font-size: 10px; color: var(--teal); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.rationale-panel .rat-summary {
+  font-size: 13px; color: var(--text); line-height: 1.7;
+  margin-bottom: 20px; padding: 14px;
+  background: var(--teal2); border-left: 3px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+}
+.rationale-panel .rat-detail-block {
+  margin-bottom: 18px;
+}
+.rationale-panel .rat-detail-heading {
+  font-size: 12px; font-weight: 600; color: var(--teal);
+  margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.rationale-panel .rat-detail-content {
+  font-size: 12.5px; color: var(--mid); line-height: 1.7;
+}
+.rationale-panel .rat-keypoints {
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin: 20px 0;
+}
+.rationale-panel .rat-keypoints-title {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--gold); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.rationale-panel .rat-keypoint {
+  display: flex; gap: 8px; margin-bottom: 8px;
+  font-size: 12px; color: var(--text); line-height: 1.6;
+}
+.rationale-panel .rat-keypoint-bullet {
+  color: var(--teal); flex-shrink: 0; margin-top: 2px; font-size: 10px;
+}
+.rationale-panel .rat-references {
+  margin-top: 20px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.rationale-panel .rat-ref-title {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--dim); margin-bottom: 8px;
+}
+.rationale-panel .rat-ref {
+  font-size: 11px; color: var(--mid); padding: 3px 0;
+  display: flex; align-items: flex-start; gap: 6px;
+}
+.rationale-panel .rat-ref-icon {
+  color: var(--dim); flex-shrink: 0; margin-top: 2px;
+}
+
 /* ── NEW DOC MODAL ── */
 .modal-overlay {
   position: fixed; inset: 0;
@@ -1582,9 +1674,14 @@ function openSopSearch() {
   const tabBar = document.querySelector('.right-panel-header .right-tabs');
   let html = '';
   openSopTabs.forEach(t => {
-    html += '<div class="right-tab sop-tab' + (t.id === activeSopTab ? ' active' : '') + '" ' +
+    const isWhy = t._isWhy;
+    const tabClass = isWhy ? 'right-tab why-tab' : 'right-tab sop-tab';
+    const icon = isWhy
+      ? '<span class="why-tab-icon" style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:700">?</span>'
+      : '<span class="sop-tab-num" style="font-family:JetBrains Mono,monospace;font-size:10px">§</span>';
+    html += '<div class="' + tabClass + (t.id === activeSopTab ? ' active' : '') + '" ' +
       'onclick="switchToSopTab(\'' + t.id + '\')" style="gap:6px">' +
-        '<span class="sop-tab-num" style="font-family:JetBrains Mono,monospace;font-size:10px">§</span>' +
+        icon +
         esc(t.query.length > 18 ? t.query.substring(0,18) + '…' : t.query) +
         '<button onclick="event.stopPropagation();closeSopTab(\'' + t.id + '\')" ' +
           'style="background:none;border:none;color:' + (t.id === activeSopTab ? '#6c6c6c' : 'transparent') + ';cursor:pointer;font-size:11px;padding:0 2px;line-height:1;margin-left:2px">×</button>' +
@@ -1657,15 +1754,32 @@ function renderSopDoc(tabId) {
   if (!tab) return;
   const d = tab.data;
   const rc = document.getElementById('rightContent');
-  let html = `<div class="sop-result-card"><div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px">${esc(d.docId)}</div>`;
-  d.sections.forEach(sec => {
+  const isBPR = d.docId && d.docId.includes('BPR');
+  let html = `<div class="sop-result-card" id="sopDocCard"><div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px">${esc(d.docId)}</div>`;
+  d.sections.forEach((sec, idx) => {
+    const whyBtn = isBPR
+      ? `<span class="why-icon" title="Why do we do this?" data-why-idx="${idx}">?</span>`
+      : '';
     html += `<div style="margin-bottom:18px">
-      <div style="font-size:12px;color:var(--gold);font-weight:500;margin-bottom:2px">${esc(sec.section_title)}</div>
+      <div style="font-size:12px;color:var(--gold);font-weight:500;margin-bottom:2px;display:flex;align-items:center">${esc(sec.section_title)}${whyBtn}</div>
       <div style="font-size:12px;color:var(--text);white-space:pre-line">${esc(sec.content)}</div>
     </div>`;
   });
   html += '</div>';
   rc.innerHTML = html;
+
+  // Bind why icons via event delegation (avoids inline quoting issues)
+  if (isBPR) {
+    const card = document.getElementById('sopDocCard');
+    card.addEventListener('click', function(e) {
+      const icon = e.target.closest('.why-icon');
+      if (!icon) return;
+      e.stopPropagation();
+      const idx = parseInt(icon.dataset.whyIdx, 10);
+      const sec = d.sections[idx];
+      if (sec) openRationalePanel(d.docId, sec.section_title);
+    });
+  }
 }
 
 function renderSopTabs() {
@@ -1673,9 +1787,14 @@ function renderSopTabs() {
   let html = '';
   openSopTabs.forEach(t => {
     const isActive = t.id === activeSopTab;
-    html += '<div class="right-tab sop-tab' + (isActive ? ' active' : '') + '" ' +
+    const isWhy = t._isWhy;
+    const tabClass = isWhy ? 'right-tab why-tab' : 'right-tab sop-tab';
+    const icon = isWhy
+      ? '<span class="why-tab-icon" style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:700">?</span>'
+      : '<span class="sop-tab-num" style="font-family:JetBrains Mono,monospace;font-size:10px">§</span>';
+    html += '<div class="' + tabClass + (isActive ? ' active' : '') + '" ' +
       'onclick="switchToSopTab(\'' + t.id + '\')" style="gap:6px">' +
-        '<span class="sop-tab-num" style="font-family:JetBrains Mono,monospace;font-size:10px">§</span>' +
+        icon +
         esc(t.query.length > 18 ? t.query.substring(0,18) + '…' : t.query) +
         '<button onclick="event.stopPropagation();closeSopTab(\'' + t.id + '\')" ' +
           'style="background:none;border:none;color:' + (isActive ? '#6c6c6c' : 'transparent') + ';cursor:pointer;font-size:11px;padding:0 2px;line-height:1;margin-left:2px">×</button>' +
@@ -1687,7 +1806,14 @@ function renderSopTabs() {
 function switchToSopTab(tabId) {
   activeSopTab = tabId;
   renderSopTabs();
-  renderSopResult(tabId);
+  const tab = openSopTabs.find(t => t.id === tabId);
+  if (tab && tab._isWhy) {
+    renderRationaleView(tabId);
+  } else if (tab && tab.data && tab.data.sections) {
+    renderSopDoc(tabId);
+  } else {
+    renderSopResult(tabId);
+  }
   updatePptxBtnState();
 }
 
@@ -2023,6 +2149,129 @@ function renderSopResult(tabId) {
         '<span class="sop-r-src-section">§ ' + esc(s.section) + '</span>' +
       '</div>';
     });
+  }
+
+  html += '</div>';
+  rc.innerHTML = html;
+}
+
+// ── RATIONALE ("WHY?") PANEL SYSTEM ──
+let _rationaleCache = {}; // docId → rationale array
+
+async function fetchRationale(docId) {
+  if (_rationaleCache[docId]) return _rationaleCache[docId];
+  try {
+    const res = await authFetch(SERVER + '/sop/' + encodeURIComponent(docId) + '/rationale');
+    const data = await res.json();
+    if (Array.isArray(data) && data.length) {
+      _rationaleCache[docId] = data;
+      return data;
+    }
+  } catch (err) {
+    console.error('Rationale fetch error:', err);
+  }
+  return [];
+}
+
+function matchRationale(rationaleList, sectionTitle) {
+  if (!rationaleList || !rationaleList.length) return null;
+  const t = sectionTitle.toUpperCase();
+  // Exact match first
+  let match = rationaleList.find(r => t === r.section.toUpperCase());
+  if (match) return match;
+  // Partial match — rationale section key contained in the section title
+  match = rationaleList.find(r => t.includes(r.section.toUpperCase()));
+  if (match) return match;
+  // Reverse — section title contained in rationale section key
+  match = rationaleList.find(r => r.section.toUpperCase().includes(t));
+  return match || null;
+}
+
+async function openRationalePanel(docId, sectionTitle) {
+  const rationale = await fetchRationale(docId);
+  const entry = matchRationale(rationale, sectionTitle);
+
+  if (!entry) {
+    logActivity('No rationale found for "' + sectionTitle + '"', 'warn');
+    return;
+  }
+
+  // Open as a new tab in the right panel
+  const tabId = 'why_' + docId + '_' + sectionTitle.replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now();
+  const shortLabel = entry.title.replace(/^Why\s+/i, '').substring(0, 22);
+
+  openSopTabs.push({ id: tabId, query: shortLabel, data: null, _rationale: entry, _isWhy: true });
+  activeSopTab = tabId;
+  openStepTabs = [];
+  activeStepTab = null;
+  document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
+
+  renderSopTabs();
+  renderRationaleView(tabId);
+  updatePptxBtnState();
+  logActivity('Opened rationale: "' + entry.title + '"', 'info');
+}
+
+function renderRationaleView(tabId) {
+  const tab = openSopTabs.find(t => t.id === tabId);
+  if (!tab || !tab._rationale) return;
+  const r = tab._rationale;
+  const rc = document.getElementById('rightContent');
+
+  let html = '<div class="rationale-panel">';
+
+  // Header
+  html += '<div class="rat-header">' +
+    '<div class="rat-icon">?</div>' +
+    '<div>' +
+      '<div class="rat-section-label">' + esc(r.section) + '</div>' +
+      '<div class="rat-title">' + esc(r.title) + '</div>' +
+    '</div>' +
+  '</div>';
+
+  // Summary
+  html += '<div class="rat-summary">' + esc(r.summary) + '</div>';
+
+  // Detail blocks
+  if (r.detail && r.detail.length) {
+    r.detail.forEach(d => {
+      html += '<div class="rat-detail-block">' +
+        '<div class="rat-detail-heading">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>' +
+          esc(d.heading) +
+        '</div>' +
+        '<div class="rat-detail-content">' + esc(d.content) + '</div>' +
+      '</div>';
+    });
+  }
+
+  // Key Points
+  if (r.keyPoints && r.keyPoints.length) {
+    html += '<div class="rat-keypoints">' +
+      '<div class="rat-keypoints-title">' +
+        '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
+        'Key Points' +
+      '</div>';
+    r.keyPoints.forEach(kp => {
+      html += '<div class="rat-keypoint">' +
+        '<span class="rat-keypoint-bullet">&#x25C6;</span>' +
+        '<span>' + esc(kp) + '</span>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  // References
+  if (r.references && r.references.length) {
+    html += '<div class="rat-references">' +
+      '<div class="rat-ref-title">Regulatory &amp; Technical References</div>';
+    r.references.forEach(ref => {
+      html += '<div class="rat-ref">' +
+        '<svg class="rat-ref-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+        '<span>' + esc(ref) + '</span>' +
+      '</div>';
+    });
+    html += '</div>';
   }
 
   html += '</div>';

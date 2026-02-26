@@ -1,0 +1,594 @@
+[
+  {
+    "section": "BATCH IDENTIFICATION",
+    "title": "Why Batch Identification Is Required",
+    "summary": "Every batch must be uniquely identifiable so that if a problem is discovered — even years later — the product can be traced, investigated, and if necessary recalled down to the exact vessel, raw materials, and operators involved.",
+    "detail": [
+      {
+        "heading": "The Principle",
+        "content": "Batch identification is the foundation of pharmaceutical traceability. Each bioreactor run produces material that may end up in a patient. The batch number, product code, and bioreactor ID create a unique fingerprint that links every downstream record — QC results, deviation reports, release decisions — back to this specific production run. Without this, you cannot investigate a complaint, execute a recall, or demonstrate control over your process."
+      },
+      {
+        "heading": "What Happens If This Goes Wrong",
+        "content": "If batch records are mislabelled, mixed up, or incomplete, the entire batch may be unsalvageable — not because the product is bad, but because you cannot prove it is good. Regulatory inspectors will look for gaps in traceability as a sign of systemic failure. A single mislabelled batch can trigger a facility-wide audit. In the worst case, product that should have been recalled stays on the market because it could not be traced."
+      },
+      {
+        "heading": "Regulatory Basis",
+        "content": "EU GMP Annex 11 and 21 CFR Part 211.186 require that every batch production record includes the batch number, product identification, and equipment used. ICH Q7 Section 6.50 requires batch records to be 'prepared for each batch of intermediate or API and include complete information relating to the production and control of each batch.' The BPR issue must be controlled by QA to ensure only current, approved templates are in use."
+      }
+    ],
+    "keyPoints": [
+      "The batch number is the single most important identifier — it links every record across the entire product lifecycle",
+      "The Process Specification Reference ties this batch to the validated process parameters",
+      "QA issuance ensures the template is current and controlled — operators should never photocopy or reuse old BPR templates",
+      "The bioreactor ID links to equipment maintenance, cleaning, and qualification records"
+    ],
+    "references": [
+      "EU GMP Part II, Section 6.50–6.52",
+      "21 CFR 211.186 — Master production and control records",
+      "ICH Q7 Section 6 — Documentation and Records",
+      "EU GMP Annex 11 — Computerised Systems"
+    ]
+  },
+  {
+    "section": "SECTION 1",
+    "title": "Why We Track the Batch Schedule",
+    "summary": "The batch schedule documents the exact timeline of every critical milestone. This proves the process was executed in the correct sequence and within validated time limits — because in GMP, if it isn't documented, it didn't happen.",
+    "detail": [
+      {
+        "heading": "The Principle",
+        "content": "Bioreactor operations follow a strict sequence: CIP → SIP → media addition → inoculation → perfusion → harvest. Each step has time dependencies on the previous one. CIP validity expires after 7 days. SIP validity expires after 24 hours. If media sits too long before inoculation, it degrades. The schedule captures planned vs actual times so deviations from the expected timeline are immediately visible."
+      },
+      {
+        "heading": "What Happens If This Goes Wrong",
+        "content": "If CIP-to-SIP or SIP-to-media-addition exceeds the validated hold time, the vessel sterility assurance is compromised. You would need to re-clean or re-sterilise, losing days of production time and wasting medium. If these time exceedances are not caught because nobody recorded the actual times, contaminated product could proceed to patients. Early termination documentation is critical for investigation — you need to know if you stopped because of contamination, viability drop, or equipment failure."
+      },
+      {
+        "heading": "Regulatory Basis",
+        "content": "EU GMP Part I, Chapter 4 requires that production records include the dates and times of key steps. 21 CFR 211.188 requires batch production records to include 'dates and times of... major steps in the manufacture.' ICH Q7 Section 6.52 states records must include 'actual dates and, when appropriate, times.' The 'Performed By' and 'Verified By' columns provide the dual-verification required for critical steps."
+      }
+    ],
+    "keyPoints": [
+      "Planned vs Actual columns let QA immediately spot delays that may require deviation investigation",
+      "CIP validity is 7 days — if SIP is not completed within this window, CIP must be repeated",
+      "SIP validity is 24 hours — media addition must happen within this window",
+      "Early termination reasons drive the investigation and may affect future batch planning",
+      "Dual sign-off (Performed By + Verified By) ensures no single person can complete a critical step without oversight"
+    ],
+    "references": [
+      "EU GMP Part I, Chapter 4.29",
+      "21 CFR 211.188 — Batch production and control records",
+      "ICH Q7 Section 6.52",
+      "Site SOP WX-SOP-1001 — CIP of Bioreactors"
+    ]
+  },
+  {
+    "section": "SECTION 2",
+    "title": "Why Equipment Must Be Verified Before Use",
+    "summary": "Every instrument that measures, controls, or monitors a critical process parameter must be confirmed calibrated and functional before the batch starts. Using uncalibrated equipment means your data is meaningless — you could be running at the wrong temperature, pH, or DO without knowing it.",
+    "detail": [
+      {
+        "heading": "The Principle",
+        "content": "The bioreactor control system relies on sensors (pH, DO, temperature, pressure) to maintain the environment the cells need to grow and produce product. If a temperature sensor reads 37°C but the actual temperature is 39°C, you are stressing the cells without knowing it. Equipment verification confirms that every sensor, pump, and controller has a current calibration certificate and is within its calibration interval. The 'Pass/Fail' column forces a conscious decision — not just a glance."
+      },
+      {
+        "heading": "Why Dual Sign-Off (MA + SMA)",
+        "content": "The Manufacturing Associate performs the check; the Senior Manufacturing Associate independently verifies it. This is not bureaucracy — it is a defence against human error. Studies in pharmaceutical manufacturing show that single-operator verification catches approximately 70% of errors, while dual verification catches over 95%. The SMA is confirming: yes, I independently checked the calibration certificates, and they are valid."
+      },
+      {
+        "heading": "What Happens If This Goes Wrong",
+        "content": "If a pH probe is out of calibration, the controller may add too much or too little base, shifting the culture pH. This affects cell metabolism, potentially reducing product quality (glycosylation patterns, charge variants). If a DO probe is drifting, the oxygen delivery may be wrong, causing either oxygen limitation (reduced growth) or hyperoxia (oxidative stress, affecting product quality). You won't know until offline QC analysis days or weeks later — by which time the batch may be lost."
+      },
+      {
+        "heading": "Regulatory Basis",
+        "content": "EU GMP Part I, Chapter 3.41 requires that 'measuring, weighing, recording and control equipment should be calibrated and checked at defined intervals.' 21 CFR 211.68 requires that 'automatic, mechanical, and electronic equipment... shall be routinely calibrated, inspected, or checked according to a written program.' The vessel exterior inspection catches physical damage (cracked sight glasses, damaged ports) that could compromise sterility."
+      }
+    ],
+    "keyPoints": [
+      "Every sensor in the calibration due date column must have a date in the future — expired calibrations are a critical finding in audits",
+      "The Vi-Cell/Cedex and BioProfile FLEX2 are analytical instruments — if their calibration is expired, your cell count and metabolite data is unreliable",
+      "ATF pressure transducers (P1 and P2) directly control the alternating tangential flow — miscalibrated transducers can damage the hollow fibre membrane",
+      "Peristaltic pump calibration ensures perfusion and bleed rates are accurate — these directly affect cell density control",
+      "Vessel exterior inspection catches damage that is not visible from instrument data"
+    ],
+    "references": [
+      "EU GMP Part I, Chapter 3.41",
+      "21 CFR 211.68 — Automatic, mechanical, and electronic equipment",
+      "EU GMP Annex 15 — Qualification and Validation",
+      "ISO 17025 — General requirements for calibration laboratories"
+    ]
+  },
+  {
+    "section": "SECTION 3",
+    "title": "Why Probe Calibration Has Specific Acceptance Ranges",
+    "summary": "pH and DO probes are the eyes of the bioreactor control system. If they lie to the controller, the controller makes wrong decisions. The acceptance ranges (pH slope 95–105%, DO zero/span points) are the minimum thresholds below which the probe's readings cannot be trusted.",
+    "detail": [
+      {
+        "heading": "pH Probe: Why 95–105% Slope",
+        "content": "A pH probe works by generating a voltage proportional to the hydrogen ion concentration in the medium. The 'slope' is the sensitivity — how much voltage changes per unit pH. A perfect probe has a slope of 59.16 mV/pH unit at 25°C (the Nernst equation). The 95–105% range means 56.2–62.1 mV/pH unit. Below 95%, the probe is losing sensitivity — likely due to reference electrode fouling, membrane degradation, or electrolyte depletion. Above 105% suggests electrical interference or a damaged junction. Either way, the controller's pH readings will drift, causing incorrect base addition."
+      },
+      {
+        "heading": "pH Probe: Why ± 30 mV Offset",
+        "content": "The offset is the voltage the probe reads at pH 7.00 (the isopotential point). A perfect probe reads 0 mV at pH 7. An offset beyond ± 30 mV indicates the reference electrode is drifting, which means the probe's baseline is shifting. While small offsets can be corrected by calibration, large offsets indicate the probe is near end-of-life and may drift unpredictably during the run."
+      },
+      {
+        "heading": "DO Probe: Why Minimum 6-Hour Polarisation",
+        "content": "Dissolved oxygen probes use an electrochemical reaction (Clark cell type) that requires the electrode to be 'polarised' — a voltage applied across the membrane. This voltage drives the oxygen reduction reaction that generates the measurement current. If the polarisation time is too short, the electrode hasn't reached a stable baseline, and readings will drift during the early days of the run. Six hours is the minimum for stable polarisation; many sites require overnight polarisation."
+      },
+      {
+        "heading": "DO Probe: Why Zero and Span Points",
+        "content": "Zero point (nitrogen sparge, 0% air saturation) confirms the probe reads zero when there is no oxygen. Span point (air-saturated medium, ~100% air saturation) confirms the probe reads correctly at the operating range. Both must be stable for ≥ 5 minutes to prove the response is genuine and not a transient. If the zero drifts, every DO reading during the run will be offset. If the span is wrong, the controller will deliver wrong amounts of oxygen."
+      },
+      {
+        "heading": "Pressure Hold Test: Why ≤ 0.02 bar Drop",
+        "content": "After assembly, the vessel is pressurised and held. If the pressure drops more than 0.02 bar, there is a leak. Any leak, no matter how small, is a potential contamination pathway. At 0.02 bar drop, the leak rate is small enough that sterility can be maintained during the run. Above this threshold, the risk of environmental organisms entering the vessel during the 14–30 day run is too high."
+      }
+    ],
+    "keyPoints": [
+      "pH slope outside 95–105% means the probe cannot be trusted — do not proceed with the batch",
+      "The ± 30 mV offset limit catches probes that are near end-of-life before they fail mid-run",
+      "DO polarisation is not optional — an unpolarised probe will give false readings that could lead to oxygen starvation of the culture",
+      "The pressure hold test validates the entire vessel assembly, not just individual connections",
+      "Assembly verification against AD-UP-001 ensures every port, gasket, and clamp is in the correct position"
+    ],
+    "references": [
+      "USP <791> — pH measurement",
+      "Nernst equation — theoretical basis for pH electrode slope",
+      "ASTM D888 — Standard test methods for dissolved oxygen",
+      "EU GMP Annex 1, Section 8.21 — Integrity testing",
+      "Site AD-UP-001 — Bioreactor Assembly Diagram"
+    ]
+  },
+  {
+    "section": "SECTION 4",
+    "title": "Why Media Addition Parameters Are Verified",
+    "summary": "The growth medium is the cells' entire environment — their food, their pH buffer, their osmotic balance. If the medium volume, temperature, pH, DO, or agitation is wrong at the moment of inoculation, cells will be stressed from the very start, potentially compromising the entire 14–30 day run.",
+    "detail": [
+      {
+        "heading": "Why ± 2% Volume Accuracy",
+        "content": "If you add too little medium, the concentration of nutrients and buffering agents is effectively higher per unit volume, and the seeding density calculation will be wrong. If you add too much, nutrients are diluted, and the vessel may overflow when additional volumes are added during perfusion. The ± 2% criterion ensures the working volume matches the validated process parameters. Every downstream calculation (perfusion rate in VVD, bleed volume, feed additions) depends on the working volume being correct."
+      },
+      {
+        "heading": "Why Pre-Inoculation Parameters Must Match Setpoints",
+        "content": "Temperature at 37.0°C: mammalian cells are optimised for 37°C. Even 1–2°C deviation at inoculation causes thermal shock, reducing viability and extending the lag phase. pH at 7.20: this is the optimum for most CHO cell lines. Cells inoculated into acidic medium show reduced attachment and growth. DO at 40%: ensures cells have adequate oxygen from the moment they enter the vessel. Agitation at 60 RPM: provides mixing without shear damage. These are not arbitrary numbers — they are validated process parameters specific to the cell line and process."
+      },
+      {
+        "heading": "Why QC Release of Medium",
+        "content": "Every batch of medium must be QC-released before use. Medium QC tests for sterility, endotoxin, pH, osmolality, and key nutrient concentrations. Using unreleased medium risks introducing contamination or nutrient deficiency. The medium lot number and expiry date are recorded so that if a medium quality issue is discovered later, every batch that used that medium lot can be identified."
+      },
+      {
+        "heading": "Why SMA Witness",
+        "content": "The SMA witnesses media addition and pre-inoculation verification because this is a point of no return. Once medium is in the vessel, the SIP validation is effectively consumed. If anything is wrong (wrong medium lot, wrong volume, wrong parameters), catching it now saves the batch. After inoculation, fixing these issues becomes much more difficult or impossible."
+      }
+    ],
+    "keyPoints": [
+      "Volume accuracy directly affects every VVD (vessel volumes per day) calculation during perfusion",
+      "Medium expiry is real — degraded medium (especially glutamine breakdown) causes ammonia buildup and poor growth",
+      "Pre-inoculation parameter verification is the last checkpoint before committing to the batch",
+      "Temperature equilibration takes time — ensure the medium has been at 37°C long enough to stabilise, not just started warming"
+    ],
+    "references": [
+      "ICH Q7 Section 7 — Materials Management",
+      "EU GMP Part I, Chapter 6 — Quality Control",
+      "Site PS-[PC]-UP-001 — Process Specification (product-specific)",
+      "Site SOP WX-SOP-1002 — Media Preparation"
+    ]
+  },
+  {
+    "section": "SECTION 5",
+    "title": "Why Inoculation Controls Are So Strict",
+    "summary": "Inoculation is the moment living cells enter the production bioreactor. The viability, cell density, and aseptic technique at this point determine whether the batch has a fighting chance. Get this wrong and you are nursing a sick culture for weeks.",
+    "detail": [
+      {
+        "heading": "Why Viability Must Be ≥ 90%",
+        "content": "Viability is the percentage of cells that are alive. At ≥ 90%, the culture is healthy and will adapt quickly to the production vessel. Between 85–90%, cells are stressed — maybe the N-1 run went too long, or handling damaged them. A deviation is raised because the batch outcome is now at risk: stressed cells grow slower, produce less, and are more susceptible to contamination. Below 85%, many sites will not inoculate at all because the risk of batch failure is too high."
+      },
+      {
+        "heading": "Why the VCD Calculation Matters",
+        "content": "The seeding density (target VCD × working volume ÷ N-1 VCD) determines how many cells you are putting into the vessel. Too few cells and the lag phase extends — cells take longer to reach the growth phase, wasting medium and time. Too many cells and you overshoot early perfusion capacity, leading to nutrient depletion before perfusion is established. The ± 20% acceptance criterion for post-inoculation VCD provides tolerance for transfer losses while ensuring the culture starts in the right density range."
+      },
+      {
+        "heading": "Why Independent Verification of Calculations",
+        "content": "The inoculation volume calculation is performed by the MA and independently verified by the SMA. This is not about trust — it is about catching arithmetic errors. A decimal point in the wrong place means 10× too many or too few cells. In pharma manufacturing, independent calculation verification has been shown to reduce calculation errors from ~3% to <0.1%."
+      },
+      {
+        "heading": "Why Aseptic Connection Witnessing",
+        "content": "Every aseptic connection (connecting the inoculum vessel to the bioreactor) is a potential contamination entry point. The SMA witness confirms that proper aseptic technique was used: tube welder or sterile connector used correctly, no environmental contamination risk, connections made within the validated time window. If an aseptic connection fails (detected days later as contamination), the witness record helps investigate exactly where the break occurred."
+      }
+    ],
+    "keyPoints": [
+      "Mycoplasma rapid testing is done at inoculation because mycoplasma contamination is invisible — cells look normal but product quality is destroyed",
+      "The official T=0 time is critical — every 'Run Day' in the monitoring log is counted from this moment",
+      "Post-inoculation VCD is checked to confirm the transfer was successful — significant cell death during transfer is an early warning sign",
+      "N-1 BPR reference creates a chain of traceability from seed train through to production"
+    ],
+    "references": [
+      "EU GMP Annex 1 — Manufacture of Sterile Medicinal Products (aseptic connections)",
+      "ICH Q5A — Viral Safety of Biotechnology Products",
+      "ICH Q5D — Cell Substrates Used for Production of Biotechnological/Biological Products",
+      "PDA Technical Report 13 — Fundamentals of an Environmental Monitoring Program",
+      "Site SOP WX-SOP-1003 — Inoculation of Production Bioreactor"
+    ]
+  },
+  {
+    "section": "SECTION 6",
+    "title": "Why Daily Monitoring Is Non-Negotiable",
+    "summary": "A perfusion bioreactor is a living system running 24/7 for 14–30 days. Daily sampling is how you detect problems early enough to act — waiting even one extra day can mean the difference between saving a batch and losing it.",
+    "detail": [
+      {
+        "heading": "Cell Culture Data (6a): Why VCD, Viability, and Diameter",
+        "content": "VCD (viable cell density) tells you if cells are growing as expected. A sudden plateau or decline signals a problem — nutrient limitation, contamination, or toxic metabolite accumulation. Viability trending downward is an early warning of cell stress. Mean cell diameter changes can indicate shift in cell cycle distribution (larger = more cells in G2/M, potentially producing more product) or cell swelling from osmotic stress. Sampling between 08:00–10:00 standardises the data — cell counts vary with time of day due to feeding cycles."
+      },
+      {
+        "heading": "Metabolite Data (6b): Why Glucose, Lactate, Glutamine, NH4+, pH, pCO2, Osmolality",
+        "content": "Glucose is the primary carbon source — if it drops too low, cells starve and switch to inefficient metabolism. Lactate is a waste product — rising lactate indicates the cells are metabolising glucose inefficiently (Warburg effect), which acidifies the medium. Glutamine is consumed for energy and amino acid synthesis — depletion limits growth. Ammonium (NH4+) is toxic above ~5 mmol/L, inhibiting growth and altering glycosylation. Offline pH cross-checks the online probe. pCO2 accumulation in perfusion systems can inhibit growth if not adequately stripped. Osmolality outside 280–340 mOsm/kg causes cell shrinkage or swelling."
+      },
+      {
+        "heading": "Bleed Record (6c): Why Tracking Bleed Volume",
+        "content": "In perfusion culture, the bleed removes cells to maintain the target VCD. The bleed rate (fraction/day) and actual volume must be accurately recorded because the bleed directly controls cell density. If bleed is too low, VCD overshoots, potentially clogging the ATF filter. If bleed is too high, you lose productive cells and reduce titre. The MA performs the bleed; the SMA witnesses to ensure the correct volume was removed."
+      },
+      {
+        "heading": "Process Scientist Review (6d): Why Daily Sign-Off",
+        "content": "The Process Scientist reviews all daily data and explicitly approves the perfusion rate for the next 24 hours. This is not rubber-stamping — the PS is looking at trends across all parameters to make informed decisions. They may adjust perfusion rate based on glucose consumption rate, increase bleed based on VCD trajectory, or flag an emerging problem. Without this daily expert review, operators are flying blind with a static protocol that cannot adapt to real culture behaviour."
+      }
+    ],
+    "keyPoints": [
+      "A single missed sample day creates a gap that auditors will question — and that gap is exactly when a problem might have started",
+      "Metabolite trends are more important than single values — the PS is looking at rates of change, not just absolute numbers",
+      "Bleed calculations must account for sample volume removed — taking 10 mL samples from a 2L working volume is a 0.5% volume change per day",
+      "Continuation sheets must be labelled with the batch number to maintain traceability"
+    ],
+    "references": [
+      "ICH Q8(R2) — Pharmaceutical Development (process understanding)",
+      "EU GMP Part I, Chapter 5.40 — In-process controls",
+      "FDA Guidance for Industry: PAT — A Framework for Innovative Pharmaceutical Development",
+      "Site SOP WX-SOP-1004 — Daily Monitoring of Perfusion Bioreactor"
+    ]
+  },
+  {
+    "section": "SECTION 7",
+    "title": "Why Medium Batches and Perfusion Rates Are Logged",
+    "summary": "Medium is the single largest raw material in perfusion culture — a 14-day run at 2 VVD on a 50L vessel consumes 1,400 litres. Every litre must be traceable to a QC-released lot, and every rate change must be authorised because it directly affects cell nutrition and product quality.",
+    "detail": [
+      {
+        "heading": "Medium Batch Log (7a): Why Full Traceability",
+        "content": "Over a multi-week perfusion run, you may go through 5–10 medium batches. If a product quality issue is detected post-harvest, you need to know exactly which medium lots were used on which days. If a medium lot is later found to have elevated endotoxin, you need to know which batches were exposed. The preparation date, QC release reference, and expiry date ensure that no expired or unreleased medium enters the vessel. This is raw material genealogy — it is as fundamental to pharma as ingredient traceability is to food safety."
+      },
+      {
+        "heading": "Perfusion Rate Log (7b): Why Every Rate Change Is Documented",
+        "content": "The perfusion rate (measured in VVD — vessel volumes per day) determines how quickly fresh medium replaces spent medium. Increasing the rate provides more nutrients but costs more medium. Decreasing the rate saves medium but risks nutrient limitation. Every rate change must be authorised by the Process Scientist because it is a process parameter change. The 'Reason for Change' column is critical — it creates an auditable trail showing that rate changes were driven by data (cell density, metabolite levels), not guesswork. Implemented By (MA) and SMA Check provide dual verification that the pump was actually set to the correct flow rate."
+      }
+    ],
+    "keyPoints": [
+      "Calculated flow rate (mL/hr) = VVD × working volume (mL) ÷ 24 — this is the pump setting, and errors here are common",
+      "Medium QC release is a hard gate — never use unreleased medium, even if 'it looks fine'",
+      "Medium expiry is typically 14 days from preparation for liquid medium — check this every time a new bag is connected",
+      "Rate changes should correlate with cell culture data — if rate went up on Day 7, the Day 7 VCD/metabolite data should justify it"
+    ],
+    "references": [
+      "ICH Q7 Section 7 — Materials Management",
+      "EU GMP Part I, Chapter 5 — Production",
+      "EU GMP Part II — Basic Requirements for Active Substances used as Starting Materials",
+      "Site SOP WX-SOP-1002 — Media Preparation and QC Release"
+    ]
+  },
+  {
+    "section": "SECTION 8",
+    "title": "Why Filter Integrity Testing Is Performed Pre and Post Use",
+    "summary": "Sterile filters are the barrier between the non-sterile medium preparation area and the sterile bioreactor. If a filter is defective, non-sterile medium enters the vessel. Pre-use testing confirms the filter works; post-use testing proves it worked throughout the entire filtration.",
+    "detail": [
+      {
+        "heading": "Why Pre-Use Integrity Testing",
+        "content": "Before filtering any medium, the filter is integrity-tested (typically a bubble point or diffusion test). This confirms the membrane has no defects — pinholes, damaged fibres, or poorly sealed housings. A filter that passes pre-use testing is confirmed to have the rated 0.2 µm retention capability. If the pre-use test fails, the filter is replaced before any medium is filtered. This prevents wasting a batch of medium on a defective filter."
+      },
+      {
+        "heading": "Why Post-Use Integrity Testing",
+        "content": "Post-use testing is even more important than pre-use testing. A filter can pass pre-use testing but develop a defect during filtration — pressure spikes, chemical incompatibility, or physical damage from handling. The post-use test confirms the filter maintained its integrity throughout the entire filtration process. If the post-use test fails, all medium filtered through that filter is considered non-sterile. The batch of medium must be re-filtered or discarded, and any medium already added to the bioreactor must be investigated."
+      },
+      {
+        "heading": "Why We Record Filter Lot Numbers",
+        "content": "Filter lot numbers create traceability back to the filter manufacturer. If a series of filter integrity test failures occurs, the lot number helps determine if there is a manufacturing defect in the filter batch. The filter integrity test instrument itself must be calibrated — an uncalibrated integrity tester could pass a defective filter or fail a good one."
+      }
+    ],
+    "keyPoints": [
+      "A failed post-use integrity test is a critical event — it means sterility cannot be assured for all medium filtered through that filter",
+      "Both pre-use AND post-use tests must pass — one without the other is incomplete assurance",
+      "The integrity test instrument calibration due date must be current — an expired calibration invalidates the test results",
+      "Always record both Pass and Fail results — a tendency to only record passes is a data integrity red flag"
+    ],
+    "references": [
+      "EU GMP Annex 1, Section 8.85–8.96 — Filtration of products that cannot be sterilised in their final container",
+      "PDA Technical Report 26 (Revised 2008) — Sterilizing Filtration of Liquids",
+      "FDA Guidance: Sterile Drug Products Produced by Aseptic Processing — Filter validation section",
+      "ASTM F838 — Standard test method for determining bacterial retention of membrane filters"
+    ]
+  },
+  {
+    "section": "SECTION 9",
+    "title": "Why Perfusion Initiation Has a Trigger VCD",
+    "summary": "Perfusion is not started on a calendar day — it is started when the cells need it. The trigger VCD ensures perfusion begins at the point where cell density is high enough that the batch-mode nutrient supply is becoming insufficient, but before nutrients are depleted.",
+    "detail": [
+      {
+        "heading": "Why a VCD Trigger (Not a Time Trigger)",
+        "content": "Different batches grow at slightly different rates due to normal biological variability. If you start perfusion on 'Day 3' regardless of cell density, you might be wasting medium on a slow-growing culture or starving a fast-growing one. The trigger VCD (defined in the Process Specification) is the cell density at which nutrient consumption rate exceeds the batch-mode supply rate. Starting perfusion at this point ensures cells transition smoothly from batch to perfusion mode without experiencing nutrient limitation."
+      },
+      {
+        "heading": "Why Initial Perfusion Rate and Flow Rate Are Recorded",
+        "content": "The initial perfusion rate (VVD) sets the nutrient supply for the transition period. The calculated flow rate (mL/hr) is the actual pump setting. Recording both allows verification: if the VVD says 0.5 and the flow rate says 500 mL/hr for a 50L vessel, the calculation is wrong (should be 1042 mL/hr). This is a common error point — the conversion from VVD to mL/hr involves working volume, and mistakes here mean the culture receives wrong nutrition for hours or days."
+      },
+      {
+        "heading": "Why Aseptic Connection Witnessing",
+        "content": "Connecting the perfusion medium line to the bioreactor is an aseptic connection. Every aseptic connection is a contamination risk. The SMA witnesses the connection technique and signs to confirm it was performed correctly. If contamination is detected later, the aseptic connection log helps pinpoint when and where it may have entered."
+      }
+    ],
+    "keyPoints": [
+      "If the trigger VCD is not met, delay perfusion and document the reason — do not start perfusion 'just because it's Day 3'",
+      "VVD to mL/hr conversion: Flow Rate (mL/hr) = VVD × Working Volume (mL) ÷ 24",
+      "The first 24 hours of perfusion are critical — monitor that the pump is running and medium is actually flowing",
+      "An aseptic connection failure during perfusion initiation can contaminate an otherwise healthy culture"
+    ],
+    "references": [
+      "Site Process Specification PS-[PC]-UP-001",
+      "EU GMP Annex 1 — Aseptic connections",
+      "ICH Q8(R2) — Process understanding and control strategy",
+      "Site SOP WX-SOP-1004 — Daily Monitoring (perfusion section)"
+    ]
+  },
+  {
+    "section": "SECTION 10",
+    "title": "Why ATF System Monitoring Is Critical",
+    "summary": "The ATF (Alternating Tangential Flow) system is the heart of perfusion culture — it retains cells in the bioreactor while allowing spent medium and product to pass through. If the ATF fails, the entire batch fails. TMP monitoring is how you detect problems before they become catastrophic.",
+    "detail": [
+      {
+        "heading": "Why TMP (Transmembrane Pressure) Monitoring",
+        "content": "TMP is the pressure difference across the hollow fibre membrane. As cells grow and debris accumulates, the membrane gradually fouls — TMP increases. A steadily rising TMP is normal and expected. A sudden spike in TMP indicates rapid fouling (possibly from cell lysis event or medium precipitation). If TMP exceeds the membrane's rated limit, the fibres can rupture, causing cells to bleed into the harvest line and contaminating the product with cell debris and host cell proteins."
+      },
+      {
+        "heading": "Why Hollow Fibre Specifications Are Recorded",
+        "content": "The molecular weight cut-off (MWCO), surface area, and lot number of the hollow fibre membrane are recorded for traceability and performance correlation. If product recovery drops during a run, the MWCO specification helps determine if the product molecule should be passing through. If fouling is worse than expected, the lot number helps identify if it is a membrane batch issue. Expiry date ensures the membrane material has not degraded in storage."
+      },
+      {
+        "heading": "Why Ethanol Flush and Water Integrity Test (WIT)",
+        "content": "New hollow fibre membranes contain preservatives (often glycerin) and may have manufacturing residues. The ethanol flush removes these residues, and the post-flush conductivity test (≤ 2.0 µS/cm) confirms the flush was thorough. The Water Integrity Test confirms the membrane has no defects before installation. A defective membrane discovered after installation wastes the entire vessel preparation."
+      },
+      {
+        "heading": "Why ATF Stroke Rate Is Monitored",
+        "content": "The ATF controller alternates between pressure and vacuum cycles (strokes) to push medium through the fibres and pull it back. The stroke rate affects shear on cells at the fibre entrance. Too fast and cells are damaged (shear-induced lysis, increasing TMP). Too slow and the membrane fouls because the tangential flow is insufficient to sweep debris off the fibre surface. The stroke rate may need adjustment as cell density increases throughout the run."
+      }
+    ],
+    "keyPoints": [
+      "TMP trending is more important than single readings — plot TMP daily and look for acceleration",
+      "Normal/Alert/Action categories in the status column should follow pre-defined TMP limits from the process specification",
+      "If TMP enters 'Action' range, the Process Scientist must be notified immediately — they may need to increase bleed rate to reduce cell density",
+      "Post-assembly pressure hold confirms all ATF connections are leak-free before process medium flows through the system",
+      "ATF controller calibration is critical — incorrect pressure/vacuum cycling can destroy the membrane"
+    ],
+    "references": [
+      "Repligen ATF System User Manual — TMP monitoring guidelines",
+      "EU GMP Part I, Chapter 3 — Equipment qualification",
+      "Site AD-UP-004 — ATF System Assembly Diagram",
+      "Site Process Specification PS-[PC]-UP-001 — TMP limits"
+    ]
+  },
+  {
+    "section": "SECTION 11",
+    "title": "Why Harvest Collection Is Meticulously Tracked",
+    "summary": "The harvest is the product of weeks of work — the cell-free permeate containing the target protein. Every millilitre must be accounted for, tested, and traceable because it will eventually become a medicine administered to patients.",
+    "detail": [
+      {
+        "heading": "Why Weight and Volume Are Both Recorded",
+        "content": "Gross weight of the harvest bag provides an independent check on the volume measurement. If the net volume calculation (from weight) doesn't match the flow totaliser reading, something is wrong — a leak, an unclosed valve, or a measurement error. In-process testing on each bag (typically titre, bioburden, and endotoxin) ensures early detection of quality issues. If Bag #3 has elevated bioburden, you know exactly which process days were affected."
+      },
+      {
+        "heading": "Why Transfer to DSP Is Documented",
+        "content": "The handoff from Upstream (USP) to Downstream (DSP) is a critical transition. The harvest bag leaves the control of the Upstream team and enters the DSP process. Both teams must agree on the transfer — the DSP team confirms receipt, and any hold times between collection and DSP processing are tracked. Extended hold times at ambient temperature can degrade the product (proteolysis, aggregation, microbial growth)."
+      }
+    ],
+    "keyPoints": [
+      "Total harvest volume is a key batch yield metric — significant variation from expected yield triggers investigation",
+      "In-process testing submission must happen promptly — results guide DSP processing decisions",
+      "Each harvest bag must be uniquely identified and traceable to specific run days",
+      "MA/SMA dual sign-off ensures no harvest bags are lost or unaccounted for"
+    ],
+    "references": [
+      "ICH Q6B — Specifications: Test Procedures and Acceptance Criteria for Biotechnological/Biological Products",
+      "EU GMP Part I, Chapter 5 — Production",
+      "21 CFR 211.188 — Batch production and control records"
+    ]
+  },
+  {
+    "section": "SECTION 12",
+    "title": "Why CIP Parameters Have Specific Targets",
+    "summary": "Clean-In-Place (CIP) removes all traces of the previous batch from the bioreactor — cell debris, protein residue, medium components, and microorganisms. Each parameter (temperature, concentration, time, conductivity) has a scientific basis. Getting CIP wrong means the next batch starts in a dirty vessel.",
+    "detail": [
+      {
+        "heading": "Why NaOH at 0.5M and 70 ± 5°C for ≥ 30 Minutes",
+        "content": "Sodium hydroxide (NaOH) is the primary cleaning agent because it denatures proteins, saponifies lipids, and kills microorganisms. 0.5M NaOH provides sufficient alkalinity (pH ~13.7) to break down biological residues. The temperature of 70°C accelerates the chemical reaction — cleaning rate approximately doubles for every 10°C increase. The 30-minute minimum ensures contact time is sufficient for proteins that are particularly adherent (denatured proteins baked onto heat transfer surfaces). Below 65°C, the cleaning action is significantly reduced. Above 75°C, NaOH becomes more aggressive on stainless steel gaskets and seals."
+      },
+      {
+        "heading": "Why Phosphoric Acid Wash at 0.1M",
+        "content": "After the caustic wash, an acid wash with H₃PO₄ (phosphoric acid) serves two purposes: it neutralises residual NaOH and removes inorganic deposits (calcium, magnesium scales from medium minerals) that caustic alone cannot dissolve. 0.1M is sufficient to dissolve these mineral deposits without being aggressive enough to damage the vessel's passivated stainless steel surface."
+      },
+      {
+        "heading": "Why Conductivity ≤ 1.3 µS/cm and pH 5.0–7.5 on Final Rinse",
+        "content": "Conductivity measures the total dissolved ions in the rinse water. WFI (Water for Injection) has a conductivity limit of ≤ 1.3 µS/cm per Ph. Eur. and USP. If the final rinse conductivity exceeds this, cleaning agent residues remain on the vessel surfaces. These residues would contaminate the next batch's medium, potentially affecting cell growth or product quality. The pH check (5.0–7.5) provides additional confirmation that no significant acid or base residue remains."
+      },
+      {
+        "heading": "Why TOC ≤ 0.5 mg/L",
+        "content": "Total Organic Carbon (TOC) detects organic residues that conductivity misses — proteins, cell debris, medium components. A TOC result ≤ 0.5 mg/L (the WFI specification) confirms that organic contamination has been removed to below the level of detection. This is the final proof that the vessel is clean. The TOC result may be pending at the time of CIP completion — QA conditional release for SIP can proceed based on conductivity and pH, with final release pending TOC."
+      },
+      {
+        "heading": "Why CIP Validity Is 7 Days",
+        "content": "A cleaned vessel that is not sterilised within 7 days must be re-cleaned. This is because a clean, wet vessel at ambient temperature is an ideal environment for microbial growth. Biofilm can form on stainless steel surfaces within days, and once established, biofilm is much harder to remove than planktonic organisms. The 7-day hold time was established during site validation studies."
+      }
+    ],
+    "keyPoints": [
+      "CIP is a validated process — do not change temperatures, concentrations, or times without a formal change control",
+      "NaOH and H₃PO₄ lot numbers are recorded for raw material traceability",
+      "Intermediate rinse conductivity ≤ 50 µS/cm ensures most NaOH is removed before acid wash — mixing NaOH and H₃PO₄ generates heat and neutralised salt, both of which reduce cleaning effectiveness",
+      "SMA verification and QA conditional release are sequential gates — SMA confirms execution, QA confirms the results meet specifications",
+      "CIP validity date must be calculated correctly — if it expires before SIP, the entire CIP must be repeated"
+    ],
+    "references": [
+      "PDA Technical Report 29 (Revised 2012) — Points to Consider for Cleaning Validation",
+      "ASTM E3106 — Standard Guide for Science-Based and Risk-Based Cleaning Process Development and Validation",
+      "EU GMP Part I, Chapter 3.36–3.37 — Equipment cleaning",
+      "Ph. Eur. 2.2.38 — Conductivity",
+      "Site SOP WX-SOP-1001 — CIP of Bioreactors"
+    ]
+  },
+  {
+    "section": "SECTION 13",
+    "title": "Why SIP Parameters Must Be Precisely Controlled",
+    "summary": "Steam-In-Place (SIP) is the final sterilisation step before the vessel receives medium. The parameters — temperature ≥ 119°C, duration ≥ 30 minutes, F₀ ≥ 15 — are based on the science of microbial thermal destruction. If SIP is insufficient, the vessel is not sterile, and the entire batch is at risk of contamination.",
+    "detail": [
+      {
+        "heading": "Why ≥ 119°C for ≥ 30 Minutes",
+        "content": "The standard steam sterilisation reference condition is 121°C for 15 minutes. The 119°C minimum in this BPR accounts for the fact that temperature distribution within a complex vessel is not perfectly uniform — some cold spots may be 1–2°C below the control thermocouple reading. By holding at ≥ 119°C for ≥ 30 minutes (double the reference time), we ensure that even the coldest point in the vessel receives sufficient thermal exposure. The maximum of 123°C prevents damage to seals, gaskets, and the DO membrane cap."
+      },
+      {
+        "heading": "Why F₀ ≥ 15",
+        "content": "F₀ is the accumulated lethality expressed in equivalent minutes at 121°C. It integrates the actual temperature profile over time, accounting for heat-up and cool-down periods. An F₀ of 15 means the vessel received a total thermal exposure equivalent to 15 minutes at 121°C. The pharmacopoeial minimum is F₀ ≥ 12 for a standard sterilisation cycle, but most bioreactor processes target F₀ ≥ 15 to provide an additional safety margin. F₀ is calculated from the temperature logger data, not from the vessel controller, providing an independent record."
+      },
+      {
+        "heading": "Why Biological Indicators (BIs)",
+        "content": "Biological indicators contain spores of Geobacillus stearothermophilus — the most heat-resistant organism used in sterilisation validation. They are placed at the hardest-to-sterilise locations (bottom drain, inoculation port) — the points farthest from the steam inlet or most likely to trap condensate. After SIP, the BIs are removed and incubated for 7 days. A negative result (no growth) confirms that sterilisation was achieved at these worst-case locations. Note: BI results are not available until 7 days post-SIP. This is why QA provides two releases: a conditional release (based on temperature/F₀ data) to allow production to proceed, and a final release (after negative BI results) to confirm sterilisation."
+      },
+      {
+        "heading": "Why SIP Validity Is 24 Hours",
+        "content": "Once sterilised, the vessel must receive medium within 24 hours. After 24 hours, the sterility assurance level degrades because the vessel's integrity against environmental contamination has a time limit — gasket seals, sampling ports, and vent filters can allow ingress of environmental organisms over extended periods, especially as the vessel cools and creates a slight vacuum that draws air in. If the 24-hour window is exceeded, SIP must be repeated."
+      }
+    ],
+    "keyPoints": [
+      "The temperature logger is independent of the vessel controller — this provides an unbiased record of the actual sterilisation conditions",
+      "BI placement at bottom drain and inoculation port targets the coldest points — if sterilisation works there, it works everywhere",
+      "Pressure during SIP (1.0 ± 0.2 bar) ensures steam, not trapped air — air pockets prevent steam contact and create cold spots",
+      "QA conditional release allows production to proceed while BI incubation continues — this is a risk-based decision documented in the BPR",
+      "SIP validity is 24 hours from the end of the hold phase, not from the start of cool-down"
+    ],
+    "references": [
+      "Ph. Eur. 5.1.1 — Methods of preparation of sterile products",
+      "EU GMP Annex 1 — Manufacture of Sterile Medicinal Products",
+      "PDA Technical Report 1 (Revised 2007) — Validation of Moist Heat Sterilisation Processes",
+      "HTM 01-01 — Management and decontamination of surgical instruments",
+      "ISO 11138 — Biological indicators for sterilisation"
+    ]
+  },
+  {
+    "section": "SECTION 14",
+    "title": "Why Every Deviation Must Be Documented Immediately",
+    "summary": "A deviation is any departure from the approved procedure, specification, or expected result. Documenting it immediately — not at the end of the batch — is critical because memory fades, details are lost, and undocumented deviations are a serious data integrity violation.",
+    "detail": [
+      {
+        "heading": "Why Immediate Documentation",
+        "content": "EU GMP requires that entries are made 'at the time each action is taken.' A deviation documented hours or days later is an unreliable record — was the temperature really 39°C or was it 40°C? Did the alarm sound at 14:00 or 14:30? Contemporaneous recording captures accurate details. Delayed recording introduces recall bias and suggests the deviation may have been considered unimportant — or that someone tried to hide it."
+      },
+      {
+        "heading": "Why Severity Classification Matters",
+        "content": "Critical deviations (e.g., contamination, major process parameter excursion) may require batch rejection. Major deviations (e.g., equipment calibration expired during run, missed sample) require investigation and assessment of product impact. Minor deviations (e.g., documentation error, slight timing variation) may require only a note. The severity drives the level of investigation and the decision authority — a critical deviation typically requires Director-level review, while a minor deviation may be closed by QA alone."
+      },
+      {
+        "heading": "Why QA Must Be Notified",
+        "content": "QA notification time is recorded because QA owns the deviation process. They must assess whether the deviation impacts product quality, patient safety, or data integrity. QA may decide that the batch can continue (with additional testing), must be put on hold (pending investigation), or must be terminated. Delayed QA notification reduces their ability to make informed real-time decisions."
+      }
+    ],
+    "keyPoints": [
+      "Document first, investigate second — capture the facts immediately, then analyse the root cause",
+      "A separate DEV-FORM-001 must be raised for each deviation — the BPR log is a summary, not a substitute",
+      "The 'Immediate Action Taken' column captures what the operator did in the moment — this is often the most valuable part of the record",
+      "Open/Closed status tracks whether the deviation investigation is complete — open deviations at batch end delay QA release"
+    ],
+    "references": [
+      "EU GMP Part I, Chapter 1.4(xiv) — Deviations are reported, investigated and recorded",
+      "ICH Q10 — Pharmaceutical Quality System (CAPA section)",
+      "21 CFR 211.192 — Production record review (deviations)",
+      "MHRA Data Integrity Guidance — Contemporaneous recording requirements"
+    ]
+  },
+  {
+    "section": "SECTION 15",
+    "title": "Why Raw Materials Must Be Reconciled",
+    "summary": "Material reconciliation proves that every gram of raw material that entered the process can be accounted for — used in the batch, returned to stores, or destroyed. An unexplained discrepancy is a contamination risk, a cross-contamination risk, or a theft/diversion concern.",
+    "detail": [
+      {
+        "heading": "Why Amounts Received, Used, and Returned Must Balance",
+        "content": "The equation is simple: Amount Received = Amount Used + Amount Returned/Destroyed + Acceptable Loss. If the balance doesn't add up, something is wrong. Possible causes: material was used in another batch (cross-contamination risk), material was spilled and not reported (environmental/safety issue), material was discarded without documentation (data integrity issue). The reconciliation catches these problems before the batch is released."
+      },
+      {
+        "heading": "Why Specific Materials Are Listed",
+        "content": "Basal medium, L-glutamine, Pluronic F-68, glucose, NaOH, H₃PO₄, and WFI are all listed because they each enter the bioreactor process. L-glutamine is listed separately from basal medium because it is often added as a supplement and has a short shelf life. Pluronic F-68 (anti-foam) is listed because it affects cell surface interaction. NaOH and H₃PO₄ for CIP are listed because they are chemical agents that must be fully removed before the next batch."
+      }
+    ],
+    "keyPoints": [
+      "Lot numbers for every material create full traceability — if a supplier recall occurs, you can identify every affected batch",
+      "SMA check provides independent verification that the reconciliation arithmetic is correct",
+      "Discrepancies must be investigated before batch release — they cannot be waved off as 'probably spillage'",
+      "WFI is tracked in total litres — it is used for rinsing, CIP, and SIP, and its quality is critical"
+    ],
+    "references": [
+      "EU GMP Part I, Chapter 5.37–5.38 — Yield reconciliation",
+      "21 CFR 211.186(b)(6) — Reconciliation of quantities",
+      "ICH Q7 Section 7 — Materials Management"
+    ]
+  },
+  {
+    "section": "SECTION 16",
+    "title": "Why the End-of-Run Summary Exists",
+    "summary": "The end-of-run summary compresses a 14–30 day process into a single snapshot that QA and Management can review in minutes. It highlights the key outcomes and flags problems that affect the release decision.",
+    "detail": [
+      {
+        "heading": "Why These Specific Parameters",
+        "content": "Actual run duration vs planned tells you if the batch ran as expected or was cut short. Total harvest volume is the yield — is it within the expected range? Final VCD and viability indicate the culture health at termination — a viable, healthy culture that was harvested on schedule is very different from a dying culture that was terminated early. The deviation count and critical deviation count immediately tell QA whether significant problems occurred. If there are zero deviations, something might be wrong — perfect batches are rare and should be scrutinised."
+      },
+      {
+        "heading": "Why Reason for Termination Is Documented",
+        "content": "The termination reason drives different follow-up actions. Planned end: normal, proceed to DSP. Viability drop: investigate root cause, may need additional product testing. Contamination: batch rejection likely, environmental investigation required. Equipment failure: maintenance investigation, assess product impact. Each reason triggers a different chain of investigation and decision-making."
+      }
+    ],
+    "keyPoints": [
+      "The end-of-run summary is often the first thing an auditor reads — it should accurately represent the batch",
+      "Total harvest transferred to DSP must match the harvest collection log — discrepancies indicate a tracking failure",
+      "Outstanding deviations at batch end prevent QA release — resolve them promptly"
+    ],
+    "references": [
+      "EU GMP Part I, Chapter 5.63 — Batch review before release",
+      "21 CFR 211.192 — Production record review",
+      "ICH Q7 Section 6 — Documentation and Records"
+    ]
+  },
+  {
+    "section": "SECTION 17",
+    "title": "Why Multi-Level Sign-Off Is Required",
+    "summary": "The sign-off chain — Operators → Process Scientist → QA Interim Reviews → QA Final Review → Director — ensures that the batch record has been reviewed by people with different perspectives and expertise. No single person can release a batch to the patient.",
+    "detail": [
+      {
+        "heading": "Why Operator Declaration (17.1)",
+        "content": "The operators (MA, SMA, PS) who executed the batch declare that all entries are complete, accurate, and contemporaneous. This is not a formality — it is a personal attestation of data integrity. By signing, they confirm they did not backdate entries, fabricate data, or omit deviations. In regulatory terms, this declaration can be held against them in a data integrity investigation. It ensures operators take ownership of their documentation."
+      },
+      {
+        "heading": "Why QA Interim Reviews (17.2)",
+        "content": "QA does not wait until the end of a 30-day run to review the batch record. Interim reviews at Day 7 and Day 14 catch documentation problems while the batch is still running — missing signatures, incomplete entries, deviation forms not raised. This prevents a situation where QA discovers major documentation gaps at the end of the run when memories have faded and it is too late to correct them. Early intervention keeps the batch record on track."
+      },
+      {
+        "heading": "Why QA Final Review and Release Decision",
+        "content": "The QA Final Review is the last gate before product can proceed to downstream processing. QA reviews: all entries complete, all deviations closed or assessed for product impact, all raw materials reconciled, all equipment calibrations valid throughout the run, CIP/SIP records acceptable, and in-process testing results within specification. The release decision (Released / Rejected / Pending) determines the fate of the batch. A Pending decision means additional information or testing is needed before a decision can be made."
+      },
+      {
+        "heading": "Why Director Sign-Off (17.3)",
+        "content": "The Director of Manufacturing Operations provides the final sign-off representing senior management oversight. This is required by EU GMP as evidence that senior management is engaged in batch release decisions and has visibility of production quality. The Director's review focuses on trends across batches, not just the individual record — are deviation rates increasing? Is yield declining? Are the same problems recurring?"
+      }
+    ],
+    "keyPoints": [
+      "Each level of review catches different types of issues — operators catch execution errors, QA catches compliance gaps, and the Director catches trends",
+      "QA interim reviews at Day 7 and 14 are proactive — they prevent end-of-batch documentation crises",
+      "The batch release decision is QA's responsibility, not Manufacturing's — this independence is a GMP requirement",
+      "A rejected batch requires a formal investigation before any re-processing or destruction decision"
+    ],
+    "references": [
+      "EU GMP Part I, Chapter 1.4(viii) — Management responsibilities",
+      "EU GMP Part I, Chapter 6 — Quality Control",
+      "21 CFR 211.22 — Responsibilities of quality control unit",
+      "ICH Q7 Section 2.2 — Responsibilities of the Quality Unit"
+    ]
+  }
+]

@@ -214,12 +214,12 @@ Vent ships with upstream processing SOPs that are ingested, chunked by section, 
 
 | Document | Title |
 |---|---|
-| SOP-UP-001 | Bioreactor Setup, Preparation and Inoculation |
-| SOP-UP-002 | Perfusion Media Preparation, Sterile Filtration and Exchange |
-| SOP-UP-003 | Cell Density, Viability Monitoring and Bleed Rate Management |
-| SOP-UP-004 | Environmental Monitoring and Cleanroom Operations |
-| SOP-UP-005 | Equipment Cleaning, Sterilisation and Changeover |
-| BPR-UP-001 | Batch Production Record — Upstream Perfusion |
+| WX-SOP-1001-03 | Bioreactor Setup, Preparation and Inoculation |
+| WX-SOP-1002-03 | Perfusion Media Preparation, Sterile Filtration and Exchange |
+| WX-SOP-1003-03 | Cell Density, Viability Monitoring and Bleed Rate Management |
+| WX-SOP-1004-03 | Environmental Monitoring and Cleanroom Operations |
+| WX-SOP-1005-03 | Equipment Cleaning, Sterilisation and Changeover |
+| WX-BPR-2001-03 | Batch Production Record — Upstream Perfusion |
 
 The ingestion pipeline (`/ingest` or `npm run ingest`) parses each markdown SOP by heading, embeds each chunk via VoyageAI, and stores it in the `sop_chunks` table with its vector for semantic search.
 
@@ -239,7 +239,7 @@ Operators already perform every SOP step, every shift. Vent gives them a way to 
 
 **Capture** — Operators record during normal operations using a mobile-friendly interface. A photo of the sample port, a 30-second video of aseptic technique, a screenshot of the cell counter reading. Total extra effort: ~2 minutes per operation.
 
-**Map** — Vent uses its existing embedding infrastructure (VoyageAI + Supabase vectors) and Claude to automatically align each photo or video to the exact SOP step it belongs to. Media uploaded during a "Daily Sampling" workflow maps to SOP-UP-003 §5.2–5.5 without the operator needing to specify.
+**Map** — Vent uses its existing embedding infrastructure (VoyageAI + Supabase vectors) and Claude to automatically align each photo or video to the exact SOP step it belongs to. Media uploaded during a "Daily Sampling" workflow maps to WX-SOP-1003-03 §5.2–5.5 without the operator needing to specify.
 
 **Build** — With enough mapped media, Vent generates visual SOP walkthroughs: the original SOP text at each step, with embedded photos, video clips, and operator tips alongside it. It also builds searchable media libraries and training playlists — curated sequences covering end-to-end processes.
 
@@ -348,12 +348,12 @@ vent/
     ├── docs/
     │   ├── FEATURE-VISUAL-SOP-ENGINE.md  # Visual SOP Engine proposal
     │   └── sops/                  # Source SOP documents (Markdown)
-    │       ├── SOP-UP-001.md
-    │       ├── SOP-UP-002.md
-    │       ├── SOP-UP-003.md
-    │       ├── SOP-UP-004.md
-    │       ├── SOP-UP-005.md
-    │       └── BPR-UP-001.md
+    │       ├── WX-SOP-1001-03.md
+    │       ├── WX-SOP-1002-03.md
+    │       ├── WX-SOP-1003-03.md
+    │       ├── WX-SOP-1004-03.md
+    │       ├── WX-SOP-1005-03.md
+    │       └── WX-BPR-2001-03.md
     └── scripts/
         └── ingest-sops.js         # SOP ingestion pipeline script
 ```

@@ -820,8 +820,8 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
 
 {
   "priority": "High or Medium or Low",
-  "sopRefs": [{ "code": "doc_id from above e.g. SOP-UP-001", "title": "document title", "step": "actual section number e.g. 8.6.1.4", "relevance": "one sentence explaining connection to observation", "flag": "gap or ambiguous or compliant" }],
-  "bprRefs": [{ "code": "BPR-UP-001 if relevant", "title": "Batch Production Record", "step": "section ref", "relevance": "one sentence", "flag": "gap or ambiguous or compliant" }],
+  "sopRefs": [{ "code": "doc_id from above e.g. WX-SOP-1001-03", "title": "document title", "step": "actual section number e.g. 8.6.1.4", "relevance": "one sentence explaining connection to observation", "flag": "gap or ambiguous or compliant" }],
+  "bprRefs": [{ "code": "WX-BPR-2001-03 if relevant", "title": "Batch Production Record", "step": "section ref", "relevance": "one sentence", "flag": "gap or ambiguous or compliant" }],
   "sciEval": { "summary": "3-4 sentences grounded in the retrieved SOP content", "rootCauseHypothesis": "one sentence", "riskLevel": "High or Medium or Low", "affectedParameter": "specific parameter name", "regulatoryFlag": "Yes or No", "regulatoryNote": "one sentence citing relevant regulation or SOP requirement" },
   "correctiveActions": [{ "title": "action title", "description": "specific description referencing actual SOP steps where possible", "timing": "immediate or short or long", "timingLabel": "e.g. Within 24 hours" }],
   "contacts": [{ "name": "exact name from directory", "role": "exact role from directory", "dept": "exact dept from directory", "deptLabel": "exact deptLabel from directory", "avatarClass": "exact avatarClass from directory", "initials": "exact initials from directory", "workflowPhase": 1, "why": "one sentence specific to this observation explaining why this person needs to act" }],
@@ -910,7 +910,7 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
 app.get('/sop/search', requireAuth, async (req, res) => {
   const q = (req.query.q || '').trim().toLowerCase();
   try {
-    const knownDocs = ['SOP-UP-001','SOP-UP-002','SOP-UP-003','SOP-UP-004','SOP-UP-005','BPR-UP-001'];
+    const knownDocs = ['WX-SOP-1001-03','WX-SOP-1002-03','WX-SOP-1003-03','WX-SOP-1004-03','WX-SOP-1005-03','WX-BPR-2001-03'];
     const allChunks = [];
     for (const docId of knownDocs) {
       const { data } = await supabase
@@ -973,6 +973,20 @@ app.get('/sop/:docId/chunk', requireAuth, async (req, res) => {
            || data[0];
 
   res.json(match);
+});
+
+// GET /sop/:docId/rationale — fetch rationale explanations for a BPR/SOP
+app.get('/sop/:docId/rationale', requireAuth, (req, res) => {
+  const docId = req.params.docId;
+  const filePath = path.join(__dirname, 'docs', 'rationale', docId + '.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    res.json(data);
+  } catch (err) {
+    if (err.code === 'ENOENT') return res.json([]);
+    console.error('Rationale fetch error:', err);
+    res.status(500).json({ error: 'Failed to load rationale' });
+  }
 });
 
 // GET /submissions — fetch all for the dashboard
@@ -1105,7 +1119,7 @@ Return ONLY valid JSON — no markdown, no preamble.
   "params": [{ "name": "parameter name", "value": "target value", "unit": "unit string", "range": "acceptable range or null", "flag": "critical or normal" }],
   "warnings": ["warning text — only include genuine safety or quality critical cautions"],
   "notes": ["general procedural note"],
-  "sources": [{ "code": "doc_id e.g. SOP-UP-001", "title": "document title", "section": "section number e.g. 8.6.1" }]
+  "sources": [{ "code": "doc_id e.g. WX-SOP-1001-03", "title": "document title", "section": "section number e.g. 8.6.1" }]
 }`
       }]
     });
