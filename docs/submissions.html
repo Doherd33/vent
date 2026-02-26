@@ -50,9 +50,9 @@ body {
 .app-name { font-family:'Instrument Serif',serif; font-size:16px; color:var(--text); display:flex; align-items:center; gap:7px; text-decoration:none; letter-spacing:-.02em; }
 .pip { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:breathe 3s ease-in-out infinite; display:inline-block; }
 .title-nav { display:flex; gap:2px; }
-.nav-tab { padding:4px 14px; font-size:12px; color:var(--mid); cursor:pointer; border-radius:5px; text-decoration:none; transition:all .15s; font-weight:300; }
+.nav-tab { padding:4px 14px; font-size:12px; color:var(--mid); cursor:pointer; border-radius:5px; text-decoration:none; transition:all .15s; font-weight:300; display:none; }
 .nav-tab:hover { color:var(--text); background:#404040; }
-.nav-tab.active { color:#fff; background:var(--accent); font-weight:400; }
+.nav-tab.active { color:#fff; background:var(--accent); font-weight:400; display:inline-block; }
 .title-bar-right { display:flex; align-items:center; gap:10px; font-size:11px; color:var(--mid); }
 .role-badge { font-size:10px; font-family:'JetBrains Mono',monospace; padding:2px 8px; border-radius:4px; letter-spacing:.05em; border:1px solid var(--border); }
 .user-name { font-weight:400; font-size:12px; }
@@ -752,7 +752,7 @@ function renderStats() {
   if(badge){badge.textContent=labels[role]||role.toUpperCase();badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
   var un=document.getElementById('titleUser');if(un)un.textContent=name;
   var allowed=rules[role]||[];
-  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){if(!allowed.some(function(x){return a.textContent.trim()===x}))a.style.display='none';});
+  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return a.textContent.trim()===x})?'inline-block':'none';});
 })();
 
 // Init
