@@ -164,19 +164,8 @@ app.get('/health', (req, res) => {
 // ─── AUTHENTICATION ROUTES ──────────────────────────────────────────────────
 
 // POST /auth/register — create a new user account
-// Registration is disabled for public access. Only admin can create accounts.
+// Prototype mode: open registration. For production, re-enable admin-only gate.
 app.post('/auth/register', async (req, res) => {
-  // ── ADMIN-ONLY GATE ──────────────────────────────────────────────────
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(403).json({ error: 'Registration is disabled. Contact your administrator.' });
-  }
-  const decoded = verifyToken(authHeader.split(' ')[1]);
-  if (!decoded || decoded.role !== 'admin') {
-    return res.status(403).json({ error: 'Only administrators can create accounts.' });
-  }
-  // ────────────────────────────────────────────────────────────────────
-
   const { email, password, name, role } = req.body;
   
   if (!email || !password || !name || !role) {
@@ -562,6 +551,64 @@ app.post('/admin/setup', async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
   res.json({ success: true, message: 'Audit log table exists and is working. Bootstrap entry written.' });
+});
+
+// POST /admin/bootstrap — create the first admin user (only works when zero users exist)
+app.post('/admin/bootstrap', async (req, res) => {
+  const { email, password, name } = req.body;
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: 'email, password, and name are required' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  // Check if any users exist
+  const { data: existing, error: checkErr } = await supabase
+    .from('users')
+    .select('id')
+    .limit(1);
+
+  if (checkErr) {
+    return res.status(500).json({ error: 'Could not check users table: ' + checkErr.message });
+  }
+
+  if (existing && existing.length > 0) {
+    return res.status(403).json({ error: 'Users already exist. Bootstrap is disabled. Use /auth/register with admin auth.' });
+  }
+
+  // Create admin user
+  const { hash, salt } = hashPassword(password);
+  const userId = crypto.randomUUID();
+
+  const { error } = await supabase.from('users').insert({
+    id: userId,
+    email: email.toLowerCase().trim(),
+    name: name.trim(),
+    role: 'admin',
+    password_hash: hash,
+    password_salt: salt
+  });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  const token = createToken({ id: userId, email: email.toLowerCase().trim(), name: name.trim(), role: 'admin' });
+
+  await auditLog({
+    userId: name.trim(),
+    userRole: 'admin',
+    action: 'admin_bootstrap',
+    entityType: 'user',
+    entityId: userId,
+    after: { email, name, role: 'admin' },
+    reason: 'First admin account created via bootstrap',
+    req
+  });
+
+  console.log(`[BOOTSTRAP] First admin created: ${email}`);
+  res.json({ ok: true, token, user: { id: userId, email, name: name.trim(), role: 'admin' } });
 });
 
 // GET /audit/:entityId — retrieve full audit trail for a submission or entity

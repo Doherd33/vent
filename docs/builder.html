@@ -1009,7 +1009,7 @@ if(!localStorage.getItem('vent_role')) window.location.replace('login.html');
 </div>
 
 <script>
-const SERVER = 'https://vent-production-8f8a.up.railway.app';
+const SERVER = window.location.origin;
 const userName = localStorage.getItem('vent_name') || 'Operator';
 const userRole = localStorage.getItem('vent_role') || 'operator';
 
