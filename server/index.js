@@ -1093,33 +1093,33 @@ app.post('/query', requireAuth, async (req, res) => {
       max_tokens: 1500,
       messages: [{
         role: 'user',
-        content: `You are the SOP Knowledge Assistant for a biologics manufacturing facility. An operator has asked a question. Answer from the SOP content below.
+        content: `You are a concise SOP assistant for a biologics manufacturing facility. Answer the operator's question using ONLY the SOP content below.
 
-RULES:
-- Answer ONLY from the SOP content provided. Do not invent steps or values.
-- Be CONCISE. Keep summary to 2–3 sentences max. Keep steps to 6 or fewer — summarise if needed.
-- If the operator asks for images, pictures, photos, or diagrams: describe what the relevant manual section shows in plain language and populate the "manualRef" field with the section name/number and document ID so they can look it up. The system will provide a link to the PDF.
-- Keep language plain and direct — this is for a floor operator, not a regulator.
-- Always cite the exact SOP document and section you drew from.
+CRITICAL RULES:
+- Be VERY concise. Summary: 1–2 sentences max. Steps: 5 or fewer.
+- Do NOT dump large blocks of text. Distil the key information.
+- If the operator asks for images, pictures, or diagrams: this system is text-only. Give a SHORT description of the equipment/component they asked about (2–3 sentences max describing what it looks like and key features). Do NOT list every detail from the manual.
+- Only include steps if the question is procedural. Only include params if asking about values.
+- Only include warnings if they are genuine safety risks.
+- Omit empty arrays — do not include steps, params, warnings, or notes if they would be empty.
 
-════ RELEVANT SOP SECTIONS ════
+════ SOP CONTENT ════
 ${sopContext}
-═══════════════════════════════
+═════════════════════
 
-Process area: ${area || 'Upstream'}
-Operator question: "${question}"
+Area: ${area || 'Upstream'}
+Question: "${question}"
 
-Return ONLY valid JSON — no markdown, no preamble.
+Return ONLY valid JSON — no markdown, no fences, no preamble.
 
 {
-  "category": "procedure or specification or troubleshooting or general or diagram",
-  "summary": "2–3 sentences answering the question in plain language. Be concise.",
-  "steps": [{ "n": 1, "action": "step instruction", "detail": "additional detail or null", "critical": false, "value": "specific value or target if relevant, else null" }],
-  "params": [{ "name": "parameter name", "value": "target value", "unit": "unit string", "range": "acceptable range or null", "flag": "critical or normal" }],
-  "warnings": ["only genuine safety or quality critical cautions"],
-  "notes": ["general procedural note — keep brief"],
-  "manualRef": [{ "docId": "document ID e.g. CEDEX-BHT-UM-001", "section": "section name/number with diagram or image", "description": "what the figure/diagram shows" }],
-  "sources": [{ "code": "doc_id e.g. WX-SOP-1001-03", "title": "document title", "section": "section number e.g. 8.6.1" }]
+  "category": "procedure|specification|troubleshooting|general",
+  "summary": "1–2 sentence answer. Be direct and concise.",
+  "steps": [{ "n": 1, "action": "short instruction", "detail": "extra detail or null", "critical": false, "value": "target value or null" }],
+  "params": [{ "name": "param", "value": "val", "unit": "unit", "range": "range or null", "flag": "critical or normal" }],
+  "warnings": ["only real safety warnings"],
+  "notes": ["brief note"],
+  "sources": [{ "code": "doc_id", "title": "doc title", "section": "section ref" }]
 }`
       }]
     });
