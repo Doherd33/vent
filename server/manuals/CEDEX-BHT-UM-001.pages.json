@@ -1,0 +1,242 @@
+{
+  "docId": "CEDEX-BHT-UM-001",
+  "totalPages": 504,
+  "sections": [
+    {
+      "section": "68305 Mannheim",
+      "page": 4
+    },
+    {
+      "section": "10 Result flags",
+      "page": 6
+    },
+    {
+      "section": "11 Troubleshooting",
+      "page": 6
+    },
+    {
+      "section": "12 ISE description",
+      "page": 6
+    },
+    {
+      "section": "13 ISE operation",
+      "page": 6
+    },
+    {
+      "section": "14 ISE maintenance",
+      "page": 6
+    },
+    {
+      "section": "15 ISE troubleshooting",
+      "page": 6
+    },
+    {
+      "section": "18 Revisions",
+      "page": 6
+    },
+    {
+      "section": "1 Safety",
+      "page": 13
+    },
+    {
+      "section": "2 Introduction to the instrument",
+      "page": 25
+    },
+    {
+      "section": "10. Check the external fluid containers.",
+      "page": 34
+    },
+    {
+      "section": "11. Remove the reagent disk (if last",
+      "page": 34
+    },
+    {
+      "section": "12. Log off the system.",
+      "page": 34
+    },
+    {
+      "section": "13. Shut down the system and switch off",
+      "page": 34
+    },
+    {
+      "section": "3 Hardware",
+      "page": 47
+    },
+    {
+      "section": "50 Hz (±5%) and 60 Hz (±5%)",
+      "page": 75
+    },
+    {
+      "section": "250 VA",
+      "page": 75
+    },
+    {
+      "section": "70 VA",
+      "page": 75
+    },
+    {
+      "section": "20 W halogen lamp",
+      "page": 76
+    },
+    {
+      "section": "2 Electrodes",
+      "page": 76
+    },
+    {
+      "section": "1 ISE Reference Electrode",
+      "page": 76
+    },
+    {
+      "section": "4 Software",
+      "page": 77
+    },
+    {
+      "section": "5 Daily operation",
+      "page": 135
+    },
+    {
+      "section": "10. Load the remaining bottles of the set.",
+      "page": 146
+    },
+    {
+      "section": "11. Press",
+      "page": 146
+    },
+    {
+      "section": "6 Special operations",
+      "page": 223
+    },
+    {
+      "section": "10. Type the value for the mean concentration and press",
+      "page": 234
+    },
+    {
+      "section": "11. Type the value for the standard deviation.",
+      "page": 234
+    },
+    {
+      "section": "12. Press",
+      "page": 234
+    },
+    {
+      "section": "13. Perform steps 7 through 12 for all tests you want to use.",
+      "page": 234
+    },
+    {
+      "section": "10. Press one of the test buttons.",
+      "page": 235
+    },
+    {
+      "section": "12. Define the first calibration value (target value).",
+      "page": 235
+    },
+    {
+      "section": "13. Define the next calibration value.",
+      "page": 235
+    },
+    {
+      "section": "14. Select the value for",
+      "page": 235
+    },
+    {
+      "section": "15. Press",
+      "page": 235
+    },
+    {
+      "section": "7 Configuration",
+      "page": 265
+    },
+    {
+      "section": "24 Hours",
+      "page": 298
+    },
+    {
+      "section": "12 Hours",
+      "page": 298
+    },
+    {
+      "section": "8 General maintenance",
+      "page": 307
+    },
+    {
+      "section": "9 Messages and alarms",
+      "page": 343
+    },
+    {
+      "section": "10. Log off the system.",
+      "page": 410
+    },
+    {
+      "section": "11. Shut down the system and switch off",
+      "page": 410
+    },
+    {
+      "section": "1. A specific test.",
+      "page": 475
+    },
+    {
+      "section": "2. The process of measuring a substance.",
+      "page": 475
+    },
+    {
+      "section": "1. A material of known composition or",
+      "page": 476
+    },
+    {
+      "section": "2. The test portion or test solution used for calibration of",
+      "page": 476
+    },
+    {
+      "section": "1. A device built into the pipetting",
+      "page": 476
+    },
+    {
+      "section": "2. The procedure of detecting a clot.",
+      "page": 476
+    },
+    {
+      "section": "1. A computer used for overall",
+      "page": 477
+    },
+    {
+      "section": "2. A laboratory computer that stores and processes",
+      "page": 477
+    },
+    {
+      "section": "1. A technical device or function that is part",
+      "page": 478
+    },
+    {
+      "section": "2. The availability of reagents and consumables on an",
+      "page": 478
+    },
+    {
+      "section": "1. A convention or standard that controls or",
+      "page": 479
+    },
+    {
+      "section": "2. A set of rules that guides how an activity should be",
+      "page": 479
+    },
+    {
+      "section": "1. Time between receiving a sample",
+      "page": 481
+    }
+  ],
+  "keywords": {
+    "waste": 16,
+    "maintenance": 16,
+    "main cover": 23,
+    "electrode": 23,
+    "calibration": 25,
+    "reagent disk": 27,
+    "cuvette": 27,
+    "touchscreen": 27,
+    "barcode": 27,
+    "probe": 28,
+    "alarm": 30,
+    "error": 40,
+    "hardware": 44,
+    "troubleshooting": 73
+  }
+}
