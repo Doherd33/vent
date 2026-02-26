@@ -816,12 +816,7 @@ body {
 }
 </style>
 <script>
-if(new URLSearchParams(window.location.search).has('dev')){
-  localStorage.setItem('vent_role','admin');
-  localStorage.setItem('vent_name','Dev Admin');
-  localStorage.setItem('vent_token','dev');
-}
-if(!localStorage.getItem('vent_role')) window.location.replace('login.html');
+if(!localStorage.getItem('vent_token')) window.location.replace('login.html');
 </script>
 </head>
 <body>
@@ -2512,25 +2507,6 @@ function toggleExpandRight() {
   });
 })();
 
-// ── ROLE-BASED NAV FILTERING ──
-(function filterNav() {
-  const role = localStorage.getItem('vent_role') || 'operator';
-  const allowed = {
-    operator: ['query.html', 'builder.html'],
-    qa: ['index.html', 'query.html', 'submissions.html', 'qa.html', 'workflow.html', 'builder.html'],
-    director: ['submissions.html', 'qa.html', 'dashboard.html', 'workflow.html', 'builder.html'],
-    msat: ['query.html', 'submissions.html', 'builder.html'],
-    engineering: ['query.html', 'submissions.html', 'qa.html', 'builder.html'],
-    admin: null // all
-  };
-  const list = allowed[role];
-  if (list) {
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-      const href = tab.getAttribute('href');
-      if (!list.includes(href)) tab.style.display = 'none';
-    });
-  }
-})();
 
 // ── BOOT ──
 init();

@@ -415,7 +415,7 @@ body {
   .new-btn { font-size: 11px; padding: 5px 10px; }
 }
 </style>
-<script>if(new URLSearchParams(window.location.search).has('dev')){localStorage.setItem('vent_role','admin');localStorage.setItem('vent_name','Dev Admin');localStorage.setItem('vent_token','dev');}if(!localStorage.getItem('vent_role'))window.location.replace('login.html');</script>
+<script>if(!localStorage.getItem('vent_token'))window.location.replace('login.html');</script>
 </head>
 <body>
 
@@ -552,7 +552,6 @@ function authFetch(url, opts) {
 (async function authGuard() {
   const token = localStorage.getItem('vent_token');
   if (!token) { window.location.replace('login.html'); return; }
-  if (token === 'dev') return;
   try {
     const res = await fetch(SERVER_URL + '/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
     if (!res.ok) throw new Error('expired');
