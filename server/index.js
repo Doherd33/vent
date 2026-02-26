@@ -99,13 +99,6 @@ console.log('[STATIC] docs path:', docsPath, '| exists:', fs.existsSync(docsPath
 try { console.log('[STATIC] files:', fs.readdirSync(docsPath).join(', ')); } catch(e) { console.log('[STATIC] readdir error:', e.message); }
 app.use(express.static(docsPath, { etag: false, lastModified: false, setHeaders: (res) => { res.setHeader('Cache-Control', 'no-store'); } }));
 
-// Serve PDF manuals from server/manuals/
-const manualsPath = path.join(__dirname, 'manuals');
-if (!fs.existsSync(manualsPath)) fs.mkdirSync(manualsPath, { recursive: true });
-app.use('/manuals', express.static(manualsPath, { setHeaders: (res, filePath) => {
-  if (filePath.endsWith('.pdf')) res.setHeader('Content-Type', 'application/pdf');
-}}));
-
 const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 // Read voyage key lazily so Railway env vars are always current
