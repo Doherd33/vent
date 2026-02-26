@@ -1,0 +1,12 @@
+{
+  "name": "vent",
+  "version": "1.0.0",
+  "description": "Vent — Intelligent operations platform for biopharmaceutical manufacturing",
+  "scripts": {
+    "start": "node server/index.js",
+    "build": "cd server && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

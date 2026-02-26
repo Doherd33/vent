@@ -136,7 +136,7 @@ app.get('/debug-rag', async (req, res) => {
 });
 
 // Explicit HTML page routes (more reliable than express.static on Railway)
-['index', 'query', 'qa', 'workflow', 'dashboard', 'submissions', 'login'].forEach(page => {
+['index', 'query', 'qa', 'workflow', 'dashboard', 'submissions', 'login', 'builder', 'readme', 'deck'].forEach(page => {
   app.get(`/${page === 'index' ? '' : page + '.html'}`, (req, res) => {
     const file = path.join(docsPath, page === 'index' ? 'index.html' : `${page}.html`);
     if (fs.existsSync(file)) return res.sendFile(file);
