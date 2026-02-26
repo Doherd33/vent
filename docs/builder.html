@@ -1596,10 +1596,11 @@ function openSopSearch() {
   '</div>';
   tabBar.innerHTML = html;
 
-  // Focus the input
+  // Focus the input and auto-load all SOPs
   setTimeout(() => {
     const inp = document.getElementById('sopSearchInput');
     if (inp) { inp.focus(); inp.select(); }
+    runSopSearch(); // show all SOPs immediately
   }, 50);
 }
 
@@ -1609,14 +1610,11 @@ async function runSopSearch() {
   const results = document.getElementById('sopSearchResults');
   if (!inp || !btn || !results) return;
   const q = inp.value.trim();
-  if (q.length < 2) {
-    results.innerHTML = '<div style="color:var(--red);font-size:12px;padding:8px 0">Please enter at least 2 characters.</div>';
-    return;
-  }
   btn.disabled = true;
   results.innerHTML = '<div class="search-status"><div class="dot"></div> Searching SOPs…</div>';
   try {
-    const res = await authFetch(SERVER + '/sop/search?q=' + encodeURIComponent(q));
+    const url = q.length >= 2 ? SERVER + '/sop/search?q=' + encodeURIComponent(q) : SERVER + '/sop/search';
+    const res = await authFetch(url);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Query failed');
     if (!data.length) {

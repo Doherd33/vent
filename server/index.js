@@ -905,6 +905,32 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
   }
 });
 
+// GET /sop/search?q=... — search SOPs by title/content (MUST be before /sop/:docId)
+// Fetches first chunk per doc_id, then filters server-side.
+app.get('/sop/search', requireAuth, async (req, res) => {
+  const q = (req.query.q || '').trim().toLowerCase();
+  try {
+    const knownDocs = ['SOP-UP-001','SOP-UP-002','SOP-UP-003','SOP-UP-004','SOP-UP-005','BPR-UP-001'];
+    const allChunks = [];
+    for (const docId of knownDocs) {
+      const { data } = await supabase
+        .from('sop_chunks')
+        .select('section_title, content')
+        .eq('doc_id', docId)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      if (data && data.length) allChunks.push({ doc_id: docId, ...data[0] });
+    }
+    const filtered = q.length >= 2
+      ? allChunks.filter(r => (r.content || '').toLowerCase().includes(q) || (r.section_title || '').toLowerCase().includes(q) || (r.doc_id || '').toLowerCase().includes(q))
+      : allChunks;
+    res.json(filtered);
+  } catch (err) {
+    console.error('SOP search error:', err);
+    res.status(500).json({ error: 'Failed to search SOPs' });
+  }
+});
+
 // GET /sop/:docId — fetch all chunks for a document
 app.get('/sop/:docId', requireAuth, async (req, res) => {
   const { data, error } = await supabase
@@ -938,10 +964,8 @@ app.get('/sop/:docId/chunk', requireAuth, async (req, res) => {
     return res.json(data[0] || null);
   }
 
-  // Find the chunk whose section_title best matches the requested section number
-  // e.g. section="8.6.1.4" should match chunk titled "8.6.1 Cell Count and Viability"
-  const prefix = section.split('.').slice(0, 3).join('.');  // e.g. "8.6.1"
-  const broader = section.split('.').slice(0, 2).join('.');  // e.g. "8.6"
+  const prefix = section.split('.').slice(0, 3).join('.');
+  const broader = section.split('.').slice(0, 2).join('.');
 
   let match = data.find(c => c.section_title && c.section_title.startsWith(prefix))
            || data.find(c => c.section_title && c.section_title.startsWith(broader))
@@ -949,27 +973,6 @@ app.get('/sop/:docId/chunk', requireAuth, async (req, res) => {
            || data[0];
 
   res.json(match);
-});
-
-// GET /sop/search?q=... — search SOPs by title/content
-app.get('/sop/search', requireAuth, async (req, res) => {
-  const q = (req.query.q || '').trim();
-  if (!q || q.length < 2) return res.status(400).json({ error: 'Query too short' });
-  try {
-    const { data, error } = await supabase
-      .from('sop_chunks')
-      .select('doc_id, section_title, content')
-      .ilike('content', `%${q}%`);
-    if (error) throw error;
-    const grouped = {};
-    (data || []).forEach(row => {
-      if (!grouped[row.doc_id]) grouped[row.doc_id] = row;
-    });
-    res.json(Object.values(grouped));
-  } catch (err) {
-    console.error('SOP search error:', err);
-    res.status(500).json({ error: 'Failed to search SOPs' });
-  }
 });
 
 // GET /submissions — fetch all for the dashboard
