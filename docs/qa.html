@@ -13,7 +13,7 @@ body {
   color: #cccccc;
   height: 100vh;
   display: grid;
-  grid-template-rows: 35px 1fr 22px;
+  grid-template-rows: 42px 1fr 22px;
   overflow: hidden;
 }
 
@@ -23,22 +23,27 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 16px;
   border-bottom: 1px solid #111;
   user-select: none;
+  height: 42px;
+  flex-shrink: 0;
 }
-.title-bar-left { display: flex; align-items: center; gap: 16px; }
-.app-name { font-size: 12px; font-weight: 600; color: #cccccc; letter-spacing: 1px; }
-.title-nav { display: flex; gap: 2px; }
-.nav-tab {
-  padding: 4px 14px; font-size: 12px; color: #8e8e8e;
-  cursor: pointer; border-radius: 3px; text-decoration: none; transition: all 0.15s;
-}
-.nav-tab:hover { color: #cccccc; background: #404040; }
-.nav-tab.active { color: #ffffff; background: #007acc; }
-.title-bar-right { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #8e8e8e; }
-.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ec9b0; animation: pulse 2.5s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+.title-bar-left { display:flex; align-items:center; gap:16px; }
+.app-name { font-family:'Instrument Serif',serif; font-size:16px; color:var(--text); display:flex; align-items:center; gap:7px; text-decoration:none; letter-spacing:-.02em; }
+.pip { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:breathe 3s ease-in-out infinite; display:inline-block; }
+@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+.title-nav { display:flex; gap:2px; }
+.nav-tab { padding:4px 14px; font-size:12px; color:var(--mid); cursor:pointer; border-radius:5px; text-decoration:none; transition:all .15s; font-weight:300; }
+.nav-tab:hover { color:var(--text); background:#404040; }
+.nav-tab.active { color:#fff; background:var(--accent); font-weight:400; }
+.title-bar-right { display:flex; align-items:center; gap:10px; font-size:11px; color:var(--mid); }
+.role-badge { font-size:10px; font-family:'JetBrains Mono',monospace; padding:2px 8px; border-radius:4px; letter-spacing:.05em; border:1px solid var(--border); }
+.user-name { font-weight:400; font-size:12px; }
+.sign-out-btn { background:none; border:1px solid var(--border); border-radius:4px; color:var(--dim); font-size:10px; padding:2px 8px; cursor:pointer; font-family:inherit; transition:all .15s; }
+.sign-out-btn:hover { color:var(--text); border-color:var(--borderhi); }
+.mobile-hamburger { display:none; background:none; border:none; color:var(--mid); cursor:pointer; padding:4px; }
+@media(max-width:768px){.mobile-hamburger{display:block}.title-nav{display:none;position:absolute;top:42px;left:0;right:0;background:#323233;flex-direction:column;padding:8px;border-bottom:1px solid #111;z-index:999}.title-nav.open{display:flex}}
 
 /* ── WORKBENCH ── */
 .workbench {
@@ -373,7 +378,7 @@ body {
   .title-bar-right { font-size: 10px; gap: 6px; }
   .title-bar-right .s-sep { display: none; }
 
-  body { grid-template-rows: 35px 1fr 22px; }
+  body { grid-template-rows: 42px 1fr 22px; }
   .workbench {
     grid-template-columns: 1fr !important;
     grid-template-rows: auto 1fr auto !important;
@@ -423,9 +428,9 @@ body {
 <!-- TITLE BAR -->
 <div class="title-bar">
   <div class="title-bar-left">
-    <span class="app-name">&#11041; VENT</span>
+    <a href="index.html" class="app-name">Vent<span class="pip"></span></a>
     <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
-    <nav class="title-nav">
+    <nav class="title-nav" id="mainNav">
       <a href="index.html"       class="nav-tab">Submit</a>
       <a href="query.html"       class="nav-tab">Query SOPs</a>
       <a href="submissions.html" class="nav-tab">Submissions</a>
@@ -435,11 +440,10 @@ body {
       <a href="dashboard.html"   class="nav-tab">Dashboard</a>
     </nav>
   </div>
-  <div class="title-bar-right">
-    <div class="live-dot"></div>
-    <span>System Online</span>
-    <span class="s-sep">|</span>
-    <span id="titleUser"></span>
+  <div class="title-bar-right" id="titleBarRight">
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'">Sign out</button>
   </div>
 </div>
 
@@ -1380,13 +1384,18 @@ function closeRight(){
   if(eb){eb.innerHTML='&#10697;';eb.title='Expand panel';}
 }
 
+// ── NAV: role filtering + user display ──
 (function(){
-  const role=localStorage.getItem('vent_role');
-  const name=localStorage.getItem('vent_name');
-  if(!role)return;
-  const labels={operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
-  const el=document.getElementById('titleUser');
-  if(el)el.textContent=(name||'')+' \u00b7 '+(labels[role]||role);
+  var role=localStorage.getItem('vent_role')||'operator';
+  var name=localStorage.getItem('vent_name')||'';
+  var rules={operator:['Submit','Query SOPs','Doc Builder'],qa:['Submit','Query SOPs','Submissions','Doc Builder','QA Control'],director:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Dashboard'],msat:['Submit','Query SOPs','Submissions','Doc Builder'],engineering:['Submit','Query SOPs','Submissions','Doc Builder'],admin:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Workflow','Dashboard']};
+  var colors={operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
+  var labels={operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
+  var badge=document.getElementById('roleBadge');
+  if(badge){badge.textContent=labels[role]||role.toUpperCase();badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
+  var un=document.getElementById('titleUser');if(un)un.textContent=name;
+  var allowed=rules[role]||[];
+  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){if(!allowed.some(function(x){return a.textContent.trim()===x}))a.style.display='none';});
 })();
 
 // ─── AUTHOR IDENTITY SYSTEM ──────────────────────────────
