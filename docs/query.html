@@ -1514,43 +1514,63 @@ async function getPdfDoc(docId) {
 }
 
 function findRelevantPages(pageIndex, sources, query) {
-  const pages = new Set();
+  const diagramSet = new Set(pageIndex.diagramPages || []);
+  const diagramHits = new Set();  // pages with BOTH keyword match + images
+  const textHits = new Set();     // pages with keyword match only (fallback)
 
-  // Extract key words from source sections for fuzzy matching
+  // 1. Match query keywords to diagram-keyword index (highest priority)
+  const qLower = query.toLowerCase();
+  for (const [term, page] of Object.entries(pageIndex.keywordDiagrams || {})) {
+    if (qLower.includes(term)) diagramHits.add(page);
+  }
+
+  // 2. Match query keywords to regular keyword index
+  for (const [term, page] of Object.entries(pageIndex.keywords || {})) {
+    if (qLower.includes(term)) {
+      if (diagramSet.has(page)) diagramHits.add(page);
+      else textHits.add(page);
+    }
+  }
+
+  // 3. Fuzzy match source sections → page index entries
   for (const src of sources) {
     const secWords = (src.section || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2);
-
     for (const entry of pageIndex.sections || []) {
       const entryLower = entry.section.toLowerCase();
-      // Check if any source section words match the page index entry
       const matchCount = secWords.filter(w => entryLower.includes(w)).length;
       if (matchCount >= 2 || (secWords.length === 1 && matchCount === 1)) {
-        pages.add(entry.page);
+        if (diagramSet.has(entry.page)) diagramHits.add(entry.page);
+        else textHits.add(entry.page);
       }
     }
   }
 
-  // Match query keywords to keyword index — this is the most reliable
-  const qLower = query.toLowerCase();
-  for (const [term, page] of Object.entries(pageIndex.keywords || {})) {
-    if (qLower.includes(term)) {
-      pages.add(page);
-    }
-  }
-
-  // If no matches found, try broader keyword matching from the query
-  if (pages.size === 0) {
+  // 4. Broader keyword fallback from query words
+  if (diagramHits.size === 0 && textHits.size === 0) {
     const qWords = qLower.replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3);
     for (const entry of pageIndex.sections || []) {
       const entryLower = entry.section.toLowerCase();
       if (qWords.some(w => entryLower.includes(w))) {
-        pages.add(entry.page);
+        if (diagramSet.has(entry.page)) diagramHits.add(entry.page);
+        else textHits.add(entry.page);
       }
     }
   }
 
-  // Return sorted, max 3 pages
-  return [...pages].sort((a, b) => a - b).slice(0, 3);
+  // 5. If still no diagram hits, find nearest diagram page to any text hit
+  if (diagramHits.size === 0 && textHits.size > 0 && diagramSet.size > 0) {
+    const diagArray = [...diagramSet].sort((a, b) => a - b);
+    for (const tp of textHits) {
+      // Find closest diagram page within ±5 pages of the text hit
+      for (const dp of diagArray) {
+        if (Math.abs(dp - tp) <= 5) { diagramHits.add(dp); break; }
+      }
+    }
+  }
+
+  // Prioritise diagram pages, fall back to text pages
+  const result = diagramHits.size > 0 ? [...diagramHits] : [...textHits];
+  return result.sort((a, b) => a - b).slice(0, 3);
 }
 
 async function renderPdfPages(sources, query) {

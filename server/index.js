@@ -1110,7 +1110,7 @@ app.post('/query', requireAuth, async (req, res) => {
 CRITICAL RULES:
 - Be VERY concise. Summary: 1–2 sentences max. Steps: 5 or fewer.
 - Do NOT dump large blocks of text. Distil the key information.
-- If the operator asks for images, pictures, or diagrams: this system is text-only. Give a SHORT description of the equipment/component they asked about (2–3 sentences max describing what it looks like and key features). Do NOT list every detail from the manual.
+- If the operator asks for images, pictures, or diagrams: the system will automatically show relevant manual pages with diagrams alongside your answer. Just give a SHORT description of the component (1–2 sentences) and mention that a diagram is shown below.
 - Only include steps if the question is procedural. Only include params if asking about values.
 - Only include warnings if they are genuine safety risks.
 - Omit empty arrays — do not include steps, params, warnings, or notes if they would be empty.
