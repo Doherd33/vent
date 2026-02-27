@@ -859,6 +859,25 @@ body {
   color: var(--text); font-size: 12.5px; font-family: 'DM Sans', sans-serif;
 }
 .hs-search-input::placeholder { color: var(--dim); }
+.hs-search-hint {
+  font-size: 9px; color: var(--dim); white-space: nowrap; opacity: 0;
+  transition: opacity .2s; pointer-events: none;
+}
+.hs-search-input:focus ~ .hs-search-hint { opacity: 1; }
+.hs-search-spinner {
+  display: none; width: 14px; height: 14px; flex-shrink: 0;
+  border: 2px solid var(--border); border-top-color: var(--acc);
+  border-radius: 50%; animation: hsSpin .6s linear infinite;
+}
+.hs-search-spinner.active { display: block; }
+.hs-search-spinner.active ~ .hs-search-hint { display: none; }
+@keyframes hsSpin { to { transform: rotate(360deg); } }
+.hs-ai-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 9.5px; color: var(--acc); padding: 2px 8px; margin: 4px 16px 0;
+  background: rgba(99,102,241,.08); border-radius: 6px;
+}
+.hs-ai-badge svg { width: 10px; height: 10px; }
 
 .hs-list {
   flex: 1; overflow-y: auto; padding: 8px 12px 20px;
@@ -1809,8 +1828,10 @@ body {
     </button>
   </div>
   <div class="hs-search-row">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input class="hs-search-input" id="hsSearchInput" placeholder="Search conversations…" oninput="filterSessions()">
+    <svg class="hs-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="hs-search-input" id="hsSearchInput" placeholder="Describe what you're looking for…" oninput="filterSessions()" onkeydown="if(event.key==='Enter'){event.preventDefault();aiSearchSessions();}">
+    <div class="hs-search-spinner" id="hsSearchSpinner"></div>
+    <span class="hs-search-hint" id="hsSearchHint">Enter ↵ for AI search</span>
   </div>
   <button class="hs-new-btn" onclick="startNewChat(); closeHistorySidebar();">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -2434,10 +2455,18 @@ function filterSessions() {
     return false;
   });
   if (!matches.length) {
-    list.innerHTML = '<div class="hs-empty">No matching conversations.</div>';
+    list.innerHTML = '<div class="hs-empty">No exact matches.<br><span style="font-size:11px;color:var(--dim)">Press Enter for AI-powered search</span></div>';
     return;
   }
+  renderFilteredSessions(matches);
+}
+
+function renderFilteredSessions(matches, isAI) {
+  var list = document.getElementById('hsList');
   var html = '';
+  if (isAI) {
+    html += '<div class="hs-ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4v1a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-1a3 3 0 0 1 3-3V6a4 4 0 0 1 4-4z"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/></svg>AI results</div>';
+  }
   matches.forEach(function(s) {
     var active = s.id === _currentSessionId ? ' active' : '';
     var time = new Date(s.updated_at || s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -2449,6 +2478,48 @@ function filterSessions() {
     '</div>';
   });
   list.innerHTML = html;
+}
+
+async function aiSearchSessions() {
+  var q = (document.getElementById('hsSearchInput').value || '').trim();
+  if (!q) return;
+  var spinner = document.getElementById('hsSearchSpinner');
+  var list = document.getElementById('hsList');
+  spinner.classList.add('active');
+  list.innerHTML = '<div class="hs-empty" style="color:var(--dim)">Searching with AI…</div>';
+  try {
+    // Server fetches sessions + messages from Supabase directly
+    var res = await authFetch('/chat/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q })
+    });
+    var data = await res.json();
+    spinner.classList.remove('active');
+    if (data.error) {
+      list.innerHTML = '<div class="hs-empty">Search failed: ' + escHtml(data.error) + '</div>';
+      return;
+    }
+    if (!data.matches || !data.matches.length) {
+      list.innerHTML = '<div class="hs-empty">No conversations found for that description.</div>';
+      return;
+    }
+    // Order results by the AI's ranking, match against local list
+    var ordered = [];
+    data.matches.forEach(function(id) {
+      var s = _sessionsList.find(function(x) { return x.id === id; });
+      if (s) ordered.push(s);
+    });
+    if (!ordered.length) {
+      list.innerHTML = '<div class="hs-empty">No conversations found for that description.</div>';
+      return;
+    }
+    renderFilteredSessions(ordered, true);
+  } catch (err) {
+    spinner.classList.remove('active');
+    console.error('AI search error:', err);
+    list.innerHTML = '<div class="hs-empty">Search failed. Try again.</div>';
+  }
 }
 
 // ── EXPORT CHAT TO DOC BUILDER ──

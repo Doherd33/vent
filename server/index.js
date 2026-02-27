@@ -2347,6 +2347,67 @@ Create 3-8 meaningful steps that capture the essential information from the conv
   }
 });
 
+// ── AI-POWERED CHAT SEARCH ──
+app.post('/chat/search', requireAuth, async (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query) return res.status(400).json({ error: 'query required' });
+
+    // Fetch all sessions WITH messages from Supabase
+    const { data: sessions, error } = await supabase
+      .from('chat_sessions')
+      .select('id, title, messages, created_at')
+      .eq('user_id', req.user.sub || req.user.email)
+      .order('updated_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    if (!sessions || !sessions.length) {
+      return res.json({ matches: [] });
+    }
+
+    // Build rich summaries from actual message content
+    const summaries = sessions.map((s, i) => {
+      let preview = '';
+      const msgs = s.messages || [];
+      let count = 0;
+      for (let j = 0; j < msgs.length && count < 3; j++) {
+        if (msgs[j].role === 'user') {
+          preview += (preview ? ' | ' : '') + (msgs[j].content || '').substring(0, 150);
+          count++;
+        }
+      }
+      return `[${i}] ID=${s.id} | Title: ${s.title || 'Untitled'} | User messages: ${preview || '(empty)'}`;
+    }).join('\n');
+
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 500,
+      messages: [{
+        role: 'user',
+        content: `You are searching through conversations from a biologics manufacturing facility's Q&A system.
+
+The user is looking for: "${query}"
+
+Here are the conversations with their titles and user messages:
+${summaries}
+
+Return ONLY a JSON array of the matching conversation IDs (strings), ordered by relevance. If nothing matches, return an empty array [].
+Example: ["abc-123", "def-456"]
+
+Be generous with matching — the user may describe the conversation loosely or use different words than what's in the title/preview. Think about what the conversation was likely about and match if the intent is similar.`
+      }]
+    });
+
+    let text = msg.content[0].text.trim();
+    text = text.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+    const matchedIds = JSON.parse(text);
+    res.json({ matches: matchedIds });
+  } catch (err) {
+    console.error('Chat search error:', err);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 // ── DEV TO-DO LIST ──
 
 // GET /todos — list todos for the current user, filtered by page
