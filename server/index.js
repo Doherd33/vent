@@ -917,6 +917,64 @@ Return ONLY valid JSON — no markdown fences, no preamble, no explanation outsi
   }
 });
 
+// POST /sop/discover — AI-powered natural language SOP finder
+app.post('/sop/discover', requireAuth, async (req, res) => {
+  const { description } = req.body;
+  if (!description || description.length < 5) {
+    return res.status(400).json({ error: 'Description too short' });
+  }
+
+  try {
+    // Use Voyage to find semantically relevant chunks
+    const chunks = await getRelevantChunks(description, 'General');
+    if (!chunks.length) {
+      return res.json({ message: 'No matching SOPs found for that description.', results: [] });
+    }
+
+    // Deduplicate by doc_id, keeping highest similarity
+    const docMap = {};
+    chunks.forEach(c => {
+      if (!docMap[c.doc_id] || c.similarity > docMap[c.doc_id].similarity) {
+        docMap[c.doc_id] = c;
+      }
+    });
+    const uniqueDocs = Object.values(docMap);
+
+    // Ask Claude to summarise which SOPs are relevant and why
+    const sopList = uniqueDocs.map(c =>
+      `- ${c.doc_id} (${c.doc_title}): Section "${c.section_title}" — ${c.content.substring(0, 200)}`
+    ).join('\n');
+
+    const aiRes = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 600,
+      messages: [{ role: 'user', content: `A user in a biologics manufacturing facility described what they are working on:
+
+"${description}"
+
+Here are the SOP documents that matched their description:
+${sopList}
+
+Respond with a short, helpful message (2-4 sentences max) explaining which SOPs are relevant and why. Be conversational and friendly. Reference each SOP by its doc_id. Do NOT use markdown or formatting — plain text only.` }]
+    });
+
+    const message = aiRes.content[0]?.text || 'Found some relevant SOPs for you.';
+
+    res.json({
+      message,
+      results: uniqueDocs.map(c => ({
+        doc_id: c.doc_id,
+        doc_title: c.doc_title || '',
+        section_title: c.section_title,
+        similarity: c.similarity
+      }))
+    });
+  } catch (err) {
+    console.error('SOP discover error:', err);
+    res.status(500).json({ error: 'Failed to find SOPs' });
+  }
+});
+
 // GET /sop/search?q=... — search SOPs by title/content (MUST be before /sop/:docId)
 // Fetches first chunk per doc_id, then filters server-side.
 app.get('/sop/search', requireAuth, async (req, res) => {
@@ -998,6 +1056,59 @@ app.get('/sop/:docId/rationale', requireAuth, (req, res) => {
     if (err.code === 'ENOENT') return res.json([]);
     console.error('Rationale fetch error:', err);
     res.status(500).json({ error: 'Failed to load rationale' });
+  }
+});
+
+// POST /sop/:docId/ask — ask a question scoped to a single SOP document
+app.post('/sop/:docId/ask', requireAuth, async (req, res) => {
+  const { question } = req.body;
+  const docId = req.params.docId;
+
+  if (!question || question.length < 3) {
+    return res.status(400).json({ error: 'Question too short' });
+  }
+
+  try {
+    // Fetch all chunks for this specific document
+    const { data: chunks, error } = await supabase
+      .from('sop_chunks')
+      .select('section_title, content')
+      .eq('doc_id', docId)
+      .order('created_at', { ascending: true });
+
+    if (error || !chunks || !chunks.length) {
+      return res.status(404).json({ error: 'No content found for this document' });
+    }
+
+    const sopContext = chunks
+      .map(c => `Section: ${c.section_title}\n${c.content}`)
+      .join('\n\n---\n\n');
+
+    console.log(`[SOP-ASK] "${question.slice(0, 60)}" in ${docId} — ${chunks.length} sections`);
+
+    const aiRes = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 800,
+      messages: [{ role: 'user', content: `You are a concise SOP assistant. Answer the operator's question using ONLY the content from document ${docId} below.
+
+RULES:
+- Be concise — 2-4 sentences max unless a detailed procedure is needed.
+- Reference the specific section(s) where the answer comes from.
+- If the answer isn't in this document, say so clearly.
+- Plain text only, no markdown formatting.
+
+════ ${docId} CONTENT ════
+${sopContext}
+═════════════════════════
+
+Question: "${question}"` }]
+    });
+
+    const answer = aiRes.content[0]?.text || 'No answer could be generated.';
+    res.json({ answer });
+  } catch (err) {
+    console.error('SOP ask error:', err);
+    res.status(500).json({ error: 'Failed to answer question' });
   }
 });
 
@@ -1974,6 +2085,282 @@ Return ONLY valid JSON — no markdown fences, no preamble:
   } catch (error) {
     console.error('Compliance check error:', error);
     res.status(500).json({ error: 'Compliance check failed: ' + error.message });
+  }
+});
+
+// ─── CHAT SESSIONS (persistent conversation history) ─────────────────────────
+// Table: chat_sessions (id uuid PK, user_id text, title text, messages jsonb, created_at timestamptz, updated_at timestamptz)
+// Create in Supabase SQL editor:
+//   CREATE TABLE IF NOT EXISTS chat_sessions (
+//     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+//     user_id text NOT NULL,
+//     title text DEFAULT 'New conversation',
+//     messages jsonb DEFAULT '[]'::jsonb,
+//     created_at timestamptz DEFAULT now(),
+//     updated_at timestamptz DEFAULT now()
+//   );
+//   CREATE INDEX idx_chat_sessions_user ON chat_sessions(user_id);
+
+// Auto-create table on first use
+let _chatTableReady = false;
+async function ensureChatTable() {
+  if (_chatTableReady) return;
+  try {
+    // Try a simple select to see if table exists
+    const { error } = await supabase.from('chat_sessions').select('id').limit(1);
+    if (error && error.message.includes('does not exist')) {
+      // Table doesn't exist — try to create via rpc (requires a migration function) or just log
+      console.log('[CHAT] chat_sessions table not found. Please create it in the Supabase SQL editor.');
+      console.log('[CHAT] SQL: CREATE TABLE chat_sessions (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, user_id text NOT NULL, title text DEFAULT \'New conversation\', messages jsonb DEFAULT \'[]\'::jsonb, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now()); CREATE INDEX idx_chat_sessions_user ON chat_sessions(user_id);');
+    }
+    _chatTableReady = true;
+  } catch { _chatTableReady = true; }
+}
+
+// GET /chat/sessions — list all sessions for the current user
+app.get('/chat/sessions', requireAuth, async (req, res) => {
+  await ensureChatTable();
+  try {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select('id, title, created_at, updated_at')
+      .eq('user_id', req.user.sub || req.user.email)
+      .order('updated_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error('Chat sessions list error:', err);
+    res.status(500).json({ error: 'Failed to load chat sessions' });
+  }
+});
+
+// POST /chat/sessions — create a new session
+app.post('/chat/sessions', requireAuth, async (req, res) => {
+  const { title, messages } = req.body;
+  try {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .insert({
+        user_id: req.user.sub || req.user.email,
+        title: title || 'New conversation',
+        messages: messages || []
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('Chat session create error:', err);
+    res.status(500).json({ error: 'Failed to create chat session' });
+  }
+});
+
+// POST /chat/analyse — analyse all chat sessions for trends (uses Claude)
+app.post('/chat/analyse', requireAuth, async (req, res) => {
+  await ensureChatTable();
+  try {
+    const { data: sessions, error } = await supabase
+      .from('chat_sessions')
+      .select('id, title, messages, created_at, updated_at')
+      .eq('user_id', req.user.sub || req.user.email)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    if (!sessions || sessions.length === 0) {
+      return res.json({
+        totalSessions: 0, totalMessages: 0, dateRange: null,
+        html: '<p style="color:var(--dim)">No chat sessions to analyse yet. Start some conversations first.</p>'
+      });
+    }
+
+    let totalMessages = 0;
+    const digest = sessions.map(s => {
+      const msgs = (s.messages || []).filter(m => m.role === 'user');
+      totalMessages += msgs.length;
+      const questions = msgs.map(m => m.content).join(' | ');
+      return `Session "${s.title}" (${new Date(s.created_at).toLocaleDateString()}): ${questions}`;
+    }).join('\n');
+
+    const oldest = sessions[sessions.length - 1].created_at;
+    const newest = sessions[0].created_at;
+    const dateRange = new Date(oldest).toLocaleDateString() + ' – ' + new Date(newest).toLocaleDateString();
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [{
+        role: 'user',
+        content: `You are analysing chat history data from a biologics manufacturing facility's SOP query system called "Vent". Operators, QA, and engineers use this to ask questions about standard operating procedures, equipment, troubleshooting, and processes.
+
+Below is a digest of all ${sessions.length} chat sessions (${totalMessages} user messages) from ${dateRange}. Each line shows the session title and the user questions asked.
+
+════ CHAT SESSION DIGEST ════
+${digest}
+══════════════════════════════
+
+Analyse this data and produce a concise report in HTML format (no markdown, no code fences). Structure it as:
+
+<h3>Top Topics</h3>
+<ul><li><strong>Topic</strong> — brief description of what people ask about (approximate frequency)</li>...</ul>
+
+<h3>Common Question Types</h3>
+<ul><li><strong>Type</strong> — explanation</li>...</ul>
+
+<h3>Trending Areas</h3>
+<p>Brief paragraph about what areas/equipment/processes are getting the most attention recently.</p>
+
+<h3>Insights</h3>
+<p>1-2 paragraph summary: any patterns you notice, knowledge gaps, areas where better documentation might help, or training opportunities.</p>
+
+Keep it concise and actionable. Use simple HTML tags only (h3, ul, li, p, strong, em). No CSS classes or styles.`
+      }]
+    });
+
+    const html = message.content[0].text.replace(/```html|```/g, '').trim();
+
+    res.json({ totalSessions: sessions.length, totalMessages, dateRange, html });
+  } catch (err) {
+    console.error('Chat analysis error:', err);
+    res.status(500).json({ error: 'Analysis failed: ' + err.message });
+  }
+});
+
+// GET /chat/sessions/:id — get a single session with messages
+app.get('/chat/sessions/:id', requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.sub || req.user.email)
+      .single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Session not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('Chat session get error:', err);
+    res.status(500).json({ error: 'Failed to load chat session' });
+  }
+});
+
+// PUT /chat/sessions/:id — update session (title, messages)
+app.put('/chat/sessions/:id', requireAuth, async (req, res) => {
+  const { title, messages } = req.body;
+  const update = { updated_at: new Date().toISOString() };
+  if (title !== undefined) update.title = title;
+  if (messages !== undefined) update.messages = messages;
+  try {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .update(update)
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.sub || req.user.email)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('Chat session update error:', err);
+    res.status(500).json({ error: 'Failed to update chat session' });
+  }
+});
+
+// DELETE /chat/sessions/:id — delete a session
+app.delete('/chat/sessions/:id', requireAuth, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('chat_sessions')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.sub || req.user.email);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Chat session delete error:', err);
+    res.status(500).json({ error: 'Failed to delete chat session' });
+  }
+});
+
+// ── DEV TO-DO LIST ──
+
+// GET /todos — list all todos for the current user
+app.get('/todos', requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('dev_todos')
+      .select('*')
+      .eq('user_id', req.user.sub || req.user.email)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error('Todos list error:', err);
+    res.status(500).json({ error: 'Failed to load todos' });
+  }
+});
+
+// POST /todos — create a new todo
+app.post('/todos', requireAuth, async (req, res) => {
+  const { title, parent_id } = req.body;
+  if (!title) return res.status(400).json({ error: 'title required' });
+  try {
+    const { data, error } = await supabase
+      .from('dev_todos')
+      .insert({
+        user_id: req.user.sub || req.user.email,
+        title,
+        parent_id: parent_id || null
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('Todo create error:', err);
+    res.status(500).json({ error: 'Failed to create todo' });
+  }
+});
+
+// PATCH /todos/:id — update a todo (title, done, position)
+app.patch('/todos/:id', requireAuth, async (req, res) => {
+  const { title, done, position } = req.body;
+  const update = { updated_at: new Date().toISOString() };
+  if (title !== undefined) update.title = title;
+  if (done !== undefined) update.done = done;
+  if (position !== undefined) update.position = position;
+  try {
+    const { data, error } = await supabase
+      .from('dev_todos')
+      .update(update)
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.sub || req.user.email)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('Todo update error:', err);
+    res.status(500).json({ error: 'Failed to update todo' });
+  }
+});
+
+// DELETE /todos/:id — delete a todo (cascade removes children)
+app.delete('/todos/:id', requireAuth, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('dev_todos')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.sub || req.user.email);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Todo delete error:', err);
+    res.status(500).json({ error: 'Failed to delete todo' });
   }
 });
 
