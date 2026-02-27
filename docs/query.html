@@ -1489,8 +1489,8 @@ let _pageIndexCache = {}; // cache page index by docId
 
 async function getPdfjsLib() {
   if (_pdfjsLib) return _pdfjsLib;
-  _pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs');
-  _pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
+  _pdfjsLib = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs');
+  _pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';
   return _pdfjsLib;
 }
 
@@ -1516,25 +1516,36 @@ async function getPdfDoc(docId) {
 function findRelevantPages(pageIndex, sources, query) {
   const pages = new Set();
 
-  // Match source section titles to page index
+  // Extract key words from source sections for fuzzy matching
   for (const src of sources) {
-    const secLower = (src.section || '').toLowerCase();
-    const titleLower = (src.title || '').toLowerCase();
+    const secWords = (src.section || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2);
 
     for (const entry of pageIndex.sections || []) {
       const entryLower = entry.section.toLowerCase();
-      if (entryLower.includes(secLower) || secLower.includes(entryLower) ||
-          entryLower.includes(titleLower)) {
+      // Check if any source section words match the page index entry
+      const matchCount = secWords.filter(w => entryLower.includes(w)).length;
+      if (matchCount >= 2 || (secWords.length === 1 && matchCount === 1)) {
         pages.add(entry.page);
       }
     }
   }
 
-  // Match query keywords to keyword index
+  // Match query keywords to keyword index — this is the most reliable
   const qLower = query.toLowerCase();
   for (const [term, page] of Object.entries(pageIndex.keywords || {})) {
     if (qLower.includes(term)) {
       pages.add(page);
+    }
+  }
+
+  // If no matches found, try broader keyword matching from the query
+  if (pages.size === 0) {
+    const qWords = qLower.replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3);
+    for (const entry of pageIndex.sections || []) {
+      const entryLower = entry.section.toLowerCase();
+      if (qWords.some(w => entryLower.includes(w))) {
+        pages.add(entry.page);
+      }
     }
   }
 
@@ -1543,36 +1554,44 @@ function findRelevantPages(pageIndex, sources, query) {
 }
 
 async function renderPdfPages(sources, query) {
-  // Find which doc IDs have PDFs (check for manual-type docs)
+  // Find which doc IDs have PDFs
   const docIds = [...new Set(sources.map(s => s.code))];
+
+  // Find the container in the most recent answer card
+  const containers = document.querySelectorAll('.pdf-pages-section');
+  const container = containers[containers.length - 1];
+  if (!container) return;
 
   for (const docId of docIds) {
     try {
+      // Get page index for this doc
       const pageIndex = await getPageIndex(docId);
-      if (!pageIndex.totalPages) continue; // no page index for this doc
+      if (!pageIndex.totalPages) continue;
 
       const pages = findRelevantPages(pageIndex, sources, query);
       if (!pages.length) continue;
 
-      // Find the pdf-pages-section container in the most recent answer card
-      const containers = document.querySelectorAll('.pdf-pages-section');
-      const container = containers[containers.length - 1];
-      if (!container) continue;
+      // Show loading state
+      container.innerHTML = `<div class="section-head" style="margin-top:12px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Loading manual pages…
+      </div>`;
+      scrollToBottom();
+
+      // Load pdf.js and the PDF document
+      const pdfDoc = await getPdfDoc(docId);
 
       container.innerHTML = `<div class="section-head" style="margin-top:12px">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         Manual pages
       </div>
-      <div class="pdf-pages-grid" id="pdfGrid-${Date.now()}"></div>`;
+      <div class="pdf-pages-grid"></div>`;
 
       const grid = container.querySelector('.pdf-pages-grid');
 
-      // Load the PDF and render each page
-      const pdfDoc = await getPdfDoc(docId);
-
       for (const pageNum of pages) {
         const page = await pdfDoc.getPage(pageNum);
-        const scale = 2.0;
+        const scale = 1.8;
         const viewport = page.getViewport({ scale });
 
         const canvas = document.createElement('canvas');
@@ -1584,14 +1603,16 @@ async function renderPdfPages(sources, query) {
 
         const card = document.createElement('div');
         card.className = 'pdf-page-card';
-        card.innerHTML = `<div class="pdf-page-label">${docId} <span>Page ${pageNum} of ${pageIndex.totalPages}</span></div>`;
+        card.innerHTML = `<div class="pdf-page-label">${escHtml(docId)} <span>Page ${pageNum} of ${pageIndex.totalPages}</span></div>`;
         card.appendChild(canvas);
         grid.appendChild(card);
+        scrollToBottom();
       }
 
-      scrollToBottom();
+      return; // done — rendered pages for this doc
     } catch (err) {
-      console.warn('PDF page render failed for', docId, err);
+      console.error('PDF render error:', err);
+      container.innerHTML = '';
     }
   }
 }
