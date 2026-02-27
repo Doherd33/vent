@@ -150,7 +150,12 @@ async function main() {
     'front view', 'rear view', 'side view', 'overview', 'component',
     'diagram', 'figure', 'illustration', 'layout', 'schematic',
     'sensor', 'pump', 'tubing', 'filter', 'lamp', 'photometer',
-    'cleaning', 'replacement', 'installation', 'assembly'];
+    'cleaning', 'replacement', 'installation', 'assembly',
+    'cedex', 'analyzer', 'instrument', 'machine', 'system',
+    'display', 'screen', 'button', 'door', 'panel', 'module',
+    'rotor', 'mixer', 'heater', 'cooler', 'rinse', 'drain',
+    'startup', 'shutdown', 'daily', 'weekly', 'monthly',
+    'measurement', 'result', 'sample', 'bio ht'];
 
   const termPages = {};          // keyword → first text page
   const termDiagramPages = {};   // keyword → first page with BOTH text + images
