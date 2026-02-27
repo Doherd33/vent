@@ -841,6 +841,24 @@ body {
   padding: 8px 14px; cursor: pointer; transition: all .15s;
 }
 .hs-analyse-btn:hover { color: var(--text); border-color: var(--borderhi); background: var(--s3); }
+.hs-clear-btn {
+  margin: 0 16px 8px; display: flex; align-items: center; gap: 7px;
+  background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 8px;
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400;
+  padding: 8px 14px; cursor: pointer; transition: all .15s;
+}
+.hs-clear-btn:hover { color: var(--red); border-color: var(--red); background: var(--red2); }
+.hs-search-row {
+  display: flex; align-items: center; gap: 8px;
+  margin: 10px 16px 8px; padding: 7px 10px;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 8px;
+}
+.hs-search-row svg { flex-shrink: 0; color: var(--dim); }
+.hs-search-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-size: 12.5px; font-family: 'DM Sans', sans-serif;
+}
+.hs-search-input::placeholder { color: var(--dim); }
 
 .hs-list {
   flex: 1; overflow-y: auto; padding: 8px 12px 20px;
@@ -1330,36 +1348,43 @@ body {
   background: var(--accent); animation: breathe 1.5s ease-in-out infinite;
 }
 
-/* ── SOP VIEWER PANEL ── */
-.sop-viewer-backdrop {
-  position: fixed; inset: 0; z-index: 199;
-  background: rgba(0,0,0,.3); backdrop-filter: blur(1.5px);
-  opacity: 0; pointer-events: none; transition: opacity .2s;
-}
-.sop-viewer-backdrop.show { opacity: 1; pointer-events: all; }
-
+/* ── SOP VIEWER PANEL (floating window) ── */
 .sop-viewer {
-  position: fixed; top: 50%; left: 50%; z-index: 200;
-  transform: translate(-50%, -50%) scale(.96);
-  width: 92%; max-width: 1060px; height: 88vh;
+  position: fixed; z-index: 200;
+  top: 60px; left: 80px;
+  width: 900px; height: 75vh;
+  min-width: 480px; min-height: 320px;
   background: var(--bg); border: 1px solid var(--border);
-  border-radius: 14px; overflow: hidden;
+  border-radius: 12px; overflow: hidden;
   display: flex; flex-direction: column;
   opacity: 0; pointer-events: none;
-  transition: opacity .2s, transform .25s cubic-bezier(.34,1.1,.64,1);
-  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  transition: opacity .15s;
+  box-shadow: 0 8px 40px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.04);
+  resize: both;
+  transform: translate3d(0,0,0);
+}
+.sop-viewer.sv-dragging {
+  transition: none !important;
+  will-change: transform;
+  pointer-events: auto;
 }
 .sop-viewer.show {
   opacity: 1; pointer-events: all;
-  transform: translate(-50%, -50%) scale(1);
+}
+.sop-viewer.sv-maximized {
+  top: 0 !important; left: 0 !important;
+  width: 100vw !important; height: 100vh !important;
+  border-radius: 0; resize: none;
 }
 
-/* Tab bar */
+/* Tab bar — draggable handle */
 .sv-tabs {
   display: flex; align-items: stretch; background: var(--s2);
   border-bottom: 1px solid var(--border); height: 36px; flex-shrink: 0;
   overflow-x: auto; scrollbar-width: none;
+  cursor: grab; user-select: none;
 }
+.sv-tabs.dragging { cursor: grabbing; }
 .sv-tabs::-webkit-scrollbar { display: none; }
 .sv-tab {
   display: flex; align-items: center; gap: 6px;
@@ -1508,12 +1533,17 @@ body {
 .sv-add-btn:hover { color: var(--accent); background: var(--accent2); }
 .sv-add-btn.active { color: var(--accent); background: var(--bg); border-top: 2px solid var(--accent); }
 
-.sv-close-btn {
-  margin-left: auto; display: flex; align-items: center; justify-content: center;
+/* Window control buttons (right side of tab bar) */
+.sv-window-controls {
+  margin-left: auto; display: flex; flex-shrink: 0;
+}
+.sv-maximize-btn, .sv-close-btn {
+  display: flex; align-items: center; justify-content: center;
   width: 36px; flex-shrink: 0; background: none; border: none;
   border-left: 1px solid var(--border);
   color: var(--dim); cursor: pointer; transition: all .12s;
 }
+.sv-maximize-btn:hover { color: var(--accent); background: var(--accent2); }
 .sv-close-btn:hover { color: var(--red); background: var(--red2); }
 
 /* In-panel search view */
@@ -1639,10 +1669,98 @@ body {
 
 @media (max-width: 768px) {
   .sop-sidebar { width: 100%; }
-  .sop-viewer { width: 98%; height: 94vh; max-width: none; }
+  .sop-viewer { top: 0 !important; left: 0 !important; width: 100% !important; height: 100vh !important; border-radius: 0; resize: none; }
   .sv-body { flex-direction: column; }
   .sv-chat-pane { width: 100%; height: 45%; border-left: none; border-top: 1px solid var(--border); }
 }
+
+/* ── PRODUCT TOUR ── */
+.tour-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,.6);
+  transition: clip-path .3s ease;
+}
+.tour-highlight {
+  position: fixed; z-index: 9001;
+  border-radius: 8px;
+  box-shadow: 0 0 0 4px var(--accent), 0 0 24px rgba(0,122,204,.35);
+  pointer-events: none;
+  transition: top .3s ease, left .3s ease, width .3s ease, height .3s ease;
+  animation: tourPulse 2s ease-in-out infinite;
+}
+@keyframes tourPulse {
+  0%,100% { box-shadow: 0 0 0 4px var(--accent), 0 0 24px rgba(0,122,204,.35); }
+  50%     { box-shadow: 0 0 0 6px var(--accent), 0 0 36px rgba(0,122,204,.5); }
+}
+.tour-card {
+  position: fixed; z-index: 9002;
+  width: 310px; background: var(--s1);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 20px 14px; box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  animation: fadeUp .25s ease;
+}
+.tour-card-step {
+  font-size: 10px; color: var(--accent); font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+}
+.tour-card-title {
+  font-family: 'Instrument Serif', serif; font-size: 17px; color: var(--text);
+  margin-bottom: 6px;
+}
+.tour-card-desc {
+  font-size: 12.5px; color: var(--mid); line-height: 1.6; margin-bottom: 14px;
+}
+.tour-card-actions {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.tour-skip {
+  background: none; border: none; color: var(--dim); font-size: 11px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 4px 0;
+  transition: color .12s;
+}
+.tour-skip:hover { color: var(--text); }
+.tour-card-btns { display: flex; gap: 6px; }
+.tour-back, .tour-next {
+  padding: 6px 14px; border-radius: 6px; font-size: 12px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500;
+  transition: all .12s; border: none;
+}
+.tour-back {
+  background: var(--s2); color: var(--mid); border: 1px solid var(--border);
+}
+.tour-back:hover { color: var(--text); border-color: var(--borderhi); }
+.tour-next {
+  background: var(--accent); color: #fff;
+}
+.tour-next:hover { background: #0088e0; }
+.tour-card-arrow {
+  position: absolute; width: 12px; height: 12px;
+  background: var(--s1); border: 1px solid var(--border);
+  transform: rotate(45deg);
+}
+.tour-card-arrow.arrow-top { top: -7px; left: 24px; border-bottom: none; border-right: none; }
+.tour-card-arrow.arrow-bottom { bottom: -7px; left: 24px; border-top: none; border-left: none; }
+.tour-card-arrow.arrow-left { left: -7px; top: 16px; border-top: none; border-right: none; }
+.tour-card-arrow.arrow-right { right: -7px; top: 16px; border-bottom: none; border-left: none; }
+
+.tour-help-btn {
+  position: fixed; bottom: 16px; left: 16px; z-index: 99;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--s2); border: 1px solid var(--border);
+  color: var(--dim); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Instrument Serif', serif; font-size: 15px;
+  transition: all .15s; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.tour-help-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent2); }
+.tour-explore {
+  padding: 6px 14px; border-radius: 6px; font-size: 12px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500;
+  transition: all .12s; border: 1px solid var(--accent);
+  background: transparent; color: var(--accent);
+}
+.tour-explore:hover { background: var(--accent); color: #fff; }
+.tour-card-step .tour-sub-counter { opacity: .6; margin-left: 4px; }
 </style>
 <script>if(!localStorage.getItem('vent_token'))window.location.replace('login.html');</script>
 </head>
@@ -1690,6 +1808,10 @@ body {
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
+  <div class="hs-search-row">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="hs-search-input" id="hsSearchInput" placeholder="Search conversations…" oninput="filterSessions()">
+  </div>
   <button class="hs-new-btn" onclick="startNewChat(); closeHistorySidebar();">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     New conversation
@@ -1697,6 +1819,10 @@ body {
   <button class="hs-analyse-btn" onclick="analyseChats()">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
     Analyse trends
+  </button>
+  <button class="hs-clear-btn" onclick="clearAllSessions()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+    Clear all
   </button>
   <div class="hs-list" id="hsList">
     <div class="hs-empty">No conversations yet.<br>Start asking questions and they'll appear here.</div>
@@ -1805,8 +1931,7 @@ body {
   </div>
 </div>
 
-<!-- SOP VIEWER PANEL -->
-<div class="sop-viewer-backdrop" id="svBackdrop" onclick="closeSopViewer()"></div>
+<!-- SOP VIEWER PANEL (floating window) -->
 <div class="sop-viewer" id="sopViewer">
   <div class="sv-tabs" id="svTabs"></div>
   <div class="sv-body" id="svBody">
@@ -1990,6 +2115,8 @@ body {
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
   </svg>
 </button>
+
+<button class="tour-help-btn" onclick="startTour()" title="Page tour">?</button>
 
 <script>
 const SERVER = window.location.origin;
@@ -2281,6 +2408,92 @@ async function deleteSession(sessionId) {
   }
 }
 
+// ── CLEAR ALL SESSIONS ──
+async function clearAllSessions() {
+  if (!confirm('Clear all conversations? This can\'t be undone.')) return;
+  try {
+    await authFetch(`${SERVER}/chat/sessions`, { method: 'DELETE' });
+  } catch(e) { console.error('Bulk delete error:', e); }
+  localStorage.removeItem('vent_chat_sessions');
+  _sessionsList = [];
+  clearChat();
+  renderSessionsList();
+}
+
+// ── SEARCH / FILTER SESSIONS ──
+function filterSessions() {
+  const q = (document.getElementById('hsSearchInput').value || '').toLowerCase().trim();
+  if (!q) { renderSessionsList(); return; }
+  const list = document.getElementById('hsList');
+  const matches = _sessionsList.filter(function(s) {
+    if ((s.title || '').toLowerCase().indexOf(q) >= 0) return true;
+    var msgs = s.messages || [];
+    for (var i = 0; i < msgs.length; i++) {
+      if (msgs[i].role === 'user' && (msgs[i].content || '').toLowerCase().indexOf(q) >= 0) return true;
+    }
+    return false;
+  });
+  if (!matches.length) {
+    list.innerHTML = '<div class="hs-empty">No matching conversations.</div>';
+    return;
+  }
+  var html = '';
+  matches.forEach(function(s) {
+    var active = s.id === _currentSessionId ? ' active' : '';
+    var time = new Date(s.updated_at || s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    html += '<div class="hs-item' + active + '" data-sid="' + s.id + '" onclick="loadSession(\'' + s.id + '\')">' +
+      '<svg class="hs-item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+      '<span class="hs-item-text" title="' + escHtml(s.title) + '">' + escHtml(s.title) + '</span>' +
+      '<span class="hs-item-time">' + time + '</span>' +
+      '<button class="hs-item-menu-btn" onclick="event.stopPropagation(); toggleItemMenu(this, \'' + s.id + '\')" title="Options">&middot;&middot;&middot;</button>' +
+    '</div>';
+  });
+  list.innerHTML = html;
+}
+
+// ── EXPORT CHAT TO DOC BUILDER ──
+async function exportToDocBuilder(sessionId) {
+  closeAllDropdowns();
+  // Find session in cache or fetch it
+  var session = _sessionsList.find(function(s){ return s.id === sessionId; });
+  if (!session || !session.messages) {
+    try {
+      if (sessionId.startsWith('local-')) {
+        var locals = JSON.parse(localStorage.getItem('vent_chat_sessions') || '[]');
+        session = locals.find(function(s){ return s.id === sessionId; });
+      } else {
+        var r = await authFetch(SERVER + '/chat/sessions/' + sessionId);
+        if (r.ok) session = await r.json();
+      }
+    } catch(e) { console.error('Load session for export:', e); }
+  }
+  if (!session || !session.messages || !session.messages.length) {
+    alert('No messages to export.');
+    return;
+  }
+  // Show loading in a small toast
+  var toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 18px;z-index:9999;color:var(--mid);font-size:12.5px;font-family:DM Sans,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3);display:flex;align-items:center;gap:8px;';
+  toast.innerHTML = '<div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div> Exporting to Doc Builder…';
+  document.body.appendChild(toast);
+  try {
+    var res = await authFetch(SERVER + '/chat/export-to-doc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: session.messages, title: session.title })
+    });
+    if (!res.ok) throw new Error('Export failed');
+    var data = await res.json();
+    sessionStorage.setItem('vent_chat_export', JSON.stringify(data));
+    window.open('builder.html', '_blank');
+  } catch(e) {
+    console.error('Export error:', e);
+    alert('Export failed: ' + e.message);
+  } finally {
+    toast.remove();
+  }
+}
+
 // ── ITEM CONTEXT MENU ──
 let _openDropdown = null;
 
@@ -2292,6 +2505,10 @@ function toggleItemMenu(btn, sessionId) {
     <button class="hs-dropdown-item" onclick="event.stopPropagation(); analyseChats()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
       Analyse trends
+    </button>
+    <button class="hs-dropdown-item" onclick="event.stopPropagation(); exportToDocBuilder('${sessionId}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Export to Doc Builder
     </button>
     <button class="hs-dropdown-item danger" onclick="event.stopPropagation(); closeAllDropdowns(); deleteSession('${sessionId}')">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
@@ -2486,15 +2703,60 @@ async function searchSops() {
 /* ── SOP VIEWER PANEL (tabbed) ── */
 let _svTabs = [];      // { id, docId, sections, chatHtml, chatOpen }
 let _svActiveTab = null;
+let _svMaximized = false;
 
 function openSopViewer() {
-  document.getElementById('svBackdrop').classList.add('show');
   document.getElementById('sopViewer').classList.add('show');
 }
 function closeSopViewer() {
-  document.getElementById('svBackdrop').classList.remove('show');
   document.getElementById('sopViewer').classList.remove('show');
+  document.getElementById('sopViewer').classList.remove('sv-maximized');
+  _svMaximized = false;
 }
+function toggleSvMaximize() {
+  _svMaximized = !_svMaximized;
+  document.getElementById('sopViewer').classList.toggle('sv-maximized', _svMaximized);
+}
+
+// Drag logic — uses transform for GPU-composited movement
+(function() {
+  let dragging = false, dragX = 0, dragY = 0, tx = 0, ty = 0;
+  document.addEventListener('mousedown', function(e) {
+    const tabs = e.target.closest('.sv-tabs');
+    if (!tabs) return;
+    if (e.target.closest('button, .sv-tab, .sv-add-btn, input')) return;
+    const viewer = document.getElementById('sopViewer');
+    if (!viewer || _svMaximized) return;
+    dragging = true;
+    dragX = e.clientX;
+    dragY = e.clientY;
+    viewer.classList.add('sv-dragging');
+    tabs.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    tx = e.clientX - dragX;
+    ty = e.clientY - dragY;
+    var viewer = document.getElementById('sopViewer');
+    if (viewer) viewer.style.transform = 'translate3d(' + tx + 'px,' + ty + 'px,0)';
+  });
+  document.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    dragging = false;
+    var viewer = document.getElementById('sopViewer');
+    if (viewer) {
+      // Bake the transform into top/left so it sticks
+      viewer.style.left = (viewer.offsetLeft + tx) + 'px';
+      viewer.style.top = (viewer.offsetTop + ty) + 'px';
+      viewer.style.transform = 'translate3d(0,0,0)';
+      viewer.classList.remove('sv-dragging');
+    }
+    tx = 0; ty = 0;
+    var tabs = document.querySelector('.sv-tabs');
+    if (tabs) tabs.classList.remove('dragging');
+  });
+}());
 
 async function openSopDoc(docId) {
   // If tab already open, just switch to it
@@ -2544,9 +2806,16 @@ function renderSvTabs() {
       <button class="sv-tab-close" onclick="event.stopPropagation();closeSvTab('${t.id}')">&times;</button>
     </div>`
   ).join('') +
-  `<button class="sv-close-btn" onclick="closeSopViewer()" title="Close viewer">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  </button>`;
+  `<div class="sv-window-controls">
+    <button class="sv-maximize-btn" onclick="toggleSvMaximize()" title="${_svMaximized ? 'Restore' : 'Maximize'}">
+      ${_svMaximized
+        ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4V2h13v13h-2"/></svg>'
+        : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>'}
+    </button>
+    <button class="sv-close-btn" onclick="closeSopViewer()" title="Close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>`;
 }
 
 function showSvSearch() {
@@ -2897,7 +3166,7 @@ function closeTodoSidebar() {
 
 async function loadTodos() {
   try {
-    const res = await authFetch(`${SERVER}/todos`);
+    const res = await authFetch(`${SERVER}/todos?page=query`);
     if (res.ok) _todos = await res.json();
     else _todos = [];
   } catch { _todos = []; }
@@ -3047,7 +3316,7 @@ async function addTodo(title, parentId) {
     await authFetch(`${SERVER}/todos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title.trim(), parent_id: parentId })
+      body: JSON.stringify({ title: title.trim(), parent_id: parentId, page: 'query' })
     });
     await loadTodos();
   } catch (err) { console.error('Add todo error:', err); }
@@ -3058,7 +3327,7 @@ async function toggleTodoDone(id, done) {
     await authFetch(`${SERVER}/todos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ done })
+      body: JSON.stringify({ done, page: 'query' })
     });
     const t = _todos.find(x => x.id === id);
     if (t) t.done = done;
@@ -3074,7 +3343,7 @@ async function editTodoTitle(id, newTitle) {
     await authFetch(`${SERVER}/todos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: trimmed })
+      body: JSON.stringify({ title: trimmed, page: 'query' })
     });
     if (t) t.title = trimmed;
   } catch (err) { console.error('Edit todo error:', err); }
@@ -3082,7 +3351,7 @@ async function editTodoTitle(id, newTitle) {
 
 async function deleteTodo(id) {
   try {
-    await authFetch(`${SERVER}/todos/${id}`, { method: 'DELETE' });
+    await authFetch(`${SERVER}/todos/${id}?page=query`, { method: 'DELETE' });
     _todos = _todos.filter(t => t.id !== id && t.parent_id !== id);
     renderTodos();
     await loadTodos();
@@ -4186,6 +4455,259 @@ function resetVentPanel() {
   var un=document.getElementById('titleUser');if(un)un.textContent=name;
   var allowed=rules[role]||[];
   document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return a.textContent.trim()===x})?'inline-block':'none';});
+})();
+
+// ─── PRODUCT TOUR ────────────────────────────────────────────────────────────
+(function(){
+  var tourSteps = [
+    { target:'.history-toggle', title:'Chat History', desc:'View and search your past conversations. Pick up where you left off or analyse trends across all your queries.', pos:'bottom',
+      open:'openHistorySidebar', close:'closeHistorySidebar',
+      sub:[
+        { target:'.hs-new-btn', title:'New Conversation', desc:'Start a fresh conversation. Your current chat is saved automatically so you can always come back to it.', pos:'right' },
+        { target:'.hs-analyse-btn', title:'Analyse Trends', desc:'AI analyses patterns across all your past queries — recurring topics, common questions, and insights.', pos:'right' },
+        { target:'#hsList', title:'Your Conversations', desc:'All your previous chats are listed here. Click any to reload it and continue where you left off.', pos:'right' }
+      ]},
+    { target:'.sop-search-btn', title:'SOP Library', desc:'Browse and search all facility SOPs. Open them in a floating viewer where you can ask AI questions about specific documents.', pos:'bottom',
+      open:'openSopSidebar', close:'closeSopSidebar',
+      sub:[
+        { target:'.sop-discover-header', title:'AI Discovery', desc:'Not sure which SOP you need? Open this and describe what you\'re working on — the AI will find the right documents for you.', pos:'left' },
+        { target:'#sopSearchInput', title:'Keyword Search', desc:'Search SOPs by keyword or document name. Results appear instantly below.', pos:'left' },
+        { target:'#sopResults', title:'Search Results', desc:'Click any result to open it in a floating viewer where you can read the full SOP and ask AI questions about it.', pos:'left' }
+      ]},
+    { target:'#qInput', title:'Ask a Question', desc:'Type your question in plain language. Hit Enter to send, Shift+Enter for a new line. The AI searches your SOPs to find the answer.', pos:'top' },
+    { target:'#areaSelect', title:'Facility Area', desc:'Select which area you\'re working in — this helps the AI find the most relevant SOP sections for your question.', pos:'top' },
+    { target:'.cam-btn', title:'Photo Query', desc:'Snap a photo of equipment, a reading, or a label. The AI will analyse the image alongside your SOPs to give you context-specific guidance.', pos:'top' },
+    { target:'.send-btn', title:'Send', desc:'Submit your question. You can also just press Enter.', pos:'top' },
+    { target:'.sug-chips', title:'Quick Suggestions', desc:'Not sure where to start? Click any of these to instantly ask a common question.', pos:'top' },
+    { target:'.vent-fab', title:'Raise a Concern', desc:'Spotted something off? Submit an anonymous observation to QA — no paperwork, no judgement.', pos:'left',
+      open:'openVentPanel', close:'closeVentPanel',
+      sub:[
+        { target:'#ventText', title:'Describe the Observation', desc:'Write what you noticed — equipment issues, process deviations, safety concerns, anything at all.', pos:'right' },
+        { target:'.vp-pri', title:'Set Priority', desc:'Flag it as Low, Medium, or High. Medium is selected by default.', pos:'right' },
+        { target:'#vpDrop', title:'Attach Evidence', desc:'Drag photos or video here, or click to browse. Visual evidence helps QA investigate faster.', pos:'right' },
+        { target:'#ventSubmitBtn', title:'Submit', desc:'Send your observation anonymously. It gets routed straight to QA and MSAT for review.', pos:'right' }
+      ]}
+  ];
+
+  var tourIdx = 0, subIdx = -1;
+  var overlay, highlight, card;
+  var openPanelClose = null; // tracks which close fn to call
+
+  function buildOverlay(){
+    overlay = document.createElement('div');
+    overlay.className = 'tour-overlay';
+    document.body.appendChild(overlay);
+    highlight = document.createElement('div');
+    highlight.className = 'tour-highlight';
+    document.body.appendChild(highlight);
+    card = document.createElement('div');
+    card.className = 'tour-card';
+    document.body.appendChild(card);
+  }
+
+  function clipOverlay(rect){
+    var p = 6;
+    var x1 = rect.left - p, y1 = rect.top - p;
+    var x2 = rect.right + p, y2 = rect.bottom + p;
+    var W = window.innerWidth, H = window.innerHeight;
+    overlay.style.clipPath =
+      'polygon(0 0, '+W+'px 0, '+W+'px '+H+'px, 0 '+H+'px, 0 0, ' +
+      x1+'px '+y1+'px, '+x1+'px '+y2+'px, '+x2+'px '+y2+'px, '+x2+'px '+y1+'px, '+x1+'px '+y1+'px)';
+  }
+
+  function positionCard(rect, pos){
+    var cw = 310, gap = 14;
+    var top, left, arrowClass;
+    if(pos === 'bottom'){
+      top = rect.bottom + gap;
+      left = rect.left + rect.width/2 - cw/2;
+      arrowClass = 'arrow-top';
+    } else if(pos === 'top'){
+      top = rect.top - gap;
+      left = rect.left + rect.width/2 - cw/2;
+      arrowClass = 'arrow-bottom';
+    } else if(pos === 'right'){
+      top = rect.top + rect.height/2 - 60;
+      left = rect.right + gap;
+      arrowClass = 'arrow-left';
+    } else {
+      top = rect.top + rect.height/2 - 60;
+      left = rect.left - cw - gap;
+      arrowClass = 'arrow-right';
+    }
+    if(left < 10) left = 10;
+    if(left + cw > window.innerWidth - 10) left = window.innerWidth - cw - 10;
+    if(pos === 'top'){
+      card.style.left = left + 'px';
+      card.style.top = '0px';
+      card.style.visibility = 'hidden';
+      card.style.display = 'block';
+      var ch = card.offsetHeight;
+      top = rect.top - gap - ch;
+      if(top < 10){ top = rect.bottom + gap; arrowClass = 'arrow-top'; }
+      card.style.visibility = '';
+    }
+    if(pos === 'bottom'){
+      var spaceBelow = window.innerHeight - rect.bottom - gap;
+      if(spaceBelow < 160){ top = rect.top - gap - 160; arrowClass = 'arrow-bottom'; }
+    }
+    if(top < 10) top = 10;
+    card.style.top = top + 'px';
+    card.style.left = left + 'px';
+    var arrows = card.querySelectorAll('.tour-card-arrow');
+    arrows.forEach(function(a){ a.className = 'tour-card-arrow ' + arrowClass; });
+  }
+
+  function closeOpenPanel(){
+    if(openPanelClose){ try{ window[openPanelClose](); }catch(e){} openPanelClose = null; }
+  }
+
+  function renderStep(){
+    var mainStep = tourSteps[tourIdx];
+    var step, isSubStep = subIdx >= 0;
+    if(isSubStep){
+      step = mainStep.sub[subIdx];
+    } else {
+      step = mainStep;
+    }
+
+    var el = document.querySelector(step.target);
+    if(!el){
+      // skip missing elements
+      if(isSubStep){ subIdx++; if(subIdx >= mainStep.sub.length){ leaveSubTour(); nextMain(); } else renderStep(); }
+      else { tourIdx++; if(tourIdx >= tourSteps.length) endTourInner(); else renderStep(); }
+      return;
+    }
+    var rect = el.getBoundingClientRect();
+
+    // Highlight
+    var p = 6;
+    highlight.style.top = (rect.top - p) + 'px';
+    highlight.style.left = (rect.left - p) + 'px';
+    highlight.style.width = (rect.width + p*2) + 'px';
+    highlight.style.height = (rect.height + p*2) + 'px';
+    clipOverlay(rect);
+
+    // Step counter
+    var counter = (tourIdx+1) + ' of ' + tourSteps.length;
+    if(isSubStep){
+      counter += '<span class="tour-sub-counter"> · ' + (subIdx+1) + '/' + mainStep.sub.length + '</span>';
+    }
+
+    // Buttons
+    var hasSub = !isSubStep && mainStep.sub && mainStep.sub.length > 0;
+    var isLastMain = tourIdx === tourSteps.length - 1;
+    var isLastSub = isSubStep && subIdx === mainStep.sub.length - 1;
+    var canGoBack = tourIdx > 0 || subIdx > 0;
+
+    var btns = '';
+    if(canGoBack) btns += '<button class="tour-back" onclick="prevTourStep()">Back</button>';
+    if(hasSub) btns += '<button class="tour-explore" onclick="exploreTourStep()">Explore ›</button>';
+    var nextLabel = (isLastMain && !isSubStep && !hasSub) || (isLastMain && isLastSub) ? 'Done' : 'Next';
+    btns += '<button class="tour-next" onclick="nextTourStep()">' + nextLabel + '</button>';
+
+    card.innerHTML =
+      '<div class="tour-card-step">' + counter + '</div>' +
+      '<div class="tour-card-title">' + step.title + '</div>' +
+      '<div class="tour-card-desc">' + step.desc + '</div>' +
+      '<div class="tour-card-actions">' +
+        '<button class="tour-skip" onclick="endTour()">Skip tour</button>' +
+        '<div class="tour-card-btns">' + btns + '</div>' +
+      '</div>' +
+      '<div class="tour-card-arrow"></div>';
+
+    positionCard(rect, step.pos);
+  }
+
+  function leaveSubTour(){
+    closeOpenPanel();
+    subIdx = -1;
+  }
+
+  function nextMain(){
+    tourIdx++;
+    subIdx = -1;
+    if(tourIdx >= tourSteps.length){ endTourInner(); return; }
+    renderStep();
+  }
+
+  function nextStep(){
+    var mainStep = tourSteps[tourIdx];
+    if(subIdx >= 0){
+      // in sub-steps
+      subIdx++;
+      if(subIdx >= mainStep.sub.length){
+        leaveSubTour();
+        nextMain();
+      } else {
+        renderStep();
+      }
+    } else {
+      // on main step — skip sub-steps, go to next main
+      closeOpenPanel();
+      nextMain();
+    }
+  }
+
+  function prevStep(){
+    var mainStep = tourSteps[tourIdx];
+    if(subIdx > 0){
+      subIdx--;
+      renderStep();
+    } else if(subIdx === 0){
+      // back to the main step of this group — close panel
+      leaveSubTour();
+      renderStep();
+    } else {
+      // on a main step — go to previous main step
+      if(tourIdx > 0){
+        closeOpenPanel();
+        tourIdx--;
+        subIdx = -1;
+        renderStep();
+      }
+    }
+  }
+
+  function exploreStep(){
+    var mainStep = tourSteps[tourIdx];
+    if(!mainStep.sub || !mainStep.sub.length) return;
+    // Open the panel
+    if(mainStep.open){ try{ window[mainStep.open](); }catch(e){} }
+    openPanelClose = mainStep.close || null;
+    subIdx = 0;
+    // Small delay to let panel animate open
+    setTimeout(renderStep, 250);
+  }
+
+  function endTourInner(){
+    closeOpenPanel();
+    if(overlay){ overlay.remove(); overlay = null; }
+    if(highlight){ highlight.remove(); highlight = null; }
+    if(card){ card.remove(); card = null; }
+    localStorage.setItem('vent_tour_done','1');
+  }
+
+  function start(){
+    tourIdx = 0;
+    subIdx = -1;
+    closeOpenPanel();
+    if(overlay) endTourInner();
+    buildOverlay();
+    renderStep();
+  }
+
+  // Expose globally
+  window.startTour = start;
+  window.nextTourStep = nextStep;
+  window.prevTourStep = prevStep;
+  window.exploreTourStep = exploreStep;
+  window.endTour = endTourInner;
+
+  // Auto-trigger on first visit
+  if(!localStorage.getItem('vent_tour_done')){
+    setTimeout(start, 1000);
+  }
 })();
 </script>
 </body>

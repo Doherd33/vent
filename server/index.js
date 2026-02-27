@@ -2268,7 +2268,23 @@ app.put('/chat/sessions/:id', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /chat/sessions/:id — delete a session
+// ── BULK DELETE ALL SESSIONS (must be before :id route) ──
+app.delete('/chat/sessions', requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .delete()
+      .eq('user_id', req.user.sub || req.user.email)
+      .select('id');
+    if (error) throw error;
+    res.json({ ok: true, deleted: (data || []).length });
+  } catch (err) {
+    console.error('Bulk delete sessions error:', err);
+    res.status(500).json({ error: 'Failed to clear sessions' });
+  }
+});
+
+// DELETE /chat/sessions/:id — delete a single session
 app.delete('/chat/sessions/:id', requireAuth, async (req, res) => {
   try {
     const { error } = await supabase
@@ -2284,15 +2300,66 @@ app.delete('/chat/sessions/:id', requireAuth, async (req, res) => {
   }
 });
 
+// ── EXPORT CHAT TO DOC BUILDER ──
+app.post('/chat/export-to-doc', requireAuth, async (req, res) => {
+  try {
+    const { messages, title } = req.body;
+    if (!messages || !messages.length) return res.status(400).json({ error: 'No messages provided' });
+
+    const conversation = messages.map(m => `${m.role === 'user' ? 'USER' : 'ASSISTANT'}: ${m.content}`).join('\n\n');
+
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{
+        role: 'user',
+        content: `You are analysing a Q&A conversation from a biologics manufacturing facility's SOP query system.
+
+The conversation title is: "${title || 'Untitled'}"
+
+Here is the full conversation:
+${conversation}
+
+Extract the key issues, procedures, findings, and action items discussed. Convert them into a structured SOP-style document with clear steps.
+
+Return ONLY valid JSON (no markdown fences, no explanation) in this exact format:
+{
+  "title": "A clear document title based on the conversation topic",
+  "area": "One of: Upstream, Media Prep, Harvest / TFF, CIP / SIP, QC / In-process, General",
+  "description": "A 1-2 sentence summary of what this document covers",
+  "steps": [
+    { "title": "Step title", "content": "Detailed step content", "note": "Any warnings or critical notes (or empty string)" }
+  ]
+}
+
+Create 3-8 meaningful steps that capture the essential information from the conversation. Focus on actionable procedures and key findings.`
+      }]
+    });
+
+    let text = msg.content[0].text.trim();
+    // Strip any markdown code fences
+    text = text.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+    const data = JSON.parse(text);
+    res.json(data);
+  } catch (err) {
+    console.error('Export to doc error:', err);
+    res.status(500).json({ error: 'Export failed: ' + err.message });
+  }
+});
+
 // ── DEV TO-DO LIST ──
 
-// GET /todos — list all todos for the current user
+// GET /todos — list todos for the current user, filtered by page
+// Page separation uses a user_id prefix: "builder::{email}" vs raw email
 app.get('/todos', requireAuth, async (req, res) => {
+  const page = req.query.page || 'query';
+  const userId = req.user.sub || req.user.email;
+  const effectiveId = page === 'query' ? userId : page + '::' + userId;
   try {
     const { data, error } = await supabase
       .from('dev_todos')
       .select('*')
-      .eq('user_id', req.user.sub || req.user.email)
+      .eq('user_id', effectiveId)
       .order('position', { ascending: true })
       .order('created_at', { ascending: true });
     if (error) throw error;
@@ -2305,13 +2372,15 @@ app.get('/todos', requireAuth, async (req, res) => {
 
 // POST /todos — create a new todo
 app.post('/todos', requireAuth, async (req, res) => {
-  const { title, parent_id } = req.body;
+  const { title, parent_id, page } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
+  const userId = req.user.sub || req.user.email;
+  const effectiveId = (!page || page === 'query') ? userId : page + '::' + userId;
   try {
     const { data, error } = await supabase
       .from('dev_todos')
       .insert({
-        user_id: req.user.sub || req.user.email,
+        user_id: effectiveId,
         title,
         parent_id: parent_id || null
       })
@@ -2327,7 +2396,9 @@ app.post('/todos', requireAuth, async (req, res) => {
 
 // PATCH /todos/:id — update a todo (title, done, position)
 app.patch('/todos/:id', requireAuth, async (req, res) => {
-  const { title, done, position } = req.body;
+  const { title, done, position, page } = req.body;
+  const userId = req.user.sub || req.user.email;
+  const effectiveId = (!page || page === 'query') ? userId : page + '::' + userId;
   const update = { updated_at: new Date().toISOString() };
   if (title !== undefined) update.title = title;
   if (done !== undefined) update.done = done;
@@ -2337,7 +2408,7 @@ app.patch('/todos/:id', requireAuth, async (req, res) => {
       .from('dev_todos')
       .update(update)
       .eq('id', req.params.id)
-      .eq('user_id', req.user.sub || req.user.email)
+      .eq('user_id', effectiveId)
       .select()
       .single();
     if (error) throw error;
@@ -2350,12 +2421,15 @@ app.patch('/todos/:id', requireAuth, async (req, res) => {
 
 // DELETE /todos/:id — delete a todo (cascade removes children)
 app.delete('/todos/:id', requireAuth, async (req, res) => {
+  const page = req.query.page || 'query';
+  const userId = req.user.sub || req.user.email;
+  const effectiveId = page === 'query' ? userId : page + '::' + userId;
   try {
     const { error } = await supabase
       .from('dev_todos')
       .delete()
       .eq('id', req.params.id)
-      .eq('user_id', req.user.sub || req.user.email);
+      .eq('user_id', effectiveId);
     if (error) throw error;
     res.json({ ok: true });
   } catch (err) {
