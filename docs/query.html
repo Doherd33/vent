@@ -818,6 +818,7 @@ body {
   <div class="title-bar-right" id="titleBarRight">
     <span class="role-badge" id="roleBadge"></span>
     <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="clearChat()" title="Start a new conversation">New chat</button>
     <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'">Sign out</button>
   </div>
 </div>
@@ -1041,6 +1042,17 @@ function fillAndSend(q) {
   runQuery();
 }
 
+// ── CONVERSATION HISTORY (for follow-up questions) ──
+let _chatHistory = []; // [{role:'user',content:'...'}, {role:'assistant',summary:'...',diagramHint:'...'}]
+
+function clearChat() {
+  _chatHistory = [];
+  const inner = document.getElementById('chatInner');
+  // Remove all chat turns, keep empty state
+  inner.querySelectorAll('.chat-turn').forEach(el => el.remove());
+  document.getElementById('emptyState').style.display = '';
+}
+
 // ── VISUAL QUERY (Camera/Photo) ──
 let _camImageData = null; // base64 string (no prefix)
 let _camMimeType = null;
@@ -1236,22 +1248,32 @@ async function runQuery() {
 
   const thinkId = turn.querySelector('[id^="thinking-"]').id;
 
+  // Add user message to conversation history
+  _chatHistory.push({ role: 'user', content: q });
+
   try {
     const res  = await authFetch(`${SERVER}/query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: q, area })
+      body: JSON.stringify({ question: q, area, history: _chatHistory.slice(0, -1) })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Query failed');
+
+    // Add assistant response to conversation history
+    _chatHistory.push({
+      role: 'assistant',
+      summary: data.summary || '',
+      diagramHint: data.diagramHint || ''
+    });
 
     // Replace thinking indicator with answer
     const thinkEl = document.getElementById(thinkId);
     thinkEl.outerHTML = buildAnswerHtml(data);
 
-    // Render relevant PDF pages inline if sources reference a manual
+    // Render relevant PDF pages inline — use diagramHint if available
     if (data.sources && data.sources.length) {
-      renderPdfPages(data.sources, q);
+      renderPdfPages(data.sources, q, data.diagramHint);
     }
 
   } catch (err) {
@@ -1605,7 +1627,7 @@ function findRelevantPages(pageIndex, sources, query) {
   return result.sort((a, b) => a - b).slice(0, 3);
 }
 
-async function renderPdfPages(sources, query) {
+async function renderPdfPages(sources, query, diagramHint) {
   // Find which doc IDs have PDFs
   const docIds = [...new Set(sources.map(s => s.code))];
 
@@ -1620,7 +1642,9 @@ async function renderPdfPages(sources, query) {
       const pageIndex = await getPageIndex(docId);
       if (!pageIndex.totalPages) continue;
 
-      const pages = findRelevantPages(pageIndex, sources, query);
+      // Use diagramHint from Claude for better matching, fall back to raw query
+      const searchText = diagramHint || query;
+      const pages = findRelevantPages(pageIndex, sources, searchText);
       if (!pages.length) continue;
 
       // Show loading state

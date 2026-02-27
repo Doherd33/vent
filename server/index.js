@@ -1086,9 +1086,9 @@ app.patch('/submissions/:refCode/status', requireRole('qa', 'director', 'admin')
   });
 });
 
-// POST /query — operator SOP knowledge search
+// POST /query — operator SOP knowledge search (with conversation history)
 app.post('/query', requireAuth, async (req, res) => {
-  const { question, area } = req.body;
+  const { question, area, history } = req.body;
 
   if (!question || question.length < 5) {
     return res.status(400).json({ error: 'Question too short' });
@@ -1098,7 +1098,19 @@ app.post('/query', requireAuth, async (req, res) => {
     const chunks = await getRelevantChunks(question, area || 'Upstream');
     const sopContext = buildSopContext(chunks);
 
-    console.log(`[QUERY] "${question.slice(0, 60)}" — ${chunks.length} chunks retrieved`);
+    console.log(`[QUERY] "${question.slice(0, 60)}" — ${chunks.length} chunks retrieved, history: ${(history || []).length} turns`);
+
+    // Build conversation context from history (last 6 turns max)
+    let conversationContext = '';
+    if (history && history.length) {
+      const recent = history.slice(-6);
+      conversationContext = '\n\n════ CONVERSATION HISTORY ════\n' +
+        recent.map(h => h.role === 'user'
+          ? `Operator asked: "${h.content}"`
+          : `You answered: "${h.summary || '(no summary)'}"`)
+        .join('\n') +
+        '\n══════════════════════════════\n\nThe operator is now asking a FOLLOW-UP question. Use the conversation context above to understand what they are referring to.';
+    }
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -1110,14 +1122,16 @@ app.post('/query', requireAuth, async (req, res) => {
 CRITICAL RULES:
 - Be VERY concise. Summary: 1–2 sentences max. Steps: 5 or fewer.
 - Do NOT dump large blocks of text. Distil the key information.
-- If the operator asks for images, pictures, or diagrams: the system will automatically show relevant manual pages with diagrams alongside your answer. Just give a SHORT description of the component (1–2 sentences) and mention that a diagram is shown below.
+- If the operator asks for images, pictures, or diagrams: the system will show relevant manual pages alongside your answer. Give a SHORT description (1–2 sentences) and mention a diagram is shown below.
 - Only include steps if the question is procedural. Only include params if asking about values.
 - Only include warnings if they are genuine safety risks.
 - Omit empty arrays — do not include steps, params, warnings, or notes if they would be empty.
+- ALWAYS set diagramHint to specific equipment/component keywords for the best matching diagram page. Be specific: "hardware front view", "reagent disk assembly", "cuvette rotor", "sample rack positions", "touchscreen main menu". If the question is about a specific part, name that part.
 
 ════ SOP CONTENT ════
 ${sopContext}
 ═════════════════════
+${conversationContext}
 
 Area: ${area || 'Upstream'}
 Question: "${question}"
@@ -1127,6 +1141,7 @@ Return ONLY valid JSON — no markdown, no fences, no preamble.
 {
   "category": "procedure|specification|troubleshooting|general",
   "summary": "1–2 sentence answer. Be direct and concise.",
+  "diagramHint": "specific equipment/component keyword for diagram lookup e.g. 'hardware front view' or 'reagent disk' or 'cuvette rotor' — be specific to what the operator is asking about",
   "steps": [{ "n": 1, "action": "short instruction", "detail": "extra detail or null", "critical": false, "value": "target value or null" }],
   "params": [{ "name": "param", "value": "val", "unit": "unit", "range": "range or null", "flag": "critical or normal" }],
   "warnings": ["only real safety warnings"],
