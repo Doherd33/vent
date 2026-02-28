@@ -231,6 +231,10 @@ body {
 .doc-card-icon { color: var(--accent); flex-shrink: 0; }
 .doc-card-status { font-size: 9px; padding: 1px 6px; border-radius: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 .status-draft    { background: var(--gold2); color: var(--gold); }
+.status-reviewed { background: rgba(0,122,204,.12); color: var(--accent); }
+.status-approved { background: var(--green2); color: var(--green); }
+.status-rejected { background: var(--red2); color: var(--red); }
+.status-published { background: rgba(78,201,176,.12); color: #4ec9b0; }
 .status-active   { background: var(--green2); color: var(--green); }
 .status-archived { background: rgba(100,100,100,.18); color: var(--mid); }
 
@@ -705,6 +709,149 @@ body {
 }
 .version-meta { font-size: 10px; color: var(--dim); margin-bottom: 2px; font-family: 'JetBrains Mono', monospace; }
 .version-label { font-size: 11px; color: var(--text); }
+
+/* ── GDP TREE & REVIEW STYLES ── */
+.gdp-tree-doc {
+  padding: 6px 8px 6px 12px; cursor: pointer; display: flex;
+  align-items: center; gap: 8px; border-radius: 4px; transition: background .12s;
+  font-size: 11.5px; color: var(--text);
+}
+.gdp-tree-doc:hover { background: var(--s3); }
+.gdp-tree-chevron { font-size: 9px; color: var(--dim); transition: transform .15s; width: 10px; flex-shrink: 0; }
+.gdp-tree-chevron.collapsed { transform: rotate(-90deg); }
+.gdp-tree-doc-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gdp-tree-doc-count {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  padding: 1px 6px; border-radius: 100px; flex-shrink: 0;
+}
+.gdp-tree-doc-count.has-errors { background: var(--red2); color: var(--red); }
+.gdp-tree-doc-count.clean { background: rgba(78,201,176,.1); color: var(--green); }
+.gdp-tree-pages { padding-left: 20px; }
+.gdp-tree-pages.collapsed { display: none; }
+.gdp-tree-page {
+  padding: 4px 8px 4px 14px; cursor: pointer; display: flex;
+  align-items: center; gap: 6px; border-radius: 4px; transition: background .12s;
+  font-size: 10.5px; color: var(--mid);
+}
+.gdp-tree-page:hover { background: var(--s3); color: var(--text); }
+.gdp-tree-page.active { background: rgba(0,122,204,.1); color: var(--accent); }
+.gdp-tree-page-icon { width: 12px; height: 12px; color: var(--dim); flex-shrink: 0; }
+.gdp-tree-page-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gdp-tree-page-badge {
+  font-family: 'JetBrains Mono', monospace; font-size: 8px;
+  padding: 0 5px; border-radius: 100px; flex-shrink: 0;
+}
+.gdp-tree-page-badge.has-errors { background: var(--red2); color: var(--red); }
+.gdp-tree-page-badge.clean { color: var(--green); }
+
+/* GDP center: larger images */
+.gdp-step-image { max-width: 100%; max-height: none; object-fit: contain; border-radius: 6px; cursor: pointer; }
+.gdp-step-image:hover { opacity: .92; }
+
+/* GDP finding cards (center + right panel) */
+.gdp-fc {
+  background: var(--s2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px 12px; margin-bottom: 6px; font-size: 11px;
+}
+.gdp-fc-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.gdp-fc-type {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600;
+  padding: 1px 6px; border-radius: 3px; text-transform: uppercase;
+}
+.gdp-fc-type.ee { background: rgba(244,71,71,.12); color: #f44747; }
+.gdp-fc-type.le { background: rgba(255,198,77,.12); color: #ffc64d; }
+.gdp-fc-type.ie { background: rgba(0,122,204,.12); color: #007acc; }
+.gdp-fc-type.ce { background: rgba(78,201,176,.12); color: #4ec9b0; }
+.gdp-fc-type.gdp { background: rgba(200,200,200,.12); color: var(--mid); }
+.gdp-fc-sev {
+  font-family: 'JetBrains Mono', monospace; font-size: 8px;
+  padding: 1px 5px; border-radius: 100px;
+}
+.gdp-fc-sev.critical { background: var(--red2); color: var(--red); }
+.gdp-fc-sev.major { background: var(--gold2); color: var(--gold); }
+.gdp-fc-sev.minor { background: rgba(0,122,204,.08); color: var(--accent); }
+.gdp-fc-title { font-size: 11.5px; color: var(--text); margin-bottom: 3px; }
+.gdp-fc-desc { font-size: 10.5px; color: var(--mid); line-height: 1.5; }
+.gdp-fc-fix {
+  margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);
+  font-size: 10.5px; color: var(--green); line-height: 1.5;
+}
+
+/* ── SIGN-OFF / APPROVAL ── */
+.signoff-section {
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.signoff-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--dim); margin-bottom: 10px; font-family: 'JetBrains Mono', monospace;
+}
+.signoff-status-bar {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  padding: 10px 12px; background: var(--s2); border-radius: 6px; border: 1px solid var(--border);
+}
+.signoff-status-pill {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+  padding: 2px 8px; border-radius: 100px; text-transform: uppercase;
+}
+.signoff-status-text { font-size: 11px; color: var(--mid); flex: 1; }
+.signoff-chain { margin-bottom: 12px; }
+.signoff-entry {
+  display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 6px;
+  margin-bottom: 4px; font-size: 11px;
+}
+.signoff-entry-dot {
+  width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0;
+}
+.signoff-entry-dot.reviewed { background: var(--accent); }
+.signoff-entry-dot.approved { background: var(--green); }
+.signoff-entry-dot.rejected { background: var(--red); }
+.signoff-entry-info { flex: 1; min-width: 0; }
+.signoff-entry-name { color: var(--text); font-weight: 400; }
+.signoff-entry-role {
+  font-family: 'JetBrains Mono', monospace; font-size: 8px;
+  padding: 1px 5px; border-radius: 3px; margin-left: 4px;
+  background: rgba(0,122,204,.1); color: var(--accent); text-transform: uppercase;
+}
+.signoff-entry-time { font-size: 9px; color: var(--dim); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+.signoff-entry-comment { font-size: 10px; color: var(--mid); margin-top: 3px; font-style: italic; }
+.signoff-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.signoff-btn {
+  border: none; border-radius: 6px; padding: 7px 14px; font-size: 11px;
+  font-family: 'DM Sans', sans-serif; cursor: pointer; display: inline-flex;
+  align-items: center; gap: 5px; transition: all .15s;
+}
+.signoff-btn:hover { filter: brightness(1.1); }
+.signoff-btn.review { background: var(--accent); color: #fff; }
+.signoff-btn.approve { background: #4ec9b0; color: #1a1a1a; }
+.signoff-btn.reject { background: none; border: 1px solid var(--red); color: var(--red); }
+.signoff-btn.reject:hover { background: var(--red2); }
+.signoff-btn:disabled { opacity: .4; cursor: default; filter: none; }
+.signoff-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+}
+.signoff-modal {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 14px;
+  padding: 28px 32px; min-width: 380px; max-width: 460px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+}
+.signoff-modal-title { font-size: 16px; color: var(--text); margin-bottom: 6px; font-family: 'Instrument Serif', serif; }
+.signoff-modal-desc { font-size: 12px; color: var(--mid); margin-bottom: 16px; line-height: 1.5; }
+.signoff-modal-sig {
+  padding: 12px; background: var(--s2); border: 1px solid var(--border); border-radius: 8px;
+  margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+}
+.signoff-modal-sig-line { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.signoff-modal-sig-label { color: var(--dim); }
+.signoff-modal-sig-value { color: var(--text); }
+.signoff-modal-comment {
+  width: 100%; padding: 8px 10px; background: var(--s2); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 11px; font-family: 'DM Sans', sans-serif;
+  resize: vertical; min-height: 50px; margin-bottom: 14px;
+}
+.signoff-modal-comment:focus { outline: none; border-color: var(--accent); }
+.signoff-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 /* ── BOTTOM PANEL — Activity Log ── */
 .bottom-panel {
@@ -1482,7 +1629,8 @@ function saveDocToServer(docId) {
         description: doc.description,
         status: doc.status,
         steps: doc.steps,
-        versions: doc.versions
+        versions: doc.versions,
+        signoffs: doc.signoffs || []
       })
     }).then(r => {
       if (r.ok) showSaveStatus('Saved');
@@ -1506,6 +1654,7 @@ function createDocOnServer(doc) {
       status: doc.status,
       steps: doc.steps,
       versions: doc.versions,
+      signoffs: doc.signoffs || [],
       source: doc.source || null
     })
   }).then(r => {
@@ -1573,6 +1722,72 @@ async function init() {
       logActivity('Imported from chat: "' + (ex.title || 'Exported Chat') + '"', 'action');
     } catch(e) { console.error('Chat export import error:', e); }
   }
+
+  // Check if launched from GDP export (GDP Check → Export to Doc Builder)
+  var gdpExport = sessionStorage.getItem('vent_gdp_export');
+  if (gdpExport) {
+    sessionStorage.removeItem('vent_gdp_export');
+    try {
+      var manifest = JSON.parse(gdpExport);
+      var importedDocs = [];
+
+      for (var d = 0; d < manifest.documents.length; d++) {
+        var docData = manifest.documents[d];
+        var docTitle = docData.title;
+        if (docData.docId && !docTitle.includes(docData.docId)) {
+          docTitle += ' (' + docData.docId + ')';
+        }
+
+        var summaryParts = [];
+        if (manifest.gdpSummary.criticalCount) summaryParts.push(manifest.gdpSummary.criticalCount + ' critical');
+        if (manifest.gdpSummary.majorCount) summaryParts.push(manifest.gdpSummary.majorCount + ' major');
+        if (manifest.gdpSummary.minorCount) summaryParts.push(manifest.gdpSummary.minorCount + ' minor');
+
+        var doc = {
+          id: docData.clientId,
+          title: docTitle,
+          area: 'GDP Imports',
+          description: 'Imported from GDP Check. ' +
+            (manifest.gdpSummary.totalErrors > 0
+              ? manifest.gdpSummary.totalErrors + ' GDP issues (' + summaryParts.join(', ') + ')'
+              : 'No GDP issues detected.'),
+          status: 'draft',
+          source: 'gdp',
+          created: new Date().toISOString(),
+          updated: new Date().toISOString(),
+          steps: docData.steps.map(function(s) {
+            var step = { id: s.id, title: s.title || '', content: s.content || '', note: s.note || '' };
+            if (s.gdpErrors) step.gdpErrors = s.gdpErrors;
+            if (s.gdpEntries) step.gdpEntries = s.gdpEntries;
+            return step;
+          }),
+          versions: [
+            { time: new Date().toISOString(), label: 'Imported from GDP Check', user: userName }
+          ]
+        };
+
+        documents.push(doc);
+        saveDocs(documents);
+        createDocOnServer(doc);
+        importedDocs.push(doc);
+      }
+
+      renderDocList();
+      if (importedDocs.length > 0) {
+        openDoc(importedDocs[0].id);
+        logActivity('Imported ' + importedDocs.length + ' document(s) from GDP Check', 'action');
+      }
+
+      // Success toast
+      var totalPages = manifest.documents.reduce(function(a, d) { return a + d.steps.length; }, 0);
+      var toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(78,201,176,.08);border:1px solid rgba(78,201,176,.25);border-radius:8px;padding:10px 18px;z-index:9999;color:#4ec9b0;font-size:12.5px;font-family:DM Sans,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3);';
+      toast.textContent = 'Imported ' + importedDocs.length + ' document(s) with ' + totalPages + ' pages from GDP Check';
+      document.body.appendChild(toast);
+      setTimeout(function() { toast.remove(); }, 5000);
+
+    } catch(e) { console.error('GDP export import error:', e); }
+  }
 }
 
 function makeDoc(title, area, description) {
@@ -1618,28 +1833,78 @@ function renderDocList(filter) {
   let html = '';
   Object.keys(groups).sort().forEach(area => {
     const docs = groups[area].sort((a,b) => new Date(b.updated) - new Date(a.updated));
+    const isGdpGroup = area === 'GDP Imports';
+
     html += '<div class="doc-group-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.doc-group-chevron\').classList.toggle(\'collapsed\')">' +
       '<span class="doc-group-chevron">▼</span>' +
       area +
       '<span class="doc-group-count">' + docs.length + '</span>' +
       '</div>' +
       '<div class="doc-group-items">';
-    docs.forEach(d => {
-      const isActive = d.id === activeDocId;
-      const statusClass = 'status-' + d.status;
-      const ago = timeAgo(d.updated);
-      html += '<div class="doc-card' + (isActive ? ' active' : '') + '" onclick="openDoc(\'' + d.id + '\')">' +
-        '<div class="doc-card-top">' +
-          '<svg class="doc-card-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' +
-          '<button class="export-del-btn" onclick="event.stopPropagation(); deleteDoc(\'' + d.id + '\')" title="Delete">' +
-            '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+
+    if (isGdpGroup) {
+      // GDP tree view: doc nodes with expandable page children
+      docs.forEach(d => {
+        const isActive = d.id === activeDocId;
+        const totalErrors = d.steps.reduce((sum, s) => {
+          if (s.gdpErrors && s.gdpErrors.length) return sum + s.gdpErrors.length;
+          // Parse from note text as fallback
+          const matches = (s.note || '').match(/\[(\w+)\/(critical|major|minor)\]/g);
+          return sum + (matches ? matches.length : 0);
+        }, 0);
+        const countClass = totalErrors > 0 ? 'has-errors' : 'clean';
+        const countLabel = totalErrors > 0 ? totalErrors + ' issue' + (totalErrors !== 1 ? 's' : '') : '✓';
+
+        html += '<div class="gdp-tree-doc' + (isActive ? ' active' : '') + '" onclick="openDoc(\'' + d.id + '\')" title="' + esc(d.title) + '">' +
+          '<span class="gdp-tree-chevron" onclick="event.stopPropagation();toggleGdpTree(this)">▼</span>' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffc64d" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+          '<span class="gdp-tree-doc-title">' + esc(d.title) + '</span>' +
+          '<span class="gdp-tree-doc-count ' + countClass + '">' + countLabel + '</span>' +
+          '<button class="export-del-btn" onclick="event.stopPropagation(); deleteDoc(\'' + d.id + '\')" title="Delete" style="position:relative;margin-left:2px">' +
+            '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
           '</button>' +
-          '<span class="doc-card-status ' + statusClass + '">' + d.status + '</span>' +
-        '</div>' +
-        '<div class="doc-card-title">' + esc(d.title) + '</div>' +
-        '<div class="doc-card-meta">' + ago + ' · ' + d.steps.length + ' steps</div>' +
-      '</div>';
-    });
+        '</div>';
+
+        // Page children
+        html += '<div class="gdp-tree-pages">';
+        d.steps.forEach((step, si) => {
+          const stepActive = isActive && activeStepTab === step.id;
+          let errCount = 0;
+          if (step.gdpErrors && step.gdpErrors.length) errCount = step.gdpErrors.length;
+          else {
+            const m = (step.note || '').match(/\[(\w+)\/(critical|major|minor)\]/g);
+            if (m) errCount = m.length;
+          }
+          const pgClass = errCount > 0 ? 'has-errors' : 'clean';
+          const pgLabel = errCount > 0 ? errCount : '✓';
+
+          html += '<div class="gdp-tree-page' + (stepActive ? ' active' : '') + '" onclick="event.stopPropagation();openDoc(\'' + d.id + '\');setTimeout(function(){selectStep(\'' + d.id + '\',\'' + step.id + '\')},100)">' +
+            '<svg class="gdp-tree-page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>' +
+            '<span class="gdp-tree-page-label">' + esc(step.title || 'Page ' + (si + 1)) + '</span>' +
+            '<span class="gdp-tree-page-badge ' + pgClass + '">' + pgLabel + '</span>' +
+          '</div>';
+        });
+        html += '</div>';
+      });
+    } else {
+      // Normal doc cards
+      docs.forEach(d => {
+        const isActive = d.id === activeDocId;
+        const statusClass = 'status-' + d.status;
+        const ago = timeAgo(d.updated);
+        html += '<div class="doc-card' + (isActive ? ' active' : '') + '" onclick="openDoc(\'' + d.id + '\')">' +
+          '<div class="doc-card-top">' +
+            '<svg class="doc-card-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+            '<button class="export-del-btn" onclick="event.stopPropagation(); deleteDoc(\'' + d.id + '\')" title="Delete">' +
+              '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+            '</button>' +
+            '<span class="doc-card-status ' + statusClass + '">' + d.status + '</span>' +
+          '</div>' +
+          '<div class="doc-card-title">' + esc(d.title) + '</div>' +
+          '<div class="doc-card-meta">' + ago + ' · ' + d.steps.length + ' steps</div>' +
+        '</div>';
+      });
+    }
     html += '</div>';
   });
 
@@ -1649,6 +1914,14 @@ function renderDocList(filter) {
 }
 
 function filterDocs(val) { renderDocList(val); }
+
+function toggleGdpTree(chevron) {
+  chevron.classList.toggle('collapsed');
+  const pages = chevron.closest('.gdp-tree-doc').nextElementSibling;
+  if (pages && pages.classList.contains('gdp-tree-pages')) {
+    pages.classList.toggle('collapsed');
+  }
+}
 
 // ── RENDER EXPORTED CHATS SECTION ──
 function renderExportedChats() {
@@ -1806,48 +2079,103 @@ function closeTab(id) {
 function renderDocView(doc) {
   const el = document.getElementById('centerContent');
   const statusClass = 'status-' + doc.status;
+  const isGdp = doc.source === 'gdp';
 
   // Build steps — media loaded async
   let stepsHtml = '';
   doc.steps.forEach((step, i) => {
-    stepsHtml += '<div class="doc-step" id="step-' + step.id + '">' +
-      '<div class="step-header" onclick="selectStep(\'' + doc.id + '\',\'' + step.id + '\')">' +
-        '<div class="step-number">' + (i + 1) + '</div>' +
-        '<div class="step-title">' + esc(step.title) + '</div>' +
-        '<div class="step-actions">' +
-          '<button class="step-attach-btn" title="Attach media" onclick="event.stopPropagation();triggerStepUpload(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Attach</button>' +
-          '<button class="step-action-btn" title="Edit step" onclick="event.stopPropagation();editStep(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
-          '<button class="step-action-btn" title="Delete step" onclick="event.stopPropagation();deleteStep(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
+    if (isGdp) {
+      // GDP view: larger image area + styled finding cards
+      const errors = step.gdpErrors || [];
+      let findingsHtml = '';
+      if (errors.length) {
+        errors.forEach(e => {
+          const typeClass = getGdpTypeClass(e.type);
+          findingsHtml += '<div class="gdp-fc">' +
+            '<div class="gdp-fc-top">' +
+              '<span class="gdp-fc-type ' + typeClass + '">' + esc(e.type || 'GDP') + '</span>' +
+              '<span class="gdp-fc-sev ' + (e.severity || 'minor') + '">' + esc(e.severity || 'minor') + '</span>' +
+            '</div>' +
+            '<div class="gdp-fc-title">' + esc(e.title || '') + '</div>' +
+            (e.description ? '<div class="gdp-fc-desc">' + esc(e.description) + '</div>' : '') +
+            (e.correction ? '<div class="gdp-fc-fix">Correction: ' + esc(e.correction) + '</div>' : '') +
+          '</div>';
+        });
+      } else if (step.note && step.note !== 'No GDP issues detected.') {
+        findingsHtml = '<div class="step-note" style="margin-top:8px">⚠ ' + esc(step.note) + '</div>';
+      } else {
+        findingsHtml = '<div style="font-size:11px;color:var(--green);margin-top:8px">✓ No GDP issues detected</div>';
+      }
+
+      stepsHtml += '<div class="doc-step" id="step-' + step.id + '">' +
+        '<div class="step-header" onclick="selectStep(\'' + doc.id + '\',\'' + step.id + '\')">' +
+          '<div class="step-number">' + (i + 1) + '</div>' +
+          '<div class="step-title">' + esc(step.title) + '</div>' +
+          (errors.length ? '<span style="font-family:JetBrains Mono,monospace;font-size:9px;padding:2px 7px;border-radius:100px;background:var(--red2);color:var(--red);margin-left:auto">' + errors.length + ' issue' + (errors.length !== 1 ? 's' : '') + '</span>' : '<span style="font-family:JetBrains Mono,monospace;font-size:9px;color:var(--green);margin-left:auto">✓</span>') +
         '</div>' +
-      '</div>' +
-      '<div class="step-body">' +
-        '<p>' + esc(step.content).replace(/\n/g, '</p><p>') + '</p>' +
-        (step.note ? '<div class="step-note">⚠ ' + esc(step.note) + '</div>' : '') +
-        '<div class="step-media" id="media-' + step.id + '"></div>' +
-      '</div>' +
-    '</div>';
+        '<div class="step-body">' +
+          '<div class="step-media" id="media-' + step.id + '" style="margin-bottom:10px"></div>' +
+          '<p style="font-size:12px;color:var(--mid)">' + esc(step.content).replace(/\n/g, '</p><p>') + '</p>' +
+          findingsHtml +
+        '</div>' +
+      '</div>';
+    } else {
+      // Normal step view
+      stepsHtml += '<div class="doc-step" id="step-' + step.id + '">' +
+        '<div class="step-header" onclick="selectStep(\'' + doc.id + '\',\'' + step.id + '\')">' +
+          '<div class="step-number">' + (i + 1) + '</div>' +
+          '<div class="step-title">' + esc(step.title) + '</div>' +
+          '<div class="step-actions">' +
+            '<button class="step-attach-btn" title="Attach media" onclick="event.stopPropagation();triggerStepUpload(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Attach</button>' +
+            '<button class="step-action-btn" title="Edit step" onclick="event.stopPropagation();editStep(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+            '<button class="step-action-btn" title="Delete step" onclick="event.stopPropagation();deleteStep(\'' + doc.id + '\',\'' + step.id + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="step-body">' +
+          '<p>' + esc(step.content).replace(/\n/g, '</p><p>') + '</p>' +
+          (step.note ? '<div class="step-note">⚠ ' + esc(step.note) + '</div>' : '') +
+          '<div class="step-media" id="media-' + step.id + '"></div>' +
+        '</div>' +
+      '</div>';
+    }
   });
+
+  // GDP header shows page count + error summary; normal header unchanged
+  const headerMeta = isGdp
+    ? '<span class="doc-meta-pill ' + statusClass + '">' + doc.status.toUpperCase() + '</span>' +
+      '<span>📁 ' + doc.area + '</span>' +
+      '<span>📄 ' + doc.steps.length + ' page' + (doc.steps.length !== 1 ? 's' : '') + '</span>' +
+      '<span>🕐 ' + timeAgo(doc.updated) + '</span>'
+    : '<span class="doc-meta-pill ' + statusClass + '">' + doc.status.toUpperCase() + '</span>' +
+      '<span>📁 ' + doc.area + '</span>' +
+      '<span>📝 ' + doc.steps.length + ' steps</span>' +
+      '<span>🕐 Updated ' + timeAgo(doc.updated) + '</span>';
 
   el.innerHTML = '<div class="doc-view">' +
     '<div class="doc-view-header">' +
       '<div class="doc-view-title">' + esc(doc.title) + '</div>' +
-      '<div class="doc-view-meta">' +
-        '<span class="doc-meta-pill ' + statusClass + '">' + doc.status.toUpperCase() + '</span>' +
-        '<span>📁 ' + doc.area + '</span>' +
-        '<span>📝 ' + doc.steps.length + ' steps</span>' +
-        '<span>🕐 Updated ' + timeAgo(doc.updated) + '</span>' +
-      '</div>' +
+      '<div class="doc-view-meta">' + headerMeta + '</div>' +
       (doc.description ? '<p style="font-size:13px;color:var(--mid);margin-top:10px;line-height:1.6">' + esc(doc.description) + '</p>' : '') +
     '</div>' +
     '<div class="doc-steps">' + stepsHtml + '</div>' +
-    '<button class="add-step-btn" onclick="addStep(\'' + doc.id + '\')">' +
+    (isGdp ? '' : '<button class="add-step-btn" onclick="addStep(\'' + doc.id + '\')">' +
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
       'Add Step' +
-    '</button>' +
+    '</button>') +
   '</div>';
 
   // Load media for each step asynchronously
-  doc.steps.forEach(step => loadStepMedia(doc.id, step.id));
+  doc.steps.forEach(step => loadStepMedia(doc.id, step.id, isGdp));
+}
+
+function getGdpTypeClass(type) {
+  if (!type) return 'gdp';
+  const t = type.toUpperCase();
+  if (t === 'EE' || t.includes('ERRONEOUS')) return 'ee';
+  if (t === 'LE' || t.includes('LATE')) return 'le';
+  if (t === 'IE' || t.includes('INCOMPLETE')) return 'ie';
+  if (t === 'CE' || t.includes('CORRECTION')) return 'ce';
+  return 'gdp';
 }
 
 function toggleStep(stepId) {
@@ -1873,16 +2201,22 @@ function selectStep(docId, stepId) {
     if (body && body.style.display === 'none') body.style.display = '';
   }
 
-  // Add to open step tabs if not already there
-  if (!openStepTabs.find(t => t.stepId === stepId)) {
-    openStepTabs.push({ docId, stepId });
-  }
   activeStepTab = stepId;
 
   // Highlight in centre
   document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
   if (el) el.classList.add('editing');
 
+  // GDP docs: update right panel findings, no step tabs
+  if (doc.source === 'gdp') {
+    renderGdpRightPanel(doc, stepId);
+    return;
+  }
+
+  // Normal docs: step tabs + step view
+  if (!openStepTabs.find(t => t.stepId === stepId)) {
+    openStepTabs.push({ docId, stepId });
+  }
   renderStepTabs(doc);
   renderStepView(docId, stepId);
 }
@@ -2011,27 +2345,67 @@ function renderStepView(docId, stepId) {
   const step = doc.steps.find(s => s.id === stepId);
   if (!step) return;
   const idx = doc.steps.indexOf(step);
+  const isGdp = doc.source === 'gdp';
 
   const rc = document.getElementById('rightContent');
-  rc.innerHTML = '<div class="fade-in">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
-      '<div style="display:flex;align-items:center;gap:10px">' +
-        '<div class="step-number">' + (idx + 1) + '</div>' +
-        '<span style="font-size:14px;color:var(--text);font-weight:400">' + esc(step.title) + '</span>' +
+
+  if (isGdp) {
+    // GDP view: show image preview + structured finding cards
+    const errors = step.gdpErrors || [];
+    let findingsHtml = '';
+    if (errors.length) {
+      findingsHtml += '<div class="edit-label" style="margin-bottom:8px">' + errors.length + ' GDP Issue' + (errors.length !== 1 ? 's' : '') + '</div>';
+      errors.forEach(function(e) {
+        const typeClass = getGdpTypeClass(e.type);
+        findingsHtml += '<div class="gdp-fc">' +
+          '<div class="gdp-fc-top">' +
+            '<span class="gdp-fc-type ' + typeClass + '">' + esc(e.type || 'GDP') + '</span>' +
+            '<span class="gdp-fc-sev ' + (e.severity || 'minor') + '">' + esc(e.severity || 'minor') + '</span>' +
+            (e.location ? '<span style="font-size:9px;color:var(--dim);margin-left:auto;font-family:JetBrains Mono,monospace">' + esc(e.location) + '</span>' : '') +
+          '</div>' +
+          '<div class="gdp-fc-title">' + esc(e.title || '') + '</div>' +
+          (e.description ? '<div class="gdp-fc-desc">' + esc(e.description) + '</div>' : '') +
+          (e.correction ? '<div class="gdp-fc-fix">Correction: ' + esc(e.correction) + '</div>' : '') +
+        '</div>';
+      });
+    } else {
+      findingsHtml = '<div style="text-align:center;padding:20px 0;color:var(--green);font-size:12px">✓ No GDP issues detected on this page</div>';
+    }
+
+    rc.innerHTML = '<div class="fade-in">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<div class="step-number">' + (idx + 1) + '</div>' +
+          '<span style="font-size:14px;color:var(--text);font-weight:400">' + esc(step.title) + '</span>' +
+        '</div>' +
+        (errors.length ? '<span style="font-family:JetBrains Mono,monospace;font-size:9px;padding:2px 7px;border-radius:100px;background:var(--red2);color:var(--red)">' + errors.length + '</span>' : '<span style="color:var(--green);font-size:11px">✓</span>') +
       '</div>' +
-      '<button class="edit-btn" style="font-size:10px;padding:4px 10px" onclick="editStep(\'' + docId + '\',\'' + stepId + '\')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>' +
-    '</div>' +
-    '<div style="border-bottom:1px solid var(--border);margin-bottom:14px"></div>' +
-    '<div style="font-size:12.5px;color:var(--mid);line-height:1.7;margin-bottom:14px">' +
-      '<p>' + esc(step.content).replace(/\n/g, '</p><p>') + '</p>' +
-    '</div>' +
-    (step.note ? '<div class="step-note" style="margin-bottom:14px">⚠ ' + esc(step.note) + '</div>' : '') +
-    '<div id="rightStepMedia"></div>' +
-    '<div style="margin-top:16px;display:flex;gap:6px">' +
-      '<button class="step-attach-btn" onclick="triggerStepUpload(\'' + docId + '\',\'' + stepId + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Attach File</button>' +
-      '<button class="step-action-btn" style="font-size:10px;padding:4px 8px" onclick="deleteStep(\'' + docId + '\',\'' + stepId + '\')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>' +
-    '</div>' +
-  '</div>';
+      '<div style="border-bottom:1px solid var(--border);margin-bottom:14px"></div>' +
+      '<div style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:14px">' + esc(step.content) + '</div>' +
+      '<div id="rightStepMedia" style="margin-bottom:14px"></div>' +
+      findingsHtml +
+    '</div>';
+  } else {
+    rc.innerHTML = '<div class="fade-in">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<div class="step-number">' + (idx + 1) + '</div>' +
+          '<span style="font-size:14px;color:var(--text);font-weight:400">' + esc(step.title) + '</span>' +
+        '</div>' +
+        '<button class="edit-btn" style="font-size:10px;padding:4px 10px" onclick="editStep(\'' + docId + '\',\'' + stepId + '\')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>' +
+      '</div>' +
+      '<div style="border-bottom:1px solid var(--border);margin-bottom:14px"></div>' +
+      '<div style="font-size:12.5px;color:var(--mid);line-height:1.7;margin-bottom:14px">' +
+        '<p>' + esc(step.content).replace(/\n/g, '</p><p>') + '</p>' +
+      '</div>' +
+      (step.note ? '<div class="step-note" style="margin-bottom:14px">⚠ ' + esc(step.note) + '</div>' : '') +
+      '<div id="rightStepMedia"></div>' +
+      '<div style="margin-top:16px;display:flex;gap:6px">' +
+        '<button class="step-attach-btn" onclick="triggerStepUpload(\'' + docId + '\',\'' + stepId + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Attach File</button>' +
+        '<button class="step-action-btn" style="font-size:10px;padding:4px 8px" onclick="deleteStep(\'' + docId + '\',\'' + stepId + '\')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>' +
+      '</div>' +
+    '</div>';
+  }
 
   loadRightStepMedia(docId, stepId);
 }
@@ -2794,6 +3168,16 @@ function switchRightTab(tabEl) {
 
 function renderRightPanel(doc) {
   if (!doc) return;
+
+  // GDP documents: show GDP review panel instead of Edit/AI/Versions
+  if (doc.source === 'gdp') {
+    document.querySelector('.right-panel-header .right-tabs').innerHTML =
+      '<div class="right-tab active" data-tab="gdp-review" style="color:var(--gold)">GDP Review</div>' +
+      '<div class="right-tab" data-tab="versions" onclick="switchRightTab(this)">Versions</div>';
+    renderGdpRightPanel(doc);
+    return;
+  }
+
   // Restore default right panel tabs
   document.querySelector('.right-panel-header .right-tabs').innerHTML =
     '<div class="right-tab' + (activeRightTab === 'edit' ? ' active' : '') + '" data-tab="edit" onclick="switchRightTab(this)">Edit</div>' +
@@ -2806,6 +3190,98 @@ function renderRightPanel(doc) {
   } else if (activeRightTab === 'versions') {
     renderRightPanelVersions(doc);
   }
+}
+
+function renderGdpRightPanel(doc, selectedStepId) {
+  const rc = document.getElementById('rightContent');
+  const stepId = selectedStepId || (doc.steps.length ? doc.steps[0].id : null);
+
+  // Summary header
+  let totalErrors = 0;
+  let critCount = 0, majCount = 0, minCount = 0;
+  doc.steps.forEach(s => {
+    (s.gdpErrors || []).forEach(e => {
+      totalErrors++;
+      if (e.severity === 'critical') critCount++;
+      else if (e.severity === 'major') majCount++;
+      else minCount++;
+    });
+  });
+
+  let html = '<div class="fade-in" style="padding:2px 0">';
+
+  // Summary pills
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
+  if (totalErrors === 0) {
+    html += '<span style="font-size:11px;color:var(--green)">✓ All pages clear</span>';
+  } else {
+    html += '<span style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--text)">' + totalErrors + ' total issue' + (totalErrors !== 1 ? 's' : '') + '</span>';
+    if (critCount) html += '<span style="font-family:JetBrains Mono,monospace;font-size:9px;padding:1px 6px;border-radius:100px;background:var(--red2);color:var(--red)">' + critCount + ' critical</span>';
+    if (majCount) html += '<span style="font-family:JetBrains Mono,monospace;font-size:9px;padding:1px 6px;border-radius:100px;background:var(--gold2);color:var(--gold)">' + majCount + ' major</span>';
+    if (minCount) html += '<span style="font-family:JetBrains Mono,monospace;font-size:9px;padding:1px 6px;border-radius:100px;background:rgba(0,122,204,.08);color:var(--accent)">' + minCount + ' minor</span>';
+  }
+  html += '</div>';
+  html += '<div style="border-bottom:1px solid var(--border);margin-bottom:12px"></div>';
+
+  // Page-by-page findings
+  doc.steps.forEach((step, si) => {
+    const errors = step.gdpErrors || [];
+    const isSelected = step.id === stepId;
+    const hasErrors = errors.length > 0;
+
+    html += '<div style="margin-bottom:12px;border:1px solid ' + (isSelected ? 'var(--accent)' : 'var(--border)') + ';border-radius:8px;overflow:hidden;background:' + (isSelected ? 'rgba(0,122,204,.04)' : 'transparent') + ';cursor:pointer" onclick="gdpSelectPageInBuilder(\'' + doc.id + '\',\'' + step.id + '\')">';
+
+    // Page header
+    html += '<div style="padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">' +
+      '<span style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--accent);background:rgba(0,122,204,.08);padding:1px 6px;border-radius:3px">' + (si + 1) + '</span>' +
+      '<span style="font-size:11.5px;color:var(--text);flex:1">' + esc(step.title) + '</span>' +
+      (hasErrors
+        ? '<span style="font-family:JetBrains Mono,monospace;font-size:9px;padding:1px 6px;border-radius:100px;background:var(--red2);color:var(--red)">' + errors.length + '</span>'
+        : '<span style="color:var(--green);font-size:10px">✓</span>') +
+    '</div>';
+
+    // Findings (only show when selected or when few pages)
+    if (isSelected || doc.steps.length <= 3) {
+      if (hasErrors) {
+        errors.forEach(e => {
+          const typeClass = getGdpTypeClass(e.type);
+          html += '<div class="gdp-fc" style="margin:6px;margin-bottom:4px">' +
+            '<div class="gdp-fc-top">' +
+              '<span class="gdp-fc-type ' + typeClass + '">' + esc(e.type || 'GDP') + '</span>' +
+              '<span class="gdp-fc-sev ' + (e.severity || 'minor') + '">' + esc(e.severity || 'minor') + '</span>' +
+            '</div>' +
+            '<div class="gdp-fc-title">' + esc(e.title || '') + '</div>' +
+            (e.description ? '<div class="gdp-fc-desc">' + esc(e.description) + '</div>' : '') +
+            (e.correction ? '<div class="gdp-fc-fix">Correction: ' + esc(e.correction) + '</div>' : '') +
+          '</div>';
+        });
+      } else {
+        html += '<div style="padding:10px 12px;font-size:11px;color:var(--green)">✓ No issues on this page</div>';
+      }
+    }
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+
+  // Sign-off section for GDP documents
+  html += buildSignoffSectionHtml(doc);
+
+  rc.innerHTML = html;
+}
+
+function gdpSelectPageInBuilder(docId, stepId) {
+  // Scroll center panel to the step and highlight it
+  const el = document.getElementById('step-' + stepId);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelectorAll('.doc-step').forEach(s => s.classList.remove('editing'));
+    el.classList.add('editing');
+  }
+  // Re-render right panel with this page selected
+  const doc = documents.find(d => d.id === docId);
+  if (doc) renderGdpRightPanel(doc, stepId);
 }
 
 function renderRightPanelEdit(doc, focusStep) {
@@ -2917,6 +3393,7 @@ function renderRightPanelEdit(doc, focusStep) {
         ).join('') +
       '</div>' +
     '</div>' +
+    buildSignoffSectionHtml(doc) +
   '</div>';
 }
 
@@ -3052,10 +3529,10 @@ function deleteDoc(docId) {
 // ── MEDIA FUNCTIONS ──
 
 // Load and render media for a step in the doc viewer
-async function loadStepMedia(docId, stepId) {
+async function loadStepMedia(docId, stepId, gdpMode) {
   const container = document.getElementById('media-' + stepId);
   if (!container) return;
-  
+
   const items = await getMediaForStep(docId, stepId);
   if (!items.length) {
     container.innerHTML = '';
@@ -3065,7 +3542,12 @@ async function loadStepMedia(docId, stepId) {
   let html = '';
   items.forEach(m => {
     const type = getMediaType(m.mimeType);
-    if (type === 'image') {
+    if (type === 'image' && gdpMode) {
+      // GDP mode: full-width image for easy reading
+      html += '<div style="cursor:pointer;margin-bottom:6px" onclick="openLightbox(\'' + m.id + '\')" title="Click to enlarge">' +
+        '<img class="gdp-step-image" src="' + m.data + '" alt="' + esc(m.name) + '">' +
+      '</div>';
+    } else if (type === 'image') {
       html += '<div class="media-item" onclick="openLightbox(\'' + m.id + '\')" title="' + esc(m.name) + '">' +
         '<img src="' + m.data + '" alt="' + esc(m.name) + '">' +
         '<button class="media-delete" onclick="event.stopPropagation();removeMedia(\'' + m.id + '\',\'' + docId + '\',\'' + stepId + '\')" title="Remove">×</button>' +
@@ -3718,6 +4200,161 @@ function updateCounts() {
   var nonChat = documents.filter(function(d){ return d.source !== 'chat'; }).length;
   document.getElementById('docCount').textContent = nonChat;
   document.getElementById('statusDocCount').textContent = documents.length + ' document' + (documents.length !== 1 ? 's' : '');
+}
+
+// ── SIGN-OFF / APPROVAL SYSTEM ──
+function buildSignoffSectionHtml(doc) {
+  const signoffs = doc.signoffs || [];
+  const canReview = ['qa', 'director', 'admin'].includes(userRole);
+  const canApprove = ['director', 'admin'].includes(userRole);
+
+  let html = '<div class="signoff-section">';
+  html += '<div class="signoff-label">Sign-Off &amp; Approval</div>';
+
+  // Status bar
+  const statusLabels = { draft: 'Draft', reviewed: 'Reviewed', approved: 'Approved', rejected: 'Rejected', published: 'Published' };
+  const statusLabel = statusLabels[doc.status] || doc.status;
+  html += '<div class="signoff-status-bar">' +
+    '<span class="signoff-status-pill status-' + doc.status + '">' + statusLabel + '</span>' +
+    '<span class="signoff-status-text">' +
+      (doc.status === 'draft' ? 'Awaiting review' :
+       doc.status === 'reviewed' ? 'Reviewed — awaiting approval' :
+       doc.status === 'approved' ? 'Approved and locked' :
+       doc.status === 'rejected' ? 'Rejected — returned to draft' : '') +
+    '</span>' +
+  '</div>';
+
+  // Sign-off chain
+  if (signoffs.length) {
+    html += '<div class="signoff-chain">';
+    signoffs.forEach(s => {
+      const actionLabel = s.action === 'reviewed' ? 'Reviewed' : s.action === 'approved' ? 'Approved' : 'Rejected';
+      const ts = s.timestamp ? new Date(s.timestamp) : new Date();
+      const dateStr = ts.toLocaleDateString('en-IE', { day:'2-digit', month:'short', year:'numeric' }) + ' ' + ts.toLocaleTimeString('en-IE', { hour:'2-digit', minute:'2-digit' });
+      html += '<div class="signoff-entry">' +
+        '<div class="signoff-entry-dot ' + s.action + '"></div>' +
+        '<div class="signoff-entry-info">' +
+          '<div>' +
+            '<span class="signoff-entry-name">' + esc(s.user) + '</span>' +
+            '<span class="signoff-entry-role">' + esc(s.role || '') + '</span>' +
+            '<span style="float:right;font-size:9px;color:var(--dim)">' + actionLabel + '</span>' +
+          '</div>' +
+          '<div class="signoff-entry-time">' + dateStr + '</div>' +
+          (s.comment ? '<div class="signoff-entry-comment">"' + esc(s.comment) + '"</div>' : '') +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Action buttons
+  html += '<div class="signoff-actions">';
+  if (doc.status === 'draft' && canReview) {
+    html += '<button class="signoff-btn review" onclick="openSignoffModal(\'' + doc.id + '\',\'reviewed\')">Review &amp; Sign</button>';
+  }
+  if (doc.status === 'reviewed' && canApprove) {
+    html += '<button class="signoff-btn approve" onclick="openSignoffModal(\'' + doc.id + '\',\'approved\')">Approve &amp; Sign</button>';
+  }
+  if ((doc.status === 'draft' || doc.status === 'reviewed') && canReview) {
+    html += '<button class="signoff-btn reject" onclick="openSignoffModal(\'' + doc.id + '\',\'rejected\')">Reject</button>';
+  }
+  if (doc.status === 'draft' && !canReview) {
+    html += '<span style="font-size:10px;color:var(--dim)">QA or Director sign-off required</span>';
+  }
+  html += '</div></div>';
+
+  return html;
+}
+
+function openSignoffModal(docId, action) {
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return;
+
+  const actionLabels = { reviewed: 'Review', approved: 'Approve', rejected: 'Reject' };
+  const actionLabel = actionLabels[action] || action;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IE', { day:'2-digit', month:'short', year:'numeric' });
+  const timeStr = now.toLocaleTimeString('en-IE', { hour:'2-digit', minute:'2-digit' });
+
+  const ov = document.createElement('div');
+  ov.className = 'signoff-modal-overlay';
+  ov.innerHTML = '<div class="signoff-modal">' +
+    '<div class="signoff-modal-title">' + actionLabel + ' Document</div>' +
+    '<div class="signoff-modal-desc">You are about to <strong>' + actionLabel.toLowerCase() + '</strong> "' + esc(doc.title) + '". This action will be permanently recorded in the audit trail.</div>' +
+    '<div class="signoff-modal-sig">' +
+      '<div class="signoff-modal-sig-line"><span class="signoff-modal-sig-label">Name</span><span class="signoff-modal-sig-value">' + esc(userName) + '</span></div>' +
+      '<div class="signoff-modal-sig-line"><span class="signoff-modal-sig-label">Role</span><span class="signoff-modal-sig-value">' + userRole.toUpperCase() + '</span></div>' +
+      '<div class="signoff-modal-sig-line"><span class="signoff-modal-sig-label">Date</span><span class="signoff-modal-sig-value">' + dateStr + ' ' + timeStr + '</span></div>' +
+    '</div>' +
+    '<textarea class="signoff-modal-comment" id="signoffComment" placeholder="Add a comment (optional)…"></textarea>' +
+    '<div class="signoff-modal-actions">' +
+      '<button class="edit-btn" onclick="this.closest(\'.signoff-modal-overlay\').remove()">Cancel</button>' +
+      '<button class="signoff-btn ' + (action === 'rejected' ? 'reject' : action === 'approved' ? 'approve' : 'review') + '" id="signoffConfirmBtn" onclick="submitSignoff(\'' + docId + '\',\'' + action + '\')">' +
+        'Confirm ' + actionLabel +
+      '</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.appendChild(ov);
+  document.getElementById('signoffComment').focus();
+}
+
+async function submitSignoff(docId, action) {
+  const comment = (document.getElementById('signoffComment') || {}).value || '';
+  const confirmBtn = document.getElementById('signoffConfirmBtn');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Signing…'; }
+
+  try {
+    const res = await authFetch(SERVER + '/docs/documents/' + encodeURIComponent(docId) + '/signoff', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, comment })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Sign-off failed' }));
+      alert(err.error || 'Sign-off failed');
+      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Retry'; }
+      return;
+    }
+
+    const result = await res.json();
+
+    // Update local document
+    const doc = documents.find(d => d.id === docId);
+    if (doc) {
+      doc.status = result.status;
+      if (!doc.signoffs) doc.signoffs = [];
+      doc.signoffs.push(result.signoff);
+      doc.updated = result.signoff.timestamp;
+      doc.versions.push({
+        time: result.signoff.timestamp,
+        label: (action === 'reviewed' ? 'Reviewed' : action === 'approved' ? 'Approved' : 'Rejected') + ' by ' + userName + ' (' + userRole.toUpperCase() + ')' + (comment ? ' — ' + comment : ''),
+        user: userName
+      });
+      saveDocs(documents);
+    }
+
+    // Close modal
+    const overlay = document.querySelector('.signoff-modal-overlay');
+    if (overlay) overlay.remove();
+
+    // Refresh UI
+    renderDocList();
+    renderEditorTabs();
+    if (doc) {
+      renderDocView(doc);
+      renderRightPanel(doc);
+    }
+
+    const actionLabel = action === 'reviewed' ? 'Reviewed' : action === 'approved' ? 'Approved' : 'Rejected';
+    logActivity(actionLabel + ' document: "' + (doc ? doc.title : docId) + '"', 'action');
+
+  } catch (err) {
+    console.error('Sign-off error:', err);
+    alert('Sign-off failed: ' + err.message);
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Retry'; }
+  }
 }
 
 function logActivity(message, type) {
