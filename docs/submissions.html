@@ -36,7 +36,7 @@
 html { height: 100%; }
 body {
   background: var(--bg); color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-weight: 300;
+  font-family: 'DM Sans', sans-serif; font-weight: 400;
   -webkit-font-smoothing: antialiased;
   display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 }
@@ -59,7 +59,7 @@ body {
 .sign-out-btn { background:none; border:1px solid var(--border); border-radius:4px; color:var(--dim); font-size:10px; padding:2px 8px; cursor:pointer; font-family:inherit; transition:all .15s; }
 .sign-out-btn:hover { color:var(--text); border-color:var(--borderhi); }
 .mobile-hamburger { display:none; background:none; border:none; color:var(--mid); cursor:pointer; padding:4px; }
-@media(max-width:768px){.mobile-hamburger{display:block}.title-nav{display:none;position:absolute;top:42px;left:0;right:0;background:#323233;flex-direction:column;padding:8px;border-bottom:1px solid #111;z-index:999}.title-nav.open{display:flex}}
+@media(max-width:768px){.mobile-hamburger{display:block}.title-nav{display:none;position:absolute;top:42px;left:0;right:0;background:#323233;flex-direction:column;padding:8px;border-bottom:1px solid #111;z-index:999}.title-nav.open{display:flex}.title-nav .nav-tab{display:block;padding:12px 16px;font-size:14px;border-radius:8px}.title-bar-right .role-badge,.title-bar-right .user-name{display:none}.sign-out-btn{font-size:12px;padding:6px 12px}}
 
 /* ── PAGE HEADER ── */
 .page-header {
@@ -75,7 +75,7 @@ body {
 .stat-strip { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
 .stat-chip {
   display: flex; flex-direction: column; align-items: center;
-  background: var(--s2); border: 1px solid var(--border); border-radius: 9px;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 6px;
   padding: 8px 18px; min-width: 72px; text-align: center;
 }
 .sc-n {
@@ -132,7 +132,7 @@ body {
 
 /* ── SUBMISSION ROW ── */
 .sub-row {
-  background: var(--s1); border: 1px solid var(--border); border-radius: 11px;
+  background: var(--s1); border: 1px solid var(--border); border-radius: 8px;
   overflow: hidden; transition: border-color .15s;
   animation: fadeUp .2s ease both;
 }
@@ -140,7 +140,7 @@ body {
 .sub-row.expanded { border-color: rgba(27,95,204,.3); }
 
 .sub-row-head { display: flex; cursor: pointer; }
-.sr-pri-bar { width: 4px; flex-shrink: 0; border-radius: 11px 0 0 11px; }
+.sr-pri-bar { width: 4px; flex-shrink: 0; border-radius: 8px 0 0 8px; }
 .sr-pri-bar.high   { background: var(--red); }
 .sr-pri-bar.medium { background: var(--gold); }
 .sr-pri-bar.low    { background: var(--green); }
@@ -149,13 +149,13 @@ body {
 
 .sr-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
 .sr-ref {
-  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 500;
-  color: var(--accent); background: var(--accent2); padding: 2px 8px; border-radius: 5px; flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500;
+  color: var(--accent); letter-spacing: .02em; flex-shrink: 0;
 }
 .sr-submitter { font-size: 12.5px; font-weight: 400; color: var(--text); flex-shrink: 0; }
 .sr-sep { color: var(--borderhi); font-size: 12px; }
 .sr-area {
-  font-size: 10.5px; font-weight: 500; padding: 2px 8px; border-radius: 5px; flex-shrink: 0;
+  font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 3px; flex-shrink: 0;
   font-family: 'JetBrains Mono', monospace; letter-spacing: .02em;
 }
 .area-upstream { background: var(--blue2);  color: var(--blue); }
@@ -175,13 +175,13 @@ body {
 .sr-bottom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sr-badge {
   font-size: 9px; font-family: 'JetBrains Mono', monospace; font-weight: 600;
-  padding: 2px 8px; border-radius: 100px;
+  padding: 3px 8px; border-radius: 3px;
   text-transform: uppercase; letter-spacing: .04em; flex-shrink: 0;
 }
-.sb-new   { background: var(--accent2); color: var(--accent); }
-.sb-ack   { background: var(--gold2);   color: var(--gold); }
-.sb-wip   { background: var(--teal2);   color: var(--teal); }
-.sb-done  { background: var(--green2);  color: var(--green); }
+.sb-new   { background: var(--accent2); color: var(--accent); border-left: 2px solid var(--accent); }
+.sb-ack   { background: var(--gold2);   color: var(--gold); border-left: 2px solid var(--gold); }
+.sb-wip   { background: var(--teal2);   color: var(--teal); border-left: 2px solid var(--teal); }
+.sb-done  { background: var(--green2);  color: var(--green); border-left: 2px solid var(--green); }
 
 .sr-stage { font-size: 11.5px; color: var(--mid); display: flex; align-items: center; gap: 5px; }
 .sr-stage-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
@@ -272,27 +272,44 @@ body {
   .app-nav.open { display: flex; }
   .topbar { position: relative; padding: 0 12px; gap: 8px; }
   .nav-item { padding: 12px 16px; font-size: 14px; width: 100%; border-radius: 8px; }
-  .page-header { padding: 16px 14px; }
-  .ph-title { font-size: 20px; }
-  .filter-bar { padding: 10px 14px; }
+  /* Header */
+  .page-header { padding: 18px 16px; }
+  .ph-title { font-size: 21px; }
+  .ph-sub { font-size: 13px; }
+  /* Filters */
+  .filter-bar { padding: 10px 16px; }
   .filter-inner { gap: 8px; }
   .status-pills { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
   .status-pills::-webkit-scrollbar { display: none; }
+  .s-pill { padding: 7px 14px; font-size: 12px; }
   .filter-right { width: 100%; margin-left: 0; }
-  .list-inner { padding: 12px 14px 28px; }
+  .f-select { padding: 8px 12px; font-size: 13px; }
+  /* List */
+  .list-inner { padding: 12px 16px 28px; gap: 8px; }
   .sr-date { display: none; }
+  /* Stats */
   .stat-strip { gap: 6px; }
-  .stat-chip { padding: 6px 10px; min-width: 58px; }
-  .sc-n { font-size: 20px; }
-  .f-search { width: 100%; min-width: 0; }
+  .stat-chip { padding: 8px 12px; min-width: 64px; }
+  .sc-n { font-size: 22px; }
+  .sc-lbl { font-size: 10px; }
+  /* Search */
+  .f-search { width: 100%; min-width: 0; padding: 8px 10px 8px 30px; font-size: 14px; }
   .search-wrap { flex: 1; }
-  .sr-preview { -webkit-line-clamp: 1; font-size: 12px; }
-  .sr-top { gap: 5px; }
-  .sr-main { padding: 10px 12px 9px; }
-  .sr-submitter { font-size: 12px; }
-  .sub-row-body { padding: 14px 14px 16px 16px; }
-  .full-text { font-size: 13px; }
-  .pl-stage { font-size: 12px; }
+  /* Submission cards — more breathing room */
+  .sr-preview { -webkit-line-clamp: 2; font-size: 13px; }
+  .sr-top { gap: 6px; }
+  .sr-main { padding: 14px 14px 12px; }
+  .sr-ref { font-size: 11px; }
+  .sr-submitter { font-size: 13px; }
+  .sr-badge { font-size: 10px; padding: 3px 10px; }
+  /* Expand button — bigger touch target */
+  .sr-expand-btn { width: 34px; height: 34px; border-radius: 8px; }
+  /* Expanded body */
+  .sub-row-body { padding: 16px 16px 18px 18px; }
+  .full-text { font-size: 13.5px; line-height: 1.7; }
+  .pl-stage { font-size: 12.5px; }
+  .pl-who { font-size: 12px; }
+  .pl-note { font-size: 12px; }
 }
 </style>
 <script>
@@ -312,6 +329,7 @@ body {
     }
   })();
 </script>
+<script src="i18n.js"></script>
 </head>
 <body>
 
@@ -321,19 +339,20 @@ body {
     <a href="index.html" class="app-name">Vent<span class="pip"></span></a>
     <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
     <nav class="title-nav" id="mainNav">
-      <a href="index.html"       class="nav-tab">Submit</a>
-      <a href="query.html"       class="nav-tab">Query SOPs</a>
-      <a href="submissions.html" class="nav-tab active">Submissions</a>
-      <a href="builder.html"     class="nav-tab">Doc Builder</a>
-      <a href="qa.html"          class="nav-tab">QA Control</a>
-      <a href="workflow.html"    class="nav-tab">Workflow</a>
-      <a href="dashboard.html"   class="nav-tab">Dashboard</a>
+      <a href="index.html"       class="nav-tab" data-nav-key="Submit" data-i18n="nav.submit">Submit</a>
+      <a href="query.html"       class="nav-tab" data-nav-key="Query SOPs" data-i18n="nav.query">Query SOPs</a>
+      <a href="submissions.html" class="nav-tab active" data-nav-key="Submissions" data-i18n="nav.submissions">Submissions</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab" data-nav-key="QA Control" data-i18n="nav.qaControl">QA Control</a>
+      <a href="workflow.html"    class="nav-tab" data-nav-key="Workflow" data-i18n="nav.workflow">Workflow</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
     </nav>
   </div>
   <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
     <span class="role-badge" id="roleBadge"></span>
     <span class="user-name" id="titleUser"></span>
-    <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'">Sign out</button>
+    <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'" data-i18n="nav.signOut">Sign out</button>
   </div>
 </div>
 
@@ -747,12 +766,12 @@ function renderStats() {
   var name=localStorage.getItem('vent_name')||'';
   var rules={operator:['Query SOPs','Doc Builder'],qa:['Submit','Query SOPs','Submissions','Doc Builder','QA Control'],director:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Dashboard'],msat:['Submit','Query SOPs','Submissions','Doc Builder'],engineering:['Submit','Query SOPs','Submissions','Doc Builder'],admin:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Workflow','Dashboard']};
   var colors={operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
-  var labels={operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
+  var roleKeys={operator:'role.operator',qa:'role.qa',director:'role.director',msat:'role.msat',engineering:'role.engineering',admin:'role.admin'};
   var badge=document.getElementById('roleBadge');
-  if(badge){badge.textContent=labels[role]||role.toUpperCase();badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
+  if(badge){badge.textContent=t(roleKeys[role]||'role.operator');badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
   var un=document.getElementById('titleUser');if(un)un.textContent=name;
   var allowed=rules[role]||[];
-  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return a.textContent.trim()===x})?'inline-block':'none';});
+  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return(a.dataset.navKey||a.textContent.trim())===x})?'inline-block':'none';});
 })();
 
 // Init

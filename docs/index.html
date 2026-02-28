@@ -38,7 +38,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
-  font-weight: 300;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
@@ -64,7 +64,7 @@ body::before {
 .sign-out-btn { background:none; border:1px solid var(--border); border-radius:4px; color:var(--dim); font-size:10px; padding:2px 8px; cursor:pointer; font-family:inherit; transition:all .15s; }
 .sign-out-btn:hover { color:var(--text); border-color:var(--borderhi); }
 .mobile-hamburger { display:none; background:none; border:none; color:var(--mid); cursor:pointer; padding:4px; }
-@media(max-width:768px){.mobile-hamburger{display:block}.title-nav{display:none;position:absolute;top:42px;left:0;right:0;background:#323233;flex-direction:column;padding:8px;border-bottom:1px solid #111;z-index:999}.title-nav.open{display:flex}}
+@media(max-width:768px){.mobile-hamburger{display:block}.title-nav{display:none;position:absolute;top:42px;left:0;right:0;background:#323233;flex-direction:column;padding:8px;border-bottom:1px solid #111;z-index:999}.title-nav.open{display:flex}.title-nav .nav-tab{display:block;padding:12px 16px;font-size:14px;border-radius:8px}.title-bar-right .role-badge,.title-bar-right .user-name{display:none}.sign-out-btn{font-size:12px;padding:6px 12px}}
 
 #submitScreen {
   min-height: calc(100vh - 42px);
@@ -126,6 +126,7 @@ body::before {
 .atab.on { background: var(--s2); color: var(--accent); border-color: var(--borderhi); position: relative; z-index: 2; }
 
 .input-box {
+  position: relative;
   background: var(--s2); border: 1px solid var(--borderhi); border-radius: 0 12px 12px 12px;
   overflow: hidden; transition: box-shadow .25s;
 }
@@ -134,7 +135,7 @@ body::before {
 textarea {
   width: 100%; min-height: 160px; background: transparent; border: none; outline: none;
   resize: none; padding: 22px 22px 12px;
-  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 300; line-height: 1.75;
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 400; line-height: 1.75;
   color: var(--text); caret-color: var(--accent);
 }
 @media (min-width: 640px) {
@@ -162,6 +163,91 @@ textarea::placeholder {
 .shift-sel option { background: #131316; }
 
 .anon-note { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--dim); flex: 1; }
+
+/* ── MIC BUTTON ── */
+.mic-btn {
+  background: var(--s3); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--mid); padding: 9px 12px;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  transition: all .2s;
+}
+.mic-btn:hover { border-color: var(--borderhi); color: var(--text); background: var(--s2); }
+.mic-btn.recording {
+  background: var(--red2); border-color: var(--red); color: var(--red);
+  animation: recPulse 1.5s ease-in-out infinite;
+}
+@keyframes recPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244,71,71,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(244,71,71,0); }
+}
+
+/* ── RECORDING OVERLAY ── */
+.rec-overlay {
+  display: none; position: absolute; inset: 0; z-index: 10;
+  background: rgba(30,30,30,0.97);
+  border-radius: inherit;
+  flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+}
+.rec-overlay.active { display: flex; }
+
+.rec-rings { position: relative; width: 80px; height: 80px; }
+.rec-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid var(--red);
+  animation: ringPulse 2s ease-out infinite;
+}
+.rec-ring-2 { animation-delay: 0.4s; }
+.rec-ring-3 { animation-delay: 0.8s; }
+@keyframes ringPulse {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.rec-mic-center {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--red);
+}
+
+.rec-timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px; color: var(--text); font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.rec-bars {
+  display: flex; align-items: center; justify-content: center;
+  gap: 2px; height: 24px;
+}
+.rec-bar-item {
+  width: 3px; border-radius: 100px;
+  background: var(--red);
+  transition: height 0.1s ease;
+  opacity: 0.7;
+}
+
+.rec-hint {
+  font-size: 11px; color: var(--dim);
+  letter-spacing: 0.02em;
+}
+
+/* ── TRANSCRIBING STATE ── */
+.rec-transcribing {
+  display: none; position: absolute; inset: 0; z-index: 10;
+  background: rgba(30,30,30,0.97);
+  border-radius: inherit;
+  flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+}
+.rec-transcribing.active { display: flex; }
+.rec-transcribe-spinner {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+.rec-transcribe-text {
+  font-size: 13px; color: var(--mid);
+  font-family: 'Instrument Serif', serif; font-style: italic;
+}
 
 .go-btn {
   background: var(--accent); color: #070709;
@@ -285,12 +371,12 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .hero-meta { margin-top: 6px; font-size: 12px; color: var(--mid); display: flex; gap: 16px; flex-wrap: wrap; }
 .hero-meta span { display: flex; align-items: center; gap: 5px; }
 .pill {
-  padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 500;
+  padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;
   letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
 }
-.pill-green { background: var(--green2); border: 1px solid rgba(98,201,154,.2); color: var(--green); }
-.pill-amber { background: var(--gold2); border: 1px solid rgba(212,168,90,.2); color: var(--gold); }
-.pill-red   { background: var(--red2);  border: 1px solid rgba(224,112,112,.2); color: var(--red); }
+.pill-green { background: var(--green2); border-left: 2px solid var(--green); color: var(--green); }
+.pill-amber { background: var(--gold2); border-left: 2px solid var(--gold); color: var(--gold); }
+.pill-red   { background: var(--red2);  border-left: 2px solid var(--red); color: var(--red); }
 
 .obs-echo {
   margin-top: 18px;
@@ -310,7 +396,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 }
 
 .panel {
-  background: var(--s1); border: 1px solid var(--border); border-radius: 14px;
+  background: var(--s1); border: 1px solid var(--border); border-radius: 10px;
   overflow: hidden; transition: border-color .2s;
 }
 .panel:hover { border-color: var(--borderhi); }
@@ -325,7 +411,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 }
 .ph-left { display: flex; align-items: center; gap: 10px; }
 .ph-icon {
-  width: 28px; height: 28px; border-radius: 8px;
+  width: 26px; height: 26px; border-radius: 5px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .phi-amber  { background: var(--gold2);  color: var(--gold); }
@@ -335,11 +421,11 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .phi-teal   { background: var(--teal2);  color: var(--teal); }
 .phi-red    { background: var(--red2);   color: var(--red); }
 
-.ph-title { font-size: 13px; color: var(--mid); font-weight: 400; letter-spacing: .01em; }
+.ph-title { font-size: 12px; color: var(--mid); font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
 .ph-badge {
   font-size: 10px; font-weight: 500;
   background: var(--s3); border: 1px solid var(--border);
-  border-radius: 100px; padding: 2px 8px; color: var(--dim);
+  border-radius: 4px; padding: 2px 8px; color: var(--dim);
   font-family: 'JetBrains Mono', monospace; letter-spacing: .02em;
 }
 .ph-chev { color: var(--dim); transition: transform .25s; flex-shrink: 0; }
@@ -350,30 +436,28 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 
 .sop-table { width: 100%; border-collapse: collapse; }
 .sop-table th {
-  font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--dim); font-weight: 500; padding: 0 10px 8px 0;
-  text-align: left; white-space: nowrap;
+  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--dim); font-weight: 500; padding: 0 12px 10px 0;
+  text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border);
 }
 .sop-table td {
-  font-size: 12.5px; color: var(--mid); padding: 9px 10px 9px 0;
-  border-top: 1px solid var(--border); line-height: 1.5; vertical-align: top;
+  font-size: 13px; color: var(--mid); padding: 11px 12px 11px 0;
+  border-top: 1px solid var(--border); line-height: 1.55; vertical-align: top;
 }
 .sop-table tr:hover td { color: var(--text); }
 .sop-code {
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  color: var(--accent); white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500;
+  color: var(--accent); white-space: nowrap; letter-spacing: .02em;
 }
 .sop-step {
   display: inline-block;
-  background: var(--s3); border: 1px solid var(--border);
-  border-radius: 4px; padding: 1px 7px;
-  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--mid);
-  white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--mid);
+  white-space: nowrap; letter-spacing: .01em;
 }
-.flag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; white-space: nowrap; }
-.flag-gap  { background: var(--red2);  color: var(--red); }
-.flag-ambi { background: var(--gold2); color: var(--gold); }
-.flag-ok   { background: var(--green2); color: var(--green); }
+.flag { font-size: 10px; padding: 3px 8px; border-radius: 3px; font-weight: 600; white-space: nowrap; letter-spacing: .03em; text-transform: uppercase; }
+.flag-gap  { background: var(--red2);  color: var(--red); border-left: 2px solid var(--red); }
+.flag-ambi { background: var(--gold2); color: var(--gold); border-left: 2px solid var(--gold); }
+.flag-ok   { background: var(--green2); color: var(--green); border-left: 2px solid var(--green); }
 
 .sci-summary { font-size: 13.5px; color: var(--mid); line-height: 1.75; margin-bottom: 16px; }
 .sci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -391,38 +475,38 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 .ca-list { display: flex; flex-direction: column; gap: 8px; }
 .ca-item {
   display: flex; gap: 12px;
-  padding: 12px 14px;
-  background: var(--s2); border: 1px solid var(--border); border-radius: 9px;
+  padding: 14px 16px;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 6px;
 }
 .ca-num {
-  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 500; font-family: 'JetBrains Mono', monospace;
-  background: var(--accent2); color: var(--accent); border: 1px solid var(--accent3);
-  margin-top: 1px;
+  font-size: 10px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+  background: var(--s3); color: var(--mid); border: 1px solid var(--border);
+  margin-top: 2px;
 }
 .ca-text { flex: 1; }
-.ca-title { font-size: 13px; color: var(--text); font-weight: 400; margin-bottom: 3px; }
-.ca-desc { font-size: 12px; color: var(--mid); line-height: 1.55; }
+.ca-title { font-size: 13.5px; color: var(--text); font-weight: 500; margin-bottom: 4px; }
+.ca-desc { font-size: 12.5px; color: var(--mid); line-height: 1.6; }
 .ca-type {
-  font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 4px;
+  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 3px;
   white-space: nowrap; align-self: flex-start; flex-shrink: 0; margin-top: 2px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .03em; text-transform: uppercase;
 }
-.ca-imm  { background: var(--red2);   color: var(--red); }
-.ca-short{ background: var(--gold2);  color: var(--gold); }
-.ca-long { background: var(--blue2);  color: var(--blue); }
+.ca-imm  { background: var(--red2);   color: var(--red); border-left: 2px solid var(--red); }
+.ca-short{ background: var(--gold2);  color: var(--gold); border-left: 2px solid var(--gold); }
+.ca-long { background: var(--blue2);  color: var(--blue); border-left: 2px solid var(--blue); }
 
 .contact-list { display: flex; flex-direction: column; gap: 8px; }
 .contact-item {
   display: flex; align-items: flex-start; gap: 12px;
-  padding: 11px 13px;
-  background: var(--s2); border: 1px solid var(--border); border-radius: 9px;
+  padding: 12px 14px;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 6px;
 }
 .contact-avatar {
-  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 6px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 500; letter-spacing: .02em;
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
 }
 .av-a { background: rgba(184,164,216,.12); color: var(--accent); border: 1px solid rgba(184,164,216,.2); }
 .av-b { background: var(--blue2);  color: var(--blue);  border: 1px solid rgba(122,180,232,.2); }
@@ -494,49 +578,61 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
   .t-logo { font-size: 19px; margin-right: 0; }
   .nav-item { padding: 12px 16px; font-size: 14px; width: 100%; border-radius: 8px; }
   .topbar-right { gap: 6px; }
-  #submitScreen { padding: 24px 14px; min-height: auto; }
+  #submitScreen { padding: 24px 16px; min-height: auto; }
   .submit-wrap { max-width: 100%; }
   .s-headline { font-size: 24px; }
   .s-subhead { font-size: 13px; margin-bottom: 24px; }
-  .dashboard { grid-template-columns: 1fr; padding: 16px 14px 0; }
+  .dashboard { grid-template-columns: 1fr; padding: 16px 16px 0; }
   .panel.left, .panel.right { grid-column: 1; }
-  .fb-hero { padding: 20px 14px 16px; }
+  .fb-hero { padding: 20px 16px 18px; }
   .fb-topbar { padding: 10px 14px; gap: 10px; }
   .fb-topbar .logo { font-size: 18px; }
   .fb-status { font-size: 11px; }
   .fb-status span { display: none; }
   .topbar-right .ref-code { font-size: 10px; padding: 3px 8px; }
-  .new-sub-btn { font-size: 11px; padding: 5px 10px; }
+  .new-sub-btn { font-size: 12px; padding: 8px 14px; }
   .hero-title { font-size: 22px; }
   .hero-meta { font-size: 11px; gap: 8px; }
-  .obs-echo { font-size: 12px; padding: 11px 14px; }
+  .obs-echo { font-size: 13px; padding: 12px 14px; }
   .sci-grid { grid-template-columns: 1fr; }
   .anon-note { display: none; }
-  .section-card { padding: 22px 16px; }
+  /* Section cards — more breathing room */
+  .section-card { padding: 24px 18px; }
   .sc-header { gap: 12px; }
-  .sc-icon { width: 40px; height: 40px; border-radius: 10px; }
+  .sc-icon { width: 42px; height: 42px; border-radius: 10px; }
   .sc-icon svg { width: 20px; height: 20px; }
-  .sc-title { font-size: 18px; }
-  .sc-desc { font-size: 12.5px; }
-  .build-search input { font-size: 16px; padding: 12px 14px 12px 40px; }
+  .sc-title { font-size: 19px; }
+  .sc-desc { font-size: 13px; line-height: 1.6; }
+  .build-search input { font-size: 16px; padding: 14px 14px 14px 40px; }
   .build-search .bs-icon { left: 12px; }
   .build-search .bs-icon svg { width: 16px; height: 16px; }
-  .build-search .bs-go { font-size: 11px; padding: 7px 14px; }
+  .build-search .bs-go { font-size: 12px; padding: 9px 16px; }
   .section-or { margin-bottom: 20px; }
-  .area-row { gap: 1px; }
-  .atab { font-size: 11px; padding: 7px 10px; }
-  textarea { min-height: 120px; padding: 16px 16px 10px; font-size: 16px; }
-  .box-foot { padding: 8px 12px 12px; }
-  .go-btn { padding: 11px 18px; font-size: 14px; }
-  .s-hint { font-size: 10px; }
-  .sop-table th, .sop-table td { font-size: 11px; padding: 7px 8px; }
+  /* Area tabs — bigger tap targets */
+  .area-row { gap: 2px; }
+  .atab { font-size: 12px; padding: 10px 12px; }
+  /* Textarea and footer */
+  textarea { min-height: 130px; padding: 18px 16px 12px; font-size: 16px; }
+  .box-foot { padding: 10px 14px 14px; gap: 10px; }
+  .shift-sel { padding: 8px 28px 8px 12px; font-size: 13px; }
+  .go-btn { padding: 12px 20px; font-size: 14px; }
+  /* Consent toggle — bigger for touch */
+  .track { width: 38px; height: 22px; }
+  .thumb { width: 14px; height: 14px; top: 4px; left: 4px; }
+  input:checked ~ .track .thumb { transform: translateX(16px); }
+  .ct-title { font-size: 14px; }
+  .ct-desc { font-size: 12px; }
+  .cl { padding: 14px 16px; }
+  .s-hint { font-size: 11px; }
+  /* Feedback panels */
+  .sop-table th, .sop-table td { font-size: 11px; padding: 8px 8px; }
   .ca-item { flex-wrap: wrap; }
   .ca-type { margin-top: 6px; }
   .contact-item { flex-wrap: wrap; }
   .contact-dept { margin-top: 0; }
-  .panel-head { padding: 12px 14px; }
-  .panel-body { padding: 14px; }
-  .ph-title { font-size: 12px; }
+  .panel-head { padding: 14px 16px; }
+  .panel-body { padding: 16px; }
+  .ph-title { font-size: 13px; }
   .p-step { padding: 10px 0; }
 }
 
@@ -574,7 +670,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
   width: 100%; background: var(--s2);
   border: 1px solid var(--accent3); border-radius: 10px;
   color: var(--text); font-family: 'DM Sans', sans-serif;
-  font-size: 14px; font-weight: 300;
+  font-size: 14px; font-weight: 400;
   padding: 14px 16px 14px 44px; outline: none;
   transition: border-color .2s, box-shadow .2s;
 }
@@ -612,6 +708,7 @@ input:checked ~ .track .thumb { transform: translateX(13px); }
 if(!localStorage.getItem('vent_token'))window.location.replace('login.html');
 if(localStorage.getItem('vent_role')==='operator')window.location.replace('builder.html');
 </script>
+<script src="i18n.js"></script>
 </head>
 <body>
 
@@ -621,19 +718,20 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
     <a href="index.html" class="app-name">Vent<span class="pip"></span></a>
     <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
     <nav class="title-nav" id="mainNav">
-      <a href="index.html"       class="nav-tab active">Submit</a>
-      <a href="query.html"       class="nav-tab">Query SOPs</a>
-      <a href="submissions.html" class="nav-tab">Submissions</a>
-      <a href="builder.html"     class="nav-tab">Doc Builder</a>
-      <a href="qa.html"          class="nav-tab">QA Control</a>
-      <a href="workflow.html"    class="nav-tab">Workflow</a>
-      <a href="dashboard.html"   class="nav-tab">Dashboard</a>
+      <a href="index.html"       class="nav-tab active" data-nav-key="Submit" data-i18n="nav.submit">Submit</a>
+      <a href="query.html"       class="nav-tab" data-nav-key="Query SOPs" data-i18n="nav.query">Query SOPs</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="Submissions" data-i18n="nav.submissions">Submissions</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab" data-nav-key="QA Control" data-i18n="nav.qaControl">QA Control</a>
+      <a href="workflow.html"    class="nav-tab" data-nav-key="Workflow" data-i18n="nav.workflow">Workflow</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
     </nav>
   </div>
   <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
     <span class="role-badge" id="roleBadge"></span>
     <span class="user-name" id="titleUser"></span>
-    <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'">Sign out</button>
+    <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'" data-i18n="nav.signOut">Sign out</button>
   </div>
 </div>
 
@@ -652,25 +750,26 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
             <line x1="9" y1="15" x2="15" y2="15"/>
           </svg>
         </div>
-        <div class="sc-title">Build a <em class="blue">Workflow</em></div>
+        <div class="sc-title"><span data-i18n="submit.buildA">Build a</span> <em class="blue" data-i18n="submit.workflow">Workflow</em></div>
       </div>
-      <div class="sc-desc">Capture photos, videos and notes from the floor — turn real operations into living documents anyone can follow.</div>
+      <div class="sc-desc" data-i18n="submit.buildDesc">Capture photos, videos and notes from the floor — turn real operations into living documents anyone can follow.</div>
 
       <div class="build-search">
         <div class="bs-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </div>
         <input type="text" id="buildSearch" placeholder="What process do you want to document?"
+               data-i18n-placeholder="submit.buildPlaceholder"
                oninput="document.querySelector('.bs-go').classList.toggle('show', this.value.trim().length > 0)"
                onkeydown="if(event.key==='Enter' && this.value.trim()) startBuild()">
         <button class="bs-go" onclick="startBuild()">
-          Start
+          <span data-i18n="submit.start">Start</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </div>
     </div>
 
-    <div class="section-or">or</div>
+    <div class="section-or" data-i18n="submit.or">or</div>
 
     <!-- ═══ RAISE A CONCERN ═══ -->
     <div class="section-card">
@@ -682,40 +781,64 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
             <line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
         </div>
-        <div class="sc-title">Raise a <em class="gold">Concern</em></div>
+        <div class="sc-title"><span data-i18n="submit.raiseA">Raise a</span> <em class="gold" data-i18n="submit.concern">Concern</em></div>
       </div>
-      <div class="sc-desc">Describe what you've observed on the floor. AI reads the SOPs and routes it to the right people — anonymously.</div>
+      <div class="sc-desc" data-i18n="submit.raiseDesc">Describe what you've observed on the floor. AI reads the SOPs and routes it to the right people — anonymously.</div>
     </div>
 
-    <div class="s-eyebrow">Select process area</div>
+    <div class="s-eyebrow" data-i18n="submit.selectArea">Select process area</div>
 
     <div class="area-row" role="tablist">
-      <button class="atab on" data-area="Upstream"   onclick="setArea(this)">Upstream</button>
-      <button class="atab"    data-area="Media Prep" onclick="setArea(this)">Media Prep</button>
-      <button class="atab"    data-area="Downstream" onclick="setArea(this)">Downstream</button>
-      <button class="atab"    data-area="QC"         onclick="setArea(this)">QC</button>
-      <button class="atab"    data-area="Facilities" onclick="setArea(this)">Facilities</button>
-      <button class="atab"    data-area="Other"      onclick="setArea(this)">Other</button>
+      <button class="atab on" data-area="Upstream"   onclick="setArea(this)" data-i18n="area.upstream">Upstream</button>
+      <button class="atab"    data-area="Media Prep" onclick="setArea(this)" data-i18n="area.mediaPrep">Media Prep</button>
+      <button class="atab"    data-area="Downstream" onclick="setArea(this)" data-i18n="area.downstream">Downstream</button>
+      <button class="atab"    data-area="QC"         onclick="setArea(this)" data-i18n="area.qc">QC</button>
+      <button class="atab"    data-area="Facilities" onclick="setArea(this)" data-i18n="area.facilities">Facilities</button>
+      <button class="atab"    data-area="Other"      onclick="setArea(this)" data-i18n="area.other">Other</button>
     </div>
 
     <div class="input-box">
+      <!-- Voice recording overlay -->
+      <div class="rec-overlay" id="recOverlay">
+        <div class="rec-rings">
+          <div class="rec-ring rec-ring-1"></div>
+          <div class="rec-ring rec-ring-2"></div>
+          <div class="rec-ring rec-ring-3"></div>
+          <div class="rec-mic-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+        </div>
+        <div class="rec-timer" id="recTimer">0:00</div>
+        <div class="rec-bars" id="recBars"></div>
+        <div class="rec-hint" data-i18n="submit.listening">Listening... tap the stop button when done</div>
+      </div>
+      <!-- Transcribing state -->
+      <div class="rec-transcribing" id="recTranscribing">
+        <div class="rec-transcribe-spinner"></div>
+        <div class="rec-transcribe-text" data-i18n="submit.transcribing">Transcribing your voice...</div>
+      </div>
       <textarea id="ventText"
         placeholder="Just say what you've been noticing..."
+        data-i18n-placeholder="submit.placeholder"
         maxlength="1000" autofocus
         oninput="onType(this)" onkeydown="onKey(event)"
         aria-label="Your observation"></textarea>
       <div class="box-foot">
         <select class="shift-sel" id="shiftSel" aria-label="Shift">
-          <option value="">Shift</option>
-          <option>Day</option><option>Evening</option>
-          <option>Night</option><option>Rotating</option>
+          <option value="" data-i18n="submit.shift">Shift</option>
+          <option data-i18n="submit.day">Day</option><option data-i18n="submit.evening">Evening</option>
+          <option data-i18n="submit.night">Night</option><option data-i18n="submit.rotating">Rotating</option>
         </select>
         <div class="anon-note">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Anonymous by default
+          <span data-i18n="submit.anonymous">Anonymous by default</span>
         </div>
+        <button class="mic-btn" id="micBtn" onclick="toggleRecording()" title="Voice input">
+          <svg class="mic-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <svg class="mic-stop" style="display:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
         <button class="go-btn" id="goBtn" onclick="doSubmit()" disabled>
-          Submit
+          <span data-i18n="submit.submit">Submit</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </div>
@@ -726,12 +849,12 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
         <input type="checkbox" id="conToggle">
         <div class="track"><div class="thumb"></div></div>
         <div class="ct">
-          <div class="ct-title">I'm willing to be consulted</div>
-          <div class="ct-desc">Optional — someone may follow up to understand your observation. Your identity is confidential to your team lead only.</div>
+          <div class="ct-title" data-i18n="submit.willingConsult">I'm willing to be consulted</div>
+          <div class="ct-desc" data-i18n="submit.consultDesc">Optional — someone may follow up to understand your observation. Your identity is confidential to your team lead only.</div>
         </div>
       </label>
     </div>
-    <div class="s-hint">⌘ + Enter to submit · Structured automatically by AI · No login · No trace</div>
+    <div class="s-hint" data-i18n="submit.hint">⌘ + Enter to submit · Structured automatically by AI · No login · No trace</div>
   </div>
 </div>
 
@@ -740,12 +863,12 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
   <div class="proc-logo">Vent<div class="pip"></div></div>
   <div class="proc-ring"></div>
   <div class="proc-list">
-    <div class="p-step" id="ps0"><div class="p-icon">01</div>Receiving your observation</div>
-    <div class="p-step" id="ps1"><div class="p-icon">02</div>Cross-referencing SOPs &amp; batch records</div>
-    <div class="p-step" id="ps2"><div class="p-icon">03</div>Scientific &amp; engineering evaluation</div>
-    <div class="p-step" id="ps3"><div class="p-icon">04</div>Identifying corrective actions</div>
-    <div class="p-step" id="ps4"><div class="p-icon">05</div>Routing to relevant contacts</div>
-    <div class="p-step" id="ps5"><div class="p-icon">06</div>Building your feedback report</div>
+    <div class="p-step" id="ps0"><div class="p-icon">01</div><span data-i18n="proc.step1">Receiving your observation</span></div>
+    <div class="p-step" id="ps1"><div class="p-icon">02</div><span data-i18n="proc.step2">Cross-referencing SOPs &amp; batch records</span></div>
+    <div class="p-step" id="ps2"><div class="p-icon">03</div><span data-i18n="proc.step3">Scientific &amp; engineering evaluation</span></div>
+    <div class="p-step" id="ps3"><div class="p-icon">04</div><span data-i18n="proc.step4">Identifying corrective actions</span></div>
+    <div class="p-step" id="ps4"><div class="p-icon">05</div><span data-i18n="proc.step5">Routing to relevant contacts</span></div>
+    <div class="p-step" id="ps5"><div class="p-icon">06</div><span data-i18n="proc.step6">Building your feedback report</span></div>
   </div>
 </div>
 
@@ -756,18 +879,18 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
     <div class="logo">Vent<div class="pip"></div></div>
     <div class="fb-status">
       <div class="status-dot"></div>
-      <span>Observation received and logged</span>
+      <span data-i18n="fb.received">Observation received and logged</span>
     </div>
     <div class="topbar-right">
       <div class="ref-code" id="refCode">VNT-0000</div>
-      <button class="new-sub-btn" onclick="resetAll()">New submission</button>
+      <button class="new-sub-btn" onclick="resetAll()" data-i18n="fb.newSubmission">New submission</button>
     </div>
   </div>
 
   <div class="fb-hero">
     <div class="hero-top">
       <div>
-        <div class="hero-title">Your observation has been <em>evaluated.</em></div>
+        <div class="hero-title"><span data-i18n="fb.evaluated">Your observation has been</span> <em data-i18n="fb.evaluatedEm">evaluated.</em></div>
         <div class="hero-meta">
           <span><span id="heroArea">Upstream</span></span>
           <span><span id="heroShift">Day shift</span></span>
@@ -787,7 +910,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
           <div class="ph-icon phi-amber">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
-          <div class="ph-title">SOP &amp; Batch Record References</div>
+          <div class="ph-title" data-i18n="fb.sopRefs">SOP &amp; Batch Record References</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="ph-badge" id="sopCount">0 docs</div>
@@ -797,7 +920,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
       <div class="panel-body">
         <table class="sop-table">
           <thead><tr>
-            <th>Document</th><th>Title</th><th>Relevant Step</th><th>How it relates</th><th>Status</th>
+            <th data-i18n="th.document">Document</th><th data-i18n="th.title">Title</th><th data-i18n="th.relevantStep">Relevant Step</th><th data-i18n="th.howRelates">How it relates</th><th data-i18n="th.status">Status</th>
           </tr></thead>
           <tbody id="sopTbody"></tbody>
         </table>
@@ -810,7 +933,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
           <div class="ph-icon phi-blue">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
           </div>
-          <div class="ph-title">Scientific &amp; Engineering Evaluation</div>
+          <div class="ph-title" data-i18n="fb.sciEval">Scientific &amp; Engineering Evaluation</div>
         </div>
         <svg class="ph-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
@@ -826,7 +949,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
           <div class="ph-icon phi-accent">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           </div>
-          <div class="ph-title">Potential Corrective Actions</div>
+          <div class="ph-title" data-i18n="fb.corrective">Potential Corrective Actions</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="ph-badge" id="caCount">0</div>
@@ -844,7 +967,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
           <div class="ph-icon phi-green">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
-          <div class="ph-title">Contacts &amp; Departments</div>
+          <div class="ph-title" data-i18n="fb.contacts">Contacts &amp; Departments</div>
         </div>
         <svg class="ph-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
@@ -859,7 +982,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
           <div class="ph-icon phi-teal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
-          <div class="ph-title">Review Timeline</div>
+          <div class="ph-title" data-i18n="fb.timeline">Review Timeline</div>
         </div>
         <svg class="ph-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
@@ -874,7 +997,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
           <div class="ph-icon phi-red">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           </div>
-          <div class="ph-title">Pattern Intelligence</div>
+          <div class="ph-title" data-i18n="fb.pattern">Pattern Intelligence</div>
         </div>
         <div class="ph-badge" id="patternBadge">1 submission</div>
         <svg class="ph-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -883,7 +1006,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
         <div class="pattern-summary" id="patternSummary"></div>
         <div class="pattern-bar-wrap">
           <div class="pb-label">
-            <span>Submissions on this topic</span>
+            <span data-i18n="fb.submissions">Submissions on this topic</span>
             <span id="pbFraction">1 / 3 threshold</span>
           </div>
           <div class="pb-track"><div class="pb-fill" id="pbFill" style="--w:33%"></div></div>
@@ -996,7 +1119,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
 
       } catch(err) {
         console.error('Error:', err);
-        alert('Could not connect to server. Make sure it is running.');
+        alert(t('err.serverDown'));
         _submitting = false;
         document.getElementById('goBtn').disabled = false;
         showScreen('submitScreen');
@@ -1122,18 +1245,166 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
   }
 
   showScreen('submitScreen');
+
+  // ════════════════════════════════════════════════════════
+  // VOICE RECORDING — Speech-to-Text
+  // ════════════════════════════════════════════════════════
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let recStream = null;
+  let recStartTime = 0;
+  let recTimerInterval = null;
+  let recAnalyser = null;
+  let recAnimFrame = null;
+
+  // Init recording waveform bars
+  (function initRecBars() {
+    const container = document.getElementById('recBars');
+    for (let i = 0; i < 32; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'rec-bar-item';
+      bar.style.height = '3px';
+      container.appendChild(bar);
+    }
+  })();
+
+  async function toggleRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }
+
+  async function startRecording() {
+    try {
+      recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      alert(t('mic.noAccess'));
+      return;
+    }
+
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(recStream, { mimeType: 'audio/webm' });
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      // Clean up stream
+      recStream.getTracks().forEach(t => t.stop());
+      clearInterval(recTimerInterval);
+      cancelAnimationFrame(recAnimFrame);
+
+      // Show transcribing state
+      document.getElementById('recOverlay').classList.remove('active');
+      document.getElementById('recTranscribing').classList.add('active');
+
+      // Convert to base64
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result.split(',')[1];
+        try {
+          const res = await fetch(SERVER_URL + '/stt', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + (localStorage.getItem('vent_token') || ''),
+            },
+            body: JSON.stringify({ audio: base64, mimeType: 'audio/webm', language_code: (window.VentI18n && VentI18n.getSttLangCode()) || 'eng' }),
+          });
+
+          const data = await res.json();
+          if (data.text) {
+            const textarea = document.getElementById('ventText');
+            // Append to existing text or set it
+            const existing = textarea.value.trim();
+            textarea.value = existing ? existing + ' ' + data.text : data.text;
+            // Trigger the submit button enable check
+            onType(textarea);
+            textarea.focus();
+          }
+        } catch (err) {
+          console.error('STT error:', err);
+          alert(t('mic.sttFailed'));
+        }
+
+        document.getElementById('recTranscribing').classList.remove('active');
+        resetMicBtn();
+      };
+      reader.readAsDataURL(blob);
+    };
+
+    // Start recording
+    mediaRecorder.start(250);
+    recStartTime = Date.now();
+
+    // Update UI
+    const micBtn = document.getElementById('micBtn');
+    micBtn.classList.add('recording');
+    micBtn.querySelector('.mic-icon').style.display = 'none';
+    micBtn.querySelector('.mic-stop').style.display = '';
+    document.getElementById('recOverlay').classList.add('active');
+
+    // Start timer
+    recTimerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      document.getElementById('recTimer').textContent = mins + ':' + String(secs).padStart(2, '0');
+    }, 200);
+
+    // Start waveform animation using AnalyserNode
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(recStream);
+    recAnalyser = audioCtx.createAnalyser();
+    recAnalyser.fftSize = 128;
+    recAnalyser.smoothingTimeConstant = 0.7;
+    source.connect(recAnalyser);
+
+    const bars = document.querySelectorAll('.rec-bar-item');
+    const freqData = new Uint8Array(recAnalyser.frequencyBinCount);
+
+    function animateRecBars() {
+      recAnalyser.getByteFrequencyData(freqData);
+      bars.forEach((bar, i) => {
+        const idx = Math.floor((i / bars.length) * freqData.length * 0.8);
+        const val = freqData[idx] || 0;
+        const h = Math.max(3, (val / 255) * 22);
+        bar.style.height = h + 'px';
+      });
+      recAnimFrame = requestAnimationFrame(animateRecBars);
+    }
+    animateRecBars();
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    }
+  }
+
+  function resetMicBtn() {
+    const micBtn = document.getElementById('micBtn');
+    micBtn.classList.remove('recording');
+    micBtn.querySelector('.mic-icon').style.display = '';
+    micBtn.querySelector('.mic-stop').style.display = 'none';
+  }
+
   // ── NAV: role filtering + user display ──
   (function(){
     var role=localStorage.getItem('vent_role')||'operator';
     var name=localStorage.getItem('vent_name')||'';
     var rules={operator:['Query SOPs','Doc Builder'],qa:['Submit','Query SOPs','Submissions','Doc Builder','QA Control'],director:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Dashboard'],msat:['Submit','Query SOPs','Submissions','Doc Builder'],engineering:['Submit','Query SOPs','Submissions','Doc Builder'],admin:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Workflow','Dashboard']};
     var colors={operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
-    var labels={operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
+    var roleKeys={operator:'role.operator',qa:'role.qa',director:'role.director',msat:'role.msat',engineering:'role.engineering',admin:'role.admin'};
     var badge=document.getElementById('roleBadge');
-    if(badge){badge.textContent=labels[role]||role.toUpperCase();badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
+    if(badge){badge.textContent=t(roleKeys[role]||'role.operator');badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
     var un=document.getElementById('titleUser');if(un)un.textContent=name;
     var allowed=rules[role]||[];
-    document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return a.textContent.trim()===x})?'inline-block':'none';});
+    document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return(a.dataset.navKey||a.textContent.trim())===x})?'inline-block':'none';});
   })();
 </script>
 </body>

@@ -43,7 +43,7 @@ body {
 .sign-out-btn { background:none; border:1px solid var(--border); border-radius:4px; color:var(--dim); font-size:10px; padding:2px 8px; cursor:pointer; font-family:inherit; transition:all .15s; }
 .sign-out-btn:hover { color:var(--text); border-color:var(--borderhi); }
 .mobile-hamburger { display:none; background:none; border:none; color:var(--mid); cursor:pointer; padding:4px; }
-@media(max-width:768px){.mobile-hamburger{display:block}.title-nav{display:none;position:absolute;top:42px;left:0;right:0;background:#323233;flex-direction:column;padding:8px;border-bottom:1px solid #111;z-index:999}.title-nav.open{display:flex}}
+@media(max-width:768px){.mobile-hamburger{display:block}.title-nav{display:none;position:absolute;top:42px;left:0;right:0;background:#323233;flex-direction:column;padding:8px;border-bottom:1px solid #111;z-index:999}.title-nav.open{display:flex}.title-nav .nav-tab{display:block;padding:12px 16px;font-size:14px;border-radius:8px}}
 
 /* ── WORKBENCH ── */
 .workbench {
@@ -373,10 +373,14 @@ body {
   .mobile-hamburger { display: flex; align-items: center; justify-content: center; }
   .title-nav { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #252526; border-bottom: 1px solid #3c3c3c; flex-direction: column; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.4); z-index: 500; }
   .title-nav.open { display: flex; }
-  .nav-tab { padding: 10px 14px; font-size: 13px; border-radius: 3px; }
-  .title-bar { position: relative; padding: 0 8px; }
+  .title-nav .nav-tab { display: block; padding: 12px 16px; font-size: 14px; border-radius: 8px; }
+  .title-bar { position: relative; padding: 0 10px; }
+  /* Hide role badge and username on mobile */
+  .title-bar-right .role-badge,
+  .title-bar-right .user-name { display: none; }
   .title-bar-right { font-size: 10px; gap: 6px; }
   .title-bar-right .s-sep { display: none; }
+  .sign-out-btn { font-size: 12px; padding: 6px 12px; }
 
   body { grid-template-rows: 42px 1fr 22px; }
   .workbench {
@@ -388,40 +392,41 @@ body {
 
   .left-panel {
     grid-column: 1 !important; grid-row: 1 !important;
-    max-height: 200px; border-right: none; border-bottom: 1px solid #3c3c3c;
+    max-height: 220px; border-right: none; border-bottom: 1px solid #3c3c3c;
   }
   .center-panel { grid-column: 1 !important; grid-row: 2 !important; }
   .right-panel {
     grid-column: 1 !important; grid-row: 3 !important;
     border-left: none; border-top: 1px solid #3c3c3c;
-    max-height: 280px;
+    max-height: 300px;
   }
   .bottom-panel { display: none; }
 
   .lp-restore-tab { display: none !important; }
 
-  .center-content { padding: 14px 12px; }
-  .right-content { padding: 12px; }
-  .obs-text { font-size: 12px; padding: 10px 12px; }
-  .sop-table { font-size: 11px; }
-  .sop-table th, .sop-table td { padding: 5px 6px; }
-  .change-item { flex-direction: column; gap: 8px; padding: 10px 12px; }
+  .center-content { padding: 16px 14px; }
+  .right-content { padding: 14px; }
+  .obs-text { font-size: 13px; padding: 12px 14px; line-height: 1.65; }
+  .sop-table { font-size: 12px; }
+  .sop-table th, .sop-table td { padding: 7px 8px; }
+  .change-item { flex-direction: column; gap: 8px; padding: 12px 14px; }
   .change-num { margin: 0; }
 
-  .editor-tabs { height: 30px; }
-  .editor-tab { font-size: 11px; padding: 0 8px 0 10px; }
+  .editor-tabs { height: 34px; }
+  .editor-tab { font-size: 12px; padding: 0 10px 0 12px; }
   .right-tabs-scroll { overflow-x: auto; }
-  .right-tab { font-size: 10px; padding: 0 6px 0 10px; }
+  .right-tab { font-size: 11px; padding: 0 8px 0 12px; }
 
   .esig-modal { width: 92vw; }
   .annotation-text { padding-left: 0; }
   .annotation-reactions { padding-left: 0; }
 
-  .status-bar { font-size: 10px; gap: 8px; padding: 0 6px; }
+  .status-bar { font-size: 11px; gap: 8px; padding: 0 8px; }
   .s-right { gap: 8px; }
 }
 </style>
 <script>if(!localStorage.getItem('vent_token'))window.location.replace('login.html');</script>
+<script src="i18n.js"></script>
 </head>
 <body>
 
@@ -431,19 +436,20 @@ body {
     <a href="index.html" class="app-name">Vent<span class="pip"></span></a>
     <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
     <nav class="title-nav" id="mainNav">
-      <a href="index.html"       class="nav-tab">Submit</a>
-      <a href="query.html"       class="nav-tab">Query SOPs</a>
-      <a href="submissions.html" class="nav-tab">Submissions</a>
-      <a href="builder.html"     class="nav-tab">Doc Builder</a>
-      <a href="qa.html"          class="nav-tab active">QA Control</a>
-      <a href="workflow.html"    class="nav-tab">Workflow</a>
-      <a href="dashboard.html"   class="nav-tab">Dashboard</a>
+      <a href="index.html"       class="nav-tab" data-nav-key="Submit" data-i18n="nav.submit">Submit</a>
+      <a href="query.html"       class="nav-tab" data-nav-key="Query SOPs" data-i18n="nav.query">Query SOPs</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="Submissions" data-i18n="nav.submissions">Submissions</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab active" data-nav-key="QA Control" data-i18n="nav.qaControl">QA Control</a>
+      <a href="workflow.html"    class="nav-tab" data-nav-key="Workflow" data-i18n="nav.workflow">Workflow</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
     </nav>
   </div>
   <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
     <span class="role-badge" id="roleBadge"></span>
     <span class="user-name" id="titleUser"></span>
-    <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'">Sign out</button>
+    <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'" data-i18n="nav.signOut">Sign out</button>
   </div>
 </div>
 
@@ -1389,12 +1395,12 @@ function closeRight(){
   var name=localStorage.getItem('vent_name')||'';
   var rules={operator:['Query SOPs','Doc Builder'],qa:['Submit','Query SOPs','Submissions','Doc Builder','QA Control'],director:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Dashboard'],msat:['Submit','Query SOPs','Submissions','Doc Builder'],engineering:['Submit','Query SOPs','Submissions','Doc Builder'],admin:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Workflow','Dashboard']};
   var colors={operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
-  var labels={operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
+  var roleKeys={operator:'role.operator',qa:'role.qa',director:'role.director',msat:'role.msat',engineering:'role.engineering',admin:'role.admin'};
   var badge=document.getElementById('roleBadge');
-  if(badge){badge.textContent=labels[role]||role.toUpperCase();badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
+  if(badge){badge.textContent=t(roleKeys[role]||'role.operator');badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
   var un=document.getElementById('titleUser');if(un)un.textContent=name;
   var allowed=rules[role]||[];
-  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return a.textContent.trim()===x})?'inline-block':'none';});
+  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return(a.dataset.navKey||a.textContent.trim())===x})?'inline-block':'none';});
 })();
 
 // ─── AUTHOR IDENTITY SYSTEM ──────────────────────────────

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vent · Sign In</title>
+<title>Vent</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,13 +31,13 @@
   --teal2:    rgba(78,201,176,0.12);
 }
 
-html, body { height: 100%; }
+html, body { height: 100%; overflow: hidden; }
 
 body {
-  background: var(--bg);
+  background: #0a0a0c;
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
-  font-weight: 300;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   display: flex;
   align-items: center;
@@ -46,70 +46,362 @@ body {
   padding: 24px;
 }
 
-body::before {
+/* ════════════════════════════════════════════════════════
+   CINEMATIC INTRO
+   ════════════════════════════════════════════════════════ */
+#cinematic {
+  position: fixed; inset: 0; z-index: 1000;
+  background: #0a0a0c;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.8s cubic-bezier(.4,0,.2,1), transform 0.8s cubic-bezier(.4,0,.2,1);
+}
+#cinematic.exit {
+  opacity: 0;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+
+/* Ambient gradient orbs */
+.cine-orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(120px); opacity: 0; pointer-events: none;
+  animation: orbFade 2s ease forwards;
+}
+.cine-orb-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,122,204,0.25) 0%, transparent 70%);
+  top: -10%; left: -5%;
+  animation-delay: 0.3s;
+}
+.cine-orb-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(78,201,176,0.15) 0%, transparent 70%);
+  bottom: -10%; right: -5%;
+  animation-delay: 0.6s;
+}
+.cine-orb-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(0,122,204,0.1) 0%, transparent 70%);
+  top: 40%; right: 20%;
+  animation-delay: 0.9s;
+}
+@keyframes orbFade { to { opacity: 1; } }
+
+/* Canvas visualizer */
+#vizCanvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 1; opacity: 0;
+  transition: opacity 1.5s ease;
+}
+#vizCanvas.active { opacity: 1; }
+
+/* Content layer */
+.cine-content {
+  position: relative; z-index: 10;
+  display: flex; flex-direction: column;
+  align-items: center; text-align: center;
+  gap: 0;
+}
+
+/* Logo */
+.cine-logo {
+  display: flex; align-items: center; gap: 12px;
+  opacity: 0; transform: translateY(20px) scale(0.95);
+  animation: cineReveal 1s cubic-bezier(.16,1,.3,1) 0.4s forwards;
+}
+.cine-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 72px; color: #fff;
+  letter-spacing: -0.03em;
+  text-shadow: 0 0 80px rgba(0,122,204,0.3);
+}
+.cine-pip {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 20px rgba(0,122,204,0.6), 0 0 60px rgba(0,122,204,0.3);
+  animation: cineBreathe 3s ease-in-out infinite;
+}
+
+/* Subtitle */
+.cine-subtitle {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px; font-weight: 400;
+  color: var(--accent);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-top: 12px;
+  opacity: 0;
+  animation: cineReveal 1s cubic-bezier(.16,1,.3,1) 1s forwards;
+}
+
+/* Divider line */
+.cine-divider {
+  width: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,122,204,0.4), transparent);
+  margin-top: 24px;
+  transition: width 1s cubic-bezier(.16,1,.3,1);
+}
+.cine-divider.expand { width: 200px; }
+
+/* Tagline */
+.cine-tagline {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 17px; color: var(--mid);
+  margin-top: 16px; min-height: 24px;
+  opacity: 0;
+  animation: cineReveal 0.8s ease 1.8s forwards;
+  letter-spacing: 0.02em;
+}
+.cine-tagline .cursor {
+  display: inline-block; width: 1px; height: 16px;
+  background: var(--accent); margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 0.8s step-end infinite;
+}
+
+/* Visualizer bar row */
+.cine-viz-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 3px; margin-top: 48px; height: 80px;
+  opacity: 0;
+  animation: cineReveal 1s ease 2.4s forwards;
+}
+.cine-bar {
+  width: 3px; border-radius: 100px;
+  background: linear-gradient(to top, var(--accent), var(--teal));
+  transition: height 0.15s ease;
+  box-shadow: 0 0 8px rgba(0,122,204,0.3);
+}
+
+/* Enter button */
+.cine-enter-wrap {
+  margin-top: 48px;
+  opacity: 0;
+  animation: cineReveal 0.8s ease 3s forwards;
+}
+.cine-enter {
+  position: relative;
+  background: transparent;
+  border: 1px solid rgba(0,122,204,0.4);
+  border-radius: 50px;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 500;
+  padding: 14px 40px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: all 0.3s ease;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+}
+.cine-enter::before {
   content: '';
-  position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
-  pointer-events: none; z-index: 0;
+  position: absolute; inset: -1px;
+  border-radius: 50px;
+  background: conic-gradient(from var(--glow-angle, 0deg), transparent 0%, var(--accent) 10%, transparent 20%);
+  z-index: -1; opacity: 0.5;
+  animation: glowSpin 3s linear infinite;
+}
+.cine-enter::after {
+  content: '';
+  position: absolute; inset: 1px;
+  border-radius: 50px;
+  background: #0a0a0c;
+  z-index: -1;
+}
+.cine-enter:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 30px rgba(0,122,204,0.2), 0 0 60px rgba(0,122,204,0.1);
+  transform: translateY(-2px);
+}
+.cine-enter:active { transform: translateY(0); }
+.cine-enter svg {
+  transition: transform 0.3s ease;
+}
+.cine-enter:hover svg { transform: translateX(3px); }
+
+/* ElevenLabs status indicator */
+.cine-voice-status {
+  margin-top: 20px;
+  font-size: 11px; color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+  display: flex; align-items: center; gap: 6px;
+  opacity: 0;
+  animation: cineReveal 0.5s ease 3.4s forwards;
+}
+.voice-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+.voice-dot.connected { background: var(--green); box-shadow: 0 0 8px rgba(78,201,176,0.5); }
+.voice-dot.offline { background: var(--dim); }
+
+/* Animations */
+@keyframes cineReveal {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cineBreathe {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 20px rgba(0,122,204,0.6), 0 0 60px rgba(0,122,204,0.3); }
+  50% { opacity: 0.4; transform: scale(0.7); box-shadow: 0 0 10px rgba(0,122,204,0.3), 0 0 30px rgba(0,122,204,0.15); }
+}
+@keyframes glowSpin {
+  to { --glow-angle: 360deg; }
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ════════════════════════════════════════════════════════
+   LOGIN CARD (hidden until cinematic exits)
+   ════════════════════════════════════════════════════════ */
+.login-wrap {
+  opacity: 0; transform: translateY(30px) scale(0.97);
+  transition: opacity 0.8s cubic-bezier(.16,1,.3,1) 0.2s, transform 0.8s cubic-bezier(.16,1,.3,1) 0.2s;
+  pointer-events: none;
+  position: relative; z-index: 1;
+}
+.login-wrap.visible {
+  opacity: 1; transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+body.login-ready {
+  background: #0a0a0c;
 }
 
 @keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
 @keyframes fadeUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
+/* ── AMBIENT ORBS (persist behind login card) ── */
+.login-orbs {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  opacity: 0; transition: opacity 1.5s ease;
+}
+.login-wrap.visible ~ .login-orbs,
+.login-orbs.show { opacity: 1; }
+.login-orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(120px); pointer-events: none;
+}
+.login-orb-1 {
+  width: 450px; height: 450px;
+  background: radial-gradient(circle, rgba(0,122,204,0.18) 0%, transparent 70%);
+  top: -5%; left: -8%;
+  animation: orbDrift1 12s ease-in-out infinite;
+}
+.login-orb-2 {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(78,201,176,0.12) 0%, transparent 70%);
+  bottom: -8%; right: -5%;
+  animation: orbDrift2 15s ease-in-out infinite;
+}
+.login-orb-3 {
+  width: 250px; height: 250px;
+  background: radial-gradient(circle, rgba(0,122,204,0.08) 0%, transparent 70%);
+  top: 50%; left: 60%;
+  animation: orbDrift3 18s ease-in-out infinite;
+}
+@keyframes orbDrift1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(40px, 30px); }
+}
+@keyframes orbDrift2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-30px, -40px); }
+}
+@keyframes orbDrift3 {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(-20px, 20px); }
+  66% { transform: translate(20px, -15px); }
+}
+
+/* ── LOGIN PARTICLE CANVAS ── */
+#loginCanvas {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+  opacity: 0; transition: opacity 1.5s ease 0.3s;
+}
+#loginCanvas.active { opacity: 0.6; }
+
 /* ── CARD ── */
 .card {
   position: relative; z-index: 1;
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 20px;
+  background: rgba(30, 30, 32, 0.45);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 24px;
   padding: 42px 40px 36px;
   width: 100%;
   max-width: 500px;
-  box-shadow: 0 4px 40px rgba(26,38,56,0.08), 0 1px 4px rgba(26,38,56,0.04);
-  animation: fadeUp .35s ease both;
+  box-shadow:
+    0 4px 60px rgba(0,0,0,0.4),
+    0 0 80px rgba(0,122,204,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  animation: cardGlow 6s ease-in-out infinite;
+}
+@keyframes cardGlow {
+  0%, 100% { box-shadow: 0 4px 60px rgba(0,0,0,0.4), 0 0 80px rgba(0,122,204,0.06), inset 0 1px 0 rgba(255,255,255,0.04); }
+  50% { box-shadow: 0 4px 60px rgba(0,0,0,0.4), 0 0 100px rgba(0,122,204,0.1), inset 0 1px 0 rgba(255,255,255,0.06); }
 }
 
 /* ── BRAND ── */
 .brand {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 10px;
   margin-bottom: 30px;
 }
 .brand-name {
   font-family: 'Instrument Serif', serif;
-  font-size: 27px; letter-spacing: -.02em; color: var(--text);
+  font-size: 30px; letter-spacing: -.02em; color: #fff;
+  text-shadow: 0 0 40px rgba(0,122,204,0.2);
 }
 .pip {
-  width: 7px; height: 7px; border-radius: 50%;
+  width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent);
+  box-shadow: 0 0 12px rgba(0,122,204,0.5), 0 0 30px rgba(0,122,204,0.2);
   animation: breathe 3s ease-in-out infinite;
 }
 
 /* ── TABS ── */
 .tabs {
   display: flex; gap: 2px;
-  background: var(--s3); border-radius: 10px; padding: 3px;
+  background: rgba(255,255,255,0.04); border-radius: 12px; padding: 3px;
   margin-bottom: 28px;
+  border: 1px solid rgba(255,255,255,0.04);
 }
 .tab {
-  flex: 1; background: none; border: none; border-radius: 8px;
-  padding: 8px 12px;
-  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300; color: var(--mid);
-  cursor: pointer; transition: all .15s;
+  flex: 1; background: none; border: none; border-radius: 10px;
+  padding: 9px 12px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 400; color: var(--dim);
+  cursor: pointer; transition: all .25s;
 }
+.tab:hover { color: var(--mid); }
 .tab.on {
-  background: var(--s1); color: var(--text);
-  box-shadow: 0 1px 4px rgba(26,38,56,0.09);
-  font-weight: 400;
+  background: rgba(0,122,204,0.12); color: #fff;
+  box-shadow: 0 0 20px rgba(0,122,204,0.1);
+  font-weight: 500;
 }
 
 /* ── HEADING ── */
 .heading { margin-bottom: 20px; }
 .heading h1 {
   font-family: 'Instrument Serif', serif;
-  font-size: 22px; font-weight: 400; letter-spacing: -.01em; line-height: 1.25;
+  font-size: 24px; font-weight: 400; letter-spacing: -.01em; line-height: 1.25;
+  color: #fff;
 }
 .heading .sub {
-  font-size: 13px; color: var(--mid); margin-top: 6px; line-height: 1.65;
+  font-size: 13px; color: var(--dim); margin-top: 8px; line-height: 1.65;
 }
 
 /* ── PATH CARDS (Step 1) ── */
@@ -117,12 +409,12 @@ body::before {
 
 .path-card {
   position: relative;
-  background: var(--s2); border: 1.5px solid var(--border);
+  background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.06);
   border-radius: 14px; padding: 22px 20px 18px;
-  cursor: pointer; transition: all .18s;
+  cursor: pointer; transition: all .25s;
   user-select: none;
 }
-.path-card:hover { border-color: var(--borderhi); background: var(--s1); }
+.path-card:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
 .path-card.selected[data-path="floor"]      { border-color: var(--teal);   background: var(--teal2); }
 .path-card.selected[data-path="management"] { border-color: var(--accent); background: var(--accent2); }
 
@@ -130,7 +422,7 @@ body::before {
   width: 48px; height: 48px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 14px; transition: all .15s;
-  background: var(--s3); color: var(--dim);
+  background: rgba(255,255,255,0.05); color: var(--dim);
 }
 .path-card.selected[data-path="floor"]      .path-icon { background: rgba(78,201,176,.12); color: var(--teal); }
 .path-card.selected[data-path="management"] .path-icon { background: var(--accent2); color: var(--accent); }
@@ -178,12 +470,12 @@ body::before {
 .dept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 20px; }
 
 .dept-item {
-  background: var(--s2); border: 1.5px solid var(--border);
+  background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.06);
   border-radius: 10px; padding: 12px 14px;
-  cursor: pointer; transition: all .15s;
+  cursor: pointer; transition: all .25s;
   user-select: none;
 }
-.dept-item:hover { border-color: var(--borderhi); background: var(--s1); }
+.dept-item:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
 .dept-item.selected { border-color: var(--accent); background: var(--accent2); }
 .dept-item.selected[data-role="qa"]          { border-color: var(--accent); background: var(--accent2); }
 .dept-item.selected[data-role="director"]    { border-color: var(--gold);   background: var(--gold2); }
@@ -203,18 +495,24 @@ body::before {
 .dept-hint { font-size: 10.5px; color: var(--dim); line-height: 1.4; }
 
 /* ── FIELDS ── */
-.field { margin-bottom: 16px; }
+.field { margin-bottom: 18px; }
 .field label {
-  display: block; font-size: 10.5px; letter-spacing: .07em;
-  text-transform: uppercase; color: var(--dim); margin-bottom: 7px; font-weight: 400;
+  display: block; font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 8px; font-weight: 500;
 }
 .field input {
-  width: 100%; background: var(--s2); border: 1px solid var(--border);
-  border-radius: 9px; color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300;
-  padding: 11px 14px; outline: none; transition: border-color .15s;
+  width: 100%; background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; color: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 400;
+  padding: 13px 16px; outline: none;
+  transition: all .3s ease;
 }
-.field input:focus { border-color: var(--borderhi); background: var(--s1); }
+.field input:focus {
+  border-color: rgba(0,122,204,0.5);
+  background: rgba(0,122,204,0.06);
+  box-shadow: 0 0 0 3px rgba(0,122,204,0.1), 0 0 30px rgba(0,122,204,0.08);
+}
 .field input::placeholder { color: var(--dim); }
 
 /* ── PASSWORD WRAPPER ── */
@@ -242,18 +540,45 @@ body::before {
 
 /* ── BUTTON ── */
 .continue-btn {
-  width: 100%; background: var(--accent); border: none; border-radius: 9px;
-  color: #fff; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 500;
-  padding: 12px 20px; cursor: pointer; transition: opacity .15s;
+  position: relative;
+  width: 100%; background: transparent; border: 1px solid rgba(0,122,204,0.4);
+  border-radius: 50px;
+  color: #fff; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+  padding: 14px 24px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all .3s ease;
+  overflow: hidden;
+  letter-spacing: 0.03em;
 }
-.continue-btn:hover   { opacity: .88; }
-.continue-btn:disabled { opacity: .35; cursor: default; }
+.continue-btn::before {
+  content: '';
+  position: absolute; inset: -1px;
+  border-radius: 50px;
+  background: conic-gradient(from var(--glow-angle, 0deg), transparent 0%, var(--accent) 10%, transparent 20%);
+  z-index: -1; opacity: 0.6;
+  animation: glowSpin 3s linear infinite;
+}
+.continue-btn::after {
+  content: '';
+  position: absolute; inset: 1px;
+  border-radius: 50px;
+  background: rgba(10, 10, 12, 0.85);
+  z-index: -1;
+}
+.continue-btn:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 30px rgba(0,122,204,0.25), 0 0 60px rgba(0,122,204,0.1);
+  transform: translateY(-2px);
+}
+.continue-btn:active { transform: translateY(0); }
+.continue-btn:disabled { opacity: .35; cursor: default; transform: none; box-shadow: none; }
+.continue-btn:disabled::before { animation: none; opacity: 0.2; }
 
 /* ── ERROR ── */
 .err-msg {
   text-align: center; font-size: 12px; color: var(--red);
-  margin-top: 10px; min-height: 16px;
+  margin-top: 12px; min-height: 16px;
+  text-shadow: 0 0 20px rgba(244,71,71,0.3);
 }
 
 /* ── PANE VISIBILITY ── */
@@ -268,40 +593,106 @@ body::before {
 /* ── FOOTER ── */
 .login-footer {
   margin-top: 28px; padding-top: 20px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(255,255,255,0.05);
   text-align: center; font-size: 12px; color: var(--dim); line-height: 1.7;
 }
 .login-footer em {
   font-family: 'Instrument Serif', serif; font-style: italic;
-  font-size: 13.5px; color: var(--mid);
+  font-size: 14px; color: var(--mid);
+  text-shadow: 0 0 30px rgba(0,122,204,0.15);
 }
 
 /* ── MOBILE ── */
 @media (max-width: 480px) {
   body { padding: 16px; align-items: flex-start; padding-top: 32px; }
-  .card { padding: 28px 22px 24px; border-radius: 16px; }
+  .card { padding: 28px 22px 24px; border-radius: 18px; }
   .brand { margin-bottom: 22px; }
-  .brand-name { font-size: 24px; }
+  .brand-name { font-size: 26px; }
   .tabs { margin-bottom: 22px; }
-  .tab { font-size: 13px; padding: 9px 10px; }
-  .heading { margin-bottom: 16px; }
-  .heading h1 { font-size: 20px; }
-  .heading .sub { font-size: 12.5px; }
-  .field input { font-size: 16px; padding: 12px 14px; border-radius: 10px; }
-  .pw-wrap input { padding-right: 42px; }
-  .continue-btn { font-size: 14px; padding: 13px 20px; border-radius: 10px; }
-  .path-card { padding: 18px 16px 14px; }
-  .path-icon { width: 42px; height: 42px; margin-bottom: 12px; }
-  .path-title { font-size: 17px; }
-  .path-desc { font-size: 11.5px; }
-  .dept-grid { grid-template-columns: 1fr; gap: 8px; }
-  .dept-item { padding: 12px 14px; }
+  .tab { font-size: 14px; padding: 11px 12px; }
+  .heading { margin-bottom: 18px; }
+  .heading h1 { font-size: 21px; }
+  .heading .sub { font-size: 13px; line-height: 1.5; }
+  .field input { font-size: 16px; padding: 14px 16px; border-radius: 12px; }
+  .pw-wrap input { padding-right: 44px; }
+  .continue-btn { font-size: 15px; padding: 15px 22px; border-radius: 50px; }
+  .path-card { padding: 20px 18px 16px; }
+  .path-icon { width: 44px; height: 44px; margin-bottom: 12px; }
+  .path-title { font-size: 18px; }
+  .path-desc { font-size: 12.5px; line-height: 1.5; }
+  .dept-grid { grid-template-columns: 1fr; gap: 10px; }
+  .dept-item { padding: 14px 16px; }
   .login-footer { margin-top: 22px; padding-top: 16px; }
-  .login-footer em { font-size: 12.5px; }
+  .login-footer em { font-size: 13px; }
+  /* Ambient orbs — smaller on mobile */
+  .login-orb-1 { width: 250px; height: 250px; }
+  .login-orb-2 { width: 200px; height: 200px; }
+  .login-orb-3 { width: 150px; height: 150px; }
+  /* Cinematic mobile adjustments */
+  .cine-name { font-size: 48px; }
+  .cine-subtitle { font-size: 12px; letter-spacing: 0.2em; }
+  .cine-tagline { font-size: 14px; }
+  .cine-viz-row { margin-top: 32px; height: 60px; }
+  .cine-enter-wrap { margin-top: 32px; }
 }
 </style>
 </head>
 <body>
+
+<!-- ════════════════════════════════════════════════════════
+     CINEMATIC INTRO
+     ════════════════════════════════════════════════════════ -->
+<div id="cinematic">
+  <!-- Language switcher (cinematic) -->
+  <div class="cine-lang-switcher" id="cineLangSwitcher"></div>
+
+  <!-- Ambient gradient orbs -->
+  <div class="cine-orb cine-orb-1"></div>
+  <div class="cine-orb cine-orb-2"></div>
+  <div class="cine-orb cine-orb-3"></div>
+
+  <!-- Canvas for frequency visualizer -->
+  <canvas id="vizCanvas"></canvas>
+
+  <!-- Content -->
+  <div class="cine-content">
+    <div class="cine-logo">
+      <span class="cine-name">Vent</span>
+      <div class="cine-pip"></div>
+    </div>
+
+    <div class="cine-subtitle" id="cineSubtitle" data-i18n="cine.subtitle">Manufacturing Intelligence</div>
+
+    <div class="cine-divider" id="cineDivider"></div>
+
+    <div class="cine-tagline" id="cineTagline"></div>
+
+    <!-- Frequency bar visualizer -->
+    <div class="cine-viz-row" id="vizBars"></div>
+
+    <!-- Enter button -->
+    <div class="cine-enter-wrap">
+      <button class="cine-enter" id="cineEnter" onclick="enterVent()">
+        <span data-i18n="cine.enter">Enter Vent</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Voice status -->
+    <div class="cine-voice-status" id="voiceStatus">
+      <div class="voice-dot" id="voiceDot"></div>
+      <span id="voiceLabel"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     LOGIN CARD
+     ════════════════════════════════════════════════════════ -->
+<div class="login-wrap" id="loginWrap">
 <div class="card">
 
   <div class="brand">
@@ -310,30 +701,32 @@ body::before {
   </div>
 
   <div class="tabs">
-    <button class="tab on" onclick="switchTab('login', this)">Sign In</button>
-    <button class="tab"    onclick="switchTab('register', this)">Register</button>
+    <button class="tab on" onclick="switchTab('login', this)" data-i18n="login.signInTab">Sign In</button>
+    <button class="tab"    onclick="switchTab('register', this)" data-i18n="login.registerTab">Register</button>
   </div>
 
   <!-- ── SIGN IN PANE ── -->
   <div class="login-pane show" id="loginPane">
 
     <div class="heading">
-      <h1>Welcome back</h1>
-      <p class="sub">Sign in with your email and password.</p>
+      <h1 data-i18n="login.welcomeBack">Welcome back</h1>
+      <p class="sub" data-i18n="login.signInSub">Sign in with your email and password.</p>
     </div>
 
     <div class="field">
-      <label>Email</label>
+      <label data-i18n="login.email">Email</label>
       <input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="email"
+             data-i18n-placeholder="login.emailPlaceholder"
              onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
     </div>
 
     <div class="field">
-      <label>Password</label>
+      <label data-i18n="login.password">Password</label>
       <div class="pw-wrap">
         <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"
+               data-i18n-placeholder="login.passwordPlaceholder"
                onkeydown="if(event.key==='Enter')doLogin()">
-        <button type="button" class="pw-toggle" onclick="togglePw('loginPass',this)" tabindex="-1" aria-label="Show password">
+        <button type="button" class="pw-toggle" onclick="togglePw('loginPass',this)" tabindex="-1" aria-label="Show password" data-i18n-aria="login.showPassword">
           <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
           <svg class="eye-shut" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
         </button>
@@ -342,7 +735,7 @@ body::before {
     <div class="err-msg" id="loginErr"></div>
 
     <button class="continue-btn" onclick="doLogin()" id="loginBtn">
-      Sign in
+      <span data-i18n="login.signInBtn">Sign in</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
     </button>
 
@@ -354,7 +747,7 @@ body::before {
     <div style="text-align:center; padding: 20px 0 10px;">
 
       <!-- Lock icon -->
-      <div style="width:64px; height:64px; border-radius:16px; background:var(--accent2); display:flex; align-items:center; justify-content:center; margin:0 auto 24px;">
+      <div style="width:64px; height:64px; border-radius:16px; background:rgba(0,122,204,0.1); display:flex; align-items:center; justify-content:center; margin:0 auto 24px; box-shadow: 0 0 40px rgba(0,122,204,0.1);">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -363,17 +756,17 @@ body::before {
       </div>
 
       <div class="heading" style="margin-bottom:16px;">
-        <h1 style="font-size:21px;">Private Access</h1>
+        <h1 style="font-size:21px;" data-i18n="login.privateAccess">Private Access</h1>
       </div>
 
-      <p style="font-size:13.5px; color:var(--mid); line-height:1.7; max-width:340px; margin:0 auto 24px;">
-        Registration and access to Vent is <strong style="color:var(--text); font-weight:400;">private</strong> for the time being.<br><br>
-        Please contact <strong style="color:var(--accent); font-weight:500;">Mr&nbsp;Vent</strong> directly to request user access.
-      </p>
+      <div style="font-size:13.5px; color:var(--dim); line-height:1.7; max-width:340px; margin:0 auto 24px;">
+        <p data-i18n="login.privateMsg" data-i18n-html style="margin-bottom:16px;">Registration and access to Vent is <strong style="color:#fff; font-weight:400;">private</strong> for the time being.</p>
+        <p data-i18n="login.contactMsg" data-i18n-html>Please contact <strong style="color:var(--accent); font-weight:500;">Mr&nbsp;Vent</strong> directly to request user access.</p>
+      </div>
 
-      <button class="continue-btn" onclick="switchTab('login', document.querySelector('.tab'))" style="max-width:220px; margin:0 auto; background:var(--s3); font-size:13px;">
+      <button class="continue-btn" onclick="switchTab('login', document.querySelector('.tab'))" style="max-width:220px; margin:0 auto; font-size:13px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-        Back to Sign In
+        <span data-i18n="login.backToSignIn">Back to Sign In</span>
       </button>
 
     </div>
@@ -381,12 +774,588 @@ body::before {
   </div><!-- /register-pane -->
 
   <div class="login-footer">
-    <em>Anonymous by design. Intelligent by necessity.</em>
+    <em data-i18n="login.footer">Anonymous by design. Intelligent by necessity.</em>
   </div>
 
 </div><!-- /card -->
+</div><!-- /login-wrap -->
 
+<!-- Ambient elements for login screen -->
+<canvas id="loginCanvas"></canvas>
+<div class="login-orbs" id="loginOrbs">
+  <div class="login-orb login-orb-1"></div>
+  <div class="login-orb login-orb-2"></div>
+  <div class="login-orb login-orb-3"></div>
+</div>
+
+<script src="i18n.js"></script>
 <script>
+// ════════════════════════════════════════════════════════
+// ELEVENLABS CONFIG — Paste your API key and voice ID here
+// ════════════════════════════════════════════════════════
+const ELEVEN_CONFIG = {
+  voiceId: 'pNInz6obpgDQGcFmaJgB',    // Default: "Adam" — change to any voice ID
+  modelId: 'eleven_multilingual_v2',   // Best quality model
+  get greeting() { return t('tts.greeting'); },
+};
+
+// ════════════════════════════════════════════════════════
+// AUDIO ENGINE — Web Audio API
+// ════════════════════════════════════════════════════════
+let audioCtx = null;
+let analyser = null;
+let audioSource = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.8;
+    analyser.connect(audioCtx.destination);
+  }
+  return audioCtx;
+}
+
+// ── Sound Effects ──
+function playSfx(type) {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+
+  if (type === 'hover') {
+    // Subtle tick
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(2400, now);
+    osc.frequency.exponentialRampToValueAtTime(1800, now + 0.04);
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    osc.start(now); osc.stop(now + 0.05);
+  }
+
+  if (type === 'click') {
+    // Satisfying click
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.start(now); osc.stop(now + 0.12);
+
+    // Click body — noise burst
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.1;
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const ng = ctx.createGain();
+    noise.connect(ng); ng.connect(ctx.destination);
+    ng.gain.setValueAtTime(0.12, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+    noise.start(now); noise.stop(now + 0.03);
+  }
+
+  if (type === 'enter') {
+    // Cinematic whoosh + rising tone
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    const gain2 = ctx.createGain();
+
+    osc1.connect(gain1); gain1.connect(ctx.destination);
+    osc2.connect(gain2); gain2.connect(ctx.destination);
+
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(200, now);
+    osc1.frequency.exponentialRampToValueAtTime(800, now + 0.5);
+    gain1.gain.setValueAtTime(0.0001, now);
+    gain1.gain.exponentialRampToValueAtTime(0.15, now + 0.15);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(400, now);
+    osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.4);
+    gain2.gain.setValueAtTime(0.0001, now);
+    gain2.gain.exponentialRampToValueAtTime(0.08, now + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    osc1.start(now); osc1.stop(now + 0.5);
+    osc2.start(now); osc2.stop(now + 0.4);
+
+    // Noise sweep
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.08;
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(500, now);
+    filter.frequency.exponentialRampToValueAtTime(4000, now + 0.4);
+    filter.Q.value = 2;
+    const ng = ctx.createGain();
+    noise.connect(filter); filter.connect(ng); ng.connect(ctx.destination);
+    ng.gain.setValueAtTime(0.0001, now);
+    ng.gain.exponentialRampToValueAtTime(0.15, now + 0.15);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    noise.start(now); noise.stop(now + 0.6);
+  }
+
+  if (type === 'ambient') {
+    // Deep ambient pad
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = 80;
+    filter.type = 'lowpass';
+    filter.frequency.value = 200;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.04, now + 2);
+    gain.gain.setValueAtTime(0.04, now + 6);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 10);
+    osc.start(now); osc.stop(now + 10);
+
+    // Second harmonic
+    const osc2 = ctx.createOscillator();
+    const g2 = ctx.createGain();
+    osc2.connect(g2); g2.connect(ctx.destination);
+    osc2.type = 'sine';
+    osc2.frequency.value = 120;
+    g2.gain.setValueAtTime(0.0001, now);
+    g2.gain.exponentialRampToValueAtTime(0.02, now + 3);
+    g2.gain.setValueAtTime(0.02, now + 7);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 10);
+    osc2.start(now); osc2.stop(now + 10);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// FREQUENCY VISUALIZER BARS
+// ════════════════════════════════════════════════════════
+const NUM_BARS = 48;
+let barHeights = new Array(NUM_BARS).fill(4);
+let targetHeights = new Array(NUM_BARS).fill(4);
+let vizRunning = false;
+let isPlayingVoice = false;
+
+function initBars() {
+  const container = document.getElementById('vizBars');
+  for (let i = 0; i < NUM_BARS; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'cine-bar';
+    bar.style.height = '4px';
+    container.appendChild(bar);
+  }
+}
+
+function animateBars() {
+  vizRunning = true;
+  const bars = document.querySelectorAll('.cine-bar');
+  const freqData = analyser ? new Uint8Array(analyser.frequencyBinCount) : null;
+
+  function tick() {
+    if (!vizRunning) return;
+
+    if (isPlayingVoice && analyser && freqData) {
+      // React to real audio
+      analyser.getByteFrequencyData(freqData);
+      for (let i = 0; i < NUM_BARS; i++) {
+        const idx = Math.floor((i / NUM_BARS) * freqData.length * 0.7);
+        targetHeights[i] = Math.max(4, (freqData[idx] / 255) * 76);
+      }
+    } else {
+      // Idle procedural animation
+      const t = Date.now() / 1000;
+      for (let i = 0; i < NUM_BARS; i++) {
+        const center = NUM_BARS / 2;
+        const dist = Math.abs(i - center) / center;
+        const wave1 = Math.sin(t * 1.5 + i * 0.25) * 0.5 + 0.5;
+        const wave2 = Math.sin(t * 0.8 + i * 0.15 + 1.5) * 0.5 + 0.5;
+        const wave3 = Math.sin(t * 2.3 + i * 0.4 + 3.0) * 0.3 + 0.7;
+        const envelope = 1 - dist * 0.6;
+        targetHeights[i] = Math.max(4, (wave1 * wave2 * wave3 * envelope) * 50 + 4);
+      }
+    }
+
+    // Smooth interpolation
+    for (let i = 0; i < NUM_BARS; i++) {
+      barHeights[i] += (targetHeights[i] - barHeights[i]) * 0.18;
+      if (bars[i]) bars[i].style.height = barHeights[i] + 'px';
+    }
+
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+// ════════════════════════════════════════════════════════
+// CANVAS BACKGROUND PARTICLES
+// ════════════════════════════════════════════════════════
+function initCanvas() {
+  const canvas = document.getElementById('vizCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  const PARTICLE_COUNT = 60;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Create particles
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      size: Math.random() * 1.5 + 0.5,
+      opacity: Math.random() * 0.3 + 0.05,
+      color: Math.random() > 0.5 ? '0,122,204' : '78,201,176',
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw connection lines
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 150) {
+          const alpha = (1 - dist / 150) * 0.08;
+          ctx.strokeStyle = `rgba(0,122,204,${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw and update particles
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.color},${p.opacity})`;
+      ctx.fill();
+
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
+    });
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  setTimeout(() => canvas.classList.add('active'), 500);
+}
+
+// ════════════════════════════════════════════════════════
+// TYPEWRITER EFFECT
+// ════════════════════════════════════════════════════════
+function typewriter(element, text, speed = 50) {
+  return new Promise(resolve => {
+    let i = 0;
+    element.innerHTML = '<span class="cursor"></span>';
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        element.innerHTML = text.substring(0, i + 1) + '<span class="cursor"></span>';
+        i++;
+      } else {
+        clearInterval(interval);
+        // Remove cursor after a moment
+        setTimeout(() => {
+          element.innerHTML = text;
+          resolve();
+        }, 1500);
+      }
+    }, speed);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// ELEVENLABS TEXT-TO-SPEECH
+// ════════════════════════════════════════════════════════
+async function playVoiceGreeting() {
+  try {
+    const response = await fetch(SERVER + '/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: ELEVEN_CONFIG.greeting,
+        voiceId: ELEVEN_CONFIG.voiceId,
+        modelId: ELEVEN_CONFIG.modelId,
+      }),
+    });
+
+    if (!response.ok) throw new Error('TTS request failed');
+
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+
+    // Route through analyser for visualizer
+    const ctx = getAudioCtx();
+    const source = ctx.createMediaElementSource(audio);
+    source.connect(analyser);
+
+    isPlayingVoice = true;
+    audio.play();
+
+    audio.addEventListener('ended', () => {
+      isPlayingVoice = false;
+      URL.revokeObjectURL(audioUrl);
+    });
+
+    return true;
+  } catch (err) {
+    console.warn('ElevenLabs TTS failed:', err.message);
+    return false;
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// ENTER TRANSITION
+// ════════════════════════════════════════════════════════
+let hasEntered = false;
+
+async function enterVent() {
+  if (hasEntered) return;
+  hasEntered = true;
+
+  // Play sounds
+  playSfx('enter');
+
+  // Try ElevenLabs greeting
+  const voicePlayed = await playVoiceGreeting();
+
+  // Wait for voice or just a moment
+  const delay = voicePlayed ? 2500 : 800;
+
+  setTimeout(() => {
+    // Exit cinematic
+    const cine = document.getElementById('cinematic');
+    cine.classList.add('exit');
+    vizRunning = false;
+
+    // Show login with ambient atmosphere
+    document.body.classList.add('login-ready');
+    document.body.style.overflow = 'auto';
+
+    // Start login particle canvas
+    initLoginCanvas();
+    document.getElementById('loginOrbs').classList.add('show');
+
+    setTimeout(() => {
+      document.getElementById('loginWrap').classList.add('visible');
+      cine.style.display = 'none';
+      // Play ambient when login appears
+      playSfx('click');
+      playSfx('ambient');
+    }, 500);
+  }, delay);
+}
+
+// ════════════════════════════════════════════════════════
+// LOGIN PARTICLE CANVAS
+// ════════════════════════════════════════════════════════
+function initLoginCanvas() {
+  const canvas = document.getElementById('loginCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  const PARTICLE_COUNT = 40;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: (Math.random() - 0.5) * 0.2,
+      size: Math.random() * 1.2 + 0.3,
+      opacity: Math.random() * 0.25 + 0.03,
+      color: Math.random() > 0.5 ? '0,122,204' : '78,201,176',
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          const alpha = (1 - dist / 120) * 0.06;
+          ctx.strokeStyle = `rgba(0,122,204,${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.color},${p.opacity})`;
+      ctx.fill();
+
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
+    });
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  setTimeout(() => canvas.classList.add('active'), 300);
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+function bootCinematic() {
+  hasEntered = false;
+  vizRunning = false;
+
+  // Reset cinematic visibility
+  const cine = document.getElementById('cinematic');
+  cine.style.display = '';
+  cine.classList.remove('exit');
+
+  // Reset login card + ambient elements
+  document.body.classList.remove('login-ready');
+  document.getElementById('loginWrap').classList.remove('visible');
+  document.getElementById('loginOrbs').classList.remove('show');
+  const lc = document.getElementById('loginCanvas');
+  if (lc) lc.classList.remove('active');
+
+  // Reset tagline for fresh typewriter
+  const tagline = document.getElementById('cineTagline');
+  tagline.innerHTML = '<span class="cursor"></span>';
+
+  // Reset divider
+  document.getElementById('cineDivider').classList.remove('expand');
+
+  // Init canvas particles
+  initCanvas();
+
+  // Init visualizer bars
+  initBars();
+
+  // Expand divider line
+  setTimeout(() => {
+    document.getElementById('cineDivider').classList.add('expand');
+  }, 1400);
+
+  // Start typewriter after subtitle appears
+  setTimeout(() => {
+    typewriter(
+      document.getElementById('cineTagline'),
+      t('cine.tagline'),
+      65
+    );
+  }, 1900);
+
+  // Start bar animation after bars appear
+  setTimeout(() => animateBars(), 2600);
+
+  // Update voice status indicator — check if server is reachable
+  const dot = document.getElementById('voiceDot');
+  const label = document.getElementById('voiceLabel');
+  dot.classList.remove('connected', 'offline');
+  label.textContent = '';
+  fetch(SERVER + '/health').then(r => {
+    if (r.ok) {
+      dot.classList.add('connected');
+      label.textContent = t('cine.voiceConnected');
+    } else throw new Error();
+  }).catch(() => {
+    dot.classList.add('offline');
+    label.textContent = t('cine.voiceOffline');
+  });
+}
+
+// Re-apply cinematic text when language switches
+window.addEventListener('ventLangChanged', () => {
+  const sub = document.getElementById('cineSubtitle');
+  if (sub) sub.textContent = t('cine.subtitle');
+  const tagline = document.getElementById('cineTagline');
+  if (tagline && !tagline.querySelector('.cursor')) tagline.textContent = t('cine.tagline');
+  const dot = document.getElementById('voiceDot');
+  const label = document.getElementById('voiceLabel');
+  if (dot && dot.classList.contains('connected')) label.textContent = t('cine.voiceConnected');
+  if (dot && dot.classList.contains('offline')) label.textContent = t('cine.voiceOffline');
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  bootCinematic();
+
+  // Add hover sounds to interactive elements
+  document.addEventListener('mouseenter', (e) => {
+    if (e.target.matches('button, .tab, .path-card, .dept-item, a')) {
+      playSfx('hover');
+    }
+  }, true);
+
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.matches('button, .tab, .path-card, .dept-item, a') && !e.target.matches('#cineEnter')) {
+      playSfx('click');
+    }
+  }, true);
+
+  // Add sound to input focus
+  document.addEventListener('focusin', (e) => {
+    if (e.target.matches('input')) {
+      playSfx('hover');
+    }
+  }, true);
+});
+
+// Handle mobile bfcache — re-show cinematic when page is restored from cache
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) {
+    // Page was restored from bfcache — reset cinematic intro
+    bootCinematic();
+  }
+});
+
+// ════════════════════════════════════════════════════════
+// ORIGINAL LOGIN LOGIC (preserved)
+// ════════════════════════════════════════════════════════
 const SERVER = window.location.origin;
 
 const ROLE_ROUTES = {
@@ -445,10 +1414,10 @@ function checkMatch() {
   }
   if (pw === cpw) {
     tag.className = 'match-tag ok';
-    tag.textContent = 'Passwords match ✓';
+    tag.textContent = t('err.matchOk');
   } else {
     tag.className = 'match-tag no';
-    tag.textContent = 'Does not match';
+    tag.textContent = t('err.matchNo');
   }
 }
 
@@ -479,14 +1448,14 @@ function goToStep2() {
     // Floor operators — no department choice needed
     selectedRole = 'operator';
     document.getElementById('deptPicker').style.display = 'none';
-    document.getElementById('step2Title').textContent = 'Almost there';
-    document.getElementById('step2Sub').textContent = 'Enter your details to start submitting observations.';
+    document.getElementById('step2Title').textContent = t('login.almostThere');
+    document.getElementById('step2Sub').textContent = t('login.detailsSub');
   } else {
     // Management — show department picker
     selectedRole = null;
     document.getElementById('deptPicker').style.display = 'block';
-    document.getElementById('step2Title').textContent = 'Your department';
-    document.getElementById('step2Sub').textContent = 'Select your department and create your credentials.';
+    document.getElementById('step2Title').textContent = t('login.yourDept');
+    document.getElementById('step2Sub').textContent = t('login.deptSub');
   }
 }
 
@@ -520,7 +1489,7 @@ function setLoading(btnId, loading) {
   if (loading) {
     btn.classList.add('btn-loading');
     btn.dataset.origHtml = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span> Please wait…';
+    btn.innerHTML = '<span class="spinner"></span> ' + t('login.pleaseWait');
   } else {
     btn.classList.remove('btn-loading');
     if (btn.dataset.origHtml) btn.innerHTML = btn.dataset.origHtml;
@@ -540,7 +1509,7 @@ async function doLogin() {
   const password = document.getElementById('loginPass').value;
 
   if (!email || !password) {
-    showError('loginErr', 'Please enter your email and password.');
+    showError('loginErr', t('err.emailPassword'));
     return;
   }
 
@@ -553,20 +1522,20 @@ async function doLogin() {
     });
     const data = await res.json();
     if (!res.ok) {
-      showError('loginErr', data.error || 'Sign in failed.');
+      showError('loginErr', data.error || t('err.signInFailed'));
       setLoading('loginBtn', false);
       return;
     }
     handleAuthSuccess(data);
   } catch (e) {
-    showError('loginErr', 'Unable to reach server. Please try again.');
+    showError('loginErr', t('err.serverUnreachable'));
     setLoading('loginBtn', false);
   }
 }
 
 async function doRegister() {
   if (!selectedRole) {
-    showError('regErr', selectedPath === 'management' ? 'Please select your department.' : 'Please select a path first.');
+    showError('regErr', selectedPath === 'management' ? t('err.selectDept') : t('err.selectPath'));
     return;
   }
   const name = document.getElementById('regName').value.trim();
@@ -574,10 +1543,10 @@ async function doRegister() {
   const password = document.getElementById('regPass').value;
   const confirmPassword = document.getElementById('regPassConfirm').value;
 
-  if (!name) { showError('regErr', 'Please enter your name.'); return; }
-  if (!email) { showError('regErr', 'Please enter your email.'); return; }
-  if (password.length < 6) { showError('regErr', 'Password must be at least 6 characters.'); return; }
-  if (password !== confirmPassword) { showError('regErr', 'Passwords do not match.'); return; }
+  if (!name) { showError('regErr', t('err.enterName')); return; }
+  if (!email) { showError('regErr', t('err.enterEmail')); return; }
+  if (password.length < 6) { showError('regErr', t('err.passwordLength')); return; }
+  if (password !== confirmPassword) { showError('regErr', t('err.passwordMismatch')); return; }
 
   setLoading('regBtn', true);
   try {
@@ -588,13 +1557,13 @@ async function doRegister() {
     });
     const data = await res.json();
     if (!res.ok) {
-      showError('regErr', data.error || 'Registration failed.');
+      showError('regErr', data.error || t('err.registrationFailed'));
       setLoading('regBtn', false);
       return;
     }
     handleAuthSuccess(data);
   } catch (e) {
-    showError('regErr', 'Unable to reach server. Please try again.');
+    showError('regErr', t('err.serverUnreachable'));
     setLoading('regBtn', false);
   }
 }

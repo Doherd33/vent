@@ -36,7 +36,7 @@
 html { height: 100%; }
 body {
   background: var(--bg); color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-weight: 300;
+  font-family: 'DM Sans', sans-serif; font-weight: 400;
   -webkit-font-smoothing: antialiased;
   display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 }
@@ -309,7 +309,7 @@ body {
 }
 .q-textarea {
   width: 100%; border: none; outline: none; background: transparent;
-  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 400;
   color: var(--text); resize: none; line-height: 1.55; min-height: 44px; max-height: 120px;
 }
 .q-textarea::placeholder { color: var(--dim); }
@@ -497,7 +497,7 @@ body {
 .vent-textarea {
   width: 100%; border: 1px solid var(--border); border-radius: 9px;
   background: var(--s2); color: var(--text);
-  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 400;
   padding: 11px 13px; resize: none; outline: none; min-height: 88px;
   line-height: 1.6; transition: border-color .15s, background .15s;
 }
@@ -573,6 +573,80 @@ body {
 }
 .sc-att-vid-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 58px; }
 
+/* ── VOICE MIC BUTTON ── */
+.vp-textarea-wrap { position: relative; }
+.vp-mic-btn {
+  position: absolute; bottom: 8px; right: 8px;
+  background: var(--s3); border: 1px solid var(--border); border-radius: 7px;
+  color: var(--mid); padding: 7px 9px;
+  cursor: pointer; display: flex; align-items: center;
+  transition: all .2s; z-index: 2;
+}
+.vp-mic-btn:hover { border-color: var(--borderhi); color: var(--text); background: var(--s2); }
+.vp-mic-btn.recording {
+  background: var(--red2); border-color: var(--red); color: var(--red);
+  animation: recPulse 1.5s ease-in-out infinite;
+}
+@keyframes recPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244,71,71,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(244,71,71,0); }
+}
+
+/* ── RECORDING OVERLAY ── */
+.vp-rec-overlay {
+  display: none; position: absolute; inset: 0; z-index: 5;
+  background: rgba(30,30,30,0.97);
+  border-radius: 9px;
+  flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+}
+.vp-rec-overlay.active { display: flex; }
+.vp-rec-rings { position: relative; width: 56px; height: 56px; }
+.vp-rec-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid var(--red);
+  animation: ringPulse 2s ease-out infinite;
+}
+.vp-rec-ring:nth-child(2) { animation-delay: 0.4s; }
+.vp-rec-ring:nth-child(3) { animation-delay: 0.8s; }
+@keyframes ringPulse {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.vp-rec-mic-center {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--red);
+}
+.vp-rec-timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px; color: var(--text); font-weight: 500;
+}
+.vp-rec-bars { display: flex; align-items: center; gap: 2px; height: 18px; }
+.vp-rec-bar {
+  width: 2.5px; border-radius: 100px;
+  background: var(--red); opacity: 0.7;
+  transition: height 0.1s ease;
+}
+.vp-rec-hint { font-size: 10px; color: var(--dim); }
+
+/* ── TRANSCRIBING STATE ── */
+.vp-rec-transcribing {
+  display: none; position: absolute; inset: 0; z-index: 5;
+  background: rgba(30,30,30,0.97);
+  border-radius: 9px;
+  flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+}
+.vp-rec-transcribing.active { display: flex; }
+.vp-rec-spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+.vp-rec-transcribe-text {
+  font-size: 12px; color: var(--mid);
+  font-family: 'Instrument Serif', serif; font-style: italic;
+}
+
 .vp-submit-btn {
   width: 100%; margin-top: 14px;
   background: var(--teal); color: #fff; border: none; border-radius: 9px;
@@ -618,7 +692,7 @@ body {
 }
 .sd-tab {
   background: none; border: none; cursor: pointer;
-  font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 300;
+  font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 400;
   color: var(--dim); padding: 8px 10px; border-radius: 0;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
   transition: color .15s;
@@ -2154,7 +2228,7 @@ body {
 }
 .tour-card {
   position: fixed; z-index: 9002;
-  width: 310px; background: var(--s1);
+  width: 330px; background: var(--s1);
   border: 1px solid var(--border); border-radius: 12px;
   padding: 18px 20px 14px; box-shadow: 0 12px 40px rgba(0,0,0,.5);
   animation: fadeUp .25s ease;
@@ -2205,14 +2279,66 @@ body {
 
 .tour-help-btn {
   position: fixed; bottom: 16px; left: 16px; z-index: 99;
-  width: 32px; height: 32px; border-radius: 50%;
+  height: 36px; border-radius: 50px;
   background: var(--s2); border: 1px solid var(--border);
   color: var(--dim); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Instrument Serif', serif; font-size: 15px;
-  transition: all .15s; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400;
+  padding: 0 14px 0 10px;
+  transition: all .25s; box-shadow: 0 2px 8px rgba(0,0,0,.2);
 }
 .tour-help-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent2); }
+.tour-help-btn svg { flex-shrink: 0; }
+
+/* ── VOICE TOUR: frequency bars inside card ── */
+.tour-voice-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; min-height: 28px;
+}
+.tour-voice-bars {
+  display: flex; align-items: center; gap: 2px; height: 22px;
+}
+.tour-voice-bar {
+  width: 2.5px; border-radius: 100px;
+  background: linear-gradient(to top, var(--accent), var(--teal));
+  transition: height 0.08s ease;
+  box-shadow: 0 0 4px rgba(0,122,204,0.3);
+}
+.tour-voice-label {
+  font-size: 10px; color: var(--accent); font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .04em; display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.tour-voice-pip {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  animation: breathe 2s ease-in-out infinite; flex-shrink: 0;
+}
+.tour-voice-mute {
+  background: none; border: 1px solid var(--border); border-radius: 5px;
+  color: var(--dim); cursor: pointer; padding: 3px 6px; margin-left: auto;
+  font-size: 10px; font-family: 'DM Sans', sans-serif;
+  transition: all .15s; display: flex; align-items: center; gap: 3px;
+}
+.tour-voice-mute:hover { color: var(--text); border-color: var(--borderhi); }
+.tour-voice-mute.muted { color: var(--red); border-color: var(--red); }
+
+/* Demo mode banner at top */
+.tour-demo-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9003;
+  background: linear-gradient(90deg, #007acc, #0098e6);
+  padding: 8px 20px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-size: 12px; color: #fff; font-weight: 500;
+  box-shadow: 0 2px 12px rgba(0,122,204,0.3);
+  animation: fadeUp .3s ease;
+}
+.tour-demo-banner svg { flex-shrink: 0; }
+.tour-demo-exit {
+  background: rgba(255,255,255,0.2); border: none; border-radius: 5px;
+  color: #fff; font-size: 11px; font-family: 'DM Sans', sans-serif;
+  padding: 3px 10px; cursor: pointer; margin-left: 8px;
+  transition: background .15s;
+}
+.tour-demo-exit:hover { background: rgba(255,255,255,0.35); }
 .tour-explore {
   padding: 6px 14px; border-radius: 6px; font-size: 12px;
   cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500;
@@ -2384,6 +2510,7 @@ body {
 .sop-content-box { animation: fadeUp .25s ease; }
 </style>
 <script>if(!localStorage.getItem('vent_token'))window.location.replace('login.html');</script>
+<script src="i18n.js"></script>
 </head>
 <body>
 
@@ -2393,23 +2520,24 @@ body {
     <a href="index.html" class="app-name">Vent<span class="pip"></span></a>
     <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
     <nav class="title-nav" id="mainNav">
-      <a href="index.html"       class="nav-tab">Submit</a>
-      <a href="query.html"       class="nav-tab active">Query SOPs</a>
-      <a href="submissions.html" class="nav-tab">Submissions</a>
-      <a href="builder.html"     class="nav-tab">Doc Builder</a>
-      <a href="qa.html"          class="nav-tab">QA Control</a>
-      <a href="workflow.html"    class="nav-tab">Workflow</a>
-      <a href="dashboard.html"   class="nav-tab">Dashboard</a>
+      <a href="index.html"       class="nav-tab" data-nav-key="Submit" data-i18n="nav.submit">Submit</a>
+      <a href="query.html"       class="nav-tab active" data-nav-key="Query SOPs" data-i18n="nav.query">Query SOPs</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="Submissions" data-i18n="nav.submissions">Submissions</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab" data-nav-key="QA Control" data-i18n="nav.qaControl">QA Control</a>
+      <a href="workflow.html"    class="nav-tab" data-nav-key="Workflow" data-i18n="nav.workflow">Workflow</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
     </nav>
   </div>
   <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
     <button class="sop-search-btn" onclick="toggleSopSidebar()" title="Search SOPs">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
     <span class="role-badge" id="roleBadge"></span>
     <span class="user-name" id="titleUser"></span>
-    <button class="sign-out-btn" onclick="startNewChat()" title="Start a new conversation">New chat</button>
-    <button class="sign-out-btn" onclick="localStorage.removeItem('vent_token');localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');localStorage.removeItem('vent_user_id');location.href='login.html'">Sign out</button>
+    <button class="sign-out-btn" onclick="startNewChat()" title="Start a new conversation" data-i18n="query.newChat">New chat</button>
+    <button class="sign-out-btn" onclick="localStorage.removeItem('vent_token');localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');localStorage.removeItem('vent_user_id');location.href='login.html'" data-i18n="nav.signOut">Sign out</button>
   </div>
 </div>
 
@@ -2815,7 +2943,30 @@ body {
 
   <div class="vp-body" id="vpBody">
     <label class="vp-label">Observation</label>
-    <textarea class="vent-textarea" id="ventText" placeholder="What did you observe? Any deviation, concern, or SOP gap?"></textarea>
+    <div class="vp-textarea-wrap">
+      <div class="vp-rec-overlay" id="vpRecOverlay">
+        <div class="vp-rec-rings">
+          <div class="vp-rec-ring"></div>
+          <div class="vp-rec-ring"></div>
+          <div class="vp-rec-ring"></div>
+          <div class="vp-rec-mic-center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+        </div>
+        <div class="vp-rec-timer" id="vpRecTimer">0:00</div>
+        <div class="vp-rec-bars" id="vpRecBars"></div>
+        <div class="vp-rec-hint">Tap mic to stop</div>
+      </div>
+      <div class="vp-rec-transcribing" id="vpRecTranscribing">
+        <div class="vp-rec-spinner"></div>
+        <div class="vp-rec-transcribe-text">Transcribing...</div>
+      </div>
+      <textarea class="vent-textarea" id="ventText" placeholder="What did you observe? Any deviation, concern, or SOP gap?"></textarea>
+      <button class="vp-mic-btn" id="vpMicBtn" onclick="toggleVpRecording()" title="Voice input">
+        <svg class="vp-mic-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <svg class="vp-mic-stop" style="display:none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+    </div>
 
     <div class="vp-row2">
       <select class="vp-area-sel" id="ventArea">
@@ -2883,7 +3034,10 @@ body {
   </svg>
 </button>
 
-<button class="tour-help-btn" onclick="startTour()" title="Page tour">?</button>
+<button class="tour-help-btn" onclick="startVoiceTour()" title="Watch guided demo">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+  Watch Demo
+</button>
 
 <script>
 const SERVER = window.location.origin;
@@ -6448,55 +6602,217 @@ function resetVentPanel() {
   setTimeout(() => document.getElementById('ventText').focus(), 50);
 }
 
+// ════════════════════════════════════════════════════════
+// VOICE RECORDING — Speech-to-Text (Vent Panel)
+// ════════════════════════════════════════════════════════
+let vpMediaRecorder = null;
+let vpAudioChunks = [];
+let vpRecStream = null;
+let vpRecStartTime = 0;
+let vpRecTimerInterval = null;
+let vpRecAnalyser = null;
+let vpRecAnimFrame = null;
+
+// Init waveform bars
+(function() {
+  const c = document.getElementById('vpRecBars');
+  if (!c) return;
+  for (let i = 0; i < 24; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'vp-rec-bar';
+    bar.style.height = '3px';
+    c.appendChild(bar);
+  }
+})();
+
+function toggleVpRecording() {
+  if (vpMediaRecorder && vpMediaRecorder.state === 'recording') {
+    vpMediaRecorder.stop();
+  } else {
+    startVpRecording();
+  }
+}
+
+async function startVpRecording() {
+  try {
+    vpRecStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    alert(t('mic.noAccess'));
+    return;
+  }
+
+  vpAudioChunks = [];
+  vpMediaRecorder = new MediaRecorder(vpRecStream, {
+    mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : ''
+  });
+
+  vpMediaRecorder.ondataavailable = (e) => {
+    if (e.data.size > 0) vpAudioChunks.push(e.data);
+  };
+
+  vpMediaRecorder.onstop = async () => {
+    vpRecStream.getTracks().forEach(t => t.stop());
+    clearInterval(vpRecTimerInterval);
+    cancelAnimationFrame(vpRecAnimFrame);
+
+    document.getElementById('vpRecOverlay').classList.remove('active');
+    document.getElementById('vpRecTranscribing').classList.add('active');
+
+    const blob = new Blob(vpAudioChunks, { type: 'audio/webm' });
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result.split(',')[1];
+      try {
+        const res = await fetch(SERVER + '/stt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('vent_token') || ''),
+          },
+          body: JSON.stringify({ audio: base64, mimeType: 'audio/webm', language_code: (window.VentI18n && VentI18n.getSttLangCode()) || 'eng' }),
+        });
+        const data = await res.json();
+        if (data.text) {
+          const ta = document.getElementById('ventText');
+          const existing = ta.value.trim();
+          ta.value = existing ? existing + ' ' + data.text : data.text;
+          ta.focus();
+        }
+      } catch (err) {
+        console.error('STT error:', err);
+        alert(t('mic.sttFailed'));
+      }
+      document.getElementById('vpRecTranscribing').classList.remove('active');
+      resetVpMicBtn();
+    };
+    reader.readAsDataURL(blob);
+  };
+
+  vpMediaRecorder.start(250);
+  vpRecStartTime = Date.now();
+
+  const btn = document.getElementById('vpMicBtn');
+  btn.classList.add('recording');
+  btn.querySelector('.vp-mic-icon').style.display = 'none';
+  btn.querySelector('.vp-mic-stop').style.display = '';
+  document.getElementById('vpRecOverlay').classList.add('active');
+
+  vpRecTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - vpRecStartTime) / 1000);
+    document.getElementById('vpRecTimer').textContent =
+      Math.floor(elapsed / 60) + ':' + String(elapsed % 60).padStart(2, '0');
+  }, 200);
+
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const source = audioCtx.createMediaStreamSource(vpRecStream);
+  vpRecAnalyser = audioCtx.createAnalyser();
+  vpRecAnalyser.fftSize = 128;
+  vpRecAnalyser.smoothingTimeConstant = 0.7;
+  source.connect(vpRecAnalyser);
+
+  const bars = document.querySelectorAll('.vp-rec-bar');
+  const freqData = new Uint8Array(vpRecAnalyser.frequencyBinCount);
+
+  function animateBars() {
+    vpRecAnalyser.getByteFrequencyData(freqData);
+    bars.forEach((bar, i) => {
+      const idx = Math.floor((i / bars.length) * freqData.length * 0.8);
+      bar.style.height = Math.max(3, (freqData[idx] / 255) * 18) + 'px';
+    });
+    vpRecAnimFrame = requestAnimationFrame(animateBars);
+  }
+  animateBars();
+}
+
+function resetVpMicBtn() {
+  const btn = document.getElementById('vpMicBtn');
+  btn.classList.remove('recording');
+  btn.querySelector('.vp-mic-icon').style.display = '';
+  btn.querySelector('.vp-mic-stop').style.display = 'none';
+}
+
 // ── NAV: role filtering + user display ──
 (function(){
   var role=localStorage.getItem('vent_role')||'operator';
   var name=localStorage.getItem('vent_name')||'';
   var rules={operator:['Query SOPs','Doc Builder'],qa:['Submit','Query SOPs','Submissions','Doc Builder','QA Control'],director:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Dashboard'],msat:['Submit','Query SOPs','Submissions','Doc Builder'],engineering:['Submit','Query SOPs','Submissions','Doc Builder'],admin:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Workflow','Dashboard']};
   var colors={operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
-  var labels={operator:'Operator',qa:'QA',director:'Director',msat:'MSAT',engineering:'Engineering',admin:'Admin'};
+  var roleKeys={operator:'role.operator',qa:'role.qa',director:'role.director',msat:'role.msat',engineering:'role.engineering',admin:'role.admin'};
   var badge=document.getElementById('roleBadge');
-  if(badge){badge.textContent=labels[role]||role.toUpperCase();badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
+  if(badge){badge.textContent=t(roleKeys[role]||'role.operator');badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
   var un=document.getElementById('titleUser');if(un)un.textContent=name;
   var allowed=rules[role]||[];
-  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return a.textContent.trim()===x})?'inline-block':'none';});
+  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return(a.dataset.navKey||a.textContent.trim())===x})?'inline-block':'none';});
 })();
 
-// ─── PRODUCT TOUR ────────────────────────────────────────────────────────────
+// ─── VOICE-NARRATED PRODUCT TOUR (Charlie) ──────────────────────────────────
 (function(){
+  var CHARLIE_VOICE_ID = 'IKne3meq5aSn9XLyUdCD';
+  var TTS_MODEL = 'eleven_multilingual_v2';
+
   var tourSteps = [
-    { target:'.history-toggle', title:'Chat History', desc:'View and search your past conversations. Pick up where you left off or analyse trends across all your queries.', pos:'bottom',
+    { target:'.history-toggle', title:'Chat History',
+      desc:'View and search your past conversations. Pick up where you left off or analyse trends across all your queries.',
+      voice:'Over here is your chat history. Every conversation you have with Vent is saved automatically. You can search through them, pick up where you left off, or even analyse trends across all your past queries.',
+      pos:'bottom',
       open:'openHistorySidebar', close:'closeHistorySidebar',
       sub:[
-        { target:'.hs-new-btn', title:'New Conversation', desc:'Start a fresh conversation. Your current chat is saved automatically so you can always come back to it.', pos:'right' },
-        { target:'.hs-head-actions', title:'Quick Actions', desc:'Analyse trends across all your past queries, or clear your history. Hover for tooltips.', pos:'right' },
-        { target:'#hsList', title:'Your Conversations', desc:'All your previous chats are listed here. Click any to reload it and continue where you left off.', pos:'right' }
+        { target:'.hs-new-btn', title:'New Conversation', desc:'Start a fresh conversation. Your current chat is saved automatically.', voice:'Hit this button to start a fresh conversation. Don\'t worry — your current chat is saved automatically so you can always come back to it.', pos:'right' },
+        { target:'.hs-head-actions', title:'Quick Actions', desc:'Analyse trends across all your past queries, or clear your history.', voice:'These quick actions let you analyse trends across all your queries, or clear your history if you need a fresh start.', pos:'right' },
+        { target:'#hsList', title:'Your Conversations', desc:'All your previous chats are listed here. Click any to reload it.', voice:'All your previous conversations are listed right here. Just click any one to jump straight back in.', pos:'right' }
       ]},
-    { target:'.sop-search-btn', title:'SOP Library', desc:'Browse and search all facility SOPs. Open them in a floating viewer where you can ask AI questions about specific documents.', pos:'bottom',
+    { target:'.sop-search-btn', title:'SOP Library',
+      desc:'Browse and search all facility SOPs. Open them in a floating viewer where you can ask AI questions about specific documents.',
+      voice:'This is the SOP Library. Every standard operating procedure for your facility lives here. You can browse, search, and even ask the AI questions about specific documents — all without leaving this page.',
+      pos:'bottom',
       open:'openSopSidebar', close:'closeSopSidebar',
       sub:[
-        { target:'.sop-discover-header', title:'AI Discovery', desc:'Not sure which SOP you need? Open this and describe what you\'re working on — the AI will find the right documents for you.', pos:'left' },
-        { target:'#sopSearchInput', title:'Keyword Search', desc:'Search SOPs by keyword or document name. Results appear instantly below.', pos:'left' },
-        { target:'#sopResults', title:'Search Results', desc:'Click any result to open it in a floating viewer where you can read the full SOP and ask AI questions about it.', pos:'left' }
+        { target:'.sop-discover-header', title:'AI Discovery', desc:'Describe what you\'re working on — the AI will find the right documents.', voice:'Not sure which SOP you need? Just open this and describe what you\'re working on. The AI will find the right documents for you. Pretty handy.', pos:'left' },
+        { target:'#sopSearchInput', title:'Keyword Search', desc:'Search SOPs by keyword or document name.', voice:'Or if you know what you\'re looking for, use the keyword search. Results appear instantly as you type.', pos:'left' },
+        { target:'#sopResults', title:'Search Results', desc:'Click any result to open it in a floating viewer.', voice:'Click any result to open it in a floating viewer. You can read the full SOP and ask the AI questions about it, right here.', pos:'left' }
       ]},
-    { target:'#qInput', title:'Ask a Question', desc:'Type your question in plain language. Hit Enter to send, Shift+Enter for a new line. The AI searches your SOPs to find the answer.', pos:'top' },
-    { target:'#areaSelect', title:'Facility Area', desc:'Select which area you\'re working in — this helps the AI find the most relevant SOP sections for your question.', pos:'top' },
-    { target:'.cam-btn', title:'Photo Query', desc:'Snap a photo of equipment, a reading, or a label. The AI will analyse the image alongside your SOPs to give you context-specific guidance.', pos:'top' },
-    { target:'.send-btn', title:'Send', desc:'Submit your question. You can also just press Enter.', pos:'top' },
-    { target:'.sug-chips', title:'Quick Suggestions', desc:'Not sure where to start? Click any of these to instantly ask a common question.', pos:'top' },
-    { target:'.vent-fab', title:'Raise a Concern', desc:'Spotted something off? Submit an anonymous observation to QA — no paperwork, no judgement.', pos:'left',
+    { target:'#qInput', title:'Ask a Question',
+      desc:'Type your question in plain language. The AI searches your SOPs to find the answer.',
+      voice:'This is where the magic happens. Just type your question in plain language — things like "what\'s the target pH range" or "how do I calibrate the DO probe". The AI searches your SOPs and gives you the answer in seconds.',
+      pos:'top' },
+    { target:'#areaSelect', title:'Facility Area',
+      desc:'Select which area you\'re working in — this helps the AI find the most relevant SOP sections.',
+      voice:'Select your facility area here. This helps the AI narrow down to the most relevant SOP sections for your question. The more specific you are, the better the answers.',
+      pos:'top' },
+    { target:'.cam-btn', title:'Photo Query',
+      desc:'Snap a photo of equipment, a reading, or a label for context-specific guidance.',
+      voice:'Now this is really cool. You can snap a photo of equipment, a reading, or a label, and the AI will analyse the image alongside your SOPs. It gives you context-specific guidance based on what it sees. No more guessing.',
+      pos:'top' },
+    { target:'.send-btn', title:'Send',
+      desc:'Submit your question. You can also just press Enter.',
+      voice:'Hit send or just press enter. Simple as that.',
+      pos:'top' },
+    { target:'.sug-chips', title:'Quick Suggestions',
+      desc:'Not sure where to start? Click any of these to instantly ask a common question.',
+      voice:'Not sure where to start? These quick suggestions cover the most common questions. Just click one and the answer comes straight back.',
+      pos:'top' },
+    { target:'.vent-fab', title:'Raise a Concern',
+      desc:'Spotted something off? Submit an anonymous observation to QA — no paperwork, no judgement.',
+      voice:'Now here\'s the heart of Vent. This button lets any operator raise a concern — anonymously. Spotted something off on the floor? Equipment issue? Process deviation? Just tap this and tell us. No paperwork, no judgement. It goes straight to QA.',
+      pos:'left',
       open:'openVentPanel', close:'closeVentPanel',
       sub:[
-        { target:'#ventText', title:'Describe the Observation', desc:'Write what you noticed — equipment issues, process deviations, safety concerns, anything at all.', pos:'right' },
-        { target:'.vp-pri', title:'Set Priority', desc:'Flag it as Low, Medium, or High. Medium is selected by default.', pos:'right' },
-        { target:'#vpDrop', title:'Attach Evidence', desc:'Drag photos or video here, or click to browse. Visual evidence helps QA investigate faster.', pos:'right' },
-        { target:'#ventSubmitBtn', title:'Submit', desc:'Send your observation anonymously. It gets routed straight to QA and MSAT for review.', pos:'right' }
+        { target:'#ventText', title:'Describe the Observation', desc:'Write what you noticed — anything at all.', voice:'Just describe what you noticed. Equipment issues, process deviations, safety concerns — anything at all. You can type it, or use the mic button to speak it.', pos:'right' },
+        { target:'.vp-pri', title:'Set Priority', desc:'Flag it as Low, Medium, or High.', voice:'Set the priority. Low, medium, or high. Medium is selected by default, but if it\'s urgent — flag it.', pos:'right' },
+        { target:'#vpDrop', title:'Attach Evidence', desc:'Drag photos or video here. Visual evidence helps QA investigate faster.', voice:'You can attach photos or video too. Just drag and drop, or click to browse. Visual evidence helps QA investigate much faster.', pos:'right' },
+        { target:'#ventSubmitBtn', title:'Submit', desc:'Send your observation anonymously to QA and MSAT.', voice:'And that\'s it. Hit submit. Your observation gets routed straight to QA and MSAT for review. Completely anonymous. That\'s Vent — manufacturing intelligence, designed for the floor.', pos:'right' }
       ]}
   ];
 
   var tourIdx = 0, subIdx = -1;
-  var overlay, highlight, card;
-  var openPanelClose = null; // tracks which close fn to call
+  var overlay, highlight, card, demoBanner;
+  var openPanelClose = null;
+  var voiceMuted = false;
+  var currentAudio = null;
+  var tourAudioCtx = null;
+  var tourAnalyser = null;
+  var voiceBarsAnimFrame = null;
+  var isVoiceTour = false;
 
   function buildOverlay(){
     overlay = document.createElement('div');
@@ -6510,6 +6826,21 @@ function resetVentPanel() {
     document.body.appendChild(card);
   }
 
+  function showDemoBanner(){
+    if(demoBanner) return;
+    demoBanner = document.createElement('div');
+    demoBanner.className = 'tour-demo-banner';
+    demoBanner.innerHTML =
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>' +
+      '<span>Guided Demo — Charlie is walking you through Vent</span>' +
+      '<button class="tour-demo-exit" onclick="endTour()">Exit Demo</button>';
+    document.body.appendChild(demoBanner);
+  }
+
+  function removeDemoBanner(){
+    if(demoBanner){ demoBanner.remove(); demoBanner = null; }
+  }
+
   function clipOverlay(rect){
     var p = 6;
     var x1 = rect.left - p, y1 = rect.top - p;
@@ -6521,7 +6852,7 @@ function resetVentPanel() {
   }
 
   function positionCard(rect, pos){
-    var cw = 310, gap = 14;
+    var cw = 330, gap = 14;
     var top, left, arrowClass;
     if(pos === 'bottom'){
       top = rect.bottom + gap;
@@ -6567,7 +6898,89 @@ function resetVentPanel() {
     if(openPanelClose){ try{ window[openPanelClose](); }catch(e){} openPanelClose = null; }
   }
 
+  // ── Voice narration ──
+  function stopCurrentAudio(){
+    if(voiceBarsAnimFrame){ cancelAnimationFrame(voiceBarsAnimFrame); voiceBarsAnimFrame = null; }
+    if(currentAudio){
+      currentAudio.pause();
+      currentAudio.src = '';
+      currentAudio = null;
+    }
+  }
+
+  function speakStep(text){
+    if(voiceMuted || !isVoiceTour || !text) return;
+    stopCurrentAudio();
+
+    fetch(SERVER + '/tts', {
+      method: 'POST',
+      headers: Object.assign({'Content-Type':'application/json'}, getAuthHeaders()),
+      body: JSON.stringify({ text: text, voiceId: CHARLIE_VOICE_ID, modelId: TTS_MODEL })
+    })
+    .then(function(r){ if(!r.ok) throw new Error('TTS failed'); return r.blob(); })
+    .then(function(blob){
+      var url = URL.createObjectURL(blob);
+      currentAudio = new Audio(url);
+      currentAudio.volume = 0.85;
+
+      // Connect to analyser for frequency bars
+      if(!tourAudioCtx) tourAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var source = tourAudioCtx.createMediaElementSource(currentAudio);
+      tourAnalyser = tourAudioCtx.createAnalyser();
+      tourAnalyser.fftSize = 64;
+      tourAnalyser.smoothingTimeConstant = 0.75;
+      source.connect(tourAnalyser);
+      tourAnalyser.connect(tourAudioCtx.destination);
+
+      currentAudio.play().catch(function(){});
+      animateVoiceBars();
+
+      currentAudio.onended = function(){
+        if(voiceBarsAnimFrame){ cancelAnimationFrame(voiceBarsAnimFrame); voiceBarsAnimFrame = null; }
+        resetVoiceBarsIdle();
+        URL.revokeObjectURL(url);
+      };
+    })
+    .catch(function(e){ console.warn('Voice narration unavailable:', e); });
+  }
+
+  function animateVoiceBars(){
+    var bars = card ? card.querySelectorAll('.tour-voice-bar') : [];
+    if(!bars.length || !tourAnalyser){ return; }
+    var freqData = new Uint8Array(tourAnalyser.frequencyBinCount);
+
+    function tick(){
+      tourAnalyser.getByteFrequencyData(freqData);
+      bars.forEach(function(bar, i){
+        var idx = Math.floor((i / bars.length) * freqData.length * 0.7);
+        bar.style.height = Math.max(3, (freqData[idx] / 255) * 20) + 'px';
+      });
+      voiceBarsAnimFrame = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  function resetVoiceBarsIdle(){
+    var bars = card ? card.querySelectorAll('.tour-voice-bar') : [];
+    bars.forEach(function(bar, i){
+      bar.style.height = (3 + Math.sin(i * 0.5) * 2) + 'px';
+    });
+  }
+
+  function toggleMute(){
+    voiceMuted = !voiceMuted;
+    var btn = card ? card.querySelector('.tour-voice-mute') : null;
+    if(btn){
+      btn.classList.toggle('muted', voiceMuted);
+      btn.innerHTML = voiceMuted
+        ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Muted'
+        : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Charlie';
+    }
+    if(voiceMuted) stopCurrentAudio();
+  }
+
   function renderStep(){
+    stopCurrentAudio();
     var mainStep = tourSteps[tourIdx];
     var step, isSubStep = subIdx >= 0;
     if(isSubStep){
@@ -6578,14 +6991,12 @@ function resetVentPanel() {
 
     var el = document.querySelector(step.target);
     if(!el){
-      // skip missing elements
       if(isSubStep){ subIdx++; if(subIdx >= mainStep.sub.length){ leaveSubTour(); nextMain(); } else renderStep(); }
       else { tourIdx++; if(tourIdx >= tourSteps.length) endTourInner(); else renderStep(); }
       return;
     }
     var rect = el.getBoundingClientRect();
 
-    // Highlight
     var p = 6;
     highlight.style.top = (rect.top - p) + 'px';
     highlight.style.left = (rect.left - p) + 'px';
@@ -6593,13 +7004,11 @@ function resetVentPanel() {
     highlight.style.height = (rect.height + p*2) + 'px';
     clipOverlay(rect);
 
-    // Step counter
     var counter = (tourIdx+1) + ' of ' + tourSteps.length;
     if(isSubStep){
       counter += '<span class="tour-sub-counter"> · ' + (subIdx+1) + '/' + mainStep.sub.length + '</span>';
     }
 
-    // Buttons
     var hasSub = !isSubStep && mainStep.sub && mainStep.sub.length > 0;
     var isLastMain = tourIdx === tourSteps.length - 1;
     var isLastSub = isSubStep && subIdx === mainStep.sub.length - 1;
@@ -6611,8 +7020,26 @@ function resetVentPanel() {
     var nextLabel = (isLastMain && !isSubStep && !hasSub) || (isLastMain && isLastSub) ? 'Done' : 'Next';
     btns += '<button class="tour-next" onclick="nextTourStep()">' + nextLabel + '</button>';
 
+    // Build voice bars HTML
+    var voiceBarCount = 16;
+    var barsHtml = '';
+    for(var b=0; b<voiceBarCount; b++){
+      barsHtml += '<div class="tour-voice-bar" style="height:'+(3+Math.sin(b*0.5)*2)+'px"></div>';
+    }
+    var muteIcon = voiceMuted
+      ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Muted'
+      : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Charlie';
+    var voiceRow = isVoiceTour
+      ? '<div class="tour-voice-row">' +
+          '<div class="tour-voice-bars">' + barsHtml + '</div>' +
+          '<div class="tour-voice-label"><span class="tour-voice-pip"></span> CHARLIE</div>' +
+          '<button class="tour-voice-mute'+(voiceMuted?' muted':'')+'" onclick="toggleTourMute()">'+muteIcon+'</button>' +
+        '</div>'
+      : '';
+
     card.innerHTML =
       '<div class="tour-card-step">' + counter + '</div>' +
+      voiceRow +
       '<div class="tour-card-title">' + step.title + '</div>' +
       '<div class="tour-card-desc">' + step.desc + '</div>' +
       '<div class="tour-card-actions">' +
@@ -6622,6 +7049,11 @@ function resetVentPanel() {
       '<div class="tour-card-arrow"></div>';
 
     positionCard(rect, step.pos);
+
+    // Trigger voice narration
+    if(isVoiceTour && step.voice){
+      setTimeout(function(){ speakStep(step.voice); }, 400);
+    }
   }
 
   function leaveSubTour(){
@@ -6639,7 +7071,6 @@ function resetVentPanel() {
   function nextStep(){
     var mainStep = tourSteps[tourIdx];
     if(subIdx >= 0){
-      // in sub-steps
       subIdx++;
       if(subIdx >= mainStep.sub.length){
         leaveSubTour();
@@ -6648,7 +7079,6 @@ function resetVentPanel() {
         renderStep();
       }
     } else {
-      // on main step — skip sub-steps, go to next main
       closeOpenPanel();
       nextMain();
     }
@@ -6660,11 +7090,9 @@ function resetVentPanel() {
       subIdx--;
       renderStep();
     } else if(subIdx === 0){
-      // back to the main step of this group — close panel
       leaveSubTour();
       renderStep();
     } else {
-      // on a main step — go to previous main step
       if(tourIdx > 0){
         closeOpenPanel();
         tourIdx--;
@@ -6677,41 +7105,47 @@ function resetVentPanel() {
   function exploreStep(){
     var mainStep = tourSteps[tourIdx];
     if(!mainStep.sub || !mainStep.sub.length) return;
-    // Open the panel
     if(mainStep.open){ try{ window[mainStep.open](); }catch(e){} }
     openPanelClose = mainStep.close || null;
     subIdx = 0;
-    // Small delay to let panel animate open
     setTimeout(renderStep, 250);
   }
 
   function endTourInner(){
+    stopCurrentAudio();
     closeOpenPanel();
+    removeDemoBanner();
     if(overlay){ overlay.remove(); overlay = null; }
     if(highlight){ highlight.remove(); highlight = null; }
     if(card){ card.remove(); card = null; }
+    isVoiceTour = false;
     localStorage.setItem('vent_tour_done','1');
   }
 
-  function start(){
+  function start(withVoice){
     tourIdx = 0;
     subIdx = -1;
+    isVoiceTour = !!withVoice;
+    voiceMuted = false;
     closeOpenPanel();
     if(overlay) endTourInner();
     buildOverlay();
+    if(isVoiceTour) showDemoBanner();
     renderStep();
   }
 
   // Expose globally
-  window.startTour = start;
+  window.startTour = function(){ start(false); };
+  window.startVoiceTour = function(){ start(true); };
   window.nextTourStep = nextStep;
   window.prevTourStep = prevStep;
   window.exploreTourStep = exploreStep;
   window.endTour = endTourInner;
+  window.toggleTourMute = toggleMute;
 
-  // Auto-trigger on first visit
+  // Auto-trigger on first visit (silent tour)
   if(!localStorage.getItem('vent_tour_done')){
-    setTimeout(start, 1000);
+    setTimeout(function(){ start(false); }, 1000);
   }
 })();
 </script>
