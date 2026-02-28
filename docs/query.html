@@ -1086,6 +1086,47 @@ body {
 .gdp-upload-title { font-size: 15px; color: var(--text); margin-bottom: 6px; font-weight: 400; }
 .gdp-upload-sub { font-size: 12px; color: var(--mid); line-height: 1.6; }
 .gdp-upload-sub strong { color: var(--gold); font-weight: 500; }
+.gdp-upload-actions { display: flex; gap: 10px; margin-top: 16px; }
+.gdp-upload-action-btn {
+  display: flex; align-items: center; gap: 6px; padding: 8px 18px;
+  border-radius: 8px; font-size: 12px; font-family: inherit; font-weight: 400;
+  cursor: pointer; transition: all .15s;
+  background: var(--s2); border: 1px solid var(--border); color: var(--text);
+}
+.gdp-upload-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+.gdp-upload-action-btn.camera { border-color: var(--gold); color: var(--gold); background: var(--gold2); }
+.gdp-upload-action-btn.camera:hover { background: rgba(255,198,77,.25); }
+/* Camera viewfinder */
+.gdp-camera-view {
+  flex: 1; display: flex; flex-direction: column; background: #000; margin: 16px; border-radius: 12px; overflow: hidden; position: relative;
+}
+.gdp-camera-view video { width: 100%; flex: 1; object-fit: cover; }
+.gdp-camera-controls {
+  display: flex; align-items: center; justify-content: center; gap: 24px;
+  padding: 16px; background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+}
+.gdp-camera-cancel {
+  background: none; border: 1px solid rgba(255,255,255,.3); border-radius: 8px;
+  color: #fff; font-size: 12px; padding: 6px 16px; cursor: pointer; font-family: inherit;
+}
+.gdp-camera-cancel:hover { border-color: #fff; }
+.gdp-camera-shutter {
+  width: 56px; height: 56px; border-radius: 50%; background: #fff;
+  border: 3px solid rgba(255,255,255,.4); cursor: pointer; position: relative;
+  display: flex; align-items: center; justify-content: center; transition: transform .1s;
+}
+.gdp-camera-shutter:hover { transform: scale(1.05); }
+.gdp-camera-shutter:active { transform: scale(.95); }
+.gdp-shutter-ring {
+  width: 46px; height: 46px; border-radius: 50%; border: 2px solid rgba(0,0,0,.15);
+  display: block;
+}
+.gdp-camera-switch {
+  background: none; border: 1px solid rgba(255,255,255,.3); border-radius: 50%;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  color: #fff; cursor: pointer;
+}
+.gdp-camera-switch:hover { border-color: #fff; }
 
 /* Photo strip (upload mode) */
 .gdp-photos { display: flex; gap: 10px; padding: 0 24px 16px; overflow-x: auto; flex-shrink: 0; }
@@ -2456,14 +2497,38 @@ body {
           <div class="gdp-upload-icon">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15l3-3 3 3"/></svg>
           </div>
-          <div class="gdp-upload-title">Upload PBR pages for GDP review</div>
+          <div class="gdp-upload-title">Upload or photograph PBR pages</div>
           <div class="gdp-upload-sub">
-            Take photos or upload images of your batch record pages.<br>
+            Upload images of your batch record pages or take a photo directly.<br>
             AI will scan for <strong>EE</strong>, <strong>LE</strong>, <strong>IE</strong>, <strong>CE</strong>, blank spaces,
             missing signatures, and other GDP issues.
           </div>
+          <div class="gdp-upload-actions">
+            <button class="gdp-upload-action-btn" onclick="event.stopPropagation();document.getElementById('gdpFileInput').click()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Choose Files
+            </button>
+            <button class="gdp-upload-action-btn camera" onclick="event.stopPropagation();gdpOpenCamera()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Take Photo
+            </button>
+          </div>
         </div>
         <input type="file" id="gdpFileInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
+        <input type="file" id="gdpCameraInput" accept="image/*" capture="environment" style="display:none">
+        <!-- Camera viewfinder (hidden until activated) -->
+        <div class="gdp-camera-view" id="gdpCameraView" style="display:none">
+          <video id="gdpCameraVideo" autoplay playsinline></video>
+          <div class="gdp-camera-controls">
+            <button class="gdp-camera-cancel" onclick="gdpCloseCamera()">Cancel</button>
+            <button class="gdp-camera-shutter" onclick="gdpCapturePhoto()">
+              <span class="gdp-shutter-ring"></span>
+            </button>
+            <button class="gdp-camera-switch" onclick="gdpSwitchCamera()" id="gdpCamSwitch" style="display:none">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            </button>
+          </div>
+        </div>
         <div class="gdp-photos" id="gdpPhotos"></div>
       </div>
       <!-- Loading state -->
@@ -4327,6 +4392,7 @@ function openGdpModal() {
 
 function closeGdpModal() {
   if (_gdpTourTimer) { clearInterval(_gdpTourTimer); _gdpTourTimer = null; }
+  if (_gdpCameraStream) gdpCloseCamera();
   document.getElementById('gdpOverlay').classList.remove('show');
 }
 
@@ -4355,6 +4421,100 @@ document.getElementById('gdpFileInput').addEventListener('change', function() {
   });
   this.value = '';
 });
+
+// Camera input (mobile fallback — uses native camera app)
+document.getElementById('gdpCameraInput').addEventListener('change', function() {
+  Array.from(this.files).forEach(file => {
+    if (file.size > 20 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      _gdpImages.push({ dataUrl: e.target.result, base64: e.target.result.split(',')[1], mimeType: file.type || 'image/jpeg', name: 'Photo ' + (_gdpImages.length + 1) + '.jpg' });
+      renderGdpThumbs();
+    };
+    reader.readAsDataURL(file);
+  });
+  this.value = '';
+});
+
+// ── Camera capture (getUserMedia for desktop, native camera for mobile) ──
+let _gdpCameraStream = null;
+let _gdpCameraFacing = 'environment'; // 'environment' = rear, 'user' = front
+
+function gdpOpenCamera() {
+  // On mobile, try native camera input first (better UX)
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    document.getElementById('gdpCameraInput').click();
+    return;
+  }
+  // Desktop: use getUserMedia viewfinder
+  gdpStartCamera();
+}
+
+async function gdpStartCamera() {
+  const cameraView = document.getElementById('gdpCameraView');
+  const dropZone = document.getElementById('gdpDropZone');
+  const video = document.getElementById('gdpCameraVideo');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: _gdpCameraFacing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    _gdpCameraStream = stream;
+    video.srcObject = stream;
+
+    // Show switch button if multiple cameras available
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cameras = devices.filter(d => d.kind === 'videoinput');
+    document.getElementById('gdpCamSwitch').style.display = cameras.length > 1 ? '' : 'none';
+
+    dropZone.style.display = 'none';
+    cameraView.style.display = 'flex';
+  } catch (err) {
+    alert('Could not access camera: ' + err.message);
+  }
+}
+
+function gdpCloseCamera() {
+  if (_gdpCameraStream) {
+    _gdpCameraStream.getTracks().forEach(t => t.stop());
+    _gdpCameraStream = null;
+  }
+  document.getElementById('gdpCameraView').style.display = 'none';
+  document.getElementById('gdpDropZone').style.display = '';
+}
+
+function gdpCapturePhoto() {
+  const video = document.getElementById('gdpCameraVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+  _gdpImages.push({
+    dataUrl,
+    base64: dataUrl.split(',')[1],
+    mimeType: 'image/jpeg',
+    name: 'Photo ' + (_gdpImages.length + 1) + '.jpg'
+  });
+  renderGdpThumbs();
+
+  // Flash effect
+  const flash = document.createElement('div');
+  flash.style.cssText = 'position:absolute;inset:0;background:#fff;opacity:.6;z-index:10;pointer-events:none;transition:opacity .3s';
+  document.getElementById('gdpCameraView').appendChild(flash);
+  requestAnimationFrame(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 300); });
+}
+
+async function gdpSwitchCamera() {
+  _gdpCameraFacing = _gdpCameraFacing === 'environment' ? 'user' : 'environment';
+  if (_gdpCameraStream) {
+    _gdpCameraStream.getTracks().forEach(t => t.stop());
+  }
+  await gdpStartCamera();
+}
 
 // Drag & drop
 const gdpDrop = document.getElementById('gdpDropZone');
@@ -4476,6 +4636,7 @@ function renderGdpReview() {
 
 function resetGdpModal() {
   if (_gdpTourTimer) { clearInterval(_gdpTourTimer); _gdpTourTimer = null; }
+  if (_gdpCameraStream) gdpCloseCamera();
   _gdpImages = []; _gdpData = null; _gdpActivePage = 0; _gdpActiveError = -1;
   document.getElementById('gdpPhotos').innerHTML = '';
   document.getElementById('gdpUploadSection').style.display = 'flex';
