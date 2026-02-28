@@ -123,13 +123,13 @@ function getVoyageClient() {
 }
 
 // Debug: dump all env var names so we can see what Railway is actually passing
-app.get('/debug-env', (req, res) => {
+app.get('/debug-env', requireAuth, (req, res) => {
   const voyageKeys = Object.keys(process.env).filter(k => k.toLowerCase().includes('voyage'));
   res.json({ voyageKeys, allKeys: Object.keys(process.env).sort() });
 });
 
 // Debug: test the full RAG pipeline
-app.get('/debug-rag', async (req, res) => {
+app.get('/debug-rag', requireAuth, async (req, res) => {
   const results = { voyage: null, supabase_rpc: null, chunks: 0 };
   try {
     const { client: voyage } = getVoyageClient();
@@ -523,6 +523,27 @@ CREATE INDEX IF NOT EXISTS idx_capas_owner ON capas(owner);
 
 ALTER TABLE capas ENABLE ROW LEVEL SECURITY;
 CREATE POLICY IF NOT EXISTS capas_all ON capas FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+
+-- ── Doc Builder documents ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS builder_docs (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  client_id   TEXT NOT NULL,
+  title       TEXT NOT NULL DEFAULT 'Untitled',
+  area        TEXT NOT NULL DEFAULT 'Other',
+  description TEXT DEFAULT '',
+  status      TEXT NOT NULL DEFAULT 'draft',
+  steps       JSONB DEFAULT '[]'::jsonb,
+  versions    JSONB DEFAULT '[]'::jsonb,
+  source      TEXT,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_builder_docs_user   ON builder_docs(user_id);
+CREATE INDEX IF NOT EXISTS idx_builder_docs_client ON builder_docs(client_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_builder_docs_user_client ON builder_docs(user_id, client_id);
+ALTER TABLE builder_docs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS builder_docs_all ON builder_docs FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 
 -- ── Add status column to submissions if missing ──────────────
 DO $$ BEGIN
@@ -1257,7 +1278,8 @@ Return ONLY valid JSON — no markdown, no fences, no preamble.
   "params": [{ "name": "param", "value": "val", "unit": "unit", "range": "range or null", "flag": "critical or normal" }],
   "warnings": ["only real safety warnings"],
   "notes": ["brief note"],
-  "sources": [{ "code": "doc_id", "title": "doc title", "section": "section ref" }]
+  "sources": [{ "code": "doc_id", "title": "doc title", "section": "section ref" }],
+  "followUps": ["2-3 natural follow-up questions the operator might ask next based on this answer — short, specific, actionable"]
 }`
       }]
     });
@@ -2088,6 +2110,181 @@ Return ONLY valid JSON — no markdown fences, no preamble:
   }
 });
 
+// ─── DOC BUILDER PERSISTENCE ─────────────────────────────────────────────────
+// Table: builder_docs (see /admin/setup SQL output)
+
+let _builderTableReady = false;
+async function ensureBuilderTable() {
+  if (_builderTableReady) return;
+  try {
+    const { error } = await supabase.from('builder_docs').select('id').limit(1);
+    if (error && error.message.includes('does not exist')) {
+      console.log('[DOCS] builder_docs table not found. Run the SQL from GET /admin/setup in Supabase.');
+    }
+    _builderTableReady = true;
+  } catch { _builderTableReady = true; }
+}
+
+// GET /docs/documents — list all documents for the current user
+app.get('/docs/documents', requireAuth, async (req, res) => {
+  await ensureBuilderTable();
+  try {
+    const { data, error } = await supabase
+      .from('builder_docs')
+      .select('client_id, title, area, description, status, steps, versions, source, created_at, updated_at')
+      .eq('user_id', req.user.id || req.user.email)
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error('Doc list error:', err);
+    res.status(500).json({ error: 'Failed to load documents' });
+  }
+});
+
+// POST /docs/documents — create a new document
+app.post('/docs/documents', requireAuth, async (req, res) => {
+  await ensureBuilderTable();
+  const { client_id, title, area, description, status, steps, versions, source } = req.body;
+  if (!client_id) return res.status(400).json({ error: 'client_id is required' });
+  try {
+    const { data, error } = await supabase
+      .from('builder_docs')
+      .insert({
+        user_id: req.user.id || req.user.email,
+        client_id,
+        title: title || 'Untitled',
+        area: area || 'Other',
+        description: description || '',
+        status: status || 'draft',
+        steps: steps || [],
+        versions: versions || [],
+        source: source || null
+      })
+      .select()
+      .single();
+    if (error) throw error;
+
+    await auditLog({
+      userId: req.user.id || req.user.email,
+      userRole: req.user.role || 'user',
+      action: 'doc_created',
+      entityType: 'builder_doc',
+      entityId: client_id,
+      after: { title, area, status: status || 'draft' },
+      req
+    });
+
+    res.json(data);
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Document already exists' });
+    console.error('Doc create error:', err);
+    res.status(500).json({ error: 'Failed to create document' });
+  }
+});
+
+// GET /docs/documents/:clientId — get a single document
+app.get('/docs/documents/:clientId', requireAuth, async (req, res) => {
+  await ensureBuilderTable();
+  try {
+    const { data, error } = await supabase
+      .from('builder_docs')
+      .select('*')
+      .eq('client_id', req.params.clientId)
+      .eq('user_id', req.user.id || req.user.email)
+      .single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Document not found' });
+    res.json(data);
+  } catch (err) {
+    console.error('Doc get error:', err);
+    res.status(500).json({ error: 'Failed to load document' });
+  }
+});
+
+// PUT /docs/documents/:clientId — update a document
+app.put('/docs/documents/:clientId', requireAuth, async (req, res) => {
+  await ensureBuilderTable();
+  const { title, area, description, status, steps, versions } = req.body;
+  const update = { updated_at: new Date().toISOString() };
+  if (title !== undefined) update.title = title;
+  if (area !== undefined) update.area = area;
+  if (description !== undefined) update.description = description;
+  if (steps !== undefined) update.steps = steps;
+  if (versions !== undefined) update.versions = versions;
+
+  // Track status changes for audit
+  let oldStatus = null;
+  if (status !== undefined) {
+    update.status = status;
+    try {
+      const { data: existing } = await supabase
+        .from('builder_docs')
+        .select('status')
+        .eq('client_id', req.params.clientId)
+        .eq('user_id', req.user.id || req.user.email)
+        .single();
+      if (existing) oldStatus = existing.status;
+    } catch {}
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('builder_docs')
+      .update(update)
+      .eq('client_id', req.params.clientId)
+      .eq('user_id', req.user.id || req.user.email)
+      .select()
+      .single();
+    if (error) throw error;
+
+    if (status !== undefined && oldStatus && oldStatus !== status) {
+      await auditLog({
+        userId: req.user.id || req.user.email,
+        userRole: req.user.role || 'user',
+        action: 'doc_status_changed',
+        entityType: 'builder_doc',
+        entityId: req.params.clientId,
+        before: { status: oldStatus },
+        after: { status },
+        req
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error('Doc update error:', err);
+    res.status(500).json({ error: 'Failed to update document' });
+  }
+});
+
+// DELETE /docs/documents/:clientId — delete a document
+app.delete('/docs/documents/:clientId', requireAuth, async (req, res) => {
+  await ensureBuilderTable();
+  try {
+    const { error } = await supabase
+      .from('builder_docs')
+      .delete()
+      .eq('client_id', req.params.clientId)
+      .eq('user_id', req.user.id || req.user.email);
+    if (error) throw error;
+
+    await auditLog({
+      userId: req.user.id || req.user.email,
+      userRole: req.user.role || 'user',
+      action: 'doc_deleted',
+      entityType: 'builder_doc',
+      entityId: req.params.clientId,
+      req
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Doc delete error:', err);
+    res.status(500).json({ error: 'Failed to delete document' });
+  }
+});
+
 // ─── CHAT SESSIONS (persistent conversation history) ─────────────────────────
 // Table: chat_sessions (id uuid PK, user_id text, title text, messages jsonb, created_at timestamptz, updated_at timestamptz)
 // Create in Supabase SQL editor:
@@ -2124,7 +2321,7 @@ app.get('/chat/sessions', requireAuth, async (req, res) => {
     const { data, error } = await supabase
       .from('chat_sessions')
       .select('id, title, created_at, updated_at')
-      .eq('user_id', req.user.sub || req.user.email)
+      .eq('user_id', req.user.id || req.user.email)
       .order('updated_at', { ascending: false })
       .limit(50);
     if (error) throw error;
@@ -2142,7 +2339,7 @@ app.post('/chat/sessions', requireAuth, async (req, res) => {
     const { data, error } = await supabase
       .from('chat_sessions')
       .insert({
-        user_id: req.user.sub || req.user.email,
+        user_id: req.user.id || req.user.email,
         title: title || 'New conversation',
         messages: messages || []
       })
@@ -2163,7 +2360,7 @@ app.post('/chat/analyse', requireAuth, async (req, res) => {
     const { data: sessions, error } = await supabase
       .from('chat_sessions')
       .select('id, title, messages, created_at, updated_at')
-      .eq('user_id', req.user.sub || req.user.email)
+      .eq('user_id', req.user.id || req.user.email)
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -2235,7 +2432,7 @@ app.get('/chat/sessions/:id', requireAuth, async (req, res) => {
       .from('chat_sessions')
       .select('*')
       .eq('id', req.params.id)
-      .eq('user_id', req.user.sub || req.user.email)
+      .eq('user_id', req.user.id || req.user.email)
       .single();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Session not found' });
@@ -2257,7 +2454,7 @@ app.put('/chat/sessions/:id', requireAuth, async (req, res) => {
       .from('chat_sessions')
       .update(update)
       .eq('id', req.params.id)
-      .eq('user_id', req.user.sub || req.user.email)
+      .eq('user_id', req.user.id || req.user.email)
       .select()
       .single();
     if (error) throw error;
@@ -2274,7 +2471,7 @@ app.delete('/chat/sessions', requireAuth, async (req, res) => {
     const { data, error } = await supabase
       .from('chat_sessions')
       .delete()
-      .eq('user_id', req.user.sub || req.user.email)
+      .eq('user_id', req.user.id || req.user.email)
       .select('id');
     if (error) throw error;
     res.json({ ok: true, deleted: (data || []).length });
@@ -2291,7 +2488,7 @@ app.delete('/chat/sessions/:id', requireAuth, async (req, res) => {
       .from('chat_sessions')
       .delete()
       .eq('id', req.params.id)
-      .eq('user_id', req.user.sub || req.user.email);
+      .eq('user_id', req.user.id || req.user.email);
     if (error) throw error;
     res.json({ ok: true });
   } catch (err) {
@@ -2357,7 +2554,7 @@ app.post('/chat/search', requireAuth, async (req, res) => {
     const { data: sessions, error } = await supabase
       .from('chat_sessions')
       .select('id, title, messages, created_at')
-      .eq('user_id', req.user.sub || req.user.email)
+      .eq('user_id', req.user.id || req.user.email)
       .order('updated_at', { ascending: false })
       .limit(50);
     if (error) throw error;
@@ -2414,7 +2611,7 @@ Be generous with matching — the user may describe the conversation loosely or 
 // Page separation uses a user_id prefix: "builder::{email}" vs raw email
 app.get('/todos', requireAuth, async (req, res) => {
   const page = req.query.page || 'query';
-  const userId = req.user.sub || req.user.email;
+  const userId = req.user.id || req.user.email;
   const effectiveId = page === 'query' ? userId : page + '::' + userId;
   try {
     const { data, error } = await supabase
@@ -2435,7 +2632,7 @@ app.get('/todos', requireAuth, async (req, res) => {
 app.post('/todos', requireAuth, async (req, res) => {
   const { title, parent_id, page } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
-  const userId = req.user.sub || req.user.email;
+  const userId = req.user.id || req.user.email;
   const effectiveId = (!page || page === 'query') ? userId : page + '::' + userId;
   try {
     const { data, error } = await supabase
@@ -2458,7 +2655,7 @@ app.post('/todos', requireAuth, async (req, res) => {
 // PATCH /todos/:id — update a todo (title, done, position)
 app.patch('/todos/:id', requireAuth, async (req, res) => {
   const { title, done, position, page } = req.body;
-  const userId = req.user.sub || req.user.email;
+  const userId = req.user.id || req.user.email;
   const effectiveId = (!page || page === 'query') ? userId : page + '::' + userId;
   const update = { updated_at: new Date().toISOString() };
   if (title !== undefined) update.title = title;
@@ -2483,7 +2680,7 @@ app.patch('/todos/:id', requireAuth, async (req, res) => {
 // DELETE /todos/:id — delete a todo (cascade removes children)
 app.delete('/todos/:id', requireAuth, async (req, res) => {
   const page = req.query.page || 'query';
-  const userId = req.user.sub || req.user.email;
+  const userId = req.user.id || req.user.email;
   const effectiveId = page === 'query' ? userId : page + '::' + userId;
   try {
     const { error } = await supabase

@@ -902,6 +902,11 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
   // ── CONFIG ──
   const SERVER_URL = window.location.origin;
 
+  function escHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   // ── BUILD A WORKFLOW ──
   function startBuild() {
     const q = document.getElementById('buildSearch').value.trim();
@@ -950,9 +955,12 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
     tick();
   }
 
+  let _submitting = false;
   async function doSubmit() {
     const text = document.getElementById('ventText').value.trim();
-    if (text.length < 10) return;
+    if (text.length < 10 || _submitting) return;
+    _submitting = true;
+    document.getElementById('goBtn').disabled = true;
     const shift = document.getElementById('shiftSel').value || 'Unspecified';
     const willingToConsult = document.getElementById('conToggle').checked;
 
@@ -989,6 +997,8 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
       } catch(err) {
         console.error('Error:', err);
         alert('Could not connect to server. Make sure it is running.');
+        _submitting = false;
+        document.getElementById('goBtn').disabled = false;
         showScreen('submitScreen');
       }
     });
@@ -1013,10 +1023,10 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
       const flagClass = r.flag==='gap'?'flag-gap': r.flag==='ambiguous'?'flag-ambi':'flag-ok';
       const flagLabel = r.flag==='gap'?'Gap': r.flag==='ambiguous'?'Ambiguous':'Compliant';
       tbody.innerHTML += `<tr>
-        <td><div class="sop-code">${r.code}</div></td>
-        <td>${r.title}</td>
-        <td><span class="sop-step">${r.step}</span></td>
-        <td>${r.relevance}</td>
+        <td><div class="sop-code">${escHtml(r.code)}</div></td>
+        <td>${escHtml(r.title)}</td>
+        <td><span class="sop-step">${escHtml(r.step)}</span></td>
+        <td>${escHtml(r.relevance)}</td>
         <td><span class="flag ${flagClass}">${flagLabel}</span></td>
       </tr>`;
     });
@@ -1033,7 +1043,7 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
     ].forEach(i => {
       grid.innerHTML += `<div class="sci-item">
         <div class="sci-item-label">${i.label}</div>
-        <div class="sci-item-val ${i.cls}">${i.val||'—'}</div>
+        <div class="sci-item-val ${i.cls}">${escHtml(i.val)||'—'}</div>
       </div>`;
     });
 
@@ -1046,8 +1056,8 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
       caList.innerHTML += `<div class="ca-item">
         <div class="ca-num">${String(i+1).padStart(2,'0')}</div>
         <div class="ca-text">
-          <div class="ca-title">${c.title}</div>
-          <div class="ca-desc">${c.description}</div>
+          <div class="ca-title">${escHtml(c.title)}</div>
+          <div class="ca-desc">${escHtml(c.description)}</div>
         </div>
         <div class="ca-type ${tcls}">${c.timingLabel}</div>
       </div>`;
@@ -1057,13 +1067,13 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
     cl.innerHTML = '';
     (d.contacts||[]).forEach(c => {
       cl.innerHTML += `<div class="contact-item">
-        <div class="contact-avatar ${c.avatarClass}">${c.initials}</div>
+        <div class="contact-avatar ${c.avatarClass}">${escHtml(c.initials)}</div>
         <div class="contact-info">
-          <div class="contact-name">${c.name}</div>
-          <div class="contact-role">${c.role}</div>
-          <div class="contact-why">${c.why}</div>
+          <div class="contact-name">${escHtml(c.name)}</div>
+          <div class="contact-role">${escHtml(c.role)}</div>
+          <div class="contact-why">${escHtml(c.why)}</div>
         </div>
-        <div class="contact-dept dept-${c.dept}">${c.deptLabel}</div>
+        <div class="contact-dept dept-${escHtml(c.dept)}">${escHtml(c.deptLabel)}</div>
       </div>`;
     });
 
@@ -1074,9 +1084,9 @@ if(localStorage.getItem('vent_role')==='operator')window.location.replace('build
       tl.innerHTML += `<div class="tl-item">
         <div class="tl-dot tl-${t.state}">${sym}</div>
         <div class="tl-content">
-          <div class="tl-when">${t.when}</div>
-          <div class="tl-event">${t.event}</div>
-          <div class="tl-detail">${t.detail}</div>
+          <div class="tl-when">${escHtml(t.when)}</div>
+          <div class="tl-event">${escHtml(t.event)}</div>
+          <div class="tl-detail">${escHtml(t.detail)}</div>
         </div>
       </div>`;
     });

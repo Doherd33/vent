@@ -803,7 +803,7 @@ body {
 
 .history-sidebar {
   position: fixed; top: 42px; left: 0; z-index: 150;
-  width: 300px; height: calc(100vh - 42px);
+  width: 310px; height: calc(100vh - 42px);
   background: var(--bg); border-right: 1px solid var(--border);
   display: flex; flex-direction: column; overflow: hidden;
   transform: translateX(-100%);
@@ -811,52 +811,69 @@ body {
 }
 .history-sidebar.show { transform: translateX(0); }
 
+/* ── HISTORY SIDEBAR ── */
 .hs-head {
-  flex-shrink: 0; padding: 16px 16px 12px;
-  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; padding: 14px 14px 0;
+  display: flex; flex-direction: column; gap: 0;
+}
+.hs-head-row {
   display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
 }
 .hs-title {
-  font-family: 'Instrument Serif', serif; font-size: 17px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  color: var(--mid); letter-spacing: .03em; text-transform: uppercase;
 }
-.hs-close {
-  background: none; border: 1px solid var(--border); border-radius: 6px;
-  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-  color: var(--dim); cursor: pointer; flex-shrink: 0; transition: all .15s;
+.hs-count {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--dim);
+  background: var(--s3); padding: 1px 7px; border-radius: 10px; margin-left: 6px;
 }
-.hs-close:hover { background: var(--s3); border-color: var(--borderhi); color: var(--text); }
+.hs-head-actions {
+  display: flex; align-items: center; gap: 2px;
+}
+.hs-icon-btn {
+  background: none; border: none; color: var(--dim); cursor: pointer;
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; position: relative;
+}
+.hs-icon-btn:hover { background: var(--s3); color: var(--text); }
+.hs-icon-btn.danger:hover { color: var(--red); background: var(--red2); }
+.hs-icon-btn .hs-tooltip {
+  position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: var(--text); background: var(--s3);
+  border: 1px solid var(--border); padding: 2px 8px; border-radius: 5px;
+  white-space: nowrap; opacity: 0; pointer-events: none;
+  transition: opacity .15s; z-index: 10;
+}
+.hs-icon-btn:hover .hs-tooltip { opacity: 1; }
 
 .hs-new-btn {
-  margin: 12px 16px 8px; display: flex; align-items: center; gap: 7px;
-  background: var(--accent); color: #fff; border: none; border-radius: 8px;
-  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
-  padding: 9px 14px; cursor: pointer; transition: opacity .15s;
+  display: flex; align-items: center; gap: 6px;
+  background: var(--s2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 12.5px;
+  font-weight: 400; padding: 8px 12px; cursor: pointer; transition: all .15s;
+  margin-bottom: 10px; width: 100%;
 }
-.hs-new-btn:hover { opacity: .88; }
+.hs-new-btn svg { color: var(--accent); flex-shrink: 0; }
+.hs-new-btn:hover { background: var(--s3); border-color: var(--borderhi); }
+.hs-new-btn .hs-new-kbd {
+  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--dim); background: var(--bg);
+  padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border);
+}
 
-.hs-analyse-btn {
-  margin: 0 16px 8px; display: flex; align-items: center; gap: 7px;
-  background: none; color: var(--mid); border: 1px solid var(--border); border-radius: 8px;
-  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400;
-  padding: 8px 14px; cursor: pointer; transition: all .15s;
-}
-.hs-analyse-btn:hover { color: var(--text); border-color: var(--borderhi); background: var(--s3); }
-.hs-clear-btn {
-  margin: 0 16px 8px; display: flex; align-items: center; gap: 7px;
-  background: none; color: var(--dim); border: 1px solid var(--border); border-radius: 8px;
-  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400;
-  padding: 8px 14px; cursor: pointer; transition: all .15s;
-}
-.hs-clear-btn:hover { color: var(--red); border-color: var(--red); background: var(--red2); }
 .hs-search-row {
-  display: flex; align-items: center; gap: 8px;
-  margin: 10px 16px 8px; padding: 7px 10px;
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 10px; margin-bottom: 8px;
   background: var(--s2); border: 1px solid var(--border); border-radius: 8px;
+  transition: border-color .15s;
 }
+.hs-search-row:focus-within { border-color: var(--borderhi); }
 .hs-search-row svg { flex-shrink: 0; color: var(--dim); }
 .hs-search-input {
   flex: 1; background: none; border: none; outline: none;
-  color: var(--text); font-size: 12.5px; font-family: 'DM Sans', sans-serif;
+  color: var(--text); font-size: 12px; font-family: 'DM Sans', sans-serif;
 }
 .hs-search-input::placeholder { color: var(--dim); }
 .hs-search-hint {
@@ -866,7 +883,7 @@ body {
 .hs-search-input:focus ~ .hs-search-hint { opacity: 1; }
 .hs-search-spinner {
   display: none; width: 14px; height: 14px; flex-shrink: 0;
-  border: 2px solid var(--border); border-top-color: var(--acc);
+  border: 2px solid var(--border); border-top-color: var(--accent);
   border-radius: 50%; animation: hsSpin .6s linear infinite;
 }
 .hs-search-spinner.active { display: block; }
@@ -874,62 +891,75 @@ body {
 @keyframes hsSpin { to { transform: rotate(360deg); } }
 .hs-ai-badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 9.5px; color: var(--acc); padding: 2px 8px; margin: 4px 16px 0;
-  background: rgba(99,102,241,.08); border-radius: 6px;
+  font-size: 9.5px; color: var(--accent); padding: 2px 8px; margin: 4px 0 0;
+  background: var(--accent2); border-radius: 6px;
 }
 .hs-ai-badge svg { width: 10px; height: 10px; }
 
 .hs-list {
-  flex: 1; overflow-y: auto; padding: 8px 12px 20px;
-  display: flex; flex-direction: column; gap: 2px;
+  flex: 1; overflow-y: auto; padding: 4px 8px 20px;
+  display: flex; flex-direction: column; gap: 1px;
 }
+.hs-list::-webkit-scrollbar { width: 4px; }
+.hs-list::-webkit-scrollbar-track { background: transparent; }
+.hs-list::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 4px; }
 
 .hs-date-label {
-  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--dim); padding: 10px 8px 4px; font-weight: 400;
+  font-size: 10px; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--dim); padding: 12px 8px 5px; font-weight: 400;
 }
+.hs-date-label:first-child { padding-top: 4px; }
 
 .hs-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 10px; border-radius: 8px; cursor: pointer;
-  transition: background .12s, border-color .12s;
-  border: 1px solid transparent;
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 8px 10px; border-radius: 7px; cursor: pointer;
+  transition: background .12s; position: relative;
 }
 .hs-item:hover { background: var(--s2); }
-.hs-item.active { background: var(--accent2); border-color: rgba(0,122,204,.2); }
-.hs-item-icon { flex-shrink: 0; color: var(--dim); }
-.hs-item.active .hs-item-icon { color: var(--accent); }
+.hs-item.active { background: var(--accent2); }
+.hs-item-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  margin-top: 5px; background: var(--dim); opacity: .5;
+}
+.hs-item.active .hs-item-dot { background: var(--accent); opacity: 1; }
+.hs-item-body { flex: 1; min-width: 0; }
 .hs-item-text {
-  flex: 1; min-width: 0; font-size: 13px; color: var(--mid);
+  font-size: 12.5px; color: var(--mid); line-height: 1.35;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.hs-item.active .hs-item-text { color: var(--text); }
+.hs-item.active .hs-item-text { color: var(--text); font-weight: 400; }
+.hs-item-meta {
+  display: flex; align-items: center; gap: 6px; margin-top: 2px;
+}
 .hs-item-time {
   font-size: 10px; color: var(--dim); flex-shrink: 0;
   font-family: 'JetBrains Mono', monospace;
 }
+.hs-item-msgs {
+  font-size: 9.5px; color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+}
 .hs-item-menu-btn {
   background: none; border: none; color: var(--dim); cursor: pointer;
-  padding: 2px 4px; border-radius: 4px; flex-shrink: 0;
+  padding: 2px; border-radius: 4px; flex-shrink: 0; margin-top: 2px;
   opacity: 0; transition: opacity .12s, color .12s;
-  font-size: 16px; line-height: 1; letter-spacing: 2px;
   position: relative;
 }
 .hs-item:hover .hs-item-menu-btn,
 .hs-item-menu-btn.open { opacity: 1; }
 .hs-item-menu-btn:hover { color: var(--text); }
 
-/* ── History item context menu dropdown ── */
+/* ── History dropdown ── */
 .hs-dropdown {
   display: none; position: absolute; top: 100%; right: 0; margin-top: 4px;
-  background: var(--s2); border: 1px solid var(--border); border-radius: 8px;
-  padding: 4px 0; min-width: 155px; box-shadow: 0 4px 16px rgba(0,0,0,.35);
-  z-index: 200; animation: fadeUp .15s ease both;
+  background: var(--s1); border: 1px solid var(--border); border-radius: 8px;
+  padding: 4px 0; min-width: 145px; box-shadow: 0 8px 24px rgba(0,0,0,.45);
+  z-index: 200; animation: fadeUp .12s ease both;
 }
 .hs-dropdown.show { display: block; }
 .hs-dropdown-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 14px; font-size: 12.5px; color: var(--text);
+  padding: 7px 12px; font-size: 12px; color: var(--text);
   cursor: pointer; transition: background .1s; border: none;
   background: none; width: 100%; text-align: left;
   font-family: 'DM Sans', sans-serif;
@@ -987,8 +1017,8 @@ body {
 }
 
 .hs-empty {
-  text-align: center; padding: 32px 16px; color: var(--dim); font-size: 12px;
-  line-height: 1.6;
+  text-align: center; padding: 48px 20px 32px; color: var(--mid); font-size: 12px;
+  line-height: 1.7; display: flex; flex-direction: column; align-items: center;
 }
 
 @media (max-width: 640px) {
@@ -1780,6 +1810,167 @@ body {
 }
 .tour-explore:hover { background: var(--accent); color: #fff; }
 .tour-card-step .tour-sub-counter { opacity: .6; margin-left: 4px; }
+
+/* ── FOLLOW-UP SUGGESTIONS ── */
+.follow-ups {
+  padding: 14px 20px 18px; border-top: 1px solid var(--border);
+}
+.follow-ups-label {
+  font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--dim); font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.follow-ups-label svg { color: var(--accent); }
+.follow-up-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.follow-up-chip {
+  font-size: 12px; color: var(--accent); padding: 7px 14px; border-radius: 100px;
+  background: var(--accent2); border: 1px solid rgba(0,122,204,.2); cursor: pointer;
+  transition: all .18s; opacity: 0; animation: chipIn .35s ease forwards;
+  line-height: 1.4;
+}
+.follow-up-chip:hover { background: rgba(0,122,204,.25); border-color: var(--accent); color: #fff; }
+@keyframes chipIn { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:translateY(0) } }
+
+/* ── ANSWER ACTIONS BAR ── */
+.answer-actions {
+  display: flex; align-items: center; gap: 4px;
+  padding: 10px 20px 14px; border-top: 1px solid var(--border);
+}
+.answer-act-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--dim); font-family: 'DM Sans', sans-serif; font-size: 11px;
+  padding: 5px 10px; cursor: pointer; transition: all .15s;
+}
+.answer-act-btn:hover { color: var(--text); border-color: var(--borderhi); background: var(--s2); }
+.answer-act-btn.copied { color: var(--green); border-color: var(--green); background: var(--green2); }
+.answer-act-btn svg { flex-shrink: 0; }
+.answer-actions-sep { flex: 1; }
+
+/* ── FEEDBACK BUTTONS ── */
+.feedback-btn {
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid transparent; border-radius: 6px;
+  color: var(--dim); cursor: pointer; padding: 5px 7px;
+  transition: all .18s;
+}
+.feedback-btn:hover { color: var(--mid); background: var(--s2); border-color: var(--border); }
+.feedback-btn.up-active { color: var(--green); background: var(--green2); border-color: rgba(78,201,176,.3); }
+.feedback-btn.down-active { color: var(--red); background: var(--red2); border-color: rgba(244,71,71,.3); }
+@keyframes fbPop { 0%{transform:scale(1)} 50%{transform:scale(1.25)} 100%{transform:scale(1)} }
+.feedback-btn.pop { animation: fbPop .25s ease; }
+
+/* ── BOOKMARK BUTTON ── */
+.bookmark-btn {
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid transparent; border-radius: 6px;
+  color: var(--dim); cursor: pointer; padding: 5px 7px;
+  transition: all .18s;
+}
+.bookmark-btn:hover { color: var(--gold); background: var(--gold2); border-color: rgba(255,198,77,.2); }
+.bookmark-btn.active { color: var(--gold); background: var(--gold2); border-color: rgba(255,198,77,.3); }
+
+/* ── BOOKMARKS PANEL ── */
+.bookmarks-panel {
+  max-width: 760px; width: 100%; margin: 0 auto; padding: 0 24px;
+}
+.bookmarks-bar {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 10px;
+  margin-bottom: 16px; overflow: hidden;
+}
+.bookmarks-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; cursor: pointer; user-select: none;
+  transition: background .12s;
+}
+.bookmarks-header:hover { background: var(--s2); }
+.bookmarks-header-icon { color: var(--gold); flex-shrink: 0; }
+.bookmarks-header-label {
+  font-size: 11px; color: var(--mid); flex: 1;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .04em;
+}
+.bookmarks-header-count {
+  font-size: 10px; color: var(--gold); background: var(--gold2);
+  padding: 1px 7px; border-radius: 100px; font-family: 'JetBrains Mono', monospace;
+}
+.bookmarks-header-chevron {
+  color: var(--dim); transition: transform .2s; flex-shrink: 0;
+}
+.bookmarks-header-chevron.open { transform: rotate(180deg); }
+.bookmarks-list {
+  display: none; padding: 0 10px 10px;
+}
+.bookmarks-list.open { display: flex; flex-direction: column; gap: 4px; }
+.bookmark-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 6px; cursor: pointer;
+  transition: background .12s; font-size: 12px; color: var(--mid);
+}
+.bookmark-item:hover { background: var(--s2); color: var(--text); }
+.bookmark-item-icon { flex-shrink: 0; font-size: 10px; }
+.bookmark-item-text {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bookmark-item-remove {
+  background: none; border: none; color: var(--dim); cursor: pointer;
+  padding: 2px; opacity: 0; transition: all .12s; flex-shrink: 0;
+}
+.bookmark-item:hover .bookmark-item-remove { opacity: 1; }
+.bookmark-item-remove:hover { color: var(--red); }
+
+/* ── STAGGERED ANSWER ENTRANCE ── */
+.answer-body > .answer-summary { animation: fadeUp .3s ease forwards; }
+.answer-body > .section-head { opacity: 0; animation: fadeUp .3s ease forwards; animation-delay: 80ms; }
+.answer-body > .step-row { opacity: 0; animation: fadeUp .25s ease forwards; animation-delay: 120ms; }
+.answer-body > .params-grid { opacity: 0; animation: fadeUp .3s ease forwards; animation-delay: 200ms; }
+.answer-body > .note-row { opacity: 0; animation: fadeUp .25s ease forwards; animation-delay: 260ms; }
+.answer-body > .warning-block { animation: fadeUp .3s ease forwards; animation-delay: 60ms; }
+
+/* ── MULTI-STAGE THINKING ── */
+.think-text { transition: opacity .15s; }
+.think-text.switching { opacity: 0; }
+
+/* ── SCROLL-TO-BOTTOM ── */
+.scroll-bottom-btn {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+  z-index: 50; background: var(--s1); border: 1px solid var(--border);
+  border-radius: 100px; color: var(--mid); cursor: pointer;
+  padding: 6px 16px; font-family: 'DM Sans', sans-serif; font-size: 11px;
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  transform: translateX(-50%) translateY(8px);
+}
+.scroll-bottom-btn.show {
+  opacity: 1; pointer-events: all;
+  transform: translateX(-50%) translateY(0);
+}
+.scroll-bottom-btn:hover { color: var(--text); border-color: var(--borderhi); background: var(--s2); }
+
+/* ── BETTER ERROR STATE ── */
+.error-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 24px; text-align: center;
+}
+.error-card-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--red2); color: var(--red);
+  display: flex; align-items: center; justify-content: center;
+}
+.error-card-msg { font-size: 13px; color: var(--mid); line-height: 1.55; max-width: 400px; }
+.error-card-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+/* ── SOURCE BUTTON POLISH ── */
+.src-expand-btn {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: #fff; background: var(--accent); border: none;
+  cursor: pointer; padding: 4px 10px; border-radius: 6px; flex-shrink: 0;
+  transition: background .15s; font-weight: 500;
+}
+.src-expand-btn:hover { background: #0088e0; }
+
+/* ── SOP CONTENT SLIDE ── */
+.sop-content-box { animation: fadeUp .25s ease; }
 </style>
 <script>if(!localStorage.getItem('vent_token'))window.location.replace('login.html');</script>
 </head>
@@ -1822,29 +2013,38 @@ body {
 <!-- HISTORY SIDEBAR -->
 <div class="history-sidebar" id="historySidebar">
   <div class="hs-head">
-    <div class="hs-title">Chat History</div>
-    <button class="hs-close" onclick="closeHistorySidebar()">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <div class="hs-head-row">
+      <div style="display:flex;align-items:center">
+        <span class="hs-title">Conversations</span>
+        <span class="hs-count" id="hsCount">0</span>
+      </div>
+      <div class="hs-head-actions">
+        <button class="hs-icon-btn" onclick="analyseChats()" title="Analyse trends">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+          <span class="hs-tooltip">Trends</span>
+        </button>
+        <button class="hs-icon-btn danger" onclick="clearAllSessions()" title="Clear all">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          <span class="hs-tooltip">Clear all</span>
+        </button>
+        <button class="hs-icon-btn" onclick="closeHistorySidebar()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span class="hs-tooltip">Close</span>
+        </button>
+      </div>
+    </div>
+    <button class="hs-new-btn" onclick="startNewChat(); closeHistorySidebar();">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New conversation
+      <span class="hs-new-kbd">&#8984;N</span>
     </button>
+    <div class="hs-search-row">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="hs-search-input" id="hsSearchInput" placeholder="Search conversations…" oninput="filterSessions()" onkeydown="if(event.key==='Enter'){event.preventDefault();aiSearchSessions();}">
+      <div class="hs-search-spinner" id="hsSearchSpinner"></div>
+      <span class="hs-search-hint" id="hsSearchHint">&#9166; AI search</span>
+    </div>
   </div>
-  <div class="hs-search-row">
-    <svg class="hs-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input class="hs-search-input" id="hsSearchInput" placeholder="Describe what you're looking for…" oninput="filterSessions()" onkeydown="if(event.key==='Enter'){event.preventDefault();aiSearchSessions();}">
-    <div class="hs-search-spinner" id="hsSearchSpinner"></div>
-    <span class="hs-search-hint" id="hsSearchHint">Enter ↵ for AI search</span>
-  </div>
-  <button class="hs-new-btn" onclick="startNewChat(); closeHistorySidebar();">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    New conversation
-  </button>
-  <button class="hs-analyse-btn" onclick="analyseChats()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-    Analyse trends
-  </button>
-  <button class="hs-clear-btn" onclick="clearAllSessions()">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-    Clear all
-  </button>
   <div class="hs-list" id="hsList">
     <div class="hs-empty">No conversations yet.<br>Start asking questions and they'll appear here.</div>
   </div>
@@ -1963,6 +2163,19 @@ body {
   </div>
 </div>
 
+<!-- BOOKMARKS PANEL -->
+<div class="bookmarks-panel" id="bookmarksPanel" style="display:none">
+  <div class="bookmarks-bar">
+    <div class="bookmarks-header" onclick="toggleBookmarksPanel()">
+      <svg class="bookmarks-header-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <span class="bookmarks-header-label">PINNED ANSWERS</span>
+      <span class="bookmarks-header-count" id="bookmarksCount">0</span>
+      <svg class="bookmarks-header-chevron" id="bookmarksChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="bookmarks-list" id="bookmarksList"></div>
+  </div>
+</div>
+
 <!-- CHAT AREA -->
 <div class="chat-area" id="chatArea">
   <div class="chat-inner" id="chatInner">
@@ -1989,6 +2202,12 @@ body {
 
   </div>
 </div>
+
+<!-- SCROLL TO BOTTOM -->
+<button class="scroll-bottom-btn" id="scrollBottomBtn" onclick="scrollToBottom()">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  Scroll to latest
+</button>
 
 <!-- INPUT BAR -->
 <div class="input-bar">
@@ -2242,8 +2461,15 @@ async function loadSessionsList() {
 
 function renderSessionsList() {
   const list = document.getElementById('hsList');
+  const counter = document.getElementById('hsCount');
+
+  // Update count badge
+  if (counter) counter.textContent = _sessionsList.length;
+
   if (!_sessionsList.length) {
-    list.innerHTML = '<div class="hs-empty">No conversations yet.<br>Start asking questions and they\'ll appear here.</div>';
+    list.innerHTML = `<div class="hs-empty">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin-bottom:8px;opacity:.4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><br>
+      No conversations yet.<br><span style="color:var(--dim)">Ask a question to get started.</span></div>`;
     return;
   }
 
@@ -2264,17 +2490,40 @@ function renderSessionsList() {
 
   let html = '';
 
+  function relativeTime(dateStr) {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - d;
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'now';
+    if (mins < 60) return mins + 'm';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h';
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return days + 'd';
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+
   function renderGroup(label, items) {
     if (!items.length) return '';
     let h = `<div class="hs-date-label">${label}</div>`;
     items.forEach(s => {
       const active = s.id === _currentSessionId ? ' active' : '';
-      const time = new Date(s.updated_at || s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const time = relativeTime(s.updated_at || s.created_at);
+      const msgCount = s.messages ? Math.floor(s.messages.length / 2) : 0;
+      const msgLabel = msgCount > 0 ? `<span class="hs-item-msgs">${msgCount} Q</span>` : '';
       h += `<div class="hs-item${active}" data-sid="${s.id}" onclick="loadSession('${s.id}')">
-        <svg class="hs-item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span class="hs-item-text" title="${escHtml(s.title)}">${escHtml(s.title)}</span>
-        <span class="hs-item-time">${time}</span>
-        <button class="hs-item-menu-btn" onclick="event.stopPropagation(); toggleItemMenu(this, '${s.id}')" title="Options">&middot;&middot;&middot;</button>
+        <div class="hs-item-dot"></div>
+        <div class="hs-item-body">
+          <div class="hs-item-text" title="${escHtml(s.title)}">${escHtml(s.title)}</div>
+          <div class="hs-item-meta">
+            <span class="hs-item-time">${time}</span>
+            ${msgLabel}
+          </div>
+        </div>
+        <button class="hs-item-menu-btn" onclick="event.stopPropagation(); toggleItemMenu(this, '${s.id}')" title="Options">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        </button>
       </div>`;
     });
     return h;
@@ -2469,12 +2718,27 @@ function renderFilteredSessions(matches, isAI) {
   }
   matches.forEach(function(s) {
     var active = s.id === _currentSessionId ? ' active' : '';
-    var time = new Date(s.updated_at || s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var d = new Date(s.updated_at || s.created_at);
+    var now = new Date();
+    var diffMs = now - d;
+    var mins = Math.floor(diffMs / 60000);
+    var time;
+    if (mins < 1) time = 'now';
+    else if (mins < 60) time = mins + 'm';
+    else if (mins < 1440) time = Math.floor(mins / 60) + 'h';
+    else if (mins < 10080) time = Math.floor(mins / 1440) + 'd';
+    else time = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    var msgCount = s.messages ? Math.floor(s.messages.length / 2) : 0;
+    var msgLabel = msgCount > 0 ? '<span class="hs-item-msgs">' + msgCount + ' Q</span>' : '';
     html += '<div class="hs-item' + active + '" data-sid="' + s.id + '" onclick="loadSession(\'' + s.id + '\')">' +
-      '<svg class="hs-item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-      '<span class="hs-item-text" title="' + escHtml(s.title) + '">' + escHtml(s.title) + '</span>' +
-      '<span class="hs-item-time">' + time + '</span>' +
-      '<button class="hs-item-menu-btn" onclick="event.stopPropagation(); toggleItemMenu(this, \'' + s.id + '\')" title="Options">&middot;&middot;&middot;</button>' +
+      '<div class="hs-item-dot"></div>' +
+      '<div class="hs-item-body">' +
+        '<div class="hs-item-text" title="' + escHtml(s.title) + '">' + escHtml(s.title) + '</div>' +
+        '<div class="hs-item-meta"><span class="hs-item-time">' + time + '</span>' + msgLabel + '</div>' +
+      '</div>' +
+      '<button class="hs-item-menu-btn" onclick="event.stopPropagation(); toggleItemMenu(this, \'' + s.id + '\')" title="Options">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>' +
+      '</button>' +
     '</div>';
   });
   list.innerHTML = html;
@@ -3623,34 +3887,47 @@ async function runQuery() {
   btn.disabled = true;
 
   // Append the question bubble
+  const thinkTs = Date.now();
   const turn = document.createElement('div');
   turn.className = 'chat-turn';
   turn.innerHTML = `
     <div class="turn-q-meta">${area}</div>
     <div class="turn-q"><div class="turn-q-bubble">${escHtml(q)}</div></div>
-    <div class="thinking" id="thinking-${Date.now()}">
+    <div class="thinking" id="thinking-${thinkTs}">
       <div class="think-dots">
         <div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div>
       </div>
-      Searching SOPs…
+      <span class="think-text">Searching SOPs…</span>
     </div>`;
 
   const inner = document.getElementById('chatInner');
   inner.appendChild(turn);
   scrollToBottom();
 
-  const thinkId = turn.querySelector('[id^="thinking-"]').id;
+  const thinkId = `thinking-${thinkTs}`;
+
+  // Multi-stage loading progression
+  const thinkStages = [
+    setTimeout(() => { const t = document.querySelector(`#${thinkId} .think-text`); if(t){ t.classList.add('switching'); setTimeout(()=>{ t.textContent='Analysing context…'; t.classList.remove('switching'); },150); }}, 1200),
+    setTimeout(() => { const t = document.querySelector(`#${thinkId} .think-text`); if(t){ t.classList.add('switching'); setTimeout(()=>{ t.textContent='Generating answer…'; t.classList.remove('switching'); },150); }}, 3000),
+  ];
 
   // Add user message to conversation history
   _chatHistory.push({ role: 'user', content: q, area });
+
+  const _queryAbort = new AbortController();
+  const _queryTimeout = setTimeout(() => _queryAbort.abort(), 60000);
 
   try {
     const res  = await authFetch(`${SERVER}/query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: q, area, history: _chatHistory.slice(0, -1) })
+      body: JSON.stringify({ question: q, area, history: _chatHistory.slice(0, -1) }),
+      signal: _queryAbort.signal
     });
+    clearTimeout(_queryTimeout);
     const data = await res.json();
+    thinkStages.forEach(clearTimeout);
     if (!res.ok) throw new Error(data.error || 'Query failed');
 
     // Add assistant response to conversation history (include full response for replay)
@@ -3674,13 +3951,21 @@ async function runQuery() {
     }
 
   } catch (err) {
+    clearTimeout(_queryTimeout);
+    thinkStages.forEach(clearTimeout);
     // Remove the failed user message from history so retry works cleanly
     _chatHistory.pop();
     const thinkEl = document.getElementById(thinkId);
     const retryQ = escHtml(q).replace(/'/g, '&#39;');
     thinkEl.outerHTML = `<div class="answer-card"><div class="answer-body">
-      <div class="answer-summary" style="color:var(--red)">Something went wrong: ${escHtml(err.message)}</div>
-      <button class="retry-btn" onclick="retryQuery('${retryQ}')">Retry</button>
+      <div class="error-card">
+        <div class="error-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="error-card-msg">${escHtml(err.message)}</div>
+        <div class="error-card-actions">
+          <button class="retry-btn" onclick="retryQuery('${retryQ}')">Retry</button>
+          <button class="retry-btn" style="border-color:var(--border);color:var(--mid)" onclick="startNewChat()">New chat</button>
+        </div>
+      </div>
     </div></div>`;
   } finally {
     btn.disabled = false;
@@ -3783,6 +4068,44 @@ function buildAnswerHtml(d) {
   }
 
   const cardId = `ans-${Date.now()}`;
+  // Store answer data on window for copy/export/bookmark
+  if (!window._answerData) window._answerData = {};
+  window._answerData[cardId] = d;
+
+  // Follow-up chips
+  let followHtml = '';
+  if (d.followUps && d.followUps.length) {
+    followHtml = `<div class="follow-ups">
+      <div class="follow-ups-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Continue exploring</div>
+      <div class="follow-up-chips">${d.followUps.map((f, i) =>
+        `<div class="follow-up-chip" style="animation-delay:${400 + i * 120}ms" onclick="fillAndSend('${escHtml(f).replace(/'/g, "&#39;")}')">${escHtml(f)}</div>`
+      ).join('')}</div>
+    </div>`;
+  }
+
+  // Action bar
+  const isBookmarked = isAnswerBookmarked(cardId);
+  const actionsHtml = `<div class="answer-actions">
+    <button class="answer-act-btn" onclick="copyAnswer('${cardId}')" title="Copy answer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span>Copy</span>
+    </button>
+    <button class="answer-act-btn" onclick="exportAnswerToDoc('${cardId}')" title="Export to Doc Builder">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Export</span>
+    </button>
+    <div class="answer-actions-sep"></div>
+    <button class="bookmark-btn${isBookmarked ? ' active' : ''}" id="bm-${cardId}" onclick="toggleBookmark('${cardId}')" title="Pin answer">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+    </button>
+    <button class="feedback-btn" id="fb-up-${cardId}" onclick="feedbackAnswer('${cardId}','up')" title="Helpful">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+    </button>
+    <button class="feedback-btn" id="fb-down-${cardId}" onclick="feedbackAnswer('${cardId}','down')" title="Not helpful">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+    </button>
+  </div>`;
+
   return `
   <div class="answer-card" id="${cardId}">
     <div class="answer-head">
@@ -3795,11 +4118,14 @@ function buildAnswerHtml(d) {
       <div class="pdf-pages-section" data-card-id="${cardId}"></div>
     </div>
     ${srcHtml}
+    ${actionsHtml}
+    ${followHtml}
   </div>`;
 }
 
 async function toggleSrc(btn, docId, section, uid) {
   const box = document.getElementById(uid);
+  if (!box) return;
   if (box.style.display !== 'none') {
     box.style.display = 'none';
     btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg> Read`;
@@ -3891,7 +4217,7 @@ function renderSopMarkdown(md) {
 }
 
 function renderInline(txt) {
-  return txt
+  return escHtml(txt)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -4098,7 +4424,7 @@ async function renderPdfPages(sources, query, diagramHint) {
       return; // done — rendered pages for this doc
     } catch (err) {
       console.error('PDF render error:', err);
-      container.innerHTML = '';
+      container.innerHTML = `<div class="note-row" style="margin-top:8px;color:var(--dim);font-size:12px">Could not render manual pages for this source.</div>`;
     }
   }
 }
@@ -4116,6 +4442,233 @@ function escHtml(s) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ── COPY ANSWER ──────────────────────────────────────
+function copyAnswer(cardId) {
+  const d = window._answerData && window._answerData[cardId];
+  if (!d) return;
+
+  let text = d.summary || '';
+  if (d.steps && d.steps.length) {
+    text += '\n\nSteps:\n' + d.steps.map(s =>
+      `${s.n}. ${s.action}${s.detail ? ' — ' + s.detail : ''}${s.value ? ' [' + s.value + ']' : ''}${s.critical ? ' (CRITICAL)' : ''}`
+    ).join('\n');
+  }
+  if (d.params && d.params.length) {
+    text += '\n\nParameters:\n' + d.params.map(p =>
+      `• ${p.name}: ${p.value} ${p.unit || ''}${p.range ? ' (Range: ' + p.range + ')' : ''}`
+    ).join('\n');
+  }
+  if (d.warnings && d.warnings.length) {
+    text += '\n\nWarnings:\n' + d.warnings.map(w => `⚠ ${w}`).join('\n');
+  }
+  if (d.notes && d.notes.length) {
+    text += '\n\nNotes:\n' + d.notes.map(n => `– ${n}`).join('\n');
+  }
+  if (d.sources && d.sources.length) {
+    text += '\n\nSources: ' + d.sources.map(s => `${s.code} §${s.section}`).join(', ');
+  }
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector(`#${cardId} .answer-act-btn`);
+    if (btn) {
+      btn.classList.add('copied');
+      const span = btn.querySelector('span');
+      const orig = span.textContent;
+      span.textContent = 'Copied!';
+      setTimeout(() => { btn.classList.remove('copied'); span.textContent = orig; }, 1800);
+    }
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+// ── EXPORT ANSWER TO DOC BUILDER ─────────────────────
+function exportAnswerToDoc(cardId) {
+  const d = window._answerData && window._answerData[cardId];
+  if (!d) return;
+
+  const area = document.getElementById('areaSelect').value || 'General';
+  const steps = (d.steps || []).map(s => ({
+    title: s.action,
+    content: [s.detail, s.value ? `Target: ${s.value}` : ''].filter(Boolean).join('\n') || s.action,
+    note: s.critical ? 'CRITICAL STEP — verify before proceeding' : ''
+  }));
+
+  if (!steps.length) {
+    steps.push({ title: 'Summary', content: d.summary || '', note: '' });
+  }
+
+  const doc = {
+    title: d.summary ? d.summary.slice(0, 60) + (d.summary.length > 60 ? '…' : '') : 'Exported Answer',
+    area,
+    description: d.summary || '',
+    steps
+  };
+
+  sessionStorage.setItem('vent_chat_export', JSON.stringify(doc));
+  window.open('builder.html', '_blank');
+}
+
+// ── ANSWER FEEDBACK ──────────────────────────────────
+function feedbackAnswer(cardId, type) {
+  const upBtn = document.getElementById(`fb-up-${cardId}`);
+  const downBtn = document.getElementById(`fb-down-${cardId}`);
+  if (!upBtn || !downBtn) return;
+
+  const isUp = type === 'up';
+  const btn = isUp ? upBtn : downBtn;
+  const other = isUp ? downBtn : upBtn;
+  const activeClass = isUp ? 'up-active' : 'down-active';
+  const otherClass = isUp ? 'down-active' : 'up-active';
+
+  // Toggle
+  if (btn.classList.contains(activeClass)) {
+    btn.classList.remove(activeClass);
+    updateFeedbackInHistory(cardId, null);
+  } else {
+    btn.classList.add(activeClass);
+    btn.classList.add('pop');
+    setTimeout(() => btn.classList.remove('pop'), 300);
+    other.classList.remove(otherClass);
+    updateFeedbackInHistory(cardId, type);
+  }
+}
+
+function updateFeedbackInHistory(cardId, feedback) {
+  // Find the corresponding assistant message in chat history and tag it
+  const d = window._answerData && window._answerData[cardId];
+  if (!d) return;
+  const entry = _chatHistory.find(h => h.role === 'assistant' && h.summary === d.summary);
+  if (entry) {
+    entry.feedback = feedback;
+    saveCurrentSession();
+  }
+}
+
+// ── BOOKMARKS ────────────────────────────────────────
+function getBookmarks() {
+  try { return JSON.parse(localStorage.getItem('vent_bookmarks') || '[]'); } catch { return []; }
+}
+function saveBookmarks(bm) { localStorage.setItem('vent_bookmarks', JSON.stringify(bm)); }
+
+function isAnswerBookmarked(cardId) {
+  return getBookmarks().some(b => b.id === cardId);
+}
+
+function toggleBookmark(cardId) {
+  const d = window._answerData && window._answerData[cardId];
+  if (!d) return;
+  let bm = getBookmarks();
+  const idx = bm.findIndex(b => b.id === cardId);
+  const btn = document.getElementById(`bm-${cardId}`);
+
+  if (idx >= 0) {
+    bm.splice(idx, 1);
+    if (btn) {
+      btn.classList.remove('active');
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+    }
+  } else {
+    const catMap = { procedure:'≡', specification:'◈', troubleshooting:'⚡', general:'○' };
+    bm.unshift({
+      id: cardId,
+      summary: (d.summary || '').slice(0, 120),
+      category: d.category || 'general',
+      icon: catMap[d.category] || '○',
+      timestamp: new Date().toISOString()
+    });
+    if (btn) {
+      btn.classList.add('active');
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+    }
+  }
+  saveBookmarks(bm);
+  renderBookmarks();
+}
+
+function renderBookmarks() {
+  const bm = getBookmarks();
+  const panel = document.getElementById('bookmarksPanel');
+  const list = document.getElementById('bookmarksList');
+  const count = document.getElementById('bookmarksCount');
+
+  if (!bm.length) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'block';
+  count.textContent = bm.length;
+
+  list.innerHTML = bm.map(b => `
+    <div class="bookmark-item" onclick="scrollToAnswer('${b.id}')">
+      <span class="bookmark-item-icon">${escHtml(b.icon)}</span>
+      <span class="bookmark-item-text">${escHtml(b.summary)}</span>
+      <button class="bookmark-item-remove" onclick="event.stopPropagation(); removeBookmark('${b.id}')" title="Unpin">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+function removeBookmark(id) {
+  let bm = getBookmarks().filter(b => b.id !== id);
+  saveBookmarks(bm);
+  renderBookmarks();
+  const btn = document.getElementById(`bm-${id}`);
+  if (btn) {
+    btn.classList.remove('active');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+  }
+}
+
+function scrollToAnswer(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.style.boxShadow = '0 0 0 2px var(--gold), 0 0 20px rgba(255,198,77,.2)';
+    setTimeout(() => { el.style.boxShadow = ''; }, 2000);
+  }
+}
+
+function toggleBookmarksPanel() {
+  const list = document.getElementById('bookmarksList');
+  const chevron = document.getElementById('bookmarksChevron');
+  list.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+
+// ── SCROLL-TO-BOTTOM BUTTON ──────────────────────────
+(function initScrollBtn() {
+  const chatArea = document.getElementById('chatArea');
+  const scrollBtn = document.getElementById('scrollBottomBtn');
+  if (!chatArea || !scrollBtn) return;
+
+  chatArea.addEventListener('scroll', () => {
+    const distFromBottom = chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight;
+    if (distFromBottom > 200) {
+      scrollBtn.classList.add('show');
+    } else {
+      scrollBtn.classList.remove('show');
+    }
+  });
+})();
+
+// ── KEYBOARD SHORTCUT ────────────────────────────────
+document.getElementById('qInput').addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runQuery();
+  }
+});
+
+// ── INIT BOOKMARKS ───────────────────────────────────
+renderBookmarks();
 
 // ── MY SUBMISSIONS DATA ──────────────────────────────
 const MY_SUBS = [
@@ -4535,7 +5088,7 @@ function resetVentPanel() {
       open:'openHistorySidebar', close:'closeHistorySidebar',
       sub:[
         { target:'.hs-new-btn', title:'New Conversation', desc:'Start a fresh conversation. Your current chat is saved automatically so you can always come back to it.', pos:'right' },
-        { target:'.hs-analyse-btn', title:'Analyse Trends', desc:'AI analyses patterns across all your past queries — recurring topics, common questions, and insights.', pos:'right' },
+        { target:'.hs-head-actions', title:'Quick Actions', desc:'Analyse trends across all your past queries, or clear your history. Hover for tooltips.', pos:'right' },
         { target:'#hsList', title:'Your Conversations', desc:'All your previous chats are listed here. Click any to reload it and continue where you left off.', pos:'right' }
       ]},
     { target:'.sop-search-btn', title:'SOP Library', desc:'Browse and search all facility SOPs. Open them in a floating viewer where you can ask AI questions about specific documents.', pos:'bottom',

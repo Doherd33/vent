@@ -1241,6 +1241,8 @@ if(!localStorage.getItem('vent_token')) window.location.replace('login.html');
   <span>📄 Document Builder</span>
   <span class="s-sep">|</span>
   <span id="statusDocCount">0 documents</span>
+  <span class="s-sep">|</span>
+  <span id="saveStatus" style="font-size:11px;color:var(--dim);transition:opacity .3s"></span>
   <div class="s-right">
     <span id="statusUser"></span>
     <span class="s-sep">|</span>
@@ -1412,24 +1414,125 @@ _fileInput.addEventListener('change', () => {
   _fileInput.value = '';
 });
 
-// ── DOCUMENT STORE (localStorage-backed) ──
+// ── DOCUMENT STORE (server-first with localStorage fallback) ──
 const STORE_KEY = 'vent_builder_docs';
 
-function loadDocs() {
+function loadDocsLocal() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
   catch { return []; }
 }
-function saveDocs(docs) {
+function saveDocsLocal(docs) {
   localStorage.setItem(STORE_KEY, JSON.stringify(docs));
 }
 
-let documents = loadDocs();
+async function loadDocs() {
+  try {
+    const resp = await authFetch(SERVER + '/docs/documents');
+    if (resp.ok) {
+      const rows = await resp.json();
+      const docs = rows.map(r => ({
+        id: r.client_id,
+        title: r.title,
+        area: r.area,
+        description: r.description || '',
+        status: r.status || 'draft',
+        created: r.created_at,
+        updated: r.updated_at,
+        steps: r.steps || [],
+        versions: r.versions || [],
+        source: r.source || null
+      }));
+      saveDocsLocal(docs);
+      return docs;
+    }
+  } catch (e) { console.warn('[DOCS] Server load failed, using localStorage:', e.message); }
+  return loadDocsLocal();
+}
+
+function saveDocs(docs, changedDocId) {
+  saveDocsLocal(docs);
+  if (changedDocId) {
+    saveDocToServer(changedDocId);
+  }
+}
+
+// Save status indicator
+function showSaveStatus(msg, isError) {
+  const el = document.getElementById('saveStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--red, #e74c3c)' : 'var(--dim)';
+  if (!isError) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
+}
+
+// Debounced server sync — 1.5s delay per document
+const _docSaveTimers = {};
+function saveDocToServer(docId) {
+  clearTimeout(_docSaveTimers[docId]);
+  _docSaveTimers[docId] = setTimeout(() => {
+    const doc = documents.find(d => d.id === docId);
+    if (!doc) return;
+    showSaveStatus('Saving…');
+    authFetch(SERVER + '/docs/documents/' + encodeURIComponent(docId), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: doc.title,
+        area: doc.area,
+        description: doc.description,
+        status: doc.status,
+        steps: doc.steps,
+        versions: doc.versions
+      })
+    }).then(r => {
+      if (r.ok) showSaveStatus('Saved');
+      else showSaveStatus('Save failed — using local backup', true);
+    }).catch(e => {
+      console.warn('[DOCS] Server save failed:', e.message);
+      showSaveStatus('Offline — saved locally', true);
+    });
+  }, 1500);
+}
+
+function createDocOnServer(doc) {
+  authFetch(SERVER + '/docs/documents', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: doc.id,
+      title: doc.title,
+      area: doc.area,
+      description: doc.description,
+      status: doc.status,
+      steps: doc.steps,
+      versions: doc.versions,
+      source: doc.source || null
+    })
+  }).then(r => {
+    if (!r.ok) showSaveStatus('Sync failed — saved locally', true);
+  }).catch(e => {
+    console.warn('[DOCS] Server create failed:', e.message);
+    showSaveStatus('Offline — saved locally', true);
+  });
+}
+
+function deleteDocFromServer(docId) {
+  authFetch(SERVER + '/docs/documents/' + encodeURIComponent(docId), {
+    method: 'DELETE'
+  }).catch(e => {
+    console.warn('[DOCS] Server delete failed:', e.message);
+    showSaveStatus('Delete not synced — offline', true);
+  });
+}
+
+let documents = [];
 let activeDocId = null;
 let activeRightTab = 'edit';
 let openTabs = []; // array of doc ids
 
 // ── INIT ──
-function init() {
+async function init() {
+  documents = await loadDocs();
   renderDocList();
   updateCounts();
 
@@ -1441,6 +1544,7 @@ function init() {
     const doc = makeDoc(initTitle, params.get('area') || 'Upstream', '');
     documents.push(doc);
     saveDocs(documents);
+    createDocOnServer(doc);
     renderDocList();
     openDoc(doc.id);
     logActivity('Created document from Submit page: "' + initTitle + '"', 'action');
@@ -1463,6 +1567,7 @@ function init() {
       }
       documents.push(doc);
       saveDocs(documents);
+      createDocOnServer(doc);
       renderDocList();
       openDoc(doc.id);
       logActivity('Imported from chat: "' + (ex.title || 'Exported Chat') + '"', 'action');
@@ -2626,7 +2731,7 @@ function addStep(docId) {
   });
   doc.updated = new Date().toISOString();
   doc.versions.push({ time: doc.updated, label: 'Added step ' + num, user: userName });
-  saveDocs(documents);
+  saveDocs(documents, doc.id);
   renderDocView(doc);
   renderRightPanel(doc);
   renderDocList();
@@ -2641,7 +2746,7 @@ function deleteStep(docId, stepId) {
   doc.steps = doc.steps.filter(s => s.id !== stepId);
   doc.updated = new Date().toISOString();
   doc.versions.push({ time: doc.updated, label: 'Deleted "' + title + '"', user: userName });
-  saveDocs(documents);
+  saveDocs(documents, doc.id);
 
   // Remove from step tabs
   closeStepTab(stepId);
@@ -2766,7 +2871,7 @@ function renderRightPanelEdit(doc, focusStep) {
         }
         doc.updated = new Date().toISOString();
         doc.versions.push({ time: doc.updated, label: 'Added ' + files.length + ' attachment(s)', user: userName });
-        saveDocs(documents);
+        saveDocs(documents, doc.id);
         renderDocList();
         loadStepMedia(doc.id, focusStep.id);
         loadStepMediaList(doc.id, focusStep.id);
@@ -2900,7 +3005,7 @@ function saveStepEdit(docId, stepId) {
   doc.updated = new Date().toISOString();
   doc.versions.push({ time: doc.updated, label: 'Edited step "' + step.title + '"', user: userName });
 
-  saveDocs(documents);
+  saveDocs(documents, doc.id);
   renderDocView(doc);
   renderRightPanelEdit(doc);
   renderDocList();
@@ -2921,7 +3026,7 @@ function saveDocEdit(docId) {
   doc.updated = new Date().toISOString();
   doc.versions.push({ time: doc.updated, label: 'Updated document settings', user: userName });
 
-  saveDocs(documents);
+  saveDocs(documents, doc.id);
   renderDocView(doc);
   renderEditorTabs();
   renderDocList();
@@ -2938,6 +3043,7 @@ function deleteDoc(docId) {
 
   documents = documents.filter(d => d.id !== docId);
   saveDocs(documents);
+  deleteDocFromServer(docId);
   closeTab(docId);
   updateCounts();
   logActivity('Deleted document: "' + doc.title + '"', 'warn');
@@ -3029,7 +3135,7 @@ async function removeMediaFromEditor(mediaId, docId, stepId) {
   if (doc) {
     doc.updated = new Date().toISOString();
     doc.versions.push({ time: doc.updated, label: 'Removed an attachment', user: userName });
-    saveDocs(documents);
+    saveDocs(documents, doc.id);
     renderDocList();
   }
 
@@ -3064,7 +3170,7 @@ function triggerStepUpload(docId, stepId) {
     if (doc) {
       doc.updated = new Date().toISOString();
       doc.versions.push({ time: doc.updated, label: 'Added ' + files.length + ' attachment(s)', user: userName });
-      saveDocs(documents);
+      saveDocs(documents, doc.id);
       renderDocList();
     }
 
@@ -3087,7 +3193,7 @@ async function removeMedia(mediaId, docId, stepId) {
   if (doc) {
     doc.updated = new Date().toISOString();
     doc.versions.push({ time: doc.updated, label: 'Removed an attachment', user: userName });
-    saveDocs(documents);
+    saveDocs(documents, doc.id);
     renderDocList();
   }
 
@@ -3254,7 +3360,7 @@ function acceptAiResult(docId, stepId) {
   doc.updated = new Date().toISOString();
   doc.versions.push({ time: doc.updated, label: 'AI-assisted update to "' + step.title + '"', user: userName });
 
-  saveDocs(documents);
+  saveDocs(documents, activeDocId);
   renderDocView(doc);
   renderDocList();
   editStep(docId, stepId);
@@ -3436,7 +3542,7 @@ function acceptGeneratedSteps() {
   doc.updated = new Date().toISOString();
   doc.versions.push({ time: doc.updated, label: 'AI-generated ' + data.steps.length + ' steps from SOP', user: userName });
 
-  saveDocs(documents);
+  saveDocs(documents, activeDocId);
   renderDocView(doc);
   renderEditorTabs();
   renderDocList();
@@ -3599,6 +3705,7 @@ function createDocument() {
   const doc = makeDoc(title, area, desc);
   documents.push(doc);
   saveDocs(documents);
+  createDocOnServer(doc);
   hideNewDocModal();
   renderDocList();
   updateCounts();
