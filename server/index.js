@@ -7,6 +7,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { createClient } = require('@supabase/supabase-js');
 const { VoyageAIClient } = require('voyageai');
 const { buildContactsContext } = require('./data/contacts');
+const sharp = require('sharp');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -85,7 +86,7 @@ function requireRole(...roles) {
 }
 
 app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '15mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(authMiddleware); // Parse auth token on every request
 const path = require('path');
 const fs = require('fs');
@@ -1907,6 +1908,271 @@ Return ONLY valid JSON — no markdown, no preamble:
   } catch (error) {
     console.error('Visual query error:', error);
     res.status(500).json({ error: 'Visual query failed: ' + error.message });
+  }
+});
+
+// ─── GDP CHECK ENDPOINT ──────────────────────────────────────────────────────
+
+// Detect blue ink regions using sharp pixel analysis
+async function detectBlueInkRegions(base64Data) {
+  const buffer = Buffer.from(base64Data, 'base64');
+  const { data, info } = await sharp(buffer).raw().toBuffer({ resolveWithObject: true });
+  const { width, height, channels } = info;
+
+  // Grid-based detection: divide image into cells
+  const GRID = 100; // 100×100 grid for precision
+  const cellW = Math.ceil(width / GRID);
+  const cellH = Math.ceil(height / GRID);
+  const gridW = Math.ceil(width / cellW);
+  const gridH = Math.ceil(height / cellH);
+
+  // Count blue pixels per cell
+  const grid = new Uint16Array(gridW * gridH);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * channels;
+      const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+
+      // Blue ink detection: blue channel dominant, not grey/white/black
+      // Blue pen ink: B > 100, B > R + 25, B > G + 15, not too bright (not white)
+      const brightness = (r + g + b) / 3;
+      if (b > 90 && b > r + 20 && b > g + 10 && brightness < 200 && brightness > 40) {
+        const gx = Math.min(Math.floor(x / cellW), gridW - 1);
+        const gy = Math.min(Math.floor(y / cellH), gridH - 1);
+        grid[gy * gridW + gx]++;
+      }
+    }
+  }
+
+  // Threshold: cell must have > 1.5% blue pixels to count
+  const threshold = Math.max(3, (cellW * cellH) * 0.015);
+  const blueCells = new Set();
+  for (let i = 0; i < grid.length; i++) {
+    if (grid[i] > threshold) blueCells.add(i);
+  }
+
+  // Flood-fill to cluster adjacent blue cells into regions
+  const visited = new Set();
+  const regions = [];
+
+  for (const cell of blueCells) {
+    if (visited.has(cell)) continue;
+    const region = [];
+    const stack = [cell];
+    while (stack.length) {
+      const c = stack.pop();
+      if (visited.has(c) || !blueCells.has(c)) continue;
+      visited.add(c);
+      region.push(c);
+      const cx = c % gridW, cy = Math.floor(c / gridW);
+      // Check 8-connected neighbours + skip-1 for bridging small gaps
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = cx + dx, ny = cy + dy;
+          if (nx >= 0 && nx < gridW && ny >= 0 && ny < gridH) {
+            stack.push(ny * gridW + nx);
+          }
+        }
+      }
+    }
+
+    if (region.length >= 2) { // Skip single-cell noise
+      let minX = gridW, minY = gridH, maxX = 0, maxY = 0;
+      for (const c of region) {
+        const cx = c % gridW, cy = Math.floor(c / gridW);
+        minX = Math.min(minX, cx);
+        minY = Math.min(minY, cy);
+        maxX = Math.max(maxX, cx);
+        maxY = Math.max(maxY, cy);
+      }
+
+      // Add 0.5 cell padding for tight but visible boxes
+      const pad = 0.5;
+      const x = Math.max(0, ((minX - pad) * cellW / width) * 100);
+      const y = Math.max(0, ((minY - pad) * cellH / height) * 100);
+      const w = Math.min(100 - x, ((maxX - minX + 1 + pad * 2) * cellW / width) * 100);
+      const h = Math.min(100 - y, ((maxY - minY + 1 + pad * 2) * cellH / height) * 100);
+
+      regions.push({
+        x: Math.round(x * 100) / 100,
+        y: Math.round(y * 100) / 100,
+        w: Math.round(w * 100) / 100,
+        h: Math.round(h * 100) / 100,
+        cells: region.length
+      });
+    }
+  }
+
+  // Sort top-to-bottom, left-to-right
+  regions.sort((a, b) => {
+    if (Math.abs(a.y - b.y) < 2) return a.x - b.x;
+    return a.y - b.y;
+  });
+
+  console.log(`[GDP-VISION] Detected ${regions.length} blue ink regions (${width}×${height}, grid ${gridW}×${gridH})`);
+  return { regions, width, height };
+}
+
+app.post('/query/gdp', requireAuth, async (req, res) => {
+  const { images } = req.body;
+
+  if (!images || !Array.isArray(images) || images.length === 0) {
+    return res.status(400).json({ error: 'No images provided' });
+  }
+  if (images.length > 10) {
+    return res.status(400).json({ error: 'Maximum 10 pages per check' });
+  }
+
+  const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+  try {
+    const pageResults = [];
+
+    for (let i = 0; i < images.length; i++) {
+      const { image, mimeType, pageNumber } = images[i];
+      const mediaType = supportedTypes.includes(mimeType) ? mimeType : 'image/jpeg';
+      const pNum = pageNumber || i + 1;
+
+      console.log(`[GDP-CHECK] Page ${pNum}/${images.length} — detecting blue ink…`);
+
+      // Step 1: Detect blue ink regions with sharp (pixel-accurate)
+      const { regions } = await detectBlueInkRegions(image);
+
+      console.log(`[GDP-CHECK] Page ${pNum} — ${regions.length} blue regions found, sending to Claude…`);
+
+      // Step 2: Build region summary for Claude
+      const regionList = regions.map((r, idx) =>
+        `  Region ${idx + 1}: x=${r.x}%, y=${r.y}%, w=${r.w}%, h=${r.h}%`
+      ).join('\n');
+
+      // Step 3: Send image + detected regions to Claude for GDP analysis
+      const gdpMessage = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: image }
+            },
+            {
+              type: 'text',
+              text: `You are an expert GMP Quality Assurance reviewer for pharmaceutical batch records.
+
+I have already run computer vision on this batch record page and detected ${regions.length} regions of BLUE INK (handwritten entries by operators). The pre-printed form is in black ink.
+
+Here are the detected blue ink regions with their precise bounding boxes (as % of image):
+${regionList}
+
+YOUR TASK:
+1. Look at the image and match each detected region to what was written there
+2. Transcribe the blue ink text in each region
+3. Check each entry for GDP (Good Documentation Practice) compliance
+4. Also identify any EMPTY fields that should have entries (IE errors) — estimate their position
+
+GDP ERROR CATEGORIES:
+- EE (Erroneous Entry): Wrong values, incorrect dates/times, calculation errors
+- LE (Late Entry): Different ink shade, times out of sequence, squeezed entries
+- IE (Incomplete Entry): Blank fields, missing signatures/initials/dates, values without units
+- CE (Correction Error): Correction fluid, no strikethrough, missing initials/date/reason
+- GDP (Other): Illegible handwriting, blank spaces not lined through, pencil use
+
+USE THE EXACT BOUNDING BOX COORDINATES I PROVIDED for each entry. Do NOT estimate your own coordinates — use the regions listed above. For IE errors (empty fields), you may estimate coordinates.
+
+Return ONLY valid JSON:
+{
+  "pageNumber": ${pNum},
+  "description": "what this page documents",
+  "entries": [
+    {
+      "id": 1,
+      "text": "what the blue ink says",
+      "bbox": {"x": 0, "y": 0, "w": 0, "h": 0},
+      "status": "ok|error|warning",
+      "errorType": null
+    }
+  ],
+  "errors": [
+    {
+      "type": "EE|LE|IE|CE|GDP",
+      "severity": "critical|major|minor",
+      "title": "short title",
+      "location": "human-readable location",
+      "bbox": {"x": 0, "y": 0, "w": 0, "h": 0},
+      "description": "what was observed",
+      "correction": "correct GDP procedure",
+      "entryId": 1
+    }
+  ]
+}
+
+RULES:
+- Use the EXACT bbox coordinates from my detected regions for entries
+- Each entry must correspond to one of my detected regions
+- "errors" references entries via entryId
+- Do NOT invent GDP issues — only flag genuine concerns
+- Flag empty fields that SHOULD have data as IE errors`
+            }
+          ]
+        }]
+      });
+
+      let pageResult;
+      try {
+        const raw = gdpMessage.content[0].text.trim();
+        pageResult = JSON.parse(raw);
+      } catch (parseErr) {
+        const jsonMatch = gdpMessage.content[0].text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          pageResult = JSON.parse(jsonMatch[0]);
+        } else {
+          pageResult = { pageNumber: pNum, description: 'Could not parse analysis', entries: [], errors: [] };
+        }
+      }
+      pageResult.pageNumber = pNum;
+      pageResults.push(pageResult);
+    }
+
+    // Aggregate counts
+    let totalErrors = 0, criticalCount = 0, majorCount = 0, minorCount = 0;
+    const allErrors = [];
+    pageResults.forEach(page => {
+      (page.errors || []).forEach(e => {
+        totalErrors++;
+        if (e.severity === 'critical') criticalCount++;
+        else if (e.severity === 'major') majorCount++;
+        else minorCount++;
+        allErrors.push(e);
+      });
+    });
+
+    // Recommendations
+    const recommendations = [];
+    const errorTypes = allErrors.map(e => e.type);
+    if (errorTypes.filter(t => t === 'IE').length >= 2)
+      recommendations.push('Multiple incomplete entries found — ensure all fields are completed at time of activity before moving to next step.');
+    if (errorTypes.includes('CE'))
+      recommendations.push('Correction errors detected — single line strikethrough, initial, date, and reason for every correction. Never use correction fluid.');
+    if (errorTypes.includes('LE'))
+      recommendations.push('Late entries identified — all entries must be contemporaneous. If unavoidable, annotate with "Late Entry", reason, date, time, and signature.');
+    if (errorTypes.includes('EE'))
+      recommendations.push('Erroneous entries found — double-check all values against source data before recording.');
+    if (allErrors.some(e => e.description?.toLowerCase().includes('illegible')))
+      recommendations.push('Illegible handwriting noted — all entries must be clearly legible.');
+    if (allErrors.some(e => e.description?.toLowerCase().includes('blank')))
+      recommendations.push('Unused blank spaces should be lined through with a single diagonal line.');
+    if (totalErrors === 0)
+      recommendations.push('Excellent GDP compliance on the reviewed pages.');
+
+    res.json({ pages: pageResults, totalErrors, criticalCount, majorCount, minorCount, recommendations });
+    console.log(`[GDP-CHECK] Complete — ${totalErrors} issues (${criticalCount}C/${majorCount}M/${minorCount}m), ${pageResults.reduce((a, p) => a + (p.entries?.length || 0), 0)} entries across ${images.length} page(s)`);
+
+  } catch (error) {
+    console.error('GDP check error:', error);
+    res.status(500).json({ error: 'GDP check failed: ' + error.message });
   }
 });
 
