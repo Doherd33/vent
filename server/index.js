@@ -548,10 +548,71 @@ CREATE POLICY IF NOT EXISTS builder_docs_all ON builder_docs FOR ALL TO authenti
 
 -- ── Add status column to submissions if missing ──────────────
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_name='submissions' AND column_name='status') THEN
     ALTER TABLE submissions ADD COLUMN status TEXT DEFAULT 'new';
   END IF;
+END $$;
+
+-- ── GDP Documents ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS gdp_documents (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id           TEXT NOT NULL,
+  filename          TEXT DEFAULT 'Untitled',
+  page_count        INT DEFAULT 0,
+  total_errors      INT DEFAULT 0,
+  critical_count    INT DEFAULT 0,
+  major_count       INT DEFAULT 0,
+  minor_count       INT DEFAULT 0,
+  recommendations   JSONB DEFAULT '[]'::jsonb,
+  review_status     TEXT DEFAULT 'pending_review',
+  processing_status TEXT DEFAULT 'complete',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_gdp_docs_user ON gdp_documents(user_id);
+CREATE INDEX IF NOT EXISTS idx_gdp_docs_status ON gdp_documents(review_status);
+
+ALTER TABLE gdp_documents ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY gdp_documents_all ON gdp_documents FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── GDP Findings (one row per entry/error per page) ─────────
+CREATE TABLE IF NOT EXISTS gdp_findings (
+  id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  document_id         UUID NOT NULL REFERENCES gdp_documents(id) ON DELETE CASCADE,
+  page_number         INT NOT NULL,
+  region_index        INT,
+  classification      TEXT DEFAULT 'handwritten',
+  ink_color           TEXT DEFAULT 'blue',
+  bbox                JSONB,
+  extracted_text      TEXT DEFAULT '',
+  error_type          TEXT,
+  severity            TEXT,
+  title               TEXT DEFAULT '',
+  location            TEXT DEFAULT '',
+  description         TEXT DEFAULT '',
+  correction          TEXT DEFAULT '',
+  status              TEXT DEFAULT 'ok',
+  confidence          REAL,
+  entry_id            INT,
+  manually_corrected  BOOLEAN DEFAULT false,
+  corrected_text      TEXT,
+  corrected_by        TEXT,
+  corrected_at        TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_gdp_findings_doc ON gdp_findings(document_id);
+CREATE INDEX IF NOT EXISTS idx_gdp_findings_error ON gdp_findings(error_type);
+
+ALTER TABLE gdp_findings ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY gdp_findings_all ON gdp_findings FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
   `.trim();
   res.type('text/plain').send(sql);
@@ -1913,6 +1974,24 @@ Return ONLY valid JSON — no markdown, no preamble:
 
 // ─── GDP CHECK ENDPOINT ──────────────────────────────────────────────────────
 
+// ─── IMAGE PREPROCESSING ─────────────────────────────────────────────────────
+// Improve Claude's vision accuracy with contrast normalization + sharpening
+async function preprocessImage(base64Data) {
+  const buffer = Buffer.from(base64Data, 'base64');
+  const processed = await sharp(buffer)
+    .normalize()                    // Auto-contrast normalization
+    .sharpen({ sigma: 1.2 })        // Sharpen text edges
+    .resize({
+      width: 2048,
+      height: 2048,
+      fit: 'inside',
+      withoutEnlargement: true      // Don't upscale small images
+    })
+    .jpeg({ quality: 90 })
+    .toBuffer();
+  return processed.toString('base64');
+}
+
 // Detect blue ink regions using sharp pixel analysis
 async function detectBlueInkRegions(base64Data) {
   const buffer = Buffer.from(base64Data, 'base64');
@@ -2025,19 +2104,20 @@ app.post('/query/gdp', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'Maximum 10 pages per check' });
   }
 
-  const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-
   try {
     const pageResults = [];
 
     for (let i = 0; i < images.length; i++) {
-      const { image, mimeType, pageNumber } = images[i];
-      const mediaType = supportedTypes.includes(mimeType) ? mimeType : 'image/jpeg';
+      const { image, pageNumber, filename } = images[i];
       const pNum = pageNumber || i + 1;
 
-      console.log(`[GDP-CHECK] Page ${pNum}/${images.length} — detecting blue ink…`);
+      console.log(`[GDP-CHECK] Page ${pNum}/${images.length} — preprocessing…`);
 
-      // Step 1: Detect blue ink regions with sharp (pixel-accurate)
+      // Step 0: Preprocess image for better vision results
+      const preprocessedImage = await preprocessImage(image);
+      console.log(`[GDP-CHECK] Page ${pNum} — preprocessed (${Math.round(image.length/1024)}KB → ${Math.round(preprocessedImage.length/1024)}KB)`);
+
+      // Step 1: Detect blue ink regions with sharp (use ORIGINAL for color accuracy)
       const { regions } = await detectBlueInkRegions(image);
 
       console.log(`[GDP-CHECK] Page ${pNum} — ${regions.length} blue regions found, sending to Claude…`);
@@ -2047,7 +2127,7 @@ app.post('/query/gdp', requireAuth, async (req, res) => {
         `  Region ${idx + 1}: x=${r.x}%, y=${r.y}%, w=${r.w}%, h=${r.h}%`
       ).join('\n');
 
-      // Step 3: Send image + detected regions to Claude for GDP analysis
+      // Step 3: Send PREPROCESSED image to Claude for GDP analysis (better contrast/sharpness)
       const gdpMessage = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
@@ -2056,43 +2136,52 @@ app.post('/query/gdp', requireAuth, async (req, res) => {
           content: [
             {
               type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: image }
+              source: { type: 'base64', media_type: 'image/jpeg', data: preprocessedImage }
             },
             {
               type: 'text',
               text: `You are an expert GMP Quality Assurance reviewer for pharmaceutical batch records.
 
-I have already run computer vision on this batch record page and detected ${regions.length} regions of BLUE INK (handwritten entries by operators). The pre-printed form is in black ink.
+This is a photo of a batch record form. The form has a PRE-PRINTED structure (field labels, table headers, grid lines, logos, document IDs) — IGNORE all pre-printed content. Your job is to find and review only the HANDWRITTEN entries that operators filled in by hand.
 
-Here are the detected blue ink regions with their precise bounding boxes (as % of image):
-${regionList}
+WHAT COUNTS AS HANDWRITTEN: signatures, initials, dates written by hand, values filled into blank fields, checkmarks, corrections, notes added by a person. Handwriting has irregular strokes, personal style, and is visually distinct from the uniform machine-printed text of the form.
+
+WHAT TO IGNORE: all pre-printed form labels, column headers, row labels, document titles, revision numbers, SOP references, page numbers, logos, watermarks, and any other machine-printed text that is part of the form template.
+
+I have run pixel analysis and detected ${regions.length} regions likely containing BLUE INK:
+${regionList || '  (none detected)'}
+
+These blue-ink regions are hints. Operators may also write in black ink or pencil — look for those too, but ONLY in areas where the form expects operator input (fill-in fields, signature lines, data cells).
 
 YOUR TASK:
-1. Look at the image and match each detected region to what was written there
-2. Transcribe the blue ink text in each region
-3. Check each entry for GDP (Good Documentation Practice) compliance
-4. Also identify any EMPTY fields that should have entries (IE errors) — estimate their position
+1. Identify each HANDWRITTEN entry on the page (in any ink color)
+2. Transcribe what was written
+3. Check each entry for GDP compliance
+4. Note any fields that are EMPTY but should have been filled in (IE errors)
+
+For entries matching a detected blue ink region, use those EXACT bounding box coordinates.
+For handwritten entries NOT in my detected regions, estimate the bbox as % of image.
 
 GDP ERROR CATEGORIES:
 - EE (Erroneous Entry): Wrong values, incorrect dates/times, calculation errors
-- LE (Late Entry): Different ink shade, times out of sequence, squeezed entries
-- IE (Incomplete Entry): Blank fields, missing signatures/initials/dates, values without units
-- CE (Correction Error): Correction fluid, no strikethrough, missing initials/date/reason
+- LE (Late Entry): Different ink shade suggesting different time, times out of sequence, squeezed entries
+- IE (Incomplete Entry): Blank fields that should have data, missing signatures/initials/dates
+- CE (Correction Error): Correction fluid used, no single-line strikethrough, missing initials/date/reason on corrections
 - GDP (Other): Illegible handwriting, blank spaces not lined through, pencil use
-
-USE THE EXACT BOUNDING BOX COORDINATES I PROVIDED for each entry. Do NOT estimate your own coordinates — use the regions listed above. For IE errors (empty fields), you may estimate coordinates.
 
 Return ONLY valid JSON:
 {
   "pageNumber": ${pNum},
-  "description": "what this page documents",
+  "description": "brief description of what this form page documents",
   "entries": [
     {
       "id": 1,
-      "text": "what the blue ink says",
+      "text": "transcribed handwriting",
       "bbox": {"x": 0, "y": 0, "w": 0, "h": 0},
       "status": "ok|error|warning",
-      "errorType": null
+      "errorType": null,
+      "inkColor": "blue|black|grey|other",
+      "classification": "handwritten"
     }
   ],
   "errors": [
@@ -2100,7 +2189,7 @@ Return ONLY valid JSON:
       "type": "EE|LE|IE|CE|GDP",
       "severity": "critical|major|minor",
       "title": "short title",
-      "location": "human-readable location",
+      "location": "human-readable location (e.g. Row 3, Signature field)",
       "bbox": {"x": 0, "y": 0, "w": 0, "h": 0},
       "description": "what was observed",
       "correction": "correct GDP procedure",
@@ -2109,12 +2198,13 @@ Return ONLY valid JSON:
   ]
 }
 
-RULES:
-- Use the EXACT bbox coordinates from my detected regions for entries
-- Each entry must correspond to one of my detected regions
-- "errors" references entries via entryId
-- Do NOT invent GDP issues — only flag genuine concerns
-- Flag empty fields that SHOULD have data as IE errors`
+CRITICAL RULES:
+- ONLY include handwritten content in "entries" — NEVER include pre-printed form text
+- Every entry must have classification "handwritten" — if it's printed, do not include it
+- Use EXACT bbox coordinates from my detected regions where they match
+- Do NOT invent GDP issues — only flag genuine, visible problems
+- Be conservative: if something looks acceptable, mark it status "ok"
+- For IE errors (empty fields), estimate the bbox of the blank field`
             }
           ]
         }]
@@ -2167,12 +2257,392 @@ RULES:
     if (totalErrors === 0)
       recommendations.push('Excellent GDP compliance on the reviewed pages.');
 
-    res.json({ pages: pageResults, totalErrors, criticalCount, majorCount, minorCount, recommendations });
+    // ── Persist to Supabase (non-fatal — results still return on failure) ──
+    let savedDocId = null;
+    try {
+      await ensureGdpTables();
+      const userId = req.user.id || req.user.email;
+      const docFilename = images[0]?.filename || `GDP Check ${new Date().toISOString().slice(0, 10)}`;
+
+      const { data: docRow, error: docErr } = await supabase
+        .from('gdp_documents')
+        .insert({
+          user_id: userId,
+          filename: docFilename,
+          page_count: images.length,
+          total_errors: totalErrors,
+          critical_count: criticalCount,
+          major_count: majorCount,
+          minor_count: minorCount,
+          recommendations,
+          review_status: 'pending_review',
+          processing_status: 'complete'
+        })
+        .select('id')
+        .single();
+
+      if (docErr) throw docErr;
+      savedDocId = docRow.id;
+
+      // Build findings rows — merge entries + errors per page
+      const findingRows = [];
+      pageResults.forEach(page => {
+        (page.entries || []).forEach((entry, idx) => {
+          const linkedError = (page.errors || []).find(e => e.entryId === entry.id);
+          findingRows.push({
+            document_id: savedDocId,
+            page_number: page.pageNumber,
+            region_index: idx,
+            classification: entry.classification || 'handwritten',
+            ink_color: entry.inkColor || 'blue',
+            bbox: entry.bbox || null,
+            extracted_text: entry.text || '',
+            error_type: linkedError?.type || null,
+            severity: linkedError?.severity || null,
+            title: linkedError?.title || '',
+            location: linkedError?.location || '',
+            description: linkedError?.description || '',
+            correction: linkedError?.correction || '',
+            status: entry.status || 'ok',
+            entry_id: entry.id
+          });
+        });
+        // Standalone errors (IE errors with no matching entry)
+        (page.errors || []).forEach(err => {
+          const hasEntry = (page.entries || []).some(e => e.id === err.entryId);
+          if (!hasEntry) {
+            findingRows.push({
+              document_id: savedDocId,
+              page_number: page.pageNumber,
+              classification: 'handwritten',
+              ink_color: 'unknown',
+              bbox: err.bbox || null,
+              extracted_text: '',
+              error_type: err.type,
+              severity: err.severity,
+              title: err.title || '',
+              location: err.location || '',
+              description: err.description || '',
+              correction: err.correction || '',
+              status: 'error',
+              entry_id: err.entryId || null
+            });
+          }
+        });
+      });
+
+      if (findingRows.length > 0) {
+        const { error: findErr } = await supabase.from('gdp_findings').insert(findingRows);
+        if (findErr) console.error('[GDP] Findings insert error:', findErr.message);
+      }
+
+      await auditLog({
+        userId, userRole: req.user.role || 'user',
+        action: 'gdp_check_completed', entityType: 'gdp_document', entityId: savedDocId,
+        after: { totalErrors, criticalCount, majorCount, minorCount, pageCount: images.length },
+        req
+      });
+      console.log(`[GDP] Saved document ${savedDocId} with ${findingRows.length} findings`);
+    } catch (persistErr) {
+      console.error('[GDP] Persistence error (non-fatal):', persistErr.message);
+    }
+
+    res.json({ documentId: savedDocId, pages: pageResults, totalErrors, criticalCount, majorCount, minorCount, recommendations });
     console.log(`[GDP-CHECK] Complete — ${totalErrors} issues (${criticalCount}C/${majorCount}M/${minorCount}m), ${pageResults.reduce((a, p) => a + (p.entries?.length || 0), 0)} entries across ${images.length} page(s)`);
 
   } catch (error) {
     console.error('GDP check error:', error);
     res.status(500).json({ error: 'GDP check failed: ' + error.message });
+  }
+});
+
+// ─── GDP DOCUMENT IDENTIFICATION ────────────────────────────────────────────
+
+// POST /gdp/identify-docs — Identify WX-SOP/WX-MBR doc IDs from batch record images
+app.post('/gdp/identify-docs', requireAuth, async (req, res) => {
+  const { images } = req.body;
+
+  if (!images || !images.length) {
+    return res.status(400).json({ error: 'No images provided' });
+  }
+
+  console.log(`[GDP-ID] Identifying document IDs for ${images.length} page(s)…`);
+
+  try {
+    const results = [];
+
+    for (let i = 0; i < images.length; i++) {
+      const { base64, mimeType, pageNumber } = images[i];
+      const mediaType = ['image/jpeg','image/png','image/gif','image/webp'].includes(mimeType)
+        ? mimeType : 'image/jpeg';
+
+      console.log(`[GDP-ID] Page ${pageNumber || i + 1} — sending to Claude…`);
+
+      const msg = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: `Look at this pharmaceutical batch record / GMP document page. Find the document identifier printed on it.
+
+Document IDs typically follow patterns like:
+- WX-SOP-001, WX-SOP-042 (Standard Operating Procedures)
+- WX-MBR-001, WX-MBR-042 (Master Batch Records)
+- WX-FRM-xxx (Forms)
+- WX-LOG-xxx (Logbooks)
+- Or similar alphanumeric reference numbers with a prefix and number
+
+Also identify the document title and the page/section title if visible.
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "documentId": "WX-SOP-001 or null if not found",
+  "documentTitle": "The full document title if visible",
+  "pageTitle": "The section or page title if different from document title",
+  "confidence": "high|medium|low"
+}` }
+          ]
+        }]
+      });
+
+      let parsed;
+      try {
+        const raw = msg.content[0].text.trim();
+        parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      } catch {
+        parsed = { documentId: null, documentTitle: 'Unknown', pageTitle: '', confidence: 'low' };
+      }
+      parsed.pageNumber = pageNumber || i + 1;
+      results.push(parsed);
+      console.log(`[GDP-ID] Page ${parsed.pageNumber} → ${parsed.documentId || 'unidentified'} (${parsed.confidence})`);
+    }
+
+    console.log(`[GDP-ID] Complete — identified ${results.filter(r => r.documentId).length}/${results.length} pages`);
+    res.json({ pages: results });
+  } catch (error) {
+    console.error('GDP identify-docs error:', error?.message || error);
+    if (error?.status) console.error('[GDP-ID] API status:', error.status);
+    res.status(500).json({ error: 'Document identification failed: ' + (error?.message || String(error)) });
+  }
+});
+
+// ─── GDP PERSISTENCE & REVIEW ────────────────────────────────────────────────
+
+let _gdpTableReady = false;
+async function ensureGdpTables() {
+  if (_gdpTableReady) return;
+  try {
+    const { error } = await supabase.from('gdp_documents').select('id').limit(1);
+    if (error && error.message.includes('does not exist')) {
+      console.log('[GDP] gdp_documents table not found — run the SQL from GET /admin/setup in Supabase.');
+    }
+    _gdpTableReady = true;
+  } catch { _gdpTableReady = true; }
+}
+
+// GET /api/gdp/documents — list GDP check history for the current user
+app.get('/api/gdp/documents', requireAuth, async (req, res) => {
+  await ensureGdpTables();
+  try {
+    const { data, error } = await supabase
+      .from('gdp_documents')
+      .select('id, filename, page_count, total_errors, critical_count, major_count, minor_count, review_status, created_at')
+      .eq('user_id', req.user.id || req.user.email)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error('GDP doc list error:', err);
+    res.status(500).json({ error: 'Failed to load GDP history' });
+  }
+});
+
+// GET /api/gdp/documents/:id — get a single GDP check with all findings
+app.get('/api/gdp/documents/:id', requireAuth, async (req, res) => {
+  await ensureGdpTables();
+  try {
+    const { data: doc, error: docErr } = await supabase
+      .from('gdp_documents')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    if (docErr) throw docErr;
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+    const { data: findings, error: findErr } = await supabase
+      .from('gdp_findings')
+      .select('*')
+      .eq('document_id', req.params.id)
+      .order('page_number', { ascending: true })
+      .order('region_index', { ascending: true });
+    if (findErr) throw findErr;
+
+    // Reconstruct the pages format the frontend expects
+    const pageMap = {};
+    (findings || []).forEach(f => {
+      if (!pageMap[f.page_number]) {
+        pageMap[f.page_number] = { pageNumber: f.page_number, entries: [], errors: [] };
+      }
+      const page = pageMap[f.page_number];
+
+      page.entries.push({
+        id: f.entry_id,
+        text: f.manually_corrected ? f.corrected_text : f.extracted_text,
+        originalText: f.manually_corrected ? f.extracted_text : undefined,
+        bbox: f.bbox,
+        status: f.status,
+        inkColor: f.ink_color,
+        classification: f.classification,
+        findingId: f.id,
+        manuallyCorrected: f.manually_corrected
+      });
+
+      if (f.error_type) {
+        page.errors.push({
+          type: f.error_type,
+          severity: f.severity,
+          title: f.title,
+          location: f.location,
+          bbox: f.bbox,
+          description: f.description,
+          correction: f.correction,
+          entryId: f.entry_id,
+          findingId: f.id
+        });
+      }
+    });
+
+    const pages = Object.values(pageMap).sort((a, b) => a.pageNumber - b.pageNumber);
+
+    res.json({
+      ...doc,
+      pages,
+      totalErrors: doc.total_errors,
+      criticalCount: doc.critical_count,
+      majorCount: doc.major_count,
+      minorCount: doc.minor_count,
+      recommendations: doc.recommendations
+    });
+  } catch (err) {
+    console.error('GDP doc detail error:', err);
+    res.status(500).json({ error: 'Failed to load GDP document' });
+  }
+});
+
+// PATCH /api/gdp/documents/:docId/findings/:findingId — correct a finding's text
+app.patch('/api/gdp/documents/:docId/findings/:findingId', requireAuth, async (req, res) => {
+  await ensureGdpTables();
+  const { corrected_text } = req.body;
+
+  if (corrected_text === undefined) {
+    return res.status(400).json({ error: 'corrected_text is required' });
+  }
+
+  try {
+    const { data: doc } = await supabase
+      .from('gdp_documents')
+      .select('id, user_id')
+      .eq('id', req.params.docId)
+      .single();
+
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+    const userId = req.user.id || req.user.email;
+    const userRole = req.user.role || 'user';
+
+    // Allow owner or QA/admin roles
+    if (doc.user_id !== userId && !['qa', 'admin', 'director'].includes(userRole)) {
+      return res.status(403).json({ error: 'Not authorized to edit this document' });
+    }
+
+    const { data: original } = await supabase
+      .from('gdp_findings')
+      .select('extracted_text, corrected_text, manually_corrected')
+      .eq('id', req.params.findingId)
+      .eq('document_id', req.params.docId)
+      .single();
+
+    const { data, error } = await supabase
+      .from('gdp_findings')
+      .update({
+        manually_corrected: true,
+        corrected_text,
+        corrected_by: userId,
+        corrected_at: new Date().toISOString()
+      })
+      .eq('id', req.params.findingId)
+      .eq('document_id', req.params.docId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Finding not found' });
+
+    await auditLog({
+      userId, userRole,
+      action: 'gdp_finding_corrected', entityType: 'gdp_finding', entityId: req.params.findingId,
+      before: { text: original?.extracted_text, corrected: original?.manually_corrected },
+      after: { corrected_text },
+      req
+    });
+
+    res.json(data);
+  } catch (err) {
+    console.error('GDP finding correction error:', err);
+    res.status(500).json({ error: 'Failed to update finding' });
+  }
+});
+
+// PATCH /api/gdp/documents/:docId/status — update review status
+app.patch('/api/gdp/documents/:docId/status', requireAuth, async (req, res) => {
+  await ensureGdpTables();
+  const { review_status } = req.body;
+
+  const validStatuses = ['pending_review', 'reviewed', 'approved'];
+  if (!validStatuses.includes(review_status)) {
+    return res.status(400).json({ error: 'Invalid status. Must be: ' + validStatuses.join(', ') });
+  }
+
+  const userId = req.user.id || req.user.email;
+  const userRole = req.user.role || 'user';
+
+  try {
+    const { data: doc } = await supabase
+      .from('gdp_documents')
+      .select('review_status, user_id')
+      .eq('id', req.params.docId)
+      .single();
+
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+    if (review_status === 'approved' && !['qa', 'admin', 'director'].includes(userRole)) {
+      return res.status(403).json({ error: 'Only QA, admin, or director can approve GDP checks' });
+    }
+
+    const { data, error } = await supabase
+      .from('gdp_documents')
+      .update({ review_status, updated_at: new Date().toISOString() })
+      .eq('id', req.params.docId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await auditLog({
+      userId, userRole,
+      action: 'gdp_review_status_changed', entityType: 'gdp_document', entityId: req.params.docId,
+      before: { review_status: doc.review_status },
+      after: { review_status },
+      req
+    });
+
+    res.json(data);
+  } catch (err) {
+    console.error('GDP status update error:', err);
+    res.status(500).json({ error: 'Failed to update review status' });
   }
 });
 
@@ -2471,13 +2941,14 @@ app.get('/docs/documents/:clientId', requireAuth, async (req, res) => {
 // PUT /docs/documents/:clientId — update a document
 app.put('/docs/documents/:clientId', requireAuth, async (req, res) => {
   await ensureBuilderTable();
-  const { title, area, description, status, steps, versions } = req.body;
+  const { title, area, description, status, steps, versions, signoffs } = req.body;
   const update = { updated_at: new Date().toISOString() };
   if (title !== undefined) update.title = title;
   if (area !== undefined) update.area = area;
   if (description !== undefined) update.description = description;
   if (steps !== undefined) update.steps = steps;
   if (versions !== undefined) update.versions = versions;
+  if (signoffs !== undefined) update.signoffs = signoffs;
 
   // Track status changes for audit
   let oldStatus = null;
@@ -2548,6 +3019,114 @@ app.delete('/docs/documents/:clientId', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Doc delete error:', err);
     res.status(500).json({ error: 'Failed to delete document' });
+  }
+});
+
+// ─── DOCUMENT SIGN-OFF ──────────────────────────────────────────────────────
+
+// POST /docs/documents/:clientId/signoff — electronic sign-off (21 CFR Part 11)
+app.post('/docs/documents/:clientId/signoff', requireAuth, async (req, res) => {
+  await ensureBuilderTable();
+  const { action, comment } = req.body;
+  const userId = req.user.id || req.user.email;
+  const role = req.user.role || 'operator';
+  const name = req.user.name || userId;
+
+  const validActions = ['reviewed', 'approved', 'rejected'];
+  if (!validActions.includes(action)) {
+    return res.status(400).json({ error: 'Invalid action. Must be: ' + validActions.join(', ') });
+  }
+
+  // Role-based permissions
+  const canReview = ['qa', 'director', 'admin'].includes(role);
+  const canApprove = ['director', 'admin'].includes(role);
+
+  if (action === 'reviewed' && !canReview) {
+    return res.status(403).json({ error: 'Only QA, Director, or Admin can review documents' });
+  }
+  if (action === 'approved' && !canApprove) {
+    return res.status(403).json({ error: 'Only Director or Admin can approve documents' });
+  }
+
+  try {
+    // Fetch current document
+    const { data: doc, error: fetchErr } = await supabase
+      .from('builder_docs')
+      .select('*')
+      .eq('client_id', req.params.clientId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchErr || !doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    const oldStatus = doc.status;
+
+    // Validate status transition
+    if (action === 'reviewed' && oldStatus !== 'draft') {
+      return res.status(400).json({ error: 'Only draft documents can be reviewed' });
+    }
+    if (action === 'approved' && oldStatus !== 'reviewed') {
+      return res.status(400).json({ error: 'Only reviewed documents can be approved' });
+    }
+
+    // Build sign-off entry
+    const signoffEntry = {
+      id: 'signoff-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      action,
+      user: name,
+      role,
+      timestamp: new Date().toISOString(),
+      comment: comment || null
+    };
+
+    // Update document
+    const signoffs = Array.isArray(doc.signoffs) ? doc.signoffs : [];
+    signoffs.push(signoffEntry);
+
+    const newStatus = action === 'rejected' ? 'draft' : action;
+    const versions = Array.isArray(doc.versions) ? doc.versions : [];
+    const actionLabel = action === 'reviewed' ? 'Reviewed' : action === 'approved' ? 'Approved' : 'Rejected';
+    versions.push({
+      time: signoffEntry.timestamp,
+      label: actionLabel + ' by ' + name + ' (' + role.toUpperCase() + ')' + (comment ? ' — ' + comment : ''),
+      user: name
+    });
+
+    const { data: updated, error: updateErr } = await supabase
+      .from('builder_docs')
+      .update({
+        status: newStatus,
+        signoffs,
+        versions,
+        updated_at: signoffEntry.timestamp
+      })
+      .eq('client_id', req.params.clientId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (updateErr) throw updateErr;
+
+    // Immutable audit log
+    await auditLog({
+      userId,
+      userRole: role,
+      action: 'doc_' + action,
+      entityType: 'builder_doc',
+      entityId: req.params.clientId,
+      before: { status: oldStatus },
+      after: { status: newStatus, signoff: signoffEntry },
+      reason: comment || null,
+      req
+    });
+
+    console.log(`[SIGNOFF] ${actionLabel} doc ${req.params.clientId} by ${name} (${role})`);
+    res.json({ ok: true, status: newStatus, signoff: signoffEntry });
+  } catch (err) {
+    console.error('Sign-off error:', err);
+    res.status(500).json({ error: 'Sign-off failed: ' + err.message });
   }
 });
 
