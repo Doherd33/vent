@@ -1153,12 +1153,16 @@ window.VentAudio = (function(){
             headers: Object.assign({'Content-Type':'application/json'}, getAuthHeaders()),
             body: JSON.stringify({ audio: base64, mimeType: 'audio/webm', language_code: (window.VentI18n && VentI18n.getSttLangCode()) || 'eng' })
           })
-          .then(function(r){ return r.json(); })
+          .then(function(r){
+            if(!r.ok) { console.error('[STT] Server error:', r.status); if(onError) onError('stt_error'); return; }
+            return r.json();
+          })
           .then(function(data){
+            if(!data) return; // already handled above
             if(data.text && data.text.trim()) onResult(data.text.trim());
             else if(onError) onError('empty');
           })
-          .catch(function(err){ if(onError) onError(err); });
+          .catch(function(err){ console.error('[STT] Fetch error:', err); if(onError) onError(err); });
         };
         reader.readAsDataURL(blob);
       };
@@ -1431,12 +1435,29 @@ async function sendChatMessage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    var data = await res.json();
 
     hideThinking();
 
+    if (!res.ok) {
+      var errBody = {};
+      try { errBody = await res.json(); } catch(_) {}
+      console.error('[Charlie/feedback] HTTP', res.status, errBody.error || '');
+      var errMsg = res.status === 401
+        ? 'Session expired — please sign out and back in.'
+        : res.status === 500 && errBody.error
+          ? 'Server error: ' + errBody.error
+          : 'Sorry, something went wrong (HTTP ' + res.status + '). Please try again.';
+      appendChatMsg('assistant', errMsg);
+      chatBusy = false;
+      setChatBusy(false);
+      return;
+    }
+
+    var data = await res.json();
+
     if (data.error) {
-      appendChatMsg('assistant', 'Sorry, something went wrong. Please try again.');
+      console.error('[Charlie/feedback] API error:', data.error);
+      appendChatMsg('assistant', 'Sorry — ' + data.error + '. Please try again.');
       chatBusy = false;
       setChatBusy(false);
       return;
@@ -1555,6 +1576,11 @@ function startListening() {
     if (err === 'mic') {
       voiceConvoMode = false;
       appendChatMsg('assistant', 'Microphone access denied. Please allow mic permissions or type your feedback.');
+    } else if (err === 'stt_error') {
+      appendChatMsg('assistant', 'Speech recognition is unavailable right now — please type your feedback instead.');
+      voiceConvoMode = false;
+      setChatBusy(false);
+      chatBusy = false;
     } else if (err === 'empty') {
       appendChatMsg('assistant', "I didn't catch that — could you try again? Speak clearly and I'll listen.");
       // Stay in voice mode so they can retry without pressing the button again
@@ -1564,27 +1590,38 @@ function startListening() {
     }
   });
 
-  // Silence detection loop
-  setTimeout(function tickListen() {
+  // Silence detection loop — poll until mic analyser is ready, then tick every frame
+  (function waitForMic() {
+    if (voiceState !== 'listening') return; // aborted before mic was ready
     var ma = VentAudio.getMicAnalyser();
-    if (!ma || voiceState !== 'listening') return;
-    var freq = new Uint8Array(ma.frequencyBinCount);
-    ma.getByteFrequencyData(freq);
-    var avg = 0;
-    for (var i = 0; i < freq.length; i++) avg += freq[i];
-    avg /= freq.length;
-
-    if (avg > SILENCE_THRESH) { speechDetected = true; silenceStart = 0; }
-    else if (speechDetected) {
-      if (!silenceStart) silenceStart = Date.now();
-      else if (Date.now() - silenceStart > SILENCE_MS) {
-        VentAudio.stopRecording();
-        return;
-      }
+    if (!ma) {
+      // Mic not ready yet — retry in 100 ms instead of bailing out
+      setTimeout(waitForMic, 100);
+      return;
     }
-    if (Date.now() - recStart > MAX_REC_MS) { VentAudio.stopRecording(); return; }
-    requestAnimationFrame(tickListen);
-  }, 300);
+    // Mic is ready — start the real tick loop
+    (function tickListen() {
+      if (voiceState !== 'listening') return;
+      var ma2 = VentAudio.getMicAnalyser();
+      if (!ma2) return; // stream died
+      var freq = new Uint8Array(ma2.frequencyBinCount);
+      ma2.getByteFrequencyData(freq);
+      var avg = 0;
+      for (var i = 0; i < freq.length; i++) avg += freq[i];
+      avg /= freq.length;
+
+      if (avg > SILENCE_THRESH) { speechDetected = true; silenceStart = 0; }
+      else if (speechDetected) {
+        if (!silenceStart) silenceStart = Date.now();
+        else if (Date.now() - silenceStart > SILENCE_MS) {
+          VentAudio.stopRecording();
+          return;
+        }
+      }
+      if (Date.now() - recStart > MAX_REC_MS) { VentAudio.stopRecording(); return; }
+      requestAnimationFrame(tickListen);
+    })();
+  })();
 }
 
 function endFeedbackSession() {
@@ -1888,6 +1925,13 @@ if (window.VentI18n) {
 
 // ── Init ──
 loadSessions();
+
+// Auto-greeting: show Charlie's opening line without consuming an API session
+(function showOpeningGreeting() {
+  var thread = document.getElementById('chatThread');
+  if (!thread || thread.children.length > 0) return;
+  appendChatMsg('assistant', "Hey! I'd love to hear how things are going with Vent. What's been on your mind — anything working well, or anything that's been frustrating you?");
+})();
 </script>
 </body>
 </html>
