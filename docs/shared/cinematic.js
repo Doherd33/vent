@@ -341,29 +341,29 @@ async function playVoiceGreeting() {
 
     // Apply speed + pitch
     const baseRate = vc.speed !== undefined ? vc.speed / 100 : 1.0;
-    const pitchSemitones = vc.pitch !== undefined ? (vc.pitch - 50) * 0.24 : 0;
-    audio.playbackRate = baseRate * Math.pow(2, pitchSemitones / 12);
+    const pitchSemis = vc.pitch || 0;
+    audio.playbackRate = pitchSemis !== 0 ? baseRate * Math.pow(2, pitchSemis / 12) : baseRate;
 
     const ctx      = getAudioCtx();
     const source   = ctx.createMediaElementSource(audio);
 
     // Build audio chain: source → [bass] → [treble] → analyser
     let lastNode = source;
-    const bassVal = vc.bass !== undefined ? vc.bass : 50;
-    if (bassVal !== 50) {
+    const bassVal = vc.bass || 0;
+    if (bassVal !== 0) {
       const bassFilter = ctx.createBiquadFilter();
       bassFilter.type = 'lowshelf';
       bassFilter.frequency.value = 200;
-      bassFilter.gain.value = (bassVal - 50) * 0.3;
+      bassFilter.gain.value = bassVal;
       lastNode.connect(bassFilter);
       lastNode = bassFilter;
     }
-    const trebleVal = vc.treble !== undefined ? vc.treble : 50;
-    if (trebleVal !== 50) {
+    const trebleVal = vc.treble || 0;
+    if (trebleVal !== 0) {
       const trebleFilter = ctx.createBiquadFilter();
       trebleFilter.type = 'highshelf';
       trebleFilter.frequency.value = 3000;
-      trebleFilter.gain.value = (trebleVal - 50) * 0.3;
+      trebleFilter.gain.value = trebleVal;
       lastNode.connect(trebleFilter);
       lastNode = trebleFilter;
     }
