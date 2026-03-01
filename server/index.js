@@ -3647,6 +3647,71 @@ app.post('/translate', requireAuth, async (req, res) => {
   }
 });
 
+// ── Charlie Voice Assistant ──────────────────────────────────────────────────
+app.post('/charlie/ask', requireAuth, async (req, res) => {
+  const { question, context, lang, history } = req.body;
+  if (!question) return res.status(400).json({ error: 'question is required' });
+
+  const langNames = { en: 'English', zh: 'Chinese (Mandarin)', es: 'Spanish' };
+  const targetLang = langNames[lang] || 'English';
+
+  const messages = [];
+  if (history && history.length) {
+    history.slice(-8).forEach(h => {
+      messages.push({ role: 'user', content: h.q });
+      messages.push({ role: 'assistant', content: JSON.stringify({ answer: h.a, action: 'none', params: {} }) });
+    });
+  }
+  messages.push({ role: 'user', content: question });
+
+  const contextLine = context ? `\nThe user is currently viewing: ${context}\n` : '';
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 400,
+      system: `You are Charlie, the voice assistant for Vent — a manufacturing intelligence platform used in pharmaceutical facilities.
+${contextLine}
+You can execute these actions (return ONE if appropriate):
+- new_chat: Start a fresh conversation
+- open_history / close_history: Toggle chat history sidebar
+- open_sops / close_sops: Toggle SOP library sidebar
+- open_todos / close_todos: Toggle to-do list sidebar
+- open_concern / close_concern: Toggle "Raise a Concern" panel
+- open_gdp / close_gdp: Toggle GDP document check
+- open_activity / close_activity: Toggle submissions/activity drawer
+- start_tour / end_tour: Start/stop guided demo tour
+- scroll_bottom: Scroll to latest message
+- ask_query: Send a question to the AI chat (params: { "query": "..." })
+- search_sops: Search SOP library (params: { "query": "..." })
+- switch_lang: Change language (params: { "lang": "en"|"zh"|"es" })
+- analyse_trends: Analyse chat history trends
+- none: No action, just answer the question
+
+Respond with valid JSON only: { "answer": "...", "action": "...", "params": {} }
+Keep answers conversational and brief (1-2 sentences). Respond in ${targetLang}. Match the warm, knowledgeable tone of a product expert who genuinely wants to help.`,
+      messages: messages,
+    });
+
+    const raw = response.content[0].text;
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // If Claude didn't return JSON, wrap it
+      parsed = { answer: raw, action: 'none', params: {} };
+    }
+    res.json({
+      answer: parsed.answer || raw,
+      action: parsed.action || 'none',
+      params: parsed.params || {}
+    });
+  } catch (err) {
+    console.error('[CHARLIE/ASK] Error:', err.message);
+    res.status(500).json({ error: 'Could not answer question' });
+  }
+});
+
 app.listen(PORT, () => {
   const keys = ['ANTHROPIC_API_KEY','SUPABASE_URL','SUPABASE_KEY','VOYAGE_API_KEY','VOYAGE_KEY','ELEVENLABS_API_KEY'];
   keys.forEach(k => console.log(`[ENV] ${k}: ${process.env[k] ? 'SET' : 'MISSING'}`));

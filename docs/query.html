@@ -18,17 +18,19 @@
   --text:     #cccccc;
   --mid:      #8e8e8e;
   --dim:      #5a5a5a;
-  --accent:   #007acc;
-  --accent2:  rgba(0,122,204,0.15);
-  --accent3:  rgba(0,122,204,0.28);
+  --hue:      210;
+  --glow-mult: 1;
+  --accent:   hsl(var(--hue), 100%, 40%);
+  --accent2:  hsla(var(--hue), 100%, 40%, 0.15);
+  --accent3:  hsla(var(--hue), 100%, 40%, 0.28);
   --gold:     #ffc64d;
   --gold2:    rgba(255,198,77,0.15);
   --green:    #4ec9b0;
   --green2:   rgba(78,201,176,0.15);
   --red:      #f44747;
   --red2:     rgba(244,71,71,0.15);
-  --blue:     #007acc;
-  --blue2:    rgba(0,122,204,0.15);
+  --blue:     hsl(var(--hue), 100%, 40%);
+  --blue2:    hsla(var(--hue), 100%, 40%, 0.15);
   --teal:     #4ec9b0;
   --teal2:    rgba(78,201,176,0.12);
 }
@@ -424,8 +426,6 @@ body {
 
 /* ── VENT FAB MOBILE ── */
 @media (max-width: 640px) {
-  .vent-fab { bottom: 90px; right: 16px; width: 44px; height: 44px; }
-  .vent-fab-label { right: 72px; font-size: 10.5px; }
   .vent-panel { right: 12px; left: 12px; width: auto; bottom: 148px; max-height: calc(100vh - 200px); }
   .subs-drawer { width: 100%; }
   .subs-trigger { font-size: 11px; padding: 4px 9px; }
@@ -433,28 +433,626 @@ body {
   .user-name-label { display: none; }
   .vent-textarea { font-size: 16px; }
 }
-.vent-fab {
-  position: fixed; bottom: 136px; right: 28px; z-index: 200;
-  width: 48px; height: 48px; border-radius: 50%;
-  background: var(--teal); color: #fff; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 18px rgba(26,144,128,.38), 0 2px 6px rgba(26,144,128,.2);
-  transition: transform .18s, box-shadow .18s, background .18s;
+/* ── CHARLIE — JARVIS-STYLE VOICE ASSISTANT ── */
+@keyframes fabBreath {
+  0%, 100% { opacity: .4; transform: scale(1); }
+  50%      { opacity: .7; transform: scale(1.12); }
 }
-.vent-fab:hover { transform: scale(1.09); box-shadow: 0 6px 26px rgba(26,144,128,.46); }
-.vent-fab.open  { background: var(--mid); box-shadow: 0 2px 10px rgba(26,38,56,.18); }
-.vent-fab svg   { transition: transform .2s cubic-bezier(.34,1.4,.64,1); }
-.vent-fab.open svg { transform: rotate(45deg); }
 
-.vent-fab-label {
-  position: fixed; right: 88px; z-index: 200;
-  background: var(--text); color: #fff;
-  font-family: 'DM Sans', sans-serif; font-size: 11.5px; font-weight: 400;
-  padding: 5px 10px; border-radius: 7px; white-space: nowrap;
-  pointer-events: none; opacity: 0; transition: opacity .15s, transform .12s;
-  transform: translateX(4px);
+/* ── Charlie Panel — glassmorphic ── */
+.charlie-panel {
+  position: fixed; bottom: 260px; right: 12px; z-index: 202;
+  width: 340px;
+  background: rgba(8,14,28,.88);
+  backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+  border: 1px solid hsla(var(--hue),95%,45%,.15);
+  border-radius: 22px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 0 60px hsla(var(--hue),90%,38%,.12), 0 24px 80px rgba(0,0,0,.55);
+  display: none;
+  font-family: 'DM Sans', sans-serif;
 }
-.vent-fab-label.show { opacity: 1; transform: translateX(0); }
+.charlie-close {
+  position: absolute; top: 14px; right: 16px; z-index: 1;
+  background: none; border: none; color: rgba(255,255,255,.2);
+  cursor: pointer; padding: 4px; border-radius: 6px;
+  transition: color .15s, background .15s;
+  line-height: 1;
+}
+.charlie-close:hover { color: rgba(255,255,255,.5); background: rgba(255,255,255,.05); }
+.charlie-title {
+  text-align: center; font-size: 9.5px; letter-spacing: 3.5px;
+  text-transform: uppercase; color: hsla(var(--hue),100%,52%,.45);
+  margin-bottom: 10px; font-weight: 500;
+}
+
+/* ── Radial Visualizer ── */
+.charlie-viz {
+  position: relative; width: 180px; height: 180px; margin: 0 auto 14px;
+}
+
+/* Rotating SVG rings */
+.charlie-rings {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+.charlie-ring { fill: none; stroke-width: 1; }
+.charlie-ring-1 { stroke: hsla(var(--hue),95%,42%,.12); stroke-dasharray: 6 14;
+  animation: ringRot 20s linear infinite; transform-origin: center; }
+.charlie-ring-2 { stroke: hsla(var(--hue),95%,42%,.10); stroke-dasharray: 3 18;
+  animation: ringRot 14s linear infinite reverse; transform-origin: center; }
+.charlie-ring-3 { stroke: hsla(var(--hue),95%,42%,.07); stroke-dasharray: 10 8;
+  animation: ringRot 28s linear infinite; transform-origin: center; }
+.charlie-panel.listening .charlie-ring-1 { stroke: hsla(var(--hue),100%,50%,.25); }
+.charlie-panel.listening .charlie-ring-2 { stroke: hsla(var(--hue),100%,50%,.18); }
+.charlie-panel.speaking .charlie-ring-1  { stroke: hsla(var(--hue),100%,55%,.35); }
+.charlie-panel.speaking .charlie-ring-2  { stroke: hsla(var(--hue),100%,55%,.25); }
+.charlie-panel.speaking .charlie-ring-3  { stroke: hsla(var(--hue),100%,55%,.18); }
+.charlie-panel.thinking .charlie-ring-1  { animation-duration: 3s; stroke: hsla(var(--hue),100%,50%,.3); }
+.charlie-panel.thinking .charlie-ring-2  { animation-duration: 2s; stroke: hsla(var(--hue),100%,50%,.2); }
+@keyframes ringRot { to { transform: rotate(360deg); } }
+
+/* Central orb */
+.charlie-orb {
+  position: absolute; left: 50%; top: 50%;
+  width: 30px; height: 30px; transform: translate(-50%,-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 36%,
+    hsla(var(--hue),100%,60%,.95) 0%, hsla(var(--hue),95%,42%,.7) 50%, hsla(var(--hue),80%,25%,.3) 100%);
+  box-shadow: 0 0 20px hsla(var(--hue),100%,50%,.5), 0 0 60px hsla(var(--hue),90%,38%,.2);
+  transition: box-shadow .3s, transform .3s;
+}
+.charlie-orb::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, rgba(255,255,255,.35), transparent 60%);
+}
+.charlie-panel.listening .charlie-orb {
+  animation: orbPulse 1.8s ease-in-out infinite;
+  box-shadow: 0 0 28px hsla(var(--hue),100%,55%,.7), 0 0 80px hsla(var(--hue),95%,45%,.3);
+}
+.charlie-panel.thinking .charlie-orb {
+  animation: orbSpin 1.2s linear infinite;
+  box-shadow: 0 0 24px hsla(var(--hue),100%,50%,.5), 0 0 60px hsla(var(--hue),90%,38%,.25);
+}
+.charlie-panel.speaking .charlie-orb {
+  box-shadow: 0 0 32px hsla(var(--hue),100%,60%,.8), 0 0 100px hsla(var(--hue),95%,45%,.35);
+  transform: translate(-50%,-50%) scale(1.1);
+}
+@keyframes orbPulse {
+  0%, 100% { transform: translate(-50%,-50%) scale(1);
+    box-shadow: 0 0 20px hsla(var(--hue),100%,52%,.6), 0 0 60px hsla(var(--hue),90%,38%,.2); }
+  50% { transform: translate(-50%,-50%) scale(1.12);
+    box-shadow: 0 0 32px hsla(var(--hue),100%,60%,.8), 0 0 90px hsla(var(--hue),95%,45%,.3); }
+}
+@keyframes orbSpin {
+  from { transform: translate(-50%,-50%) rotate(0deg); }
+  to   { transform: translate(-50%,-50%) rotate(360deg); }
+}
+
+/* Radial frequency bars */
+.charlie-bar-slot {
+  position: absolute; left: calc(50% - 1.5px); top: 0;
+  width: 3px; height: 50%;
+  transform-origin: 1.5px 100%;
+  pointer-events: none;
+}
+.charlie-bar {
+  position: absolute; bottom: 0; width: 100%;
+  height: 4px; margin-bottom: 28px;
+  background: hsla(var(--hue),95%,45%,.35);
+  border-radius: 1.5px;
+  box-shadow: 0 0 3px hsla(var(--hue),90%,38%,.2);
+  transition: height .07s linear;
+}
+.charlie-panel.listening .charlie-bar {
+  background: hsla(var(--hue),100%,50%,.45);
+  box-shadow: 0 0 4px hsla(var(--hue),95%,45%,.3);
+}
+.charlie-panel.speaking .charlie-bar {
+  background: hsla(var(--hue),100%,55%,.65);
+  box-shadow: 0 0 8px hsla(var(--hue),100%,50%,.45);
+}
+
+/* Status text */
+.charlie-status {
+  text-align: center; font-size: 11px; letter-spacing: 1.2px;
+  text-transform: uppercase; color: hsla(var(--hue),100%,52%,.55);
+  min-height: 16px; margin-bottom: 4px;
+  transition: color .2s;
+}
+.charlie-panel.listening .charlie-status { color: hsla(var(--hue),100%,55%,.7); }
+.charlie-panel.speaking .charlie-status  { color: hsla(var(--hue),100%,60%,.8); }
+
+/* Answer area */
+.charlie-answer {
+  font-size: 12.5px; color: rgba(180,210,255,.9); line-height: 1.55;
+  max-height: 110px; overflow-y: auto;
+  padding: 10px 13px; margin-top: 8px;
+  background: hsla(var(--hue),80%,25%,.1);
+  border: 1px solid hsla(var(--hue),95%,42%,.1);
+  border-radius: 10px; display: none;
+}
+.charlie-answer .charlie-q {
+  color: hsla(var(--hue),100%,50%,.4); font-style: italic; font-size: 11px; margin-bottom: 5px;
+}
+
+@media (max-width: 640px) {
+  .charlie-panel { bottom: 236px; right: 8px; width: calc(100vw - 16px); border-radius: 18px; }
+}
+
+/* ── VENT HUB — FULLSCREEN LANDING ── */
+.vent-hub {
+  position: fixed; inset: 0; z-index: 300;
+  background: #080e1c;
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  transition: opacity .5s ease, visibility .5s;
+}
+.vent-hub.dismissed {
+  opacity: 0; pointer-events: none; visibility: hidden;
+}
+.vent-hub::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, hsla(var(--hue),80%,30%,.12), transparent 70%);
+  pointer-events: none;
+}
+/* Subtle particle/grid effect */
+.vent-hub::after {
+  content: ''; position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; opacity: .5;
+}
+
+/* The hero orb — alive, breathing, magnetic */
+.hub-orb {
+  position: relative; z-index: 1;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: radial-gradient(circle at 45% 38%, hsla(var(--hue),100%,55%,.22), hsla(var(--hue),80%,25%,.12) 60%, hsla(var(--hue),70%,12%,.08));
+  border: 2px solid hsla(var(--hue),95%,45%,.3);
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  cursor: pointer;
+  box-shadow: 0 0 60px hsla(var(--hue),85%,35%,.3), 0 0 120px hsla(var(--hue),80%,30%,.12),
+              inset 0 0 30px hsla(var(--hue),85%,35%,.1);
+  animation: hubPulse 3.5s ease-in-out infinite;
+}
+/* Multi-phase pulse: inhale → bloom → exhale → rest */
+@keyframes hubPulse {
+  0%   { transform: scale(1);    border-color: hsla(var(--hue),95%,42%,.25);
+         box-shadow: 0 0 50px hsla(var(--hue),85%,35%,.2),  0 0 100px hsla(var(--hue),80%,25%,.08), inset 0 0 25px hsla(var(--hue),80%,30%,.06); }
+  25%  { transform: scale(1.05); border-color: hsla(var(--hue),100%,52%,.5);
+         box-shadow: 0 0 90px hsla(var(--hue),95%,45%,.45), 0 0 180px hsla(var(--hue),80%,30%,.2),  inset 0 0 45px hsla(var(--hue),90%,38%,.15); }
+  40%  { transform: scale(1.03); border-color: hsla(var(--hue),100%,50%,.4);
+         box-shadow: 0 0 70px hsla(var(--hue),95%,42%,.35), 0 0 140px hsla(var(--hue),80%,27%,.15), inset 0 0 35px hsla(var(--hue),85%,35%,.1); }
+  100% { transform: scale(1);    border-color: hsla(var(--hue),95%,42%,.25);
+         box-shadow: 0 0 50px hsla(var(--hue),85%,35%,.2),  0 0 100px hsla(var(--hue),80%,25%,.08), inset 0 0 25px hsla(var(--hue),80%,30%,.06); }
+}
+.hub-orb:hover {
+  animation: none;
+  transform: scale(1.07);
+  border-color: hsla(var(--hue),100%,55%,.55);
+  box-shadow: 0 0 100px hsla(var(--hue),100%,48%,.5), 0 0 200px hsla(var(--hue),80%,30%,.22),
+              inset 0 0 50px hsla(var(--hue),90%,38%,.18);
+  transition: transform .25s cubic-bezier(.34,1.4,.64,1), box-shadow .25s, border-color .25s;
+}
+.hub-orb:active { animation: none; transform: scale(0.96); }
+
+/* Inner ring — breathes slightly offset from the orb */
+.hub-orb::before {
+  content: ''; position: absolute; inset: -8px; border-radius: 50%;
+  border: 1.5px solid hsla(var(--hue),100%,48%,.12);
+  animation: hubInnerRing 3.5s ease-in-out infinite;
+}
+@keyframes hubInnerRing {
+  0%, 100% { transform: scale(1);    opacity: .3; border-color: hsla(var(--hue),100%,48%,.12); }
+  30%      { transform: scale(1.08); opacity: .7; border-color: hsla(var(--hue),100%,52%,.35); }
+  50%      { transform: scale(1.04); opacity: .5; }
+}
+
+/* Outer ring removed — replaced by SVG flow loops */
+
+/* Specular highlight that drifts across the orb surface */
+.hub-orb-label {
+  position: relative;
+}
+.hub-orb-label::after {
+  content: ''; position: absolute;
+  top: -28px; left: -16px;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(120,200,255,.12), transparent 70%);
+  animation: hubSpecular 5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes hubSpecular {
+  0%, 100% { transform: translate(0, 0); opacity: .4; }
+  50%      { transform: translate(12px, -6px); opacity: .8; }
+}
+
+.hub-orb-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px; letter-spacing: 6px;
+  color: hsla(var(--hue),100%,52%,.7); text-transform: uppercase;
+  font-weight: 500;
+}
+.hub-orb-sub {
+  font-size: 9px; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase;
+  animation: hubSubPulse 4s ease-in-out infinite;
+}
+@keyframes hubSubPulse {
+  0%, 100% { color: hsla(var(--hue),100%,52%,.2); }
+  50%      { color: hsla(var(--hue),100%,52%,.45); }
+}
+.hub-orb, .hub-greeting { transition: opacity .3s ease; }
+
+/* Hide the corner FAB trigger while hub is visible */
+body.hub-mode .radial-trigger { opacity: 0; pointer-events: none; }
+/* Hide title bar too — clean hub screen */
+body.hub-mode .title-bar { opacity: 0; pointer-events: none; }
+body.hub-mode .history-toggle,
+body.hub-mode .todo-toggle,
+body.hub-mode .tour-help-btn { opacity: 0; pointer-events: none; }
+
+/* Greeting below the orb */
+.hub-greeting {
+  position: relative; z-index: 1;
+  margin-top: 28px; text-align: center;
+}
+.hub-greeting-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px; color: rgba(180,210,255,.4);
+  letter-spacing: 1px;
+}
+
+/* ── Pharma flow loops around the orb ── */
+.hub-flow {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px; height: 500px;
+  pointer-events: none; z-index: 0;
+  overflow: visible;
+}
+
+/* Shared path style — thin, dashed, flowing */
+.hub-flow-path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+/* Inner supply loop — clockwise flow */
+.hub-flow-inner {
+  stroke: hsla(var(--hue),100%,48%,.14);
+  stroke-width: 1.2;
+  stroke-dasharray: 8 16;
+  animation: flowCW 8s linear infinite;
+}
+
+/* Outer return loop — counter-clockwise */
+.hub-flow-outer {
+  stroke: hsla(var(--hue),95%,42%,.09);
+  stroke-width: 1;
+  stroke-dasharray: 12 22;
+  animation: flowCCW 12s linear infinite;
+}
+
+/* Tertiary trace — very wide, barely visible */
+.hub-flow-trace {
+  stroke: hsla(var(--hue),90%,38%,.04);
+  stroke-width: 0.7;
+  stroke-dasharray: 6 30;
+  animation: flowCW 20s linear infinite;
+}
+
+/* Flow animation — rotate the dash offset to create movement */
+@keyframes flowCW {
+  to { stroke-dashoffset: -200; }
+}
+@keyframes flowCCW {
+  to { stroke-dashoffset: 200; }
+}
+
+/* Flow nodes — sampling / junction points that pulse */
+.hub-flow-node {
+  fill: hsla(var(--hue),100%,50%,.3);
+  animation: nodePulse 3.5s ease-in-out infinite;
+}
+.hub-flow-node-1 { animation-delay: 0s; }
+.hub-flow-node-2 { animation-delay: 0.9s; }
+.hub-flow-node-3 { animation-delay: 1.8s; }
+.hub-flow-node-4 { animation-delay: 2.7s; }
+.hub-flow-node-5 { animation-delay: 0.4s; }
+.hub-flow-node-6 { animation-delay: 1.3s; }
+.hub-flow-node-7 { animation-delay: 2.2s; }
+.hub-flow-node-8 { animation-delay: 3.1s; }
+
+@keyframes nodePulse {
+  0%, 100% { fill: hsla(var(--hue),100%,50%,.15); r: 2; }
+  50%      { fill: hsla(var(--hue),100%,55%,.55); r: 3.5; }
+}
+
+@media (max-width: 640px) {
+  .hub-flow { width: 360px; height: 360px; }
+}
+
+/* ── PROFILE & SETTINGS ── */
+.hub-profile-btn {
+  position: relative; z-index: 1; margin-top: 16px;
+  background: none; border: 1px solid hsla(var(--hue),100%,50%,.15);
+  color: hsla(var(--hue),100%,55%,.5);
+  font-family: 'DM Sans', sans-serif; font-size: 11px;
+  letter-spacing: 1px; padding: 6px 16px; border-radius: 100px;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all .2s;
+}
+.hub-profile-btn:hover {
+  border-color: hsla(var(--hue),100%,55%,.35);
+  color: hsla(var(--hue),100%,60%,.8);
+  background: hsla(var(--hue),80%,30%,.08);
+}
+
+.profile-panel {
+  position: fixed; inset: 0; z-index: 400;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.profile-panel.show { display: flex; }
+
+.profile-panel-inner {
+  position: relative;
+  width: 340px; max-height: 80vh; overflow-y: auto;
+  background: rgba(8,14,28,.92);
+  backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+  border: 1px solid hsla(var(--hue),95%,45%,.2);
+  border-radius: 20px; padding: 24px 22px;
+  box-shadow: 0 0 60px hsla(var(--hue),90%,38%,.15), 0 24px 80px rgba(0,0,0,.55);
+}
+.profile-panel-inner::-webkit-scrollbar { width: 4px; }
+.profile-panel-inner::-webkit-scrollbar-thumb { background: hsla(var(--hue),80%,30%,.3); border-radius: 2px; }
+
+.profile-close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; color: rgba(255,255,255,.2);
+  cursor: pointer; padding: 4px; border-radius: 6px;
+  transition: color .15s, background .15s;
+}
+.profile-close:hover { color: rgba(255,255,255,.5); background: rgba(255,255,255,.05); }
+
+.profile-section { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,.05); }
+.profile-section:last-child { border-bottom: none; margin-bottom: 0; }
+
+.profile-section-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 3px;
+  color: hsla(var(--hue),100%,52%,.45);
+  text-transform: uppercase; margin-bottom: 12px;
+}
+
+.profile-info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 0; font-size: 12px;
+}
+.profile-label { color: rgba(180,210,255,.4); }
+.profile-value { color: rgba(180,210,255,.8); font-weight: 500; }
+
+.profile-palette-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.profile-swatch {
+  width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: border-color .15s, transform .15s;
+}
+.profile-swatch:hover { transform: scale(1.12); }
+.profile-swatch.active { border-color: #fff; box-shadow: 0 0 12px hsla(var(--hue),100%,50%,.4); }
+
+.profile-slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.profile-slider-label { font-size: 11px; color: rgba(180,210,255,.5); min-width: 80px; }
+.profile-slider {
+  flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
+  background: rgba(255,255,255,.08); border-radius: 2px; outline: none;
+}
+.profile-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+  background: hsl(var(--hue),100%,50%); cursor: pointer;
+  box-shadow: 0 0 6px hsla(var(--hue),100%,50%,.4);
+}
+.profile-slider::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%; border: none;
+  background: hsl(var(--hue),100%,50%); cursor: pointer;
+}
+.profile-slider-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: rgba(180,210,255,.4); min-width: 28px; text-align: right;
+}
+
+.profile-preset-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.profile-preset-btn {
+  font-size: 10px; padding: 5px 12px; border-radius: 6px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  color: rgba(180,210,255,.6); cursor: pointer; font-family: inherit;
+  transition: all .15s; position: relative;
+}
+.profile-preset-btn:hover {
+  background: hsla(var(--hue),80%,30%,.15);
+  border-color: hsla(var(--hue),95%,45%,.25);
+  color: rgba(220,240,255,.9);
+}
+.profile-preset-btn.active {
+  background: hsla(var(--hue),80%,30%,.25);
+  border-color: hsla(var(--hue),95%,45%,.4);
+  color: #fff;
+}
+.profile-preset-btn .preset-delete {
+  display: none; position: absolute; top: -6px; right: -6px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--red); color: #fff; font-size: 8px;
+  border: none; cursor: pointer; line-height: 14px; text-align: center;
+}
+.profile-preset-btn:hover .preset-delete { display: block; }
+
+.profile-preset-save-row { display: flex; gap: 8px; }
+.profile-preset-input {
+  flex: 1; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 6px; padding: 5px 10px; color: var(--text); font-size: 11px;
+  font-family: inherit; outline: none;
+}
+.profile-preset-input:focus { border-color: hsla(var(--hue),95%,45%,.3); }
+.profile-preset-save-btn {
+  background: hsla(var(--hue),80%,30%,.2); border: 1px solid hsla(var(--hue),95%,45%,.25);
+  color: hsla(var(--hue),100%,60%,.7); font-size: 10px; padding: 5px 14px;
+  border-radius: 6px; cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.profile-preset-save-btn:hover { background: hsla(var(--hue),80%,30%,.35); color: #fff; }
+
+@media (max-width: 640px) {
+  .profile-panel-inner { width: calc(100vw - 32px); max-height: 85vh; }
+}
+
+/* ── RADIAL PIE MENU ── */
+.radial-trigger {
+  position: fixed; bottom: 136px; right: 28px; z-index: 205;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, hsla(var(--hue),100%,50%,.95), hsla(var(--hue),80%,30%,.9));
+  color: #fff; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 24px hsla(var(--hue),95%,45%,.4), 0 0 60px hsla(var(--hue),85%,35%,.15),
+              inset 0 1px 0 rgba(255,255,255,.15);
+  transition: transform .25s cubic-bezier(.34,1.4,.64,1), box-shadow .25s;
+  touch-action: none; /* prevent scroll while dragging */
+  -webkit-user-select: none; user-select: none;
+}
+.radial-trigger.dragging {
+  transform: scale(1.18) !important;
+  box-shadow: 0 0 50px hsla(var(--hue),100%,50%,.7), 0 0 120px hsla(var(--hue),85%,35%,.3),
+              inset 0 1px 0 rgba(255,255,255,.2);
+  transition: transform .15s, box-shadow .15s;
+  cursor: grabbing;
+}
+.radial-trigger.settling {
+  transition: left .3s cubic-bezier(.34,1.4,.64,1), top .3s cubic-bezier(.34,1.4,.64,1),
+              transform .3s cubic-bezier(.34,1.4,.64,1), box-shadow .3s;
+}
+.radial-trigger::before {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%;
+  border: 1.5px solid hsla(var(--hue),100%,50%,.25);
+  animation: fabBreath 3s ease-in-out infinite;
+}
+.radial-trigger:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 32px hsla(var(--hue),100%,50%,.55), 0 0 80px hsla(var(--hue),85%,35%,.2);
+}
+.radial-trigger.open {
+  transform: scale(1.05);
+  box-shadow: 0 0 40px hsla(var(--hue),100%,50%,.6), 0 0 100px hsla(var(--hue),85%,35%,.25);
+}
+.radial-trigger .trigger-icon {
+  transition: transform .3s cubic-bezier(.34,1.4,.64,1);
+}
+.radial-trigger.open .trigger-icon {
+  transform: rotate(45deg);
+}
+
+.radial-backdrop {
+  position: fixed; inset: 0; z-index: 203;
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s ease;
+}
+.radial-backdrop.show { opacity: 1; pointer-events: all; cursor: grab; }
+
+.radial-menu {
+  position: fixed; z-index: 204;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px; height: 320px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.radial-menu.show { opacity: 1; pointer-events: all; cursor: grab; }
+
+/* In hub mode, the radial menu sits above the hub */
+.vent-hub .radial-menu { z-index: 301; }
+.vent-hub .radial-backdrop { z-index: 300; background: transparent; backdrop-filter: none; }
+
+.radial-center {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px; height: 72px; border-radius: 50%;
+  background: rgba(8,14,28,.92);
+  border: 1.5px solid hsla(var(--hue),95%,45%,.25);
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  cursor: pointer;
+  box-shadow: 0 0 30px hsla(var(--hue),85%,35%,.2), inset 0 0 20px hsla(var(--hue),80%,30%,.1);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  z-index: 2;
+  transition: border-color .2s, box-shadow .2s;
+}
+.radial-center:hover {
+  border-color: hsla(var(--hue),100%,50%,.45);
+  box-shadow: 0 0 40px hsla(var(--hue),95%,45%,.35), inset 0 0 20px hsla(var(--hue),80%,30%,.15);
+}
+.radial-center-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 3px;
+  color: hsla(var(--hue),100%,52%,.6); text-transform: uppercase;
+}
+.radial-center-sub {
+  font-size: 7px; color: hsla(var(--hue),100%,52%,.3);
+  letter-spacing: 1.5px; margin-top: 2px; text-transform: uppercase;
+}
+
+.radial-wedge {
+  position: absolute; left: 50%; top: 50%;
+  opacity: 0;
+  transition: transform .35s cubic-bezier(.34,1.4,.64,1), opacity .25s;
+}
+.radial-wedge-inner {
+  width: 80px; height: 80px;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 14px;
+  background: rgba(8,14,28,.75);
+  border: 1px solid hsla(var(--hue),95%,45%,.12);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 0 15px hsla(var(--hue),80%,30%,.08);
+  transition: background .2s, border-color .2s, box-shadow .2s, transform .2s;
+}
+.radial-wedge-inner:hover {
+  background: hsla(var(--hue),80%,30%,.3);
+  border-color: hsla(var(--hue),100%,50%,.4);
+  box-shadow: 0 0 25px hsla(var(--hue),95%,45%,.3), 0 0 60px hsla(var(--hue),85%,35%,.1);
+  transform: scale(1.08);
+}
+.radial-wedge-inner:active {
+  transform: scale(0.96);
+  background: hsla(var(--hue),85%,35%,.4);
+}
+.radial-wedge-icon {
+  color: hsla(var(--hue),100%,52%,.7); margin-bottom: 6px;
+  transition: color .2s;
+}
+.radial-wedge-inner:hover .radial-wedge-icon { color: hsla(var(--hue),100%,60%,.95); }
+.radial-wedge-label {
+  font-size: 9px; letter-spacing: 0.8px;
+  color: rgba(180,210,255,.5); text-transform: uppercase;
+  font-weight: 500; text-align: center; white-space: nowrap;
+  transition: color .2s;
+}
+.radial-wedge-inner:hover .radial-wedge-label { color: rgba(220,240,255,.9); }
+
+.radial-ring {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%; border: 1px solid hsla(var(--hue),95%,42%,.08);
+  pointer-events: none;
+}
+.radial-ring-1 { width: 200px; height: 200px; }
+.radial-ring-2 { width: 280px; height: 280px; border-style: dashed; border-color: hsla(var(--hue),95%,42%,.05); }
+
+@media (max-width: 640px) {
+  .radial-trigger { bottom: 90px; right: 16px; width: 48px; height: 48px; }
+  .radial-menu { width: 280px; height: 280px; }
+  .radial-wedge-inner { width: 70px; height: 70px; border-radius: 12px; }
+  .radial-center { width: 60px; height: 60px; }
+  .radial-wedge-label { font-size: 8px; }
+}
 
 /* ── VENT BACKDROP ── */
 .vent-backdrop {
@@ -677,7 +1275,6 @@ body {
 .vps-again:hover { border-color: var(--borderhi); color: var(--text); }
 
 @media (max-width: 640px) {
-  .vent-fab   { bottom: 118px; right: 16px; }
   .vent-panel { right: 12px; left: 12px; width: auto; bottom: 176px; }
 }
 
@@ -2348,6 +2945,35 @@ body {
 .tour-explore:hover { background: var(--accent); color: #fff; }
 .tour-card-step .tour-sub-counter { opacity: .6; margin-left: 4px; }
 
+/* ── ASK CHARLIE: voice Q&A during tour ── */
+.tour-ask-btn {
+  background: none; border: 1px solid var(--border); border-radius: 5px;
+  color: var(--dim); cursor: pointer; padding: 3px 7px; margin-left: 4px;
+  font-size: 10px; font-family: 'DM Sans', sans-serif;
+  transition: all .15s; display: flex; align-items: center; gap: 3px;
+}
+.tour-ask-btn:hover { color: var(--accent); border-color: var(--accent); }
+.tour-ask-btn.recording {
+  color: #fff; border-color: var(--red); background: var(--red);
+  animation: tourRecPulse 1.2s ease-in-out infinite;
+}
+.tour-ask-btn.thinking {
+  color: var(--accent); border-color: var(--accent); pointer-events: none; opacity: .7;
+}
+@keyframes tourRecPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
+  50%     { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+}
+.tour-ask-answer {
+  margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--accent);
+  background: var(--accent2); border-radius: 0 6px 6px 0;
+  font-size: 12px; color: var(--text); line-height: 1.6;
+}
+.tour-ask-answer .tour-ask-q {
+  font-size: 10px; color: var(--dim); margin-bottom: 4px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .02em;
+}
+
 /* ── FOLLOW-UP SUGGESTIONS ── */
 .follow-ups {
   padding: 14px 20px 18px; border-top: 1px solid var(--border);
@@ -2510,9 +3136,130 @@ body {
 .sop-content-box { animation: fadeUp .25s ease; }
 </style>
 <script>if(!localStorage.getItem('vent_token'))window.location.replace('login.html');</script>
+<script>
+// Apply saved theme immediately to prevent flash of default blue
+(function(){
+  var h = localStorage.getItem('vent_theme_hue');
+  if(h) document.documentElement.style.setProperty('--hue', h);
+  var g = localStorage.getItem('vent_menu_config');
+  if(g){ try { var c=JSON.parse(g); if(c.glowIntensity!==undefined) document.documentElement.style.setProperty('--glow-mult',c.glowIntensity); } catch(e){} }
+})();
+</script>
 <script src="i18n.js"></script>
 </head>
 <body>
+
+<!-- ── VENT HUB — LANDING SCREEN ── -->
+<div class="vent-hub" id="ventHub">
+
+  <!-- Flow loops — pharma pipe routing around the orb -->
+  <svg class="hub-flow" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+    <!-- Inner supply loop — clockwise -->
+    <ellipse cx="250" cy="250" rx="105" ry="98" class="hub-flow-path hub-flow-inner"/>
+    <!-- Outer return loop — counter-clockwise, slightly tilted -->
+    <ellipse cx="250" cy="250" rx="160" ry="148" transform="rotate(-4 250 250)" class="hub-flow-path hub-flow-outer"/>
+    <!-- Tertiary trace — wide, very faint -->
+    <ellipse cx="250" cy="250" rx="220" ry="205" transform="rotate(2 250 250)" class="hub-flow-path hub-flow-trace"/>
+
+    <!-- Flow nodes — sampling / junction points on inner loop -->
+    <circle cx="355" cy="250" r="2.5" class="hub-flow-node hub-flow-node-1"/>
+    <circle cx="250" cy="152" r="2.5" class="hub-flow-node hub-flow-node-2"/>
+    <circle cx="145" cy="250" r="2.5" class="hub-flow-node hub-flow-node-3"/>
+    <circle cx="250" cy="348" r="2.5" class="hub-flow-node hub-flow-node-4"/>
+
+    <!-- Flow nodes on outer loop -->
+    <circle cx="410" cy="250" r="2" class="hub-flow-node hub-flow-node-5"/>
+    <circle cx="250" cy="102" r="2" class="hub-flow-node hub-flow-node-6"/>
+    <circle cx="90"  cy="250" r="2" class="hub-flow-node hub-flow-node-7"/>
+    <circle cx="250" cy="398" r="2" class="hub-flow-node hub-flow-node-8"/>
+  </svg>
+
+  <div class="hub-orb" id="hubOrb">
+    <div class="hub-orb-label">VENT</div>
+    <div class="hub-orb-sub">TAP TO BEGIN</div>
+  </div>
+  <div class="hub-greeting">
+    <div class="hub-greeting-name" id="hubGreeting"></div>
+  </div>
+
+  <!-- Profile button -->
+  <button class="hub-profile-btn" id="hubProfileBtn" onclick="toggleProfilePanel()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+    </svg>
+    My Profile
+  </button>
+</div>
+
+<!-- Profile & Settings Panel -->
+<div class="profile-panel" id="profilePanel">
+  <div class="profile-panel-inner">
+    <button class="profile-close" onclick="toggleProfilePanel()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <!-- Profile Info -->
+    <div class="profile-section">
+      <div class="profile-section-title">PROFILE</div>
+      <div class="profile-info-row">
+        <span class="profile-label">Name</span>
+        <span class="profile-value" id="profName"></span>
+      </div>
+      <div class="profile-info-row">
+        <span class="profile-label">Role</span>
+        <span class="profile-value" id="profRole"></span>
+      </div>
+    </div>
+
+    <!-- Accent Theme -->
+    <div class="profile-section">
+      <div class="profile-section-title">ACCENT THEME</div>
+      <div class="profile-palette-grid" id="paletteGrid"></div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Custom hue</label>
+        <input type="range" class="profile-slider" id="hueSlider" min="0" max="360" value="210">
+        <span class="profile-slider-val" id="hueVal">210</span>
+      </div>
+    </div>
+
+    <!-- Menu Design -->
+    <div class="profile-section">
+      <div class="profile-section-title">MENU DESIGN</div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Wedge size</label>
+        <input type="range" class="profile-slider" id="wedgeSizeSlider" min="60" max="100" value="80">
+        <span class="profile-slider-val" id="wedgeSizeVal">80</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Orbit radius</label>
+        <input type="range" class="profile-slider" id="radiusSlider" min="80" max="160" value="120">
+        <span class="profile-slider-val" id="radiusVal">120</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Corner radius</label>
+        <input type="range" class="profile-slider" id="cornerSlider" min="4" max="40" value="14">
+        <span class="profile-slider-val" id="cornerVal">14</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Glow intensity</label>
+        <input type="range" class="profile-slider" id="glowSlider" min="0" max="100" value="100">
+        <span class="profile-slider-val" id="glowVal">100%</span>
+      </div>
+    </div>
+
+    <!-- Presets -->
+    <div class="profile-section">
+      <div class="profile-section-title">PRESETS</div>
+      <div class="profile-preset-grid" id="presetGrid"></div>
+      <div class="profile-preset-save-row">
+        <input type="text" class="profile-preset-input" id="presetNameInput" placeholder="Preset name..." maxlength="20">
+        <button class="profile-preset-save-btn" onclick="saveCurrentPreset()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- TITLE BAR -->
 <div class="title-bar">
@@ -2537,6 +3284,7 @@ body {
     <span class="role-badge" id="roleBadge"></span>
     <span class="user-name" id="titleUser"></span>
     <button class="sign-out-btn" onclick="startNewChat()" title="Start a new conversation" data-i18n="query.newChat">New chat</button>
+    <button class="sign-out-btn" onclick="showVentHub()" title="Back to hub">Hub</button>
     <button class="sign-out-btn" onclick="localStorage.removeItem('vent_token');localStorage.removeItem('vent_role');localStorage.removeItem('vent_name');localStorage.removeItem('vent_user_id');location.href='login.html'" data-i18n="nav.signOut">Sign out</button>
   </div>
 </div>
@@ -3023,16 +3771,92 @@ body {
 
 </div>
 
-<!-- ── VENT FAB ── -->
-<div class="vent-fab-label" id="ventFabTip" style="bottom:152px">Raise a concern</div>
-<button class="vent-fab" id="ventFab"
-        onclick="toggleVentPanel()"
-        onmouseover="document.getElementById('ventFabTip').classList.add('show')"
-        onmouseout="document.getElementById('ventFabTip').classList.remove('show')">
-  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+<!-- ── RADIAL PIE MENU ── -->
+<div class="radial-backdrop" id="radialBackdrop"></div>
+<div class="radial-menu" id="radialMenu">
+  <div class="radial-ring radial-ring-1"></div>
+  <div class="radial-ring radial-ring-2"></div>
+
+  <div class="radial-wedge" data-action="charlie">
+    <div class="radial-wedge-inner">
+      <div class="radial-wedge-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+      <div class="radial-wedge-label">Charlie</div>
+    </div>
+  </div>
+  <div class="radial-wedge" data-action="newchat">
+    <div class="radial-wedge-inner">
+      <div class="radial-wedge-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="9" y1="11" x2="15" y2="11"/></svg></div>
+      <div class="radial-wedge-label">New Chat</div>
+    </div>
+  </div>
+  <div class="radial-wedge" data-action="history">
+    <div class="radial-wedge-inner">
+      <div class="radial-wedge-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="radial-wedge-label">History</div>
+    </div>
+  </div>
+  <div class="radial-wedge" data-action="sops">
+    <div class="radial-wedge-inner">
+      <div class="radial-wedge-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+      <div class="radial-wedge-label">SOPs</div>
+    </div>
+  </div>
+  <div class="radial-wedge" data-action="todos">
+    <div class="radial-wedge-inner">
+      <div class="radial-wedge-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <div class="radial-wedge-label">To-Do</div>
+    </div>
+  </div>
+  <div class="radial-wedge" data-action="concern">
+    <div class="radial-wedge-inner">
+      <div class="radial-wedge-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="radial-wedge-label">Concern</div>
+    </div>
+  </div>
+  <div class="radial-wedge" data-action="gdp">
+    <div class="radial-wedge-inner">
+      <div class="radial-wedge-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div class="radial-wedge-label">GDP Check</div>
+    </div>
+  </div>
+  <div class="radial-wedge" data-action="tour">
+    <div class="radial-wedge-inner">
+      <div class="radial-wedge-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
+      <div class="radial-wedge-label">Tour</div>
+    </div>
+  </div>
+
+  <div class="radial-center" id="radialCenter">
+    <div class="radial-center-label">VENT</div>
+    <div class="radial-center-sub">CLOSE</div>
+  </div>
+</div>
+<button class="radial-trigger" id="radialTrigger" onclick="toggleRadialMenu()">
+  <svg class="trigger-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+    <circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
+    <circle cx="5" cy="5" r="1" opacity=".5"/><circle cx="19" cy="5" r="1" opacity=".5"/>
+    <circle cx="5" cy="19" r="1" opacity=".5"/><circle cx="19" cy="19" r="1" opacity=".5"/>
   </svg>
 </button>
+
+<div class="charlie-panel" id="charliePanel">
+  <button class="charlie-close" onclick="closeCharlie()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div class="charlie-title">CHARLIE</div>
+  <div class="charlie-viz">
+    <svg class="charlie-rings" viewBox="0 0 180 180">
+      <circle cx="90" cy="90" r="64" class="charlie-ring charlie-ring-1"/>
+      <circle cx="90" cy="90" r="74" class="charlie-ring charlie-ring-2"/>
+      <circle cx="90" cy="90" r="82" class="charlie-ring charlie-ring-3"/>
+    </svg>
+    <div id="charlieBars"></div>
+    <div class="charlie-orb" id="charlieOrb"></div>
+  </div>
+  <div class="charlie-status" id="charlieStatus"></div>
+  <div class="charlie-answer" id="charlieAnswer"></div>
+</div>
 
 <button class="tour-help-btn" onclick="startVoiceTour()" title="Watch guided demo">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
@@ -3054,6 +3878,1146 @@ function authFetch(url, opts) {
   opts.headers = getAuthHeaders(opts.headers);
   return fetch(url, opts);
 }
+// ═══════════════════════════════════════════════════════════════════════════════
+// VENT AUDIO — Shared TTS/STT infrastructure for Charlie & Tour
+// ═══════════════════════════════════════════════════════════════════════════════
+window.VentAudio = (function(){
+  var CHARLIE_VOICE_ID = 'IKne3meq5aSn9XLyUdCD';
+  var TTS_MODEL = 'eleven_multilingual_v2';
+  var audioCtx = null;
+  var analyser = null;
+  var currentSource = null;
+  var currentAudio = null; // fallback HTMLAudioElement
+  var gainNode = null;
+  var animFrame = null;
+  var recorder = null;
+  var recChunks = [];
+  var recStream = null;
+  var micAnalyser = null;
+  var micSource = null;
+  var cancelled = false;
+
+  // Call this SYNCHRONOUSLY from a click/tap handler to guarantee unlock
+  function unlock(){
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    if(!gainNode){
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.85;
+      gainNode.connect(audioCtx.destination);
+    }
+    return audioCtx;
+  }
+
+  var stopGen = 0;                    // generation counter — incremented on stop()
+  function stop(){
+    stopGen++;
+    if(animFrame){ cancelAnimationFrame(animFrame); animFrame = null; }
+    if(currentSource){ try{ currentSource.stop(); }catch(e){} currentSource = null; }
+    if(currentAudio){ currentAudio.pause(); currentAudio.src = ''; currentAudio = null; }
+  }
+
+  // Stripped-down speak: fetch TTS → blob URL → Audio.play()
+  // No Web Audio, no BufferSource — get sound working first
+  function speak(text, onBars, onEnd){
+    if(!text){ if(onEnd) onEnd(); return; }
+    stop();
+    var gen = stopGen;                 // capture current generation
+    var done = false;
+    function finish(){
+      if(done) return; done = true;
+      if(animFrame){ cancelAnimationFrame(animFrame); animFrame = null; }
+      currentSource = null; currentAudio = null;
+      if(onEnd) onEnd();
+    }
+    var safety = setTimeout(function(){ console.warn('[VentAudio] safety timeout'); finish(); }, 25000);
+    function finishClean(){ clearTimeout(safety); finish(); }
+
+    // Step 1: fetch TTS audio from server
+    fetch(SERVER + '/tts', {
+      method: 'POST',
+      headers: Object.assign({'Content-Type':'application/json'}, getAuthHeaders()),
+      body: JSON.stringify({ text: text, voiceId: CHARLIE_VOICE_ID, modelId: TTS_MODEL })
+    })
+    .then(function(r){
+      if(!r.ok) throw new Error('TTS server returned ' + r.status);
+      var ct = r.headers.get('content-type') || '';
+      // If server returned JSON error instead of audio, bail
+      if(ct.indexOf('json') !== -1) throw new Error('TTS returned JSON error');
+      return r.blob();
+    })
+    .then(function(blob){
+      if(gen !== stopGen){ finishClean(); return; }   // stop() was called — bail
+      if(blob.size < 200) throw new Error('TTS audio too small (' + blob.size + 'b)');
+
+      // Step 2: create blob URL and play with plain Audio element
+      var url = URL.createObjectURL(blob);
+      currentAudio = new Audio(url);
+      currentAudio.volume = 1.0;
+
+      currentAudio.onended = function(){
+        URL.revokeObjectURL(url);
+        finishClean();
+      };
+      currentAudio.onerror = function(e){
+        console.warn('[VentAudio] Audio element error:', e);
+        URL.revokeObjectURL(url);
+        finishClean();
+      };
+
+      // Step 3: try to hook up Web Audio analyser for bar visualization
+      try {
+        var ctx = unlock();
+        if(ctx.state === 'running'){
+          var source = ctx.createMediaElementSource(currentAudio);
+          analyser = ctx.createAnalyser();
+          analyser.fftSize = 64;
+          analyser.smoothingTimeConstant = 0.75;
+          source.connect(analyser);
+          analyser.connect(ctx.destination);
+        }
+      } catch(e){
+        // Visualization won't work but audio will still play directly
+        analyser = null;
+      }
+
+      // Step 4: play — this is inside a promise chain from a user-activated page
+      var playPromise = currentAudio.play();
+      if(playPromise && playPromise.then){
+        playPromise.then(function(){
+          // Audio is playing — start bar animation if we have an analyser
+          if(onBars && analyser) tickBars(onBars);
+        }).catch(function(err){
+          console.warn('[VentAudio] play() rejected:', err.name, err.message);
+          URL.revokeObjectURL(url);
+          finishClean();
+        });
+      } else {
+        // Old browser, play() returned void — assume it's playing
+        if(onBars && analyser) tickBars(onBars);
+      }
+    })
+    .catch(function(e){
+      console.warn('[VentAudio] TTS failed:', e.message || e);
+      speak._lastError = e.message || String(e);
+      finishClean();
+    });
+  }
+
+  function tickBars(cb){
+    if(!analyser) return;
+    var freqData = new Uint8Array(analyser.frequencyBinCount);
+    (function tick(){
+      analyser.getByteFrequencyData(freqData);
+      cb(freqData);
+      animFrame = requestAnimationFrame(tick);
+    })();
+  }
+
+  function getAnalyser(){ return analyser; }
+  function getMicAnalyser(){ return micAnalyser; }
+
+  function recordSTT(onResult, onError){
+    killRecording();
+    cancelled = false;
+    navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(function(stream){
+      recStream = stream;
+      recChunks = [];
+      // Wire up mic analyser for real-time voice visualization
+      var ctx = unlock();
+      micSource = ctx.createMediaStreamSource(stream);
+      micAnalyser = ctx.createAnalyser();
+      micAnalyser.fftSize = 128;
+      micAnalyser.smoothingTimeConstant = 0.7;
+      micSource.connect(micAnalyser);
+      // Don't connect to destination — that would echo the mic
+
+      recorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : ''
+      });
+      recorder.ondataavailable = function(e){ if(e.data.size > 0) recChunks.push(e.data); };
+      recorder.onstop = function(){
+        // Clean up mic analyser
+        if(micSource){ try{ micSource.disconnect(); }catch(e){} micSource = null; }
+        micAnalyser = null;
+        // Clean up stream
+        if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream = null; }
+        // If cancelled, don't process
+        if(cancelled){ cancelled = false; return; }
+        var blob = new Blob(recChunks, { type: 'audio/webm' });
+        if(blob.size < 100){ if(onError) onError('empty'); return; }
+        var reader = new FileReader();
+        reader.onload = function(){
+          var base64 = reader.result.split(',')[1];
+          fetch(SERVER + '/stt', {
+            method: 'POST',
+            headers: Object.assign({'Content-Type':'application/json'}, getAuthHeaders()),
+            body: JSON.stringify({ audio: base64, mimeType: 'audio/webm', language_code: (window.VentI18n && VentI18n.getSttLangCode()) || 'eng' })
+          })
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            if(data.text && data.text.trim()) onResult(data.text.trim());
+            else if(onError) onError('empty');
+          })
+          .catch(function(err){ console.warn('[VentAudio] STT error:', err); if(onError) onError(err); });
+        };
+        reader.readAsDataURL(blob);
+      };
+      recorder.start(250);
+    })
+    .catch(function(err){ console.warn('[VentAudio] Mic error:', err); if(onError) onError('mic'); });
+  }
+
+  // Stop recording and process the audio through STT
+  function stopRecording(){
+    if(recorder && recorder.state === 'recording'){
+      try{ recorder.stop(); }catch(e){}
+      // Let onstop handle stream + mic cleanup and STT processing
+    }
+  }
+
+  // Kill recording without processing (for cancel/close)
+  function killRecording(){
+    cancelled = true;
+    if(recorder && recorder.state === 'recording'){ try{ recorder.stop(); }catch(e){} }
+    if(micSource){ try{ micSource.disconnect(); }catch(e){} micSource = null; }
+    micAnalyser = null;
+    if(recStream){ recStream.getTracks().forEach(function(t){ t.stop(); }); recStream = null; }
+  }
+
+  function isRecording(){ return recorder && recorder.state === 'recording'; }
+
+  return {
+    speak: speak, stop: stop, unlock: unlock,
+    recordSTT: recordSTT, stopRecording: stopRecording,
+    killRecording: killRecording, isRecording: isRecording,
+    getAnalyser: getAnalyser, getMicAnalyser: getMicAnalyser,
+    CHARLIE_VOICE_ID: CHARLIE_VOICE_ID, TTS_MODEL: TTS_MODEL
+  };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHARLIE — Persistent Voice Assistant
+// ═══════════════════════════════════════════════════════════════════════════════
+(function(){
+  var fab, panel, statusEl, answerEl, barsEl;
+  var isOpen = false;
+  var state  = 'idle'; // idle | listening | thinking | speaking
+  var convoHistory = [];
+
+  function t(k){ return (window.VentI18n && VentI18n.t(k)) || k; }
+
+  // ── Action dispatcher ──
+  var actions = {
+    'new_chat':       function(){ startNewChat(); },
+    'open_history':   function(){ openHistorySidebar(); },
+    'close_history':  function(){ closeHistorySidebar(); },
+    'open_sops':      function(){ openSopSidebar(); },
+    'close_sops':     function(){ closeSopSidebar(); },
+    'open_todos':     function(){ openTodoSidebar(); },
+    'close_todos':    function(){ closeTodoSidebar(); },
+    'open_concern':   function(){ openVentPanel(); },
+    'close_concern':  function(){ closeVentPanel(); },
+    'open_gdp':       function(){ openGdpModal(); },
+    'close_gdp':      function(){ closeGdpModal(); },
+    'open_activity':  function(){ openSubsDrawer(); },
+    'close_activity': function(){ closeSubsDrawer(); },
+    'start_tour':     function(){ startVoiceTour(); },
+    'end_tour':       function(){ endTour(); },
+    'scroll_bottom':  function(){ scrollToBottom(); },
+    'search_sops':    function(p){ if(p && p.query){ openSopSidebar(); var s = document.getElementById('sopSearch'); if(s){ s.value = p.query; s.dispatchEvent(new Event('input')); } } },
+    'ask_query':      function(p){ if(p && p.query) fillAndSend(p.query); },
+    'switch_lang':    function(p){ if(p && p.lang && window.VentI18n) VentI18n.setLang(p.lang); },
+    'analyse_trends': function(){ analyseChats(); }
+  };
+
+  function dispatchAction(action, params){
+    if(action && action !== 'none' && actions[action]){
+      try{ actions[action](params || {}); }catch(e){ console.warn('[Charlie] action error:', action, e); }
+    }
+  }
+
+  var NUM_BARS = 48;
+
+  // ── Init DOM refs ──
+  function init(){
+    fab      = null; // FAB replaced by radial menu
+    panel    = document.getElementById('charliePanel');
+    statusEl = document.getElementById('charlieStatus');
+    answerEl = document.getElementById('charlieAnswer');
+    barsEl   = document.getElementById('charlieBars');
+    // Generate radial bar slots
+    if(barsEl && !barsEl.children.length){
+      for(var i = 0; i < NUM_BARS; i++){
+        var slot = document.createElement('div');
+        slot.className = 'charlie-bar-slot';
+        slot.style.transform = 'rotate(' + (i * (360 / NUM_BARS)) + 'deg)';
+        var bar = document.createElement('div');
+        bar.className = 'charlie-bar';
+        bar.style.animationDelay = (i * 0.045) + 's';
+        slot.appendChild(bar);
+        barsEl.appendChild(slot);
+      }
+    }
+    statusEl.textContent = t('charlie.ready');
+  }
+
+  // ── State management ──
+  function setState(s){
+    state = s;
+    if(fab){
+      fab.classList.remove('active','listening','thinking','speaking');
+      if(s === 'listening') fab.classList.add('active','listening');
+      else if(s === 'thinking') fab.classList.add('active','thinking');
+      else if(s === 'speaking') fab.classList.add('active','speaking');
+      else if(isOpen) fab.classList.add('active');
+    }
+    // Panel state classes for CSS animations
+    if(panel){
+      panel.classList.remove('listening','thinking','speaking');
+      if(s !== 'idle') panel.classList.add(s);
+    }
+    if(statusEl){
+      if(s === 'listening')      statusEl.textContent = t('charlie.listening');
+      else if(s === 'thinking')  statusEl.textContent = t('charlie.thinking');
+      else if(s === 'speaking')  statusEl.textContent = t('charlie.speaking');
+      else                       statusEl.textContent = t('charlie.ready');
+    }
+  }
+
+  function resetBarsIdle(){
+    if(!barsEl) return;
+    var bars = barsEl.querySelectorAll('.charlie-bar');
+    bars.forEach(function(bar){ bar.style.height = ''; }); // clear inline → CSS animation takes over
+  }
+
+  var listenFrame = null;
+  var MIC_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+
+  var lastActivity = 0; // timestamp of last interaction
+  var CONVO_TTL = 5 * 60 * 1000; // clear conversation after 5 min idle
+
+  // ── Toggle (FAB tap) ──
+  function toggle(){
+    if(!panel) init();
+    // Unlock AudioContext NOW — within the user gesture scope
+    VentAudio.unlock();
+    if(!isOpen){
+      // If conversation is stale, clear it
+      if(convoHistory.length && Date.now() - lastActivity > CONVO_TTL){
+        convoHistory = [];
+      }
+      isOpen = true;
+      panel.style.display = 'block';
+      // Restore last answer if there is one
+      if(convoHistory.length){
+        var last = convoHistory[convoHistory.length - 1];
+        answerEl.style.display = 'block';
+        answerEl.innerHTML = '<div class="charlie-q">\u201c' + last.q + '\u201d</div>' + last.a;
+      } else {
+        answerEl.style.display = 'none';
+      }
+      startListening();
+    } else if(state === 'listening' && VentAudio.isRecording()){
+      // Tap while listening → force stop → process
+      VentAudio.stopRecording();
+    } else if(state === 'speaking'){
+      // Tap while speaking → skip → re-listen
+      VentAudio.stop();
+      resetBarsIdle();
+      startListening();
+    } else {
+      closePanel();
+    }
+  }
+
+  function closePanel(){
+    isOpen = false;
+    if(listenFrame){ cancelAnimationFrame(listenFrame); listenFrame = null; }
+    VentAudio.stop();
+    VentAudio.killRecording();
+    if(fab) fab.innerHTML = MIC_ICON;
+    panel.style.display = 'none';
+    resetBarsIdle();
+    setState('idle');
+    lastActivity = Date.now();
+    // Conversation history is KEPT — reopening restores it
+  }
+
+  // ── Listening with real mic visualization + silence detection ──
+  function startListening(){
+    VentAudio.stop();
+    setState('listening');
+
+    var speechDetected = false;
+    var silenceStart = 0;
+    var SILENCE_THRESH = 12;    // average frequency bin level
+    var SILENCE_MS     = 1800;  // ms of quiet after speech → auto-stop
+    var MAX_REC_MS     = 15000; // safety timeout
+    var recStart = Date.now();
+
+    VentAudio.recordSTT(function(text){
+      if(listenFrame){ cancelAnimationFrame(listenFrame); listenFrame = null; }
+      if(fab) fab.innerHTML = MIC_ICON;
+      onTranscript(text);
+    }, function(err){
+      if(listenFrame){ cancelAnimationFrame(listenFrame); listenFrame = null; }
+      if(fab) fab.innerHTML = MIC_ICON;
+      if(!isOpen) return;
+      statusEl.textContent = (err === 'mic') ? t('charlie.micError') : t('charlie.sttError');
+      setState('idle');
+    });
+
+    // Real-time mic visualizer + auto-silence-stop
+    setTimeout(function tickListen(){
+      var ma = VentAudio.getMicAnalyser();
+      if(!ma || !isOpen || state !== 'listening'){
+        listenFrame = null; return;
+      }
+      var freq = new Uint8Array(ma.frequencyBinCount);
+      ma.getByteFrequencyData(freq);
+
+      // Animate radial bars from mic input
+      if(barsEl){
+        var bars = barsEl.querySelectorAll('.charlie-bar');
+        bars.forEach(function(bar, i){
+          var idx = Math.floor((i / bars.length) * freq.length * 0.6);
+          bar.style.height = Math.max(4, (freq[idx] / 255) * 34) + 'px';
+        });
+      }
+
+      // Compute average level
+      var sum = 0;
+      for(var j = 0; j < freq.length; j++) sum += freq[j];
+      var avg = sum / freq.length;
+
+      if(avg > SILENCE_THRESH){
+        speechDetected = true;
+        silenceStart = 0;
+      } else if(speechDetected){
+        if(!silenceStart) silenceStart = Date.now();
+        else if(Date.now() - silenceStart > SILENCE_MS){
+          // Silence after speech → auto-stop & process
+          VentAudio.stopRecording();
+          listenFrame = null;
+          return;
+        }
+      }
+
+      // Safety max duration
+      if(Date.now() - recStart > MAX_REC_MS){
+        VentAudio.stopRecording();
+        listenFrame = null;
+        return;
+      }
+
+      listenFrame = requestAnimationFrame(tickListen);
+    }, 300); // short delay for mic init
+  }
+
+  // ── After response: go idle, wait for user to tap again ──
+  function returnToReady(){
+    resetBarsIdle();
+    if(!isOpen) return;
+    setState('idle');
+    if(statusEl) statusEl.textContent = t('charlie.ready');
+  }
+
+  // ── Transcript received → ask Claude ──
+  function onTranscript(text){
+    setState('thinking');
+    lastActivity = Date.now();
+    answerEl.style.display = 'block';
+    answerEl.innerHTML = '<div class="charlie-q">\u201c' + text + '\u201d</div>';
+    var lang = (window.VentI18n && VentI18n.getLang()) || 'en';
+
+    fetch(SERVER + '/charlie/ask', {
+      method: 'POST',
+      headers: Object.assign({'Content-Type':'application/json'}, getAuthHeaders()),
+      body: JSON.stringify({ question: text, lang: lang, history: convoHistory })
+    })
+    .then(function(r){
+      if(!r.ok) throw new Error('Server ' + r.status);
+      return r.json();
+    })
+    .then(function(data){
+      var answer = data.answer || t('charlie.error');
+      convoHistory.push({ q: text, a: answer });
+      if(convoHistory.length > 12) convoHistory = convoHistory.slice(-10);
+      lastActivity = Date.now();
+
+      answerEl.innerHTML = '<div class="charlie-q">\u201c' + text + '\u201d</div>' + answer;
+
+      // Dispatch action
+      if(data.action) dispatchAction(data.action, data.params || {});
+
+      // Speak the answer via TTS
+      setState('speaking');
+      VentAudio.speak._lastError = null;
+      VentAudio.speak(answer, function(freqData){
+        if(!barsEl) return;
+        var bars = barsEl.querySelectorAll('.charlie-bar');
+        bars.forEach(function(bar, i){
+          var idx = Math.floor((i / bars.length) * freqData.length * 0.7);
+          var h = Math.max(4, (freqData[idx] / 255) * 32);
+          bar.style.height = h + 'px';
+        });
+      }, function(){
+        // TTS finished (or failed)
+        var err = VentAudio.speak._lastError;
+        if(err){
+          VentAudio.speak._lastError = null;
+          // Show error visibly so user can see what went wrong
+          if(statusEl) statusEl.textContent = 'Voice error: ' + err;
+          console.warn('[Charlie] TTS error:', err);
+        }
+        returnToReady();
+      });
+    })
+    .catch(function(err){
+      console.warn('[Charlie] /charlie/ask failed:', err);
+      answerEl.innerHTML = '<div class="charlie-q">\u201c' + text + '\u201d</div>' + t('charlie.error');
+      // Still re-listen so user can try again
+      returnToReady();
+    });
+  }
+
+  // Expose globally
+  window.toggleCharlie = toggle;
+  window.closeCharlie = closePanel;
+  window.dispatchAction = dispatchAction;
+
+  // Init on DOM ready
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RADIAL PIE MENU + VENT HUB + SOUND DESIGN
+// ═══════════════════════════════════════════════════════════════════════════════
+(function(){
+  var trigger, menu, backdrop, center, centerLabel, centerSub, wedges;
+  var hub, hubOrb, hubGreeting;
+  var isOpen = false;
+  var hubActive = true;
+  var NUM_WEDGES = 8;
+  var RADIUS = 120;
+  var START_ANGLE = -90;
+  var WEDGE_SIZE = 80;
+  var WEDGE_BORDER_RADIUS = 14;
+  var GLOW_INTENSITY = 1.0;
+  var STEP = 360 / NUM_WEDGES; // 45°
+  var rotOffset = 0;            // current rotation offset in degrees
+  var lastNotch = 0;            // last notch index for tick detection
+  var spinDrag = null;          // null | { startAngle, startOffset }
+  var didSpin = false;           // true after a drag-rotate, prevents backdrop close
+
+  // ── Sound engine — pure Web Audio, no files ──
+  var sndCtx = null;
+  function ensureSnd(){
+    if(!sndCtx){
+      sndCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if(sndCtx.state === 'suspended') sndCtx.resume();
+    return sndCtx;
+  }
+
+  function playTone(freq, duration, type, vol, ramp){
+    try {
+      var ctx = ensureSnd();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      if(ramp) osc.frequency.linearRampToValueAtTime(ramp, ctx.currentTime + duration);
+      gain.gain.setValueAtTime(vol || 0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    } catch(e){}
+  }
+
+  // Orb tap — soft sonar ping
+  function sndPing(){
+    playTone(440, 0.25, 'sine', 0.07);
+    playTone(660, 0.2, 'sine', 0.04);
+  }
+
+  // Wedges fan out — rising hum
+  function sndFanOut(){
+    playTone(120, 0.3, 'triangle', 0.06, 220);
+    setTimeout(function(){ playTone(180, 0.15, 'sine', 0.03, 320); }, 80);
+  }
+
+  // Wedge select — crisp ascending confirm
+  function sndSelect(){
+    playTone(520, 0.1, 'sine', 0.07);
+    setTimeout(function(){ playTone(780, 0.12, 'sine', 0.06); }, 70);
+  }
+
+  // Close — soft descending tone
+  function sndClose(){
+    playTone(360, 0.18, 'sine', 0.05, 200);
+  }
+
+  // Rotary tick — crisp mechanical detent click
+  function sndTick(){
+    playTone(1800, 0.035, 'square', 0.04);
+    playTone(3200, 0.02, 'sine', 0.02);
+  }
+
+  // ── Haptics ──
+  function haptic(ms){
+    if(navigator.vibrate) navigator.vibrate(ms || 12);
+  }
+
+  // ── Wedge labels for center preview ──
+  var wedgeLabels = {
+    'charlie': 'CHARLIE',
+    'newchat': 'NEW CHAT',
+    'history': 'HISTORY',
+    'sops':    'SOPs',
+    'todos':   'TO-DO',
+    'concern': 'CONCERN',
+    'gdp':     'GDP CHECK',
+    'tour':    'TOUR'
+  };
+
+  var actionMap = {
+    'charlie':  function(){ toggleCharlie(); },
+    'newchat':  function(){ startNewChat(); },
+    'history':  function(){ toggleHistorySidebar(); },
+    'sops':     function(){ toggleSopSidebar(); },
+    'todos':    function(){ toggleTodoSidebar(); },
+    'concern':  function(){ toggleVentPanel(); },
+    'gdp':      function(){ openGdpModal(); },
+    'tour':     function(){ startVoiceTour(); }
+  };
+
+  function init(){
+    trigger     = document.getElementById('radialTrigger');
+    menu        = document.getElementById('radialMenu');
+    backdrop    = document.getElementById('radialBackdrop');
+    center      = document.getElementById('radialCenter');
+    centerLabel = center ? center.querySelector('.radial-center-label') : null;
+    centerSub   = center ? center.querySelector('.radial-center-sub') : null;
+    hub         = document.getElementById('ventHub');
+    hubOrb      = document.getElementById('hubOrb');
+    hubGreeting = document.getElementById('hubGreeting');
+    if(!menu) return;
+    wedges = menu.querySelectorAll('.radial-wedge');
+
+    // Collapse all wedges initially
+    wedges.forEach(function(w){
+      w.style.transform = 'translate(-' + (WEDGE_SIZE/2) + 'px, -' + (WEDGE_SIZE/2) + 'px) scale(0)';
+      w.style.width = WEDGE_SIZE + 'px';
+      w.style.height = WEDGE_SIZE + 'px';
+    });
+
+    center.addEventListener('click', function(e){ e.stopPropagation(); closeMenu(); });
+    backdrop.addEventListener('click', function(){
+      if(didSpin){ didSpin = false; return; } // was spinning, don't close
+      closeMenu();
+    });
+
+    // Wedge click + hover preview
+    wedges.forEach(function(wedge){
+      var inner = wedge.querySelector('.radial-wedge-inner');
+      var action = wedge.dataset.action;
+
+      inner.addEventListener('click', function(e){
+        e.stopPropagation();
+        sndSelect();
+        haptic(15);
+        closeMenu();
+        if(hubActive) dismissHub();
+        setTimeout(function(){ if(actionMap[action]) actionMap[action](); }, hubActive ? 400 : 180);
+      });
+
+      // Center label preview on hover/touch
+      inner.addEventListener('mouseenter', function(){
+        if(centerLabel) centerLabel.textContent = wedgeLabels[action] || 'VENT';
+        if(centerSub) centerSub.textContent = 'SELECT';
+      });
+      inner.addEventListener('mouseleave', function(){
+        if(centerLabel) centerLabel.textContent = 'VENT';
+        if(centerSub) centerSub.textContent = 'CLOSE';
+      });
+      // Touch: show preview on touchstart
+      inner.addEventListener('touchstart', function(){
+        if(centerLabel) centerLabel.textContent = wedgeLabels[action] || 'VENT';
+        if(centerSub) centerSub.textContent = 'SELECT';
+      }, {passive: true});
+    });
+
+    // Hub orb tap
+    if(hubOrb){
+      hubOrb.addEventListener('click', function(e){
+        e.stopPropagation();
+        if(!isOpen){ sndPing(); haptic(20); openMenu(); }
+        else closeMenu();
+      });
+    }
+
+    // Show greeting
+    if(hubGreeting){
+      var name = localStorage.getItem('vent_name') || '';
+      if(name) hubGreeting.textContent = 'Welcome, ' + name;
+    }
+
+    // Move radial menu + backdrop inside the hub
+    if(hub && hubActive){
+      hub.appendChild(backdrop);
+      hub.appendChild(menu);
+      document.body.classList.add('hub-mode');
+    }
+
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && isOpen) closeMenu();
+    });
+
+    // ── Rotary spin: mouse wheel ──
+    menu.addEventListener('wheel', function(e){
+      if(!isOpen) return;
+      e.preventDefault();
+      var delta = e.deltaY > 0 ? 8 : -8; // 8° per scroll tick
+      rotOffset += delta;
+      repositionWedges(false);
+      checkNotch();
+    }, {passive: false});
+
+    // ── Rotary spin: drag-to-rotate (middle click or left-click on backdrop area) ──
+    menu.addEventListener('mousedown', function(e){
+      if(!isOpen) return;
+      // Middle button (1) or left button (0) on the menu background (not wedge/center)
+      if(e.target !== menu && !e.target.classList.contains('radial-ring')
+         && !e.target.classList.contains('radial-ring-1')
+         && !e.target.classList.contains('radial-ring-2')) return;
+      e.preventDefault();
+      spinDrag = { startAngle: angleFromCenter(e.clientX, e.clientY), startOffset: rotOffset };
+    });
+    backdrop.addEventListener('mousedown', function(e){
+      if(!isOpen) return;
+      e.preventDefault();
+      didSpin = false;
+      spinDrag = { startAngle: angleFromCenter(e.clientX, e.clientY), startOffset: rotOffset };
+    });
+
+    document.addEventListener('mousemove', function(e){
+      if(!spinDrag) return;
+      var curr = angleFromCenter(e.clientX, e.clientY);
+      var delta = curr - spinDrag.startAngle;
+      if(delta > 180) delta -= 360;
+      if(delta < -180) delta += 360;
+      if(Math.abs(delta) > 3) didSpin = true; // meaningful rotation
+      rotOffset = spinDrag.startOffset + delta;
+      repositionWedges(false);
+      checkNotch();
+    });
+
+    document.addEventListener('mouseup', function(e){
+      if(!spinDrag) return;
+      spinDrag = null;
+      snapToNotch();
+    });
+
+    // ── Rotary spin: touch drag-to-rotate on backdrop/menu ──
+    menu.addEventListener('touchstart', function(e){
+      if(!isOpen) return;
+      if(e.target !== menu && !e.target.classList.contains('radial-ring')
+         && !e.target.classList.contains('radial-ring-1')
+         && !e.target.classList.contains('radial-ring-2')) return;
+      if(e.touches.length !== 1) return;
+      var t = e.touches[0];
+      spinDrag = { startAngle: angleFromCenter(t.clientX, t.clientY), startOffset: rotOffset };
+    }, {passive: true});
+
+    backdrop.addEventListener('touchstart', function(e){
+      if(!isOpen) return;
+      if(e.touches.length !== 1) return;
+      var t = e.touches[0];
+      e.stopPropagation();
+      spinDrag = { startAngle: angleFromCenter(t.clientX, t.clientY), startOffset: rotOffset };
+    }, {passive: true});
+
+    document.addEventListener('touchmove', function(e){
+      if(!spinDrag) return;
+      var t = e.touches[0];
+      var curr = angleFromCenter(t.clientX, t.clientY);
+      var delta = curr - spinDrag.startAngle;
+      if(delta > 180) delta -= 360;
+      if(delta < -180) delta += 360;
+      if(Math.abs(delta) > 3) didSpin = true;
+      rotOffset = spinDrag.startOffset + delta;
+      repositionWedges(false);
+      checkNotch();
+    }, {passive: true});
+
+    document.addEventListener('touchend', function(e){
+      if(!spinDrag) return;
+      spinDrag = null;
+      snapToNotch();
+    });
+
+    // ── Draggable FAB ──
+    initDrag();
+
+    // Restore saved FAB position
+    restorePosition();
+  }
+
+  // ── Position the radial menu centered on a point ──
+  function positionMenuAt(cx, cy){
+    menu.style.top = cy + 'px';
+    menu.style.left = cx + 'px';
+    menu.style.transform = 'translate(-50%, -50%)';
+  }
+
+  // Get FAB center coordinates
+  function getFabCenter(){
+    if(!trigger) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    var r = trigger.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  // ── Reposition wedges at current rotOffset (no transition) ──
+  function repositionWedges(animate){
+    if(!wedges) return;
+    wedges.forEach(function(w, i){
+      var deg = START_ANGLE + i * STEP + rotOffset;
+      var rad = deg * Math.PI / 180;
+      var x = Math.cos(rad) * RADIUS - WEDGE_SIZE / 2;
+      var y = Math.sin(rad) * RADIUS - WEDGE_SIZE / 2;
+      if(animate){
+        w.style.transition = 'transform .18s cubic-bezier(.34,1.2,.64,1)';
+      } else {
+        w.style.transition = 'transform 0s';
+      }
+      w.style.transform = 'translate(' + x + 'px, ' + y + 'px) scale(1)';
+    });
+  }
+
+  // ── Check if we crossed a notch boundary → play tick ──
+  function checkNotch(){
+    // Normalize offset to 0-360
+    var norm = ((rotOffset % 360) + 360) % 360;
+    var notch = Math.round(norm / STEP);
+    if(notch !== lastNotch){
+      lastNotch = notch;
+      sndTick();
+      haptic(8);
+    }
+  }
+
+  // ── Snap to nearest 45° notch with animation ──
+  function snapToNotch(){
+    var nearest = Math.round(rotOffset / STEP) * STEP;
+    rotOffset = nearest;
+    repositionWedges(true);
+    sndTick();
+    haptic(10);
+  }
+
+  // ── Get angle (degrees) from menu center to a point ──
+  function angleFromCenter(clientX, clientY){
+    var r = menu.getBoundingClientRect();
+    var cx = r.left + r.width / 2;
+    var cy = r.top + r.height / 2;
+    return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI;
+  }
+
+  function openMenu(){
+    isOpen = true;
+    if(trigger) trigger.classList.add('open');
+    if(hubOrb) hubOrb.style.opacity = '0';
+    if(hubGreeting) hubGreeting.parentElement.style.opacity = '0';
+    if(centerLabel) centerLabel.textContent = 'VENT';
+    if(centerSub) centerSub.textContent = 'CLOSE';
+
+    // Position menu: hub = viewport center, FAB = centered on FAB
+    if(!hubActive){
+      var c = getFabCenter();
+      positionMenuAt(c.x, c.y);
+    } else {
+      menu.style.top = '50%';
+      menu.style.left = '50%';
+      menu.style.transform = 'translate(-50%, -50%)';
+    }
+
+    menu.classList.add('show');
+    backdrop.classList.add('show');
+    sndFanOut();
+    lastNotch = Math.round(((rotOffset % 360 + 360) % 360) / STEP);
+    wedges.forEach(function(w, i){
+      var deg = START_ANGLE + i * STEP + rotOffset;
+      var rad = deg * Math.PI / 180;
+      var x = Math.cos(rad) * RADIUS - WEDGE_SIZE / 2;
+      var y = Math.sin(rad) * RADIUS - WEDGE_SIZE / 2;
+      w.style.transition = 'transform .28s cubic-bezier(.2,1.3,.5,1), opacity .15s';
+      w.style.opacity = '1';
+      w.style.transform = 'translate(' + x + 'px, ' + y + 'px) scale(1)';
+    });
+  }
+
+  function closeMenu(){
+    isOpen = false;
+    sndClose();
+    if(trigger) trigger.classList.remove('open');
+    if(hubActive && hubOrb){ hubOrb.style.opacity = '1'; }
+    if(hubActive && hubGreeting){ hubGreeting.parentElement.style.opacity = '1'; }
+    backdrop.classList.remove('show');
+    wedges.forEach(function(w){
+      w.style.transition = 'transform .15s cubic-bezier(.6,0,.7,1), opacity .1s';
+      w.style.opacity = '0';
+      w.style.transform = 'translate(-' + (WEDGE_SIZE/2) + 'px, -' + (WEDGE_SIZE/2) + 'px) scale(0)';
+    });
+    setTimeout(function(){ menu.classList.remove('show'); }, 200);
+  }
+
+  // ── Apply menu config from settings panel ──
+  function applyMenuConfig(config){
+    if(config.radius !== undefined) RADIUS = config.radius;
+    if(config.wedgeSize !== undefined) WEDGE_SIZE = config.wedgeSize;
+    if(config.borderRadius !== undefined) WEDGE_BORDER_RADIUS = config.borderRadius;
+    if(config.glowIntensity !== undefined) GLOW_INTENSITY = config.glowIntensity;
+    if(wedges){
+      wedges.forEach(function(w){
+        w.style.width = WEDGE_SIZE + 'px';
+        w.style.height = WEDGE_SIZE + 'px';
+        var inner = w.querySelector('.radial-wedge-inner');
+        if(inner){
+          inner.style.width = WEDGE_SIZE + 'px';
+          inner.style.height = WEDGE_SIZE + 'px';
+          inner.style.borderRadius = WEDGE_BORDER_RADIUS + 'px';
+        }
+      });
+    }
+    document.documentElement.style.setProperty('--glow-mult', GLOW_INTENSITY);
+    if(isOpen) repositionWedges(true);
+  }
+  window.applyMenuConfig = applyMenuConfig;
+
+  function dismissHub(){
+    hubActive = false;
+    if(hub) hub.classList.add('dismissed');
+    document.body.classList.remove('hub-mode');
+    setTimeout(function(){
+      document.body.appendChild(backdrop);
+      document.body.appendChild(menu);
+    }, 550);
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // DRAGGABLE FAB — long-press to drag, tap to open menu
+  // ═════════════════════════════════════════════════════════════════════════════
+  var LONG_PRESS_MS = 300;
+  var dragState = null; // null | 'pending' | 'dragging'
+  var pressTimer = null;
+  var startX, startY, offsetX, offsetY;
+  var didDrag = false;
+
+  function initDrag(){
+    if(!trigger) return;
+
+    // Mouse events
+    trigger.addEventListener('mousedown', onDown);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+
+    // Touch events
+    trigger.addEventListener('touchstart', onTouchDown, {passive: false});
+    document.addEventListener('touchmove', onTouchMove, {passive: false});
+    document.addEventListener('touchend', onTouchUp);
+  }
+
+  function onDown(e){
+    if(hubActive || isOpen) return;
+    startPress(e.clientX, e.clientY);
+  }
+  function onTouchDown(e){
+    if(hubActive || isOpen) return;
+    if(e.touches.length !== 1) return;
+    e.preventDefault();
+    var t = e.touches[0];
+    startPress(t.clientX, t.clientY);
+  }
+
+  function startPress(cx, cy){
+    didDrag = false;
+    startX = cx; startY = cy;
+    var r = trigger.getBoundingClientRect();
+    offsetX = cx - r.left - r.width / 2;
+    offsetY = cy - r.top - r.height / 2;
+    dragState = 'pending';
+    pressTimer = setTimeout(function(){
+      dragState = 'dragging';
+      didDrag = true;
+      trigger.classList.add('dragging');
+      haptic(30);
+      // Switch to top/left positioning for dragging
+      var rect = trigger.getBoundingClientRect();
+      trigger.style.bottom = 'auto';
+      trigger.style.right = 'auto';
+      trigger.style.top = rect.top + 'px';
+      trigger.style.left = rect.left + 'px';
+    }, LONG_PRESS_MS);
+  }
+
+  function onMove(e){
+    if(dragState === 'pending'){
+      // If moved too far before 300ms, cancel the pending press (it's a click, not a drag)
+      var dx = e.clientX - startX, dy = e.clientY - startY;
+      if(dx*dx + dy*dy > 25){ clearTimeout(pressTimer); dragState = null; }
+      return;
+    }
+    if(dragState !== 'dragging') return;
+    e.preventDefault();
+    moveAt(e.clientX, e.clientY);
+  }
+  function onTouchMove(e){
+    var t = e.touches[0];
+    if(dragState === 'pending'){
+      var dx = t.clientX - startX, dy = t.clientY - startY;
+      if(dx*dx + dy*dy > 25){ clearTimeout(pressTimer); dragState = null; }
+      return;
+    }
+    if(dragState !== 'dragging') return;
+    e.preventDefault();
+    moveAt(t.clientX, t.clientY);
+  }
+
+  function moveAt(cx, cy){
+    if(dragState !== 'dragging') return;
+    var size = trigger.offsetWidth;
+    var x = cx - offsetX - size / 2;
+    var y = cy - offsetY - size / 2;
+    // Clamp to viewport
+    x = Math.max(4, Math.min(window.innerWidth - size - 4, x));
+    y = Math.max(4, Math.min(window.innerHeight - size - 4, y));
+    trigger.style.left = x + 'px';
+    trigger.style.top = y + 'px';
+  }
+
+  function onUp(e){ endPress(e.clientX, e.clientY); }
+  function onTouchUp(e){
+    var t = e.changedTouches ? e.changedTouches[0] : null;
+    endPress(t ? t.clientX : startX, t ? t.clientY : startY);
+  }
+
+  function endPress(cx, cy){
+    clearTimeout(pressTimer);
+    if(dragState === 'dragging'){
+      trigger.classList.remove('dragging');
+      // Snap to nearest edge
+      snapToEdge();
+      dragState = null;
+      return;
+    }
+    dragState = null;
+    // It was a short tap — toggle menu (handled by onclick)
+  }
+
+  function snapToEdge(){
+    var r = trigger.getBoundingClientRect();
+    var cx = r.left + r.width / 2;
+    var vw = window.innerWidth;
+    var size = trigger.offsetWidth;
+    var margin = 16;
+    var targetLeft;
+
+    // Snap to nearest horizontal edge
+    if(cx < vw / 2){
+      targetLeft = margin;
+    } else {
+      targetLeft = vw - size - margin;
+    }
+
+    // Keep vertical position, clamped
+    var targetTop = Math.max(60, Math.min(window.innerHeight - size - 16, r.top));
+
+    trigger.classList.add('settling');
+    trigger.style.left = targetLeft + 'px';
+    trigger.style.top = targetTop + 'px';
+
+    // Save position
+    savePosition(targetLeft, targetTop);
+
+    setTimeout(function(){
+      trigger.classList.remove('settling');
+    }, 350);
+  }
+
+  function savePosition(left, top){
+    try {
+      localStorage.setItem('vent_fab_pos', JSON.stringify({l: left, t: top}));
+    } catch(e){}
+  }
+
+  function restorePosition(){
+    if(!trigger || hubActive) return;
+    try {
+      var saved = JSON.parse(localStorage.getItem('vent_fab_pos'));
+      if(saved && typeof saved.l === 'number'){
+        trigger.style.bottom = 'auto';
+        trigger.style.right = 'auto';
+        trigger.style.left = saved.l + 'px';
+        trigger.style.top = saved.t + 'px';
+      }
+    } catch(e){}
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════════
+
+  window.toggleRadialMenu = function(){
+    if(!trigger) init();
+    if(hubActive) return;
+    if(didDrag){ didDrag = false; return; } // just finished a drag, don't open
+    sndPing(); haptic(20);
+    if(isOpen) closeMenu(); else openMenu();
+  };
+
+  window.dismissVentHub = function(){
+    dismissHub();
+    // Restore saved FAB position after hub dismisses
+    setTimeout(restorePosition, 600);
+  };
+
+  window.showVentHub = function(){
+    if(!hub) return;
+    if(typeof closeCharlie === 'function') closeCharlie();
+    if(typeof closeVentPanel === 'function') closeVentPanel();
+    if(typeof closeHistorySidebar === 'function') closeHistorySidebar();
+    if(typeof closeSopSidebar === 'function') closeSopSidebar();
+    if(typeof closeTodoSidebar === 'function') closeTodoSidebar();
+    if(typeof closeSubsDrawer === 'function') closeSubsDrawer();
+    if(typeof closeGdpModal === 'function') closeGdpModal();
+    hubActive = true;
+    hub.classList.remove('dismissed');
+    document.body.classList.add('hub-mode');
+    hub.appendChild(backdrop);
+    hub.appendChild(menu);
+    // Reset FAB to default position
+    trigger.style.bottom = '';
+    trigger.style.right = '';
+    trigger.style.top = '';
+    trigger.style.left = '';
+    if(hubOrb) hubOrb.style.opacity = '1';
+    if(hubGreeting) hubGreeting.parentElement.style.opacity = '1';
+  };
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
 // Auth guard
 (async function authGuard() {
   const token = localStorage.getItem('vent_token');
@@ -6509,14 +8473,11 @@ function toggleVentPanel() {
 function openVentPanel() {
   document.getElementById('ventPanel').classList.add('show');
   document.getElementById('ventBackdrop').classList.add('show');
-  document.getElementById('ventFab').classList.add('open');
-  document.getElementById('ventFabTip').classList.remove('show');
   setTimeout(() => document.getElementById('ventText').focus(), 240);
 }
 function closeVentPanel() {
   document.getElementById('ventPanel').classList.remove('show');
   document.getElementById('ventBackdrop').classList.remove('show');
-  document.getElementById('ventFab').classList.remove('open');
 }
 function setPri(btn) {
   document.querySelectorAll('.vp-pri-btn').forEach(b => b.classList.remove('on'));
@@ -6747,60 +8708,90 @@ function resetVpMicBtn() {
 
 // ─── VOICE-NARRATED PRODUCT TOUR (Charlie) ──────────────────────────────────
 (function(){
-  var CHARLIE_VOICE_ID = 'IKne3meq5aSn9XLyUdCD';
-  var TTS_MODEL = 'eleven_multilingual_v2';
-
   var tourSteps = [
-    { target:'.history-toggle', title:'Chat History',
-      desc:'View and search your past conversations. Pick up where you left off or analyse trends across all your queries.',
-      voice:'Over here is your chat history. Every conversation you have with Vent is saved automatically. You can search through them, pick up where you left off, or even analyse trends across all your past queries.',
-      pos:'bottom',
+    // 1 — Navigation Bar
+    { target:'.title-bar', titleKey:'tour.step1.title', descKey:'tour.step1.desc', voiceKey:'tour.step1.voice', pos:'bottom',
+      sub:[
+        { target:'#mainNav', titleKey:'tour.step1.sub1.title', descKey:'tour.step1.sub1.desc', voiceKey:'tour.step1.sub1.voice', pos:'bottom' },
+        { target:'#roleBadge', titleKey:'tour.step1.sub2.title', descKey:'tour.step1.sub2.desc', voiceKey:'tour.step1.sub2.voice', pos:'bottom' },
+        { target:'.sign-out-btn:last-child', titleKey:'tour.step1.sub3.title', descKey:'tour.step1.sub3.desc', voiceKey:'tour.step1.sub3.voice', pos:'bottom' }
+      ]},
+    // 2 — Language Switcher
+    { target:'#langSwitcher', titleKey:'tour.step2.title', descKey:'tour.step2.desc', voiceKey:'tour.step2.voice', pos:'bottom' },
+    // 3 — Chat History
+    { target:'.history-toggle', titleKey:'tour.step3.title', descKey:'tour.step3.desc', voiceKey:'tour.step3.voice', pos:'bottom',
       open:'openHistorySidebar', close:'closeHistorySidebar',
       sub:[
-        { target:'.hs-new-btn', title:'New Conversation', desc:'Start a fresh conversation. Your current chat is saved automatically.', voice:'Hit this button to start a fresh conversation. Don\'t worry — your current chat is saved automatically so you can always come back to it.', pos:'right' },
-        { target:'.hs-head-actions', title:'Quick Actions', desc:'Analyse trends across all your past queries, or clear your history.', voice:'These quick actions let you analyse trends across all your queries, or clear your history if you need a fresh start.', pos:'right' },
-        { target:'#hsList', title:'Your Conversations', desc:'All your previous chats are listed here. Click any to reload it.', voice:'All your previous conversations are listed right here. Just click any one to jump straight back in.', pos:'right' }
+        { target:'.hs-new-btn', titleKey:'tour.step3.sub1.title', descKey:'tour.step3.sub1.desc', voiceKey:'tour.step3.sub1.voice', pos:'right' },
+        { target:'.hs-head-actions', titleKey:'tour.step3.sub2.title', descKey:'tour.step3.sub2.desc', voiceKey:'tour.step3.sub2.voice', pos:'right' },
+        { target:'#hsList', titleKey:'tour.step3.sub3.title', descKey:'tour.step3.sub3.desc', voiceKey:'tour.step3.sub3.voice', pos:'right' }
       ]},
-    { target:'.sop-search-btn', title:'SOP Library',
-      desc:'Browse and search all facility SOPs. Open them in a floating viewer where you can ask AI questions about specific documents.',
-      voice:'This is the SOP Library. Every standard operating procedure for your facility lives here. You can browse, search, and even ask the AI questions about specific documents — all without leaving this page.',
-      pos:'bottom',
+    // 4 — SOP Library
+    { target:'.sop-search-btn', titleKey:'tour.step4.title', descKey:'tour.step4.desc', voiceKey:'tour.step4.voice', pos:'bottom',
       open:'openSopSidebar', close:'closeSopSidebar',
       sub:[
-        { target:'.sop-discover-header', title:'AI Discovery', desc:'Describe what you\'re working on — the AI will find the right documents.', voice:'Not sure which SOP you need? Just open this and describe what you\'re working on. The AI will find the right documents for you. Pretty handy.', pos:'left' },
-        { target:'#sopSearchInput', title:'Keyword Search', desc:'Search SOPs by keyword or document name.', voice:'Or if you know what you\'re looking for, use the keyword search. Results appear instantly as you type.', pos:'left' },
-        { target:'#sopResults', title:'Search Results', desc:'Click any result to open it in a floating viewer.', voice:'Click any result to open it in a floating viewer. You can read the full SOP and ask the AI questions about it, right here.', pos:'left' }
+        { target:'.sop-discover-header', titleKey:'tour.step4.sub1.title', descKey:'tour.step4.sub1.desc', voiceKey:'tour.step4.sub1.voice', pos:'left' },
+        { target:'#sopSearchInput', titleKey:'tour.step4.sub2.title', descKey:'tour.step4.sub2.desc', voiceKey:'tour.step4.sub2.voice', pos:'left' },
+        { target:'#sopResults', titleKey:'tour.step4.sub3.title', descKey:'tour.step4.sub3.desc', voiceKey:'tour.step4.sub3.voice', pos:'left' }
       ]},
-    { target:'#qInput', title:'Ask a Question',
-      desc:'Type your question in plain language. The AI searches your SOPs to find the answer.',
-      voice:'This is where the magic happens. Just type your question in plain language — things like "what\'s the target pH range" or "how do I calibrate the DO probe". The AI searches your SOPs and gives you the answer in seconds.',
-      pos:'top' },
-    { target:'#areaSelect', title:'Facility Area',
-      desc:'Select which area you\'re working in — this helps the AI find the most relevant SOP sections.',
-      voice:'Select your facility area here. This helps the AI narrow down to the most relevant SOP sections for your question. The more specific you are, the better the answers.',
-      pos:'top' },
-    { target:'.cam-btn', title:'Photo Query',
-      desc:'Snap a photo of equipment, a reading, or a label for context-specific guidance.',
-      voice:'Now this is really cool. You can snap a photo of equipment, a reading, or a label, and the AI will analyse the image alongside your SOPs. It gives you context-specific guidance based on what it sees. No more guessing.',
-      pos:'top' },
-    { target:'.send-btn', title:'Send',
-      desc:'Submit your question. You can also just press Enter.',
-      voice:'Hit send or just press enter. Simple as that.',
-      pos:'top' },
-    { target:'.sug-chips', title:'Quick Suggestions',
-      desc:'Not sure where to start? Click any of these to instantly ask a common question.',
-      voice:'Not sure where to start? These quick suggestions cover the most common questions. Just click one and the answer comes straight back.',
-      pos:'top' },
-    { target:'.vent-fab', title:'Raise a Concern',
-      desc:'Spotted something off? Submit an anonymous observation to QA — no paperwork, no judgement.',
-      voice:'Now here\'s the heart of Vent. This button lets any operator raise a concern — anonymously. Spotted something off on the floor? Equipment issue? Process deviation? Just tap this and tell us. No paperwork, no judgement. It goes straight to QA.',
-      pos:'left',
+    // 5 — To-do List
+    { target:'.todo-toggle', titleKey:'tour.step5.title', descKey:'tour.step5.desc', voiceKey:'tour.step5.voice', pos:'bottom',
+      open:'openTodoSidebar', close:'closeTodoSidebar',
+      sub:[
+        { target:'#todoProgress', titleKey:'tour.step5.sub1.title', descKey:'tour.step5.sub1.desc', voiceKey:'tour.step5.sub1.voice', pos:'right' },
+        { target:'#todoList', titleKey:'tour.step5.sub2.title', descKey:'tour.step5.sub2.desc', voiceKey:'tour.step5.sub2.voice', pos:'right' },
+        { target:'#todoNewInput', titleKey:'tour.step5.sub3.title', descKey:'tour.step5.sub3.desc', voiceKey:'tour.step5.sub3.voice', pos:'right' }
+      ]},
+    // 6 — Ask a Question
+    { target:'#qInput', titleKey:'tour.step6.title', descKey:'tour.step6.desc', voiceKey:'tour.step6.voice', pos:'top' },
+    // 7 — Facility Area
+    { target:'#areaSelect', titleKey:'tour.step7.title', descKey:'tour.step7.desc', voiceKey:'tour.step7.voice', pos:'top' },
+    // 8 — Photo Query
+    { target:'.cam-btn', titleKey:'tour.step8.title', descKey:'tour.step8.desc', voiceKey:'tour.step8.voice', pos:'top' },
+    // 9 — GDP Check
+    { target:'#gdpBtn', titleKey:'tour.step9.title', descKey:'tour.step9.desc', voiceKey:'tour.step9.voice', pos:'top',
+      open:'openGdpModal', close:'closeGdpModal',
+      sub:[
+        { target:'#gdpDropZone', titleKey:'tour.step9.sub1.title', descKey:'tour.step9.sub1.desc', voiceKey:'tour.step9.sub1.voice', pos:'right' },
+        { target:'.gdp-upload-action-btn.camera', titleKey:'tour.step9.sub2.title', descKey:'tour.step9.sub2.desc', voiceKey:'tour.step9.sub2.voice', pos:'bottom' },
+        { target:'#gdpRunBtn', titleKey:'tour.step9.sub3.title', descKey:'tour.step9.sub3.desc', voiceKey:'tour.step9.sub3.voice', pos:'top' },
+        { target:'#gdpHistoryBtn', titleKey:'tour.step9.sub4.title', descKey:'tour.step9.sub4.desc', voiceKey:'tour.step9.sub4.voice', pos:'bottom' }
+      ]},
+    // 10 — Send
+    { target:'.send-btn', titleKey:'tour.step10.title', descKey:'tour.step10.desc', voiceKey:'tour.step10.voice', pos:'top' },
+    // 11 — Quick Suggestions
+    { target:'.sug-chips', titleKey:'tour.step11.title', descKey:'tour.step11.desc', voiceKey:'tour.step11.voice', pos:'top' },
+    // 12 — Pinned Answers (skipIfMissing)
+    { target:'#bookmarksPanel', titleKey:'tour.step12.title', descKey:'tour.step12.desc', voiceKey:'tour.step12.voice', pos:'top', skipIfMissing:true,
+      setup:function(){ var p=document.getElementById('bookmarksPanel'); if(p) p.style.display='block'; },
+      teardown:function(){ var p=document.getElementById('bookmarksPanel'); if(p) p.style.display='none'; }},
+    // 13 — Scroll to Latest (skipIfMissing)
+    { target:'#scrollBottomBtn', titleKey:'tour.step13.title', descKey:'tour.step13.desc', voiceKey:'tour.step13.voice', pos:'top', skipIfMissing:true,
+      setup:function(){ var b=document.getElementById('scrollBottomBtn'); if(b) b.style.display='flex'; },
+      teardown:function(){ var b=document.getElementById('scrollBottomBtn'); if(b) b.style.display=''; }},
+    // 14 — Answer Actions (skipIfMissing)
+    { target:'.answer-actions', titleKey:'tour.step14.title', descKey:'tour.step14.desc', voiceKey:'tour.step14.voice', pos:'top', skipIfMissing:true,
+      sub:[
+        { target:'.answer-actions .act-btn:nth-child(1)', titleKey:'tour.step14.sub1.title', descKey:'tour.step14.sub1.desc', voiceKey:'tour.step14.sub1.voice', pos:'top' },
+        { target:'.answer-actions .act-btn:nth-child(2)', titleKey:'tour.step14.sub2.title', descKey:'tour.step14.sub2.desc', voiceKey:'tour.step14.sub2.voice', pos:'top' },
+        { target:'.answer-actions .act-btn:nth-child(3)', titleKey:'tour.step14.sub3.title', descKey:'tour.step14.sub3.desc', voiceKey:'tour.step14.sub3.voice', pos:'top' },
+        { target:'.answer-actions .act-btn:nth-child(5)', titleKey:'tour.step14.sub4.title', descKey:'tour.step14.sub4.desc', voiceKey:'tour.step14.sub4.voice', pos:'top' }
+      ]},
+    // 15 — Raise a Concern
+    { target:'.radial-trigger', titleKey:'tour.step15.title', descKey:'tour.step15.desc', voiceKey:'tour.step15.voice', pos:'left',
       open:'openVentPanel', close:'closeVentPanel',
       sub:[
-        { target:'#ventText', title:'Describe the Observation', desc:'Write what you noticed — anything at all.', voice:'Just describe what you noticed. Equipment issues, process deviations, safety concerns — anything at all. You can type it, or use the mic button to speak it.', pos:'right' },
-        { target:'.vp-pri', title:'Set Priority', desc:'Flag it as Low, Medium, or High.', voice:'Set the priority. Low, medium, or high. Medium is selected by default, but if it\'s urgent — flag it.', pos:'right' },
-        { target:'#vpDrop', title:'Attach Evidence', desc:'Drag photos or video here. Visual evidence helps QA investigate faster.', voice:'You can attach photos or video too. Just drag and drop, or click to browse. Visual evidence helps QA investigate much faster.', pos:'right' },
-        { target:'#ventSubmitBtn', title:'Submit', desc:'Send your observation anonymously to QA and MSAT.', voice:'And that\'s it. Hit submit. Your observation gets routed straight to QA and MSAT for review. Completely anonymous. That\'s Vent — manufacturing intelligence, designed for the floor.', pos:'right' }
+        { target:'#ventText', titleKey:'tour.step15.sub1.title', descKey:'tour.step15.sub1.desc', voiceKey:'tour.step15.sub1.voice', pos:'right' },
+        { target:'.vp-pri', titleKey:'tour.step15.sub2.title', descKey:'tour.step15.sub2.desc', voiceKey:'tour.step15.sub2.voice', pos:'right' },
+        { target:'#vpDrop', titleKey:'tour.step15.sub3.title', descKey:'tour.step15.sub3.desc', voiceKey:'tour.step15.sub3.voice', pos:'right' },
+        { target:'#ventSubmitBtn', titleKey:'tour.step15.sub4.title', descKey:'tour.step15.sub4.desc', voiceKey:'tour.step15.sub4.voice', pos:'right' }
+      ]},
+    // 16 — My Activity
+    { target:'.subs-trigger', titleKey:'tour.step16.title', descKey:'tour.step16.desc', voiceKey:'tour.step16.voice', pos:'top',
+      open:'openSubsDrawer', close:'closeSubsDrawer',
+      sub:[
+        { target:'.sd-tab:first-child', titleKey:'tour.step16.sub1.title', descKey:'tour.step16.sub1.desc', voiceKey:'tour.step16.sub1.voice', pos:'bottom' },
+        { target:'.sd-tab:nth-child(2)', titleKey:'tour.step16.sub2.title', descKey:'tour.step16.sub2.desc', voiceKey:'tour.step16.sub2.voice', pos:'bottom' }
       ]}
   ];
 
@@ -6808,10 +8799,6 @@ function resetVpMicBtn() {
   var overlay, highlight, card, demoBanner;
   var openPanelClose = null;
   var voiceMuted = false;
-  var currentAudio = null;
-  var tourAudioCtx = null;
-  var tourAnalyser = null;
-  var voiceBarsAnimFrame = null;
   var isVoiceTour = false;
 
   function buildOverlay(){
@@ -6832,8 +8819,8 @@ function resetVpMicBtn() {
     demoBanner.className = 'tour-demo-banner';
     demoBanner.innerHTML =
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>' +
-      '<span>Guided Demo — Charlie is walking you through Vent</span>' +
-      '<button class="tour-demo-exit" onclick="endTour()">Exit Demo</button>';
+      '<span class="tour-demo-text">' + t('tour.demoBanner') + '</span>' +
+      '<button class="tour-demo-exit" onclick="endTour()">' + t('tour.exitDemo') + '</button>';
     document.body.appendChild(demoBanner);
   }
 
@@ -6898,66 +8885,20 @@ function resetVpMicBtn() {
     if(openPanelClose){ try{ window[openPanelClose](); }catch(e){} openPanelClose = null; }
   }
 
-  // ── Voice narration ──
-  function stopCurrentAudio(){
-    if(voiceBarsAnimFrame){ cancelAnimationFrame(voiceBarsAnimFrame); voiceBarsAnimFrame = null; }
-    if(currentAudio){
-      currentAudio.pause();
-      currentAudio.src = '';
-      currentAudio = null;
-    }
-  }
+  // ── Voice narration (delegates to VentAudio) ──
+  function stopCurrentAudio(){ VentAudio.stop(); }
 
   function speakStep(text){
     if(voiceMuted || !isVoiceTour || !text) return;
-    stopCurrentAudio();
-
-    fetch(SERVER + '/tts', {
-      method: 'POST',
-      headers: Object.assign({'Content-Type':'application/json'}, getAuthHeaders()),
-      body: JSON.stringify({ text: text, voiceId: CHARLIE_VOICE_ID, modelId: TTS_MODEL })
-    })
-    .then(function(r){ if(!r.ok) throw new Error('TTS failed'); return r.blob(); })
-    .then(function(blob){
-      var url = URL.createObjectURL(blob);
-      currentAudio = new Audio(url);
-      currentAudio.volume = 0.85;
-
-      // Connect to analyser for frequency bars
-      if(!tourAudioCtx) tourAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      var source = tourAudioCtx.createMediaElementSource(currentAudio);
-      tourAnalyser = tourAudioCtx.createAnalyser();
-      tourAnalyser.fftSize = 64;
-      tourAnalyser.smoothingTimeConstant = 0.75;
-      source.connect(tourAnalyser);
-      tourAnalyser.connect(tourAudioCtx.destination);
-
-      currentAudio.play().catch(function(){});
-      animateVoiceBars();
-
-      currentAudio.onended = function(){
-        if(voiceBarsAnimFrame){ cancelAnimationFrame(voiceBarsAnimFrame); voiceBarsAnimFrame = null; }
-        resetVoiceBarsIdle();
-        URL.revokeObjectURL(url);
-      };
-    })
-    .catch(function(e){ console.warn('Voice narration unavailable:', e); });
-  }
-
-  function animateVoiceBars(){
-    var bars = card ? card.querySelectorAll('.tour-voice-bar') : [];
-    if(!bars.length || !tourAnalyser){ return; }
-    var freqData = new Uint8Array(tourAnalyser.frequencyBinCount);
-
-    function tick(){
-      tourAnalyser.getByteFrequencyData(freqData);
+    VentAudio.speak(text, function(freqData){
+      var bars = card ? card.querySelectorAll('.tour-voice-bar') : [];
       bars.forEach(function(bar, i){
         var idx = Math.floor((i / bars.length) * freqData.length * 0.7);
         bar.style.height = Math.max(3, (freqData[idx] / 255) * 20) + 'px';
       });
-      voiceBarsAnimFrame = requestAnimationFrame(tick);
-    }
-    tick();
+    }, function(){
+      resetVoiceBarsIdle();
+    });
   }
 
   function resetVoiceBarsIdle(){
@@ -6979,20 +8920,123 @@ function resetVpMicBtn() {
     if(voiceMuted) stopCurrentAudio();
   }
 
+  // ── Ask Charlie: voice Q&A during tour (uses VentAudio) ──
+  var tourConvoHistory = [];
+  var lastAskStepIdx = -1;
+  var lastAskSubIdx = -1;
+  var tourAskRecording = false;
+
+  function askCharlieToggle(){
+    if(VentAudio.isRecording()){
+      VentAudio.stopRecording();
+    } else {
+      startTourAsk();
+    }
+  }
+
+  function startTourAsk(){
+    stopCurrentAudio();
+    var btn = card ? card.querySelector('.tour-ask-btn') : null;
+    if(btn){
+      btn.classList.add('recording');
+      btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg> ' + t('tour.askStop');
+    }
+    tourAskRecording = true;
+    VentAudio.recordSTT(function(text){
+      tourAskRecording = false;
+      setAskBtnThinking();
+      sendTourQuestion(text);
+    }, function(err){
+      tourAskRecording = false;
+      if(err === 'mic'){
+        var ans = card ? card.querySelector('#tourAskAnswer') : null;
+        if(ans){ ans.style.display = 'block'; ans.textContent = t('tour.askMicError'); }
+      }
+      resetAskBtn();
+    });
+  }
+
+  function setAskBtnThinking(){
+    var btn = card ? card.querySelector('.tour-ask-btn') : null;
+    if(btn){
+      btn.classList.remove('recording');
+      btn.classList.add('thinking');
+      btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> ' + t('tour.thinking');
+    }
+  }
+
+  function sendTourQuestion(question){
+    var mainStep = tourSteps[tourIdx];
+    var step = subIdx >= 0 ? mainStep.sub[subIdx] : mainStep;
+    var context = t(step.titleKey) + ': ' + t(step.descKey);
+    var lang = (window.VentI18n && VentI18n.getLang()) || 'en';
+
+    fetch(SERVER + '/charlie/ask', {
+      method: 'POST',
+      headers: Object.assign({'Content-Type':'application/json'}, getAuthHeaders()),
+      body: JSON.stringify({ question: question, context: context, lang: lang, history: tourConvoHistory })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var answer = data.answer || '';
+      if(answer){
+        tourConvoHistory.push({ q: question, a: answer });
+        var ans = card ? card.querySelector('#tourAskAnswer') : null;
+        if(ans){
+          ans.style.display = 'block';
+          ans.innerHTML = '<div class="tour-ask-q">\u201c' + question + '\u201d</div>' + answer;
+        }
+        speakStep(answer);
+        if(data.action && data.action !== 'none') dispatchAction(data.action, data.params || {});
+      } else {
+        var ans = card ? card.querySelector('#tourAskAnswer') : null;
+        if(ans){ ans.style.display = 'block'; ans.textContent = t('tour.askError'); }
+      }
+      resetAskBtn();
+    })
+    .catch(function(){
+      resetAskBtn();
+      var ans = card ? card.querySelector('#tourAskAnswer') : null;
+      if(ans){ ans.style.display = 'block'; ans.textContent = t('tour.askError'); }
+    });
+  }
+
+  function resetAskBtn(){
+    var btn = card ? card.querySelector('.tour-ask-btn') : null;
+    if(btn){
+      btn.classList.remove('recording', 'thinking');
+      btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg> ' + t('tour.askCharlie');
+    }
+  }
+
+  function teardownPrev(){
+    var ms = tourSteps[tourIdx];
+    if(ms && ms.teardown) try{ ms.teardown(); }catch(e){}
+  }
+
   function renderStep(){
     stopCurrentAudio();
+    // Cancel any in-progress recording (don't process STT)
+    VentAudio.killRecording();
+    // Reset conversation when step changes
+    if(tourIdx !== lastAskStepIdx || subIdx !== lastAskSubIdx){
+      tourConvoHistory = [];
+      lastAskStepIdx = tourIdx;
+      lastAskSubIdx = subIdx;
+    }
     var mainStep = tourSteps[tourIdx];
     var step, isSubStep = subIdx >= 0;
     if(isSubStep){
       step = mainStep.sub[subIdx];
     } else {
       step = mainStep;
+      if(step.setup) try{ step.setup(); }catch(e){}
     }
 
     var el = document.querySelector(step.target);
     if(!el){
       if(isSubStep){ subIdx++; if(subIdx >= mainStep.sub.length){ leaveSubTour(); nextMain(); } else renderStep(); }
-      else { tourIdx++; if(tourIdx >= tourSteps.length) endTourInner(); else renderStep(); }
+      else { if(step.teardown) try{ step.teardown(); }catch(e){} tourIdx++; if(tourIdx >= tourSteps.length) endTourInner(); else renderStep(); }
       return;
     }
     var rect = el.getBoundingClientRect();
@@ -7004,9 +9048,9 @@ function resetVpMicBtn() {
     highlight.style.height = (rect.height + p*2) + 'px';
     clipOverlay(rect);
 
-    var counter = (tourIdx+1) + ' of ' + tourSteps.length;
+    var counter = t('tour.counter').replace('{current}', tourIdx+1).replace('{total}', tourSteps.length);
     if(isSubStep){
-      counter += '<span class="tour-sub-counter"> · ' + (subIdx+1) + '/' + mainStep.sub.length + '</span>';
+      counter += '<span class="tour-sub-counter"> \u00b7 ' + (subIdx+1) + '/' + mainStep.sub.length + '</span>';
     }
 
     var hasSub = !isSubStep && mainStep.sub && mainStep.sub.length > 0;
@@ -7015,9 +9059,9 @@ function resetVpMicBtn() {
     var canGoBack = tourIdx > 0 || subIdx > 0;
 
     var btns = '';
-    if(canGoBack) btns += '<button class="tour-back" onclick="prevTourStep()">Back</button>';
-    if(hasSub) btns += '<button class="tour-explore" onclick="exploreTourStep()">Explore ›</button>';
-    var nextLabel = (isLastMain && !isSubStep && !hasSub) || (isLastMain && isLastSub) ? 'Done' : 'Next';
+    if(canGoBack) btns += '<button class="tour-back" onclick="prevTourStep()">' + t('tour.back') + '</button>';
+    if(hasSub) btns += '<button class="tour-explore" onclick="exploreTourStep()">' + t('tour.explore') + '</button>';
+    var nextLabel = (isLastMain && !isSubStep && !hasSub) || (isLastMain && isLastSub) ? t('tour.done') : t('tour.next');
     btns += '<button class="tour-next" onclick="nextTourStep()">' + nextLabel + '</button>';
 
     // Build voice bars HTML
@@ -7029,21 +9073,29 @@ function resetVpMicBtn() {
     var muteIcon = voiceMuted
       ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Muted'
       : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> Charlie';
+    var askBtn = isVoiceTour
+      ? '<button class="tour-ask-btn" onclick="askCharlie()" title="' + t('tour.askHint') + '">' +
+          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg> ' +
+          t('tour.askCharlie') +
+        '</button>'
+      : '';
     var voiceRow = isVoiceTour
       ? '<div class="tour-voice-row">' +
           '<div class="tour-voice-bars">' + barsHtml + '</div>' +
           '<div class="tour-voice-label"><span class="tour-voice-pip"></span> CHARLIE</div>' +
           '<button class="tour-voice-mute'+(voiceMuted?' muted':'')+'" onclick="toggleTourMute()">'+muteIcon+'</button>' +
+          askBtn +
         '</div>'
       : '';
 
     card.innerHTML =
       '<div class="tour-card-step">' + counter + '</div>' +
       voiceRow +
-      '<div class="tour-card-title">' + step.title + '</div>' +
-      '<div class="tour-card-desc">' + step.desc + '</div>' +
+      '<div class="tour-card-title">' + t(step.titleKey) + '</div>' +
+      '<div class="tour-card-desc">' + t(step.descKey) + '</div>' +
+      '<div class="tour-ask-answer" id="tourAskAnswer" style="display:none"></div>' +
       '<div class="tour-card-actions">' +
-        '<button class="tour-skip" onclick="endTour()">Skip tour</button>' +
+        '<button class="tour-skip" onclick="endTour()">' + t('tour.skip') + '</button>' +
         '<div class="tour-card-btns">' + btns + '</div>' +
       '</div>' +
       '<div class="tour-card-arrow"></div>';
@@ -7051,8 +9103,8 @@ function resetVpMicBtn() {
     positionCard(rect, step.pos);
 
     // Trigger voice narration
-    if(isVoiceTour && step.voice){
-      setTimeout(function(){ speakStep(step.voice); }, 400);
+    if(isVoiceTour && step.voiceKey){
+      setTimeout(function(){ speakStep(t(step.voiceKey)); }, 400);
     }
   }
 
@@ -7062,6 +9114,8 @@ function resetVpMicBtn() {
   }
 
   function nextMain(){
+    var prev = tourSteps[tourIdx];
+    if(prev && prev.teardown) try{ prev.teardown(); }catch(e){}
     tourIdx++;
     subIdx = -1;
     if(tourIdx >= tourSteps.length){ endTourInner(); return; }
@@ -7094,6 +9148,8 @@ function resetVpMicBtn() {
       renderStep();
     } else {
       if(tourIdx > 0){
+        var prev = tourSteps[tourIdx];
+        if(prev && prev.teardown) try{ prev.teardown(); }catch(e){}
         closeOpenPanel();
         tourIdx--;
         subIdx = -1;
@@ -7113,6 +9169,8 @@ function resetVpMicBtn() {
 
   function endTourInner(){
     stopCurrentAudio();
+    var ms = tourSteps[tourIdx];
+    if(ms && ms.teardown) try{ ms.teardown(); }catch(e){}
     closeOpenPanel();
     removeDemoBanner();
     if(overlay){ overlay.remove(); overlay = null; }
@@ -7142,10 +9200,270 @@ function resetVpMicBtn() {
   window.exploreTourStep = exploreStep;
   window.endTour = endTourInner;
   window.toggleTourMute = toggleMute;
+  window.askCharlie = askCharlieToggle;
+
+  // Re-render tour card when language changes mid-tour
+  window.addEventListener('ventLangChanged', function(){
+    if(overlay){
+      stopCurrentAudio();
+      renderStep();
+      // Update demo banner text
+      if(demoBanner){
+        var sp = demoBanner.querySelector('.tour-demo-text');
+        if(sp) sp.textContent = t('tour.demoBanner');
+        var ex = demoBanner.querySelector('.tour-demo-exit');
+        if(ex) ex.textContent = t('tour.exitDemo');
+      }
+    }
+  });
 
   // Auto-trigger on first visit (silent tour)
   if(!localStorage.getItem('vent_tour_done')){
     setTimeout(function(){ start(false); }, 1000);
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROFILE & SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════════
+(function(){
+  var PALETTES = [
+    { name: 'Blue',   hue: 210, color: 'hsl(210,100%,50%)' },
+    { name: 'Cyan',   hue: 185, color: 'hsl(185,100%,50%)' },
+    { name: 'Green',  hue: 145, color: 'hsl(145,85%,45%)'  },
+    { name: 'Amber',  hue: 38,  color: 'hsl(38,95%,50%)'   },
+    { name: 'Purple', hue: 270, color: 'hsl(270,85%,55%)'  },
+    { name: 'Rose',   hue: 340, color: 'hsl(340,85%,55%)'  }
+  ];
+
+  var BUILTIN_PRESETS = [
+    { name: 'Default',  hue: 210, radius: 120, wedgeSize: 80, borderRadius: 14, glowIntensity: 100 },
+    { name: 'Compact',  hue: 210, radius: 90,  wedgeSize: 65, borderRadius: 10, glowIntensity: 60  },
+    { name: 'Expanded', hue: 210, radius: 150, wedgeSize: 95, borderRadius: 18, glowIntensity: 100 },
+    { name: 'Minimal',  hue: 210, radius: 110, wedgeSize: 70, borderRadius: 4,  glowIntensity: 30  }
+  ];
+
+  var panelEl, hueSlider, hueVal;
+  var wedgeSizeSlider, wedgeSizeVal;
+  var radiusSlider, radiusVal;
+  var cornerSlider, cornerVal;
+  var glowSlider, glowVal;
+  var paletteGrid, presetGrid;
+  var currentHue = 210;
+
+  function init(){
+    panelEl = document.getElementById('profilePanel');
+    if(!panelEl) return;
+
+    hueSlider       = document.getElementById('hueSlider');
+    hueVal          = document.getElementById('hueVal');
+    wedgeSizeSlider = document.getElementById('wedgeSizeSlider');
+    wedgeSizeVal    = document.getElementById('wedgeSizeVal');
+    radiusSlider    = document.getElementById('radiusSlider');
+    radiusVal       = document.getElementById('radiusVal');
+    cornerSlider    = document.getElementById('cornerSlider');
+    cornerVal       = document.getElementById('cornerVal');
+    glowSlider      = document.getElementById('glowSlider');
+    glowVal         = document.getElementById('glowVal');
+    paletteGrid     = document.getElementById('paletteGrid');
+    presetGrid      = document.getElementById('presetGrid');
+
+    // Populate profile info
+    var profName = document.getElementById('profName');
+    var profRole = document.getElementById('profRole');
+    if(profName) profName.textContent = localStorage.getItem('vent_name') || '(not set)';
+    if(profRole) profRole.textContent = (localStorage.getItem('vent_role') || 'operator').replace(/^\w/, function(c){ return c.toUpperCase(); });
+
+    buildPalette();
+
+    // Slider listeners — live preview
+    hueSlider.addEventListener('input', function(){
+      var h = parseInt(this.value);
+      hueVal.textContent = h;
+      applyHue(h);
+      clearActiveSwatch();
+    });
+    wedgeSizeSlider.addEventListener('input', function(){
+      wedgeSizeVal.textContent = this.value;
+      applyMenuDesign();
+    });
+    radiusSlider.addEventListener('input', function(){
+      radiusVal.textContent = this.value;
+      applyMenuDesign();
+    });
+    cornerSlider.addEventListener('input', function(){
+      cornerVal.textContent = this.value;
+      applyMenuDesign();
+    });
+    glowSlider.addEventListener('input', function(){
+      glowVal.textContent = this.value + '%';
+      applyMenuDesign();
+    });
+
+    // Close on backdrop click
+    panelEl.addEventListener('click', function(e){
+      if(e.target === panelEl) toggleProfilePanel();
+    });
+
+    loadSavedSettings();
+    renderPresets();
+  }
+
+  function applyHue(h){
+    currentHue = h;
+    document.documentElement.style.setProperty('--hue', h);
+    localStorage.setItem('vent_theme_hue', String(h));
+  }
+
+  function applyMenuDesign(){
+    var config = {
+      radius:        parseInt(radiusSlider.value),
+      wedgeSize:     parseInt(wedgeSizeSlider.value),
+      borderRadius:  parseInt(cornerSlider.value),
+      glowIntensity: parseInt(glowSlider.value) / 100
+    };
+    if(window.applyMenuConfig) window.applyMenuConfig(config);
+    localStorage.setItem('vent_menu_config', JSON.stringify(config));
+  }
+
+  function buildPalette(){
+    if(!paletteGrid) return;
+    paletteGrid.innerHTML = '';
+    PALETTES.forEach(function(p){
+      var sw = document.createElement('div');
+      sw.className = 'profile-swatch';
+      sw.style.background = p.color;
+      sw.title = p.name;
+      sw.dataset.hue = p.hue;
+      sw.addEventListener('click', function(){
+        applyHue(p.hue);
+        hueSlider.value = p.hue;
+        hueVal.textContent = p.hue;
+        setActiveSwatch(sw);
+      });
+      paletteGrid.appendChild(sw);
+    });
+  }
+
+  function setActiveSwatch(el){
+    paletteGrid.querySelectorAll('.profile-swatch').forEach(function(s){ s.classList.remove('active'); });
+    if(el) el.classList.add('active');
+  }
+  function clearActiveSwatch(){
+    if(!paletteGrid) return;
+    paletteGrid.querySelectorAll('.profile-swatch').forEach(function(s){ s.classList.remove('active'); });
+  }
+
+  // ── Presets ──
+  function getCustomPresets(){
+    try { return JSON.parse(localStorage.getItem('vent_presets') || '[]'); } catch(e){ return []; }
+  }
+  function saveCustomPresets(list){
+    localStorage.setItem('vent_presets', JSON.stringify(list));
+  }
+
+  function renderPresets(){
+    if(!presetGrid) return;
+    presetGrid.innerHTML = '';
+    var all = BUILTIN_PRESETS.concat(getCustomPresets());
+    all.forEach(function(p, i){
+      var btn = document.createElement('button');
+      btn.className = 'profile-preset-btn';
+      btn.textContent = p.name;
+      btn.addEventListener('click', function(){
+        applyPreset(p);
+        presetGrid.querySelectorAll('.profile-preset-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+      });
+      // Custom presets get a delete button
+      if(i >= BUILTIN_PRESETS.length){
+        var del = document.createElement('span');
+        del.className = 'preset-delete';
+        del.textContent = '\u00d7';
+        del.addEventListener('click', function(e){
+          e.stopPropagation();
+          var customs = getCustomPresets();
+          customs.splice(i - BUILTIN_PRESETS.length, 1);
+          saveCustomPresets(customs);
+          renderPresets();
+        });
+        btn.appendChild(del);
+      }
+      presetGrid.appendChild(btn);
+    });
+  }
+
+  function applyPreset(p){
+    applyHue(p.hue);
+    if(hueSlider){ hueSlider.value = p.hue; hueVal.textContent = p.hue; }
+    if(wedgeSizeSlider){ wedgeSizeSlider.value = p.wedgeSize; wedgeSizeVal.textContent = p.wedgeSize; }
+    if(radiusSlider){ radiusSlider.value = p.radius; radiusVal.textContent = p.radius; }
+    if(cornerSlider){ cornerSlider.value = p.borderRadius; cornerVal.textContent = p.borderRadius; }
+    if(glowSlider){ glowSlider.value = p.glowIntensity; glowVal.textContent = p.glowIntensity + '%'; }
+    applyMenuDesign();
+    clearActiveSwatch();
+    if(paletteGrid){
+      paletteGrid.querySelectorAll('.profile-swatch').forEach(function(s){
+        if(parseInt(s.dataset.hue) === p.hue) setActiveSwatch(s);
+      });
+    }
+  }
+
+  window.saveCurrentPreset = function(){
+    var input = document.getElementById('presetNameInput');
+    var name = (input.value || '').trim();
+    if(!name) return;
+    var preset = {
+      name: name,
+      hue: currentHue,
+      radius: parseInt(radiusSlider.value),
+      wedgeSize: parseInt(wedgeSizeSlider.value),
+      borderRadius: parseInt(cornerSlider.value),
+      glowIntensity: parseInt(glowSlider.value)
+    };
+    var customs = getCustomPresets().filter(function(p){ return p.name !== name; });
+    customs.push(preset);
+    saveCustomPresets(customs);
+    input.value = '';
+    renderPresets();
+  };
+
+  function loadSavedSettings(){
+    var savedHue = localStorage.getItem('vent_theme_hue');
+    if(savedHue !== null){
+      var h = parseInt(savedHue);
+      currentHue = h;
+      if(hueSlider){ hueSlider.value = h; hueVal.textContent = h; }
+      if(paletteGrid){
+        paletteGrid.querySelectorAll('.profile-swatch').forEach(function(s){
+          if(parseInt(s.dataset.hue) === h) setActiveSwatch(s);
+        });
+      }
+    }
+    var savedConfig = localStorage.getItem('vent_menu_config');
+    if(savedConfig){
+      try {
+        var cfg = JSON.parse(savedConfig);
+        if(wedgeSizeSlider){ wedgeSizeSlider.value = cfg.wedgeSize || 80; wedgeSizeVal.textContent = cfg.wedgeSize || 80; }
+        if(radiusSlider){ radiusSlider.value = cfg.radius || 120; radiusVal.textContent = cfg.radius || 120; }
+        if(cornerSlider){ cornerSlider.value = cfg.borderRadius || 14; cornerVal.textContent = cfg.borderRadius || 14; }
+        var glow = cfg.glowIntensity !== undefined ? Math.round(cfg.glowIntensity * 100) : 100;
+        if(glowSlider){ glowSlider.value = glow; glowVal.textContent = glow + '%'; }
+        if(window.applyMenuConfig) window.applyMenuConfig(cfg);
+      } catch(e){}
+    }
+  }
+
+  window.toggleProfilePanel = function(){
+    if(!panelEl) init();
+    if(!panelEl) return;
+    panelEl.classList.toggle('show');
+  };
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();
 </script>
