@@ -606,6 +606,181 @@ body.login-ready {
   .cine-tagline { font-size: 14px; }
   .cine-viz-row { margin-top: 32px; height: 60px; }
   .cine-enter-wrap { margin-top: 32px; }
+  /* Welcome mobile */
+  .welcome-name { font-size: 28px; }
+  .welcome-input { font-size: 20px !important; padding: 16px 20px !important; }
+  .welcome-prompt { font-size: 14px; }
+}
+
+/* ════════════════════════════════════════════════════════
+   WELCOME SCREEN — cinematic name capture
+   ════════════════════════════════════════════════════════ */
+#welcomeScreen {
+  position: fixed; inset: 0; z-index: 900;
+  background: #0a0a0c;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.8s cubic-bezier(.4,0,.2,1);
+}
+#welcomeScreen.active {
+  opacity: 1; pointer-events: auto;
+}
+#welcomeScreen.exit {
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.6s cubic-bezier(.4,0,.2,1);
+}
+
+/* Reuse ambient orbs */
+.welcome-orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(120px); pointer-events: none;
+}
+.welcome-orb-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,122,204,0.2) 0%, transparent 70%);
+  top: -10%; right: -5%;
+  animation: orbDrift1 12s ease-in-out infinite;
+}
+.welcome-orb-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(78,201,176,0.12) 0%, transparent 70%);
+  bottom: -15%; left: -5%;
+  animation: orbDrift2 15s ease-in-out infinite;
+}
+
+/* Welcome canvas for particles */
+#welcomeCanvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+  opacity: 0.5;
+}
+
+.welcome-content {
+  position: relative; z-index: 10;
+  display: flex; flex-direction: column;
+  align-items: center; text-align: center;
+  gap: 0;
+  max-width: 520px; width: 90%;
+  opacity: 0; transform: translateY(20px);
+  animation: cineReveal 0.8s cubic-bezier(.16,1,.3,1) 0.2s forwards;
+}
+
+.welcome-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 36px; color: #fff;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  text-shadow: 0 0 60px rgba(0,122,204,0.2);
+}
+.welcome-name em {
+  color: var(--accent); font-style: italic;
+}
+
+.welcome-prompt {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px; color: var(--dim);
+  margin-bottom: 36px; line-height: 1.6;
+}
+
+.welcome-input-wrap {
+  position: relative; width: 100%; max-width: 400px;
+  margin-bottom: 28px;
+}
+
+.welcome-input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  color: #fff;
+  font-family: 'Instrument Serif', serif;
+  font-size: 24px; font-weight: 400;
+  padding: 18px 24px;
+  outline: none;
+  text-align: center;
+  letter-spacing: 0.01em;
+  caret-color: var(--accent);
+  transition: all 0.3s ease;
+}
+.welcome-input:focus {
+  border-color: rgba(0,122,204,0.5);
+  background: rgba(0,122,204,0.06);
+  box-shadow: 0 0 0 3px rgba(0,122,204,0.1), 0 0 40px rgba(0,122,204,0.08);
+}
+.welcome-input::placeholder {
+  color: var(--dim); font-style: italic;
+  font-family: 'Instrument Serif', serif;
+}
+
+.welcome-continue {
+  position: relative;
+  background: transparent;
+  border: 1px solid rgba(0,122,204,0.4);
+  border-radius: 50px;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 500;
+  padding: 14px 40px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: all 0.3s ease;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  margin: 0 auto;
+}
+.welcome-continue::before {
+  content: '';
+  position: absolute; inset: -1px;
+  border-radius: 50px;
+  background: conic-gradient(from var(--glow-angle, 0deg), transparent 0%, var(--accent) 10%, transparent 20%);
+  z-index: -1; opacity: 0.5;
+  animation: glowSpin 3s linear infinite;
+}
+.welcome-continue::after {
+  content: '';
+  position: absolute; inset: 1px;
+  border-radius: 50px;
+  background: #0a0a0c;
+  z-index: -1;
+}
+.welcome-continue:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 30px rgba(0,122,204,0.2), 0 0 60px rgba(0,122,204,0.1);
+  transform: translateY(-2px);
+}
+.welcome-continue:active { transform: translateY(0); }
+.welcome-continue:disabled {
+  opacity: 0.3; cursor: default; transform: none;
+  box-shadow: none;
+}
+.welcome-continue:disabled::before { animation: none; opacity: 0.15; }
+.welcome-continue svg { transition: transform 0.3s ease; }
+.welcome-continue:hover svg { transform: translateX(3px); }
+
+.welcome-skip {
+  background: none; border: none;
+  color: var(--dim); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; cursor: pointer;
+  margin-top: 16px; padding: 8px 16px;
+  transition: color 0.2s;
+  letter-spacing: 0.03em;
+}
+.welcome-skip:hover { color: var(--mid); }
+
+/* Greeting in login card */
+.personal-greeting {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px; font-weight: 400;
+  color: #fff; margin-bottom: 4px;
+  letter-spacing: -0.01em;
+  opacity: 0; transform: translateY(8px);
+  animation: cineReveal 0.6s cubic-bezier(.16,1,.3,1) 0.3s forwards;
+}
+.personal-greeting em {
+  color: var(--accent); font-style: italic;
 }
 </style>
 </head>
@@ -662,6 +837,36 @@ body.login-ready {
 </div>
 
 <!-- ════════════════════════════════════════════════════════
+     WELCOME SCREEN — Name Capture
+     ════════════════════════════════════════════════════════ -->
+<div id="welcomeScreen">
+  <div class="welcome-orb welcome-orb-1"></div>
+  <div class="welcome-orb welcome-orb-2"></div>
+  <canvas id="welcomeCanvas"></canvas>
+
+  <div class="welcome-content">
+    <div class="welcome-name">Before we begin<span style="color:var(--accent)">.</span></div>
+    <p class="welcome-prompt">What should we call you?</p>
+
+    <div class="welcome-input-wrap">
+      <input type="text" class="welcome-input" id="welcomeNameInput"
+             placeholder="Your first name" maxlength="30" autocomplete="given-name"
+             onkeydown="if(event.key==='Enter' && this.value.trim())submitWelcomeName()">
+    </div>
+
+    <button class="welcome-continue" id="welcomeBtn" disabled onclick="submitWelcomeName()">
+      <span>Continue</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="5" y1="12" x2="19" y2="12"/>
+        <polyline points="12 5 19 12 12 19"/>
+      </svg>
+    </button>
+
+    <button class="welcome-skip" onclick="skipWelcomeName()">Skip for now</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
      LOGIN CARD
      ════════════════════════════════════════════════════════ -->
 <div class="login-wrap" id="loginWrap">
@@ -680,8 +885,9 @@ body.login-ready {
   <!-- ── SIGN IN PANE ── -->
   <div class="login-pane show" id="loginPane">
 
-    <div class="heading">
-      <h1 data-i18n="login.welcomeBack">Welcome back</h1>
+    <div class="heading" id="loginHeading">
+      <div class="personal-greeting" id="personalGreeting" style="display:none;"></div>
+      <h1 data-i18n="login.welcomeBack" id="loginTitle">Welcome back</h1>
       <p class="sub" data-i18n="login.signInSub">Sign in with your email and password.</p>
     </div>
 
@@ -1128,22 +1334,159 @@ async function enterVent() {
     cine.classList.add('exit');
     vizRunning = false;
 
-    // Show login with ambient atmosphere
-    document.body.classList.add('login-ready');
-    document.body.style.overflow = 'auto';
-
-    // Start login particle canvas
-    initLoginCanvas();
-    document.getElementById('loginOrbs').classList.add('show');
-
-    setTimeout(() => {
-      document.getElementById('loginWrap').classList.add('visible');
-      cine.style.display = 'none';
-      // Play ambient when login appears
-      playSfx('click');
-      playSfx('ambient');
-    }, 500);
+    // Check if returning user already has a name
+    const savedName = localStorage.getItem('vent_first_name');
+    if (savedName) {
+      // Returning user — skip welcome, go straight to login
+      transitionToLogin(savedName);
+      setTimeout(() => { cine.style.display = 'none'; }, 600);
+    } else {
+      // New user — show welcome screen
+      initWelcomeCanvas();
+      setTimeout(() => {
+        document.getElementById('welcomeScreen').classList.add('active');
+        cine.style.display = 'none';
+        playSfx('click');
+        // Auto-focus the name input after animation
+        setTimeout(() => {
+          document.getElementById('welcomeNameInput').focus();
+        }, 400);
+      }, 500);
+    }
   }, delay);
+}
+
+// ════════════════════════════════════════════════════════
+// WELCOME SCREEN LOGIC
+// ════════════════════════════════════════════════════════
+function initWelcomeCanvas() {
+  const canvas = document.getElementById('welcomeCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  const PARTICLE_COUNT = 50;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      size: Math.random() * 1.3 + 0.4,
+      opacity: Math.random() * 0.25 + 0.04,
+      color: Math.random() > 0.5 ? '0,122,204' : '78,201,176',
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 130) {
+          const alpha = (1 - dist / 130) * 0.07;
+          ctx.strokeStyle = `rgba(0,122,204,${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.color},${p.opacity})`;
+      ctx.fill();
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// Enable/disable continue button as user types
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('welcomeNameInput');
+  if (inp) {
+    inp.addEventListener('input', () => {
+      document.getElementById('welcomeBtn').disabled = !inp.value.trim();
+    });
+  }
+});
+
+function submitWelcomeName() {
+  const name = document.getElementById('welcomeNameInput').value.trim();
+  if (!name) return;
+
+  // Store the name
+  localStorage.setItem('vent_first_name', name);
+
+  playSfx('enter');
+
+  // Exit welcome screen
+  const welcome = document.getElementById('welcomeScreen');
+  welcome.classList.add('exit');
+
+  // Transition to login
+  setTimeout(() => {
+    welcome.classList.remove('active');
+    welcome.classList.remove('exit');
+    transitionToLogin(name);
+  }, 600);
+}
+
+function skipWelcomeName() {
+  playSfx('click');
+
+  const welcome = document.getElementById('welcomeScreen');
+  welcome.classList.add('exit');
+
+  setTimeout(() => {
+    welcome.classList.remove('active');
+    welcome.classList.remove('exit');
+    transitionToLogin(null);
+  }, 600);
+}
+
+function transitionToLogin(firstName) {
+  document.body.classList.add('login-ready');
+  document.body.style.overflow = 'auto';
+
+  // Personalize login card
+  const greeting = document.getElementById('personalGreeting');
+  if (firstName) {
+    greeting.innerHTML = `Hey, <em>${firstName}</em>`;
+    greeting.style.display = 'block';
+    // Also pre-fill registration name if they switch to register
+    const regName = document.getElementById('regName');
+    if (regName) regName.value = firstName;
+  } else {
+    greeting.style.display = 'none';
+  }
+
+  // Start login particle canvas + orbs
+  initLoginCanvas();
+  document.getElementById('loginOrbs').classList.add('show');
+
+  setTimeout(() => {
+    document.getElementById('loginWrap').classList.add('visible');
+    playSfx('click');
+    playSfx('ambient');
+  }, 200);
 }
 
 // ════════════════════════════════════════════════════════
@@ -1234,6 +1577,14 @@ function bootCinematic() {
   document.getElementById('loginOrbs').classList.remove('show');
   const lc = document.getElementById('loginCanvas');
   if (lc) lc.classList.remove('active');
+
+  // Reset welcome screen
+  const ws = document.getElementById('welcomeScreen');
+  ws.classList.remove('active', 'exit');
+  const wni = document.getElementById('welcomeNameInput');
+  if (wni) wni.value = '';
+  const wb = document.getElementById('welcomeBtn');
+  if (wb) wb.disabled = true;
 
   // Reset tagline for fresh typewriter
   const tagline = document.getElementById('cineTagline');
