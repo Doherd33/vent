@@ -869,6 +869,43 @@ body.hub-mode .tour-help-btn { opacity: 0; pointer-events: none; }
 }
 .voice-reset-btn:hover { color: rgba(180,210,255,.6); }
 
+.voice-picker-grid {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;
+}
+.voice-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 68px; padding: 8px 4px; border-radius: 10px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  cursor: pointer; transition: all .2s; position: relative;
+}
+.voice-card:hover {
+  background: hsla(var(--hue),80%,30%,.12);
+  border-color: hsla(var(--hue),95%,45%,.25);
+}
+.voice-card.active {
+  background: hsla(var(--hue),80%,30%,.22);
+  border-color: hsla(var(--hue),95%,45%,.45);
+  box-shadow: 0 0 12px hsla(var(--hue),100%,50%,.15);
+}
+.voice-card-icon {
+  width: 28px; height: 28px; border-radius: 50%; margin-bottom: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600;
+  background: hsla(var(--hue),60%,35%,.2); color: hsla(var(--hue),100%,60%,.7);
+}
+.voice-card.active .voice-card-icon {
+  background: hsla(var(--hue),80%,40%,.35); color: #fff;
+}
+.voice-card-name {
+  font-size: 9px; color: rgba(180,210,255,.5); text-align: center;
+  letter-spacing: .5px; line-height: 1.2;
+}
+.voice-card.active .voice-card-name { color: rgba(220,240,255,.9); }
+.voice-card-tag {
+  font-size: 7px; color: rgba(180,210,255,.3); margin-top: 2px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .5px;
+}
+
 .voice-section-header {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
 }
@@ -3230,6 +3267,7 @@ body.hub-mode .tour-help-btn { opacity: 0; pointer-events: none; }
         <div class="profile-section-title" style="margin-bottom:0">AUDIO &amp; VOICE</div>
         <button class="voice-reset-btn" id="voiceResetBtn" title="Reset to defaults">RESET</button>
       </div>
+      <div class="voice-picker-grid" id="voicePickerGrid"></div>
       <div class="profile-slider-row">
         <label class="profile-slider-label">Charlie volume</label>
         <input type="range" class="profile-slider" id="voiceVolumeSlider" min="0" max="100" value="100">
@@ -3946,9 +3984,10 @@ window.VentAudio = (function(){
 
     // Step 1: fetch TTS audio from server (with user voice settings)
     var vc = (window.getVentVoiceConfig ? window.getVentVoiceConfig() : null) || {};
+    var selectedVoice = (vc.voiceId) || CHARLIE_VOICE_ID;
     var ttsBody = {
       text: text,
-      voiceId: CHARLIE_VOICE_ID,
+      voiceId: selectedVoice,
       modelId: TTS_MODEL,
       stability:        vc.stability !== undefined ? vc.stability / 100 : undefined,
       similarity_boost:  vc.clarity   !== undefined ? vc.clarity  / 100 : undefined,
@@ -9257,9 +9296,20 @@ function resetVpMicBtn() {
   var voiceStabilitySlider, voiceStabilityVal;
   var voiceClaritySlider, voiceClarityVal;
   var voiceStyleSlider, voiceStyleVal;
-  var voiceTestBtn, voiceResetBtn;
+  var voiceTestBtn, voiceResetBtn, voicePickerGrid;
 
-  var VOICE_DEFAULTS = { volume: 100, speed: 100, stability: 50, clarity: 75, style: 30 };
+  var VOICE_DEFAULTS = { volume: 100, speed: 100, stability: 50, clarity: 75, style: 30, voiceId: 'IKne3meq5aSn9XLyUdCD' };
+
+  var VOICE_OPTIONS = [
+    { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie',  tag: 'AUS M',   initial: 'C' },
+    { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel',   tag: 'US F',    initial: 'R' },
+    { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George',   tag: 'UK M',    initial: 'G' },
+    { id: 'ThT5KcBeYPX3keUQqHPh', name: 'Dorothy',  tag: 'UK F',    initial: 'D' },
+    { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh',     tag: 'US M',    initial: 'J' },
+    { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli',     tag: 'US F',    initial: 'E' },
+    { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold',   tag: 'US M',    initial: 'A' },
+    { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam',     tag: 'US M',    initial: 'Ad' }
+  ];
 
   function init(){
     panelEl = document.getElementById('profilePanel');
@@ -9291,6 +9341,7 @@ function resetVpMicBtn() {
     voiceStyleVal        = document.getElementById('voiceStyleVal');
     voiceTestBtn         = document.getElementById('voiceTestBtn');
     voiceResetBtn        = document.getElementById('voiceResetBtn');
+    voicePickerGrid      = document.getElementById('voicePickerGrid');
 
     // Populate profile info
     var profName = document.getElementById('profName');
@@ -9390,7 +9441,8 @@ function resetVpMicBtn() {
       speed:     parseInt(voiceSpeedSlider.value),
       stability: parseInt(voiceStabilitySlider.value),
       clarity:   parseInt(voiceClaritySlider.value),
-      style:     parseInt(voiceStyleSlider.value)
+      style:     parseInt(voiceStyleSlider.value),
+      voiceId:   (window._ventVoiceConfig && window._ventVoiceConfig.voiceId) || VOICE_DEFAULTS.voiceId
     };
     localStorage.setItem('vent_voice_config', JSON.stringify(cfg));
     // Expose for VentAudio
@@ -9405,10 +9457,32 @@ function resetVpMicBtn() {
     if(voiceClaritySlider)   { voiceClaritySlider.value   = cfg.clarity;   voiceClarityVal.textContent   = cfg.clarity; }
     if(voiceStyleSlider)     { voiceStyleSlider.value     = cfg.style;     voiceStyleVal.textContent     = cfg.style; }
     window._ventVoiceConfig = cfg;
+    buildVoicePicker(cfg.voiceId || VOICE_DEFAULTS.voiceId);
+  }
+
+  function buildVoicePicker(activeId){
+    if(!voicePickerGrid) return;
+    voicePickerGrid.innerHTML = '';
+    VOICE_OPTIONS.forEach(function(v){
+      var card = document.createElement('div');
+      card.className = 'voice-card' + (v.id === activeId ? ' active' : '');
+      card.innerHTML = '<div class="voice-card-icon">' + v.initial + '</div>' +
+                       '<div class="voice-card-name">' + v.name + '</div>' +
+                       '<div class="voice-card-tag">' + v.tag + '</div>';
+      card.addEventListener('click', function(){
+        window._ventVoiceConfig = window._ventVoiceConfig || {};
+        window._ventVoiceConfig.voiceId = v.id;
+        saveVoiceSettings();
+        voicePickerGrid.querySelectorAll('.voice-card').forEach(function(c){ c.classList.remove('active'); });
+        card.classList.add('active');
+      });
+      voicePickerGrid.appendChild(card);
+    });
   }
 
   function resetVoiceSettings(){
     localStorage.removeItem('vent_voice_config');
+    window._ventVoiceConfig = Object.assign({}, VOICE_DEFAULTS);
     loadVoiceSettings();
   }
 
