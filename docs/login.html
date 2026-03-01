@@ -1426,6 +1426,12 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('welcomeBtn').disabled = !inp.value.trim();
     });
   }
+
+  // Also handle ?reset here in case bootCinematic runs after DOMContentLoaded
+  if (new URLSearchParams(window.location.search).has('reset')) {
+    localStorage.removeItem('vent_first_name');
+    history.replaceState(null, '', window.location.pathname);
+  }
 });
 
 function submitWelcomeName() {
@@ -1585,6 +1591,13 @@ function bootCinematic() {
   if (wni) wni.value = '';
   const wb = document.getElementById('welcomeBtn');
   if (wb) wb.disabled = true;
+
+  // If ?reset in URL, clear stored name to force welcome screen again
+  if (new URLSearchParams(window.location.search).has('reset')) {
+    localStorage.removeItem('vent_first_name');
+    // Clean URL without reloading
+    history.replaceState(null, '', window.location.pathname);
+  }
 
   // Reset tagline for fresh typewriter
   const tagline = document.getElementById('cineTagline');
