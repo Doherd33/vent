@@ -3991,8 +3991,7 @@ window.VentAudio = (function(){
       modelId: TTS_MODEL,
       stability:        vc.stability !== undefined ? vc.stability / 100 : undefined,
       similarity_boost:  vc.clarity   !== undefined ? vc.clarity  / 100 : undefined,
-      style:            vc.style     !== undefined ? vc.style    / 100 : undefined,
-      speed:            vc.speed     !== undefined ? vc.speed    / 100 : undefined
+      style:            vc.style     !== undefined ? vc.style    / 100 : undefined
     };
     // Strip undefined keys
     Object.keys(ttsBody).forEach(function(k){ if(ttsBody[k] === undefined) delete ttsBody[k]; });
@@ -4017,6 +4016,7 @@ window.VentAudio = (function(){
       var url = URL.createObjectURL(blob);
       currentAudio = new Audio(url);
       currentAudio.volume = vc.volume !== undefined ? vc.volume / 100 : 1.0;
+      currentAudio.playbackRate = vc.speed !== undefined ? vc.speed / 100 : 1.0;
 
       currentAudio.onended = function(){
         URL.revokeObjectURL(url);
@@ -9486,18 +9486,34 @@ function resetVpMicBtn() {
     loadVoiceSettings();
   }
 
+  var TEST_BTN_HTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Test voice';
+
   function testVoice(){
     if(!voiceTestBtn) return;
+    // Unlock audio context synchronously in click handler
+    if(window.VentAudio) VentAudio.unlock();
     voiceTestBtn.disabled = true;
-    voiceTestBtn.textContent = 'Speaking…';
-    if(window.VentAudio){
-      VentAudio.speak('Hello, I\'m Charlie. How does this sound?', null, function(){
-        voiceTestBtn.disabled = false;
-        voiceTestBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Test voice';
-      });
-    } else {
+    voiceTestBtn.textContent = 'Speaking\u2026';
+
+    function resetBtn(){
       voiceTestBtn.disabled = false;
-      voiceTestBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Test voice';
+      voiceTestBtn.innerHTML = TEST_BTN_HTML;
+    }
+
+    if(!window.VentAudio){ resetBtn(); return; }
+
+    // Safety: if speak never calls back, reset after 20s
+    var fallback = setTimeout(resetBtn, 20000);
+
+    try {
+      VentAudio.speak('Hello! How does this voice sound?', null, function(){
+        clearTimeout(fallback);
+        resetBtn();
+      });
+    } catch(e){
+      console.warn('[testVoice] error:', e);
+      clearTimeout(fallback);
+      resetBtn();
     }
   }
 
