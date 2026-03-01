@@ -9490,6 +9490,9 @@ function resetVpMicBtn() {
 
   function testVoice(){
     if(!voiceTestBtn) return;
+    // Save current slider state to localStorage FIRST so speak() reads fresh values
+    saveVoiceSettings();
+
     // Unlock audio context synchronously in click handler
     if(window.VentAudio) VentAudio.unlock();
     voiceTestBtn.disabled = true;

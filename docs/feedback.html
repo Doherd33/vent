@@ -1081,10 +1081,22 @@ window.VentAudio = (function(){
     var safety = setTimeout(function(){ finish(); }, 25000);
     function finishClean(){ clearTimeout(safety); finish(); }
 
+    // Read user voice settings from localStorage (shared with query.html profile panel)
+    var vc = {};
+    try { vc = JSON.parse(localStorage.getItem('vent_voice_config') || '{}') || {}; } catch(e){}
+    var selectedVoice = vc.voiceId || CHARLIE_VOICE_ID;
+    var ttsBody = {
+      text: text, voiceId: selectedVoice, modelId: TTS_MODEL,
+      stability:        vc.stability !== undefined ? vc.stability / 100 : undefined,
+      similarity_boost: vc.clarity   !== undefined ? vc.clarity  / 100 : undefined,
+      style:            vc.style     !== undefined ? vc.style    / 100 : undefined
+    };
+    Object.keys(ttsBody).forEach(function(k){ if(ttsBody[k] === undefined) delete ttsBody[k]; });
+
     fetch(SERVER + '/tts', {
       method: 'POST',
       headers: Object.assign({'Content-Type':'application/json'}, getAuthHeaders()),
-      body: JSON.stringify({ text: text, voiceId: CHARLIE_VOICE_ID, modelId: TTS_MODEL })
+      body: JSON.stringify(ttsBody)
     })
     .then(function(r){ if(!r.ok) throw new Error('TTS ' + r.status); return r.blob(); })
     .then(function(blob){
@@ -1092,7 +1104,8 @@ window.VentAudio = (function(){
       if(blob.size < 200) throw new Error('Audio too small');
       var url = URL.createObjectURL(blob);
       currentAudio = new Audio(url);
-      currentAudio.volume = 1.0;
+      currentAudio.volume = vc.volume !== undefined ? vc.volume / 100 : 1.0;
+      currentAudio.playbackRate = vc.speed !== undefined ? vc.speed / 100 : 1.0;
       currentAudio.onended = function(){ URL.revokeObjectURL(url); finishClean(); };
       currentAudio.onerror = function(){ URL.revokeObjectURL(url); finishClean(); };
       try {
