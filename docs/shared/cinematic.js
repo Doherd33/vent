@@ -1,0 +1,456 @@
+/* ════════════════════════════════════════════════════════
+   cinematic.js — audio engine, visualizer, TTS, intro flow
+   ════════════════════════════════════════════════════════ */
+
+// ── ElevenLabs config ──
+const ELEVEN_CONFIG = {
+  voiceId: 'pNInz6obpgDQGcFmaJgB',
+  modelId: 'eleven_multilingual_v2',
+  get greeting() { return t('tts.greeting'); },
+};
+
+// ════════════════════════════════════════════════════════
+// AUDIO ENGINE
+// ════════════════════════════════════════════════════════
+let audioCtx   = null;
+let analyser   = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser  = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.8;
+    analyser.connect(audioCtx.destination);
+  }
+  return audioCtx;
+}
+
+function playSfx(type) {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+
+  if (type === 'hover') {
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(2400, now);
+    osc.frequency.exponentialRampToValueAtTime(1800, now + 0.04);
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    osc.start(now); osc.stop(now + 0.05);
+  }
+
+  if (type === 'click') {
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.start(now); osc.stop(now + 0.12);
+
+    const buf  = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.1;
+    const noise = ctx.createBufferSource(), ng = ctx.createGain();
+    noise.buffer = buf;
+    noise.connect(ng); ng.connect(ctx.destination);
+    ng.gain.setValueAtTime(0.12, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+    noise.start(now); noise.stop(now + 0.03);
+  }
+
+  if (type === 'enter') {
+    const osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator();
+    const gain1 = ctx.createGain(), gain2 = ctx.createGain();
+    osc1.connect(gain1); gain1.connect(ctx.destination);
+    osc2.connect(gain2); gain2.connect(ctx.destination);
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(200, now);
+    osc1.frequency.exponentialRampToValueAtTime(800, now + 0.5);
+    gain1.gain.setValueAtTime(0.0001, now);
+    gain1.gain.exponentialRampToValueAtTime(0.15, now + 0.15);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(400, now);
+    osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.4);
+    gain2.gain.setValueAtTime(0.0001, now);
+    gain2.gain.exponentialRampToValueAtTime(0.08, now + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    osc1.start(now); osc1.stop(now + 0.5);
+    osc2.start(now); osc2.stop(now + 0.4);
+
+    const buf  = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
+    const d    = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.08;
+    const noise  = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter(), ng = ctx.createGain();
+    noise.buffer = buf;
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(500, now);
+    filter.frequency.exponentialRampToValueAtTime(4000, now + 0.4);
+    filter.Q.value = 2;
+    noise.connect(filter); filter.connect(ng); ng.connect(ctx.destination);
+    ng.gain.setValueAtTime(0.0001, now);
+    ng.gain.exponentialRampToValueAtTime(0.15, now + 0.15);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    noise.start(now); noise.stop(now + 0.6);
+  }
+
+  if (type === 'ambient') {
+    const osc    = ctx.createOscillator(), gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.value = 80;
+    filter.type = 'lowpass'; filter.frequency.value = 200;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.04, now + 2);
+    gain.gain.setValueAtTime(0.04, now + 6);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 10);
+    osc.start(now); osc.stop(now + 10);
+
+    const osc2 = ctx.createOscillator(), g2 = ctx.createGain();
+    osc2.connect(g2); g2.connect(ctx.destination);
+    osc2.type = 'sine'; osc2.frequency.value = 120;
+    g2.gain.setValueAtTime(0.0001, now);
+    g2.gain.exponentialRampToValueAtTime(0.02, now + 3);
+    g2.gain.setValueAtTime(0.02, now + 7);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 10);
+    osc2.start(now); osc2.stop(now + 10);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// FREQUENCY VISUALIZER BARS
+// ════════════════════════════════════════════════════════
+const NUM_BARS    = 48;
+let barHeights    = new Array(NUM_BARS).fill(4);
+let targetHeights = new Array(NUM_BARS).fill(4);
+let vizRunning    = false;
+let isPlayingVoice = false;
+
+function initBars() {
+  const container = document.getElementById('vizBars');
+  for (let i = 0; i < NUM_BARS; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'cine-bar';
+    bar.style.height = '4px';
+    container.appendChild(bar);
+  }
+}
+
+function animateBars() {
+  vizRunning = true;
+  const bars    = document.querySelectorAll('.cine-bar');
+  const freqData = analyser ? new Uint8Array(analyser.frequencyBinCount) : null;
+
+  function tick() {
+    if (!vizRunning) return;
+    if (isPlayingVoice && analyser && freqData) {
+      analyser.getByteFrequencyData(freqData);
+      for (let i = 0; i < NUM_BARS; i++) {
+        const idx = Math.floor((i / NUM_BARS) * freqData.length * 0.7);
+        targetHeights[i] = Math.max(4, (freqData[idx] / 255) * 76);
+      }
+    } else {
+      const t = Date.now() / 1000;
+      for (let i = 0; i < NUM_BARS; i++) {
+        const center   = NUM_BARS / 2;
+        const dist     = Math.abs(i - center) / center;
+        const wave1    = Math.sin(t * 1.5 + i * 0.25) * 0.5 + 0.5;
+        const wave2    = Math.sin(t * 0.8 + i * 0.15 + 1.5) * 0.5 + 0.5;
+        const wave3    = Math.sin(t * 2.3 + i * 0.4  + 3.0) * 0.3 + 0.7;
+        const envelope = 1 - dist * 0.6;
+        targetHeights[i] = Math.max(4, (wave1 * wave2 * wave3 * envelope) * 50 + 4);
+      }
+    }
+    for (let i = 0; i < NUM_BARS; i++) {
+      barHeights[i] += (targetHeights[i] - barHeights[i]) * 0.18;
+      if (bars[i]) bars[i].style.height = barHeights[i] + 'px';
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+// ════════════════════════════════════════════════════════
+// CANVAS — cinematic intro particles
+// ════════════════════════════════════════════════════════
+function initCanvas() {
+  const canvas = document.getElementById('vizCanvas');
+  const ctx    = canvas.getContext('2d');
+  let particles = [];
+  const COUNT  = 60;
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < COUNT; i++) {
+    particles.push({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+      size: Math.random() * 1.5 + 0.5, opacity: Math.random() * 0.3 + 0.05,
+      color: Math.random() > 0.5 ? '0,122,204' : '78,201,176',
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 150) {
+          ctx.strokeStyle = `rgba(0,122,204,${(1 - dist / 150) * 0.08})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.color},${p.opacity})`;
+      ctx.fill();
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = canvas.width;  if (p.x > canvas.width)  p.x = 0;
+      if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+  setTimeout(() => canvas.classList.add('active'), 500);
+}
+
+// ════════════════════════════════════════════════════════
+// CANVAS — login card background particles
+// ════════════════════════════════════════════════════════
+function initLoginCanvas() {
+  const canvas = document.getElementById('loginCanvas');
+  const ctx    = canvas.getContext('2d');
+  let particles = [];
+  const COUNT  = 40;
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < COUNT; i++) {
+    particles.push({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
+      size: Math.random() * 1.2 + 0.3, opacity: Math.random() * 0.25 + 0.03,
+      color: Math.random() > 0.5 ? '0,122,204' : '78,201,176',
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.strokeStyle = `rgba(0,122,204,${(1 - dist / 120) * 0.06})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.color},${p.opacity})`;
+      ctx.fill();
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = canvas.width;  if (p.x > canvas.width)  p.x = 0;
+      if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+  setTimeout(() => canvas.classList.add('active'), 300);
+}
+
+// ════════════════════════════════════════════════════════
+// TYPEWRITER
+// ════════════════════════════════════════════════════════
+function typewriter(element, text, speed = 50) {
+  return new Promise(resolve => {
+    let i = 0;
+    element.innerHTML = '<span class="cursor"></span>';
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        element.innerHTML = text.substring(0, i + 1) + '<span class="cursor"></span>';
+        i++;
+      } else {
+        clearInterval(interval);
+        setTimeout(() => { element.innerHTML = text; resolve(); }, 1500);
+      }
+    }, speed);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// ELEVENLABS TTS
+// ════════════════════════════════════════════════════════
+async function playVoiceGreeting() {
+  try {
+    const response = await fetch(SERVER + '/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text:    ELEVEN_CONFIG.greeting,
+        voiceId: ELEVEN_CONFIG.voiceId,
+        modelId: ELEVEN_CONFIG.modelId,
+      }),
+    });
+    if (!response.ok) throw new Error('TTS request failed');
+    const audioUrl = URL.createObjectURL(await response.blob());
+    const audio    = new Audio(audioUrl);
+    const ctx      = getAudioCtx();
+    const source   = ctx.createMediaElementSource(audio);
+    source.connect(analyser);
+    isPlayingVoice = true;
+    audio.play();
+    audio.addEventListener('ended', () => {
+      isPlayingVoice = false;
+      URL.revokeObjectURL(audioUrl);
+    });
+    return true;
+  } catch (err) {
+    console.warn('ElevenLabs TTS failed:', err.message);
+    return false;
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// ENTER TRANSITION
+// ════════════════════════════════════════════════════════
+let hasEntered = false;
+
+async function enterVent() {
+  if (hasEntered) return;
+  hasEntered = true;
+
+  playSfx('enter');
+  const voicePlayed = await playVoiceGreeting();
+  const delay       = voicePlayed ? 2500 : 800;
+
+  setTimeout(() => {
+    const cine = document.getElementById('cinematic');
+    cine.classList.add('exit');
+    vizRunning = false;
+
+    const savedName = localStorage.getItem('vent_first_name');
+    if (savedName) {
+      // Returning user — skip welcome screen
+      transitionToLogin(savedName);
+      setTimeout(() => { cine.style.display = 'none'; }, 600);
+    } else {
+      // New user — show welcome screen
+      initWelcomeCanvas();
+      setTimeout(() => {
+        document.getElementById('welcomeScreen').classList.add('active');
+        cine.style.display = 'none';
+        playSfx('click');
+        setTimeout(() => { document.getElementById('welcomeNameInput').focus(); }, 400);
+      }, 500);
+    }
+  }, delay);
+}
+
+// ════════════════════════════════════════════════════════
+// BOOT / RESET
+// ════════════════════════════════════════════════════════
+function bootCinematic() {
+  hasEntered = false;
+  vizRunning = false;
+
+  const cine = document.getElementById('cinematic');
+  cine.style.display = '';
+  cine.classList.remove('exit');
+
+  document.body.classList.remove('login-ready');
+  document.getElementById('loginWrap').classList.remove('visible');
+  document.getElementById('loginOrbs').classList.remove('show');
+  const lc = document.getElementById('loginCanvas');
+  if (lc) lc.classList.remove('active');
+
+  const ws = document.getElementById('welcomeScreen');
+  ws.classList.remove('active', 'exit');
+  const wni = document.getElementById('welcomeNameInput');
+  if (wni) wni.value = '';
+  const wb = document.getElementById('welcomeBtn');
+  if (wb) wb.disabled = true;
+
+  // ?reset param clears stored name, forcing welcome screen on next Enter
+  if (new URLSearchParams(window.location.search).has('reset')) {
+    localStorage.removeItem('vent_first_name');
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  const tagline = document.getElementById('cineTagline');
+  tagline.innerHTML = '<span class="cursor"></span>';
+  document.getElementById('cineDivider').classList.remove('expand');
+
+  initCanvas();
+  initBars();
+
+  setTimeout(() => document.getElementById('cineDivider').classList.add('expand'), 1400);
+  setTimeout(() => typewriter(document.getElementById('cineTagline'), t('cine.tagline'), 65), 1900);
+  setTimeout(() => animateBars(), 2600);
+
+  // Voice status
+  const dot   = document.getElementById('voiceDot');
+  const label = document.getElementById('voiceLabel');
+  dot.classList.remove('connected', 'offline');
+  label.textContent = '';
+  fetch(SERVER + '/health').then(r => {
+    if (r.ok) { dot.classList.add('connected'); label.textContent = t('cine.voiceConnected'); }
+    else throw new Error();
+  }).catch(() => {
+    dot.classList.add('offline'); label.textContent = t('cine.voiceOffline');
+  });
+}
+
+// Language switcher support
+window.addEventListener('ventLangChanged', () => {
+  const sub = document.getElementById('cineSubtitle');
+  if (sub) sub.textContent = t('cine.subtitle');
+  const tagline = document.getElementById('cineTagline');
+  if (tagline && !tagline.querySelector('.cursor')) tagline.textContent = t('cine.tagline');
+  const dot = document.getElementById('voiceDot'), label = document.getElementById('voiceLabel');
+  if (dot && dot.classList.contains('connected')) label.textContent = t('cine.voiceConnected');
+  if (dot && dot.classList.contains('offline'))   label.textContent = t('cine.voiceOffline');
+});
+
+// bfcache restore
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) bootCinematic();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  bootCinematic();
+
+  document.addEventListener('mouseenter', (e) => {
+    if (e.target.matches('button, .tab, .path-card, .dept-item, a')) playSfx('hover');
+  }, true);
+
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.matches('button, .tab, .path-card, .dept-item, a') && !e.target.matches('#cineEnter')) playSfx('click');
+  }, true);
+
+  document.addEventListener('focusin', (e) => {
+    if (e.target.matches('input')) playSfx('hover');
+  }, true);
+});
