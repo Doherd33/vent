@@ -1034,6 +1034,20 @@ var voiceRetryCount = 0;       // consecutive empty-STT retries
 
 function t(k) { return (window.VentI18n && VentI18n.t(k)) || k; }
 
+// Whenever the language changes (button or voice), inject a pivot message into
+// the feedback session transcript so Charlie switches language on the next turn
+var PIVOT_TEXTS = { en: '(language changed to English)', es: '(idioma cambiado a Español)', zh: '（已切换到中文）' };
+window.addEventListener('ventLangChanged', function(e) {
+  var lang = e.detail && e.detail.lang;
+  if (!lang || !feedbackSessionId) return; // only if session is active
+  var pivotBody = { question: PIVOT_TEXTS[lang] || '(language changed)', lang: lang, sessionId: feedbackSessionId };
+  authFetch(SERVER + '/charlie/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(pivotBody)
+  }).catch(function() {}); // silent — just updating transcript context
+});
+
 // ════════════════════════════════════════════════════════════════════════════════
 // VENT AUDIO — STT/TTS (ported from query.html)
 // ════════════════════════════════════════════════════════════════════════════════
@@ -1638,7 +1652,7 @@ function startListening() {
     }
     var targetLang = detectLangCommand(text);
     if(targetLang && window.VentI18n){
-      VentI18n.setLang(targetLang);
+      VentI18n.setLang(targetLang); // fires ventLangChanged → handled below
       var confirmMsg = LANG_CONFIRM[targetLang];
       setVoiceState('speaking');
       appendChatMsg('assistant', confirmMsg);

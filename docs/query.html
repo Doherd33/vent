@@ -4548,12 +4548,27 @@ window.VentAudio = (function(){
   }
 
   var LANG_CONFIRM = { en: 'Switched to English.', es: 'Cambiado a Español.', zh: '已切换到中文。' };
+  var LANG_PIVOT = {
+    en: { q: '(language changed to English)', a: 'Got it — switching to English now.' },
+    es: { q: '(idioma cambiado a Español)',   a: 'Claro — cambio al español ahora.' },
+    zh: { q: '（已切换到中文）',                 a: '好的，我现在用中文回答。' }
+  };
+
+  // Listen for any language change (button or voice) and inject a context pivot
+  // so Claude breaks from the previous language on the very next turn
+  window.addEventListener('ventLangChanged', function(e){
+    var pivot = LANG_PIVOT[e.detail && e.detail.lang];
+    if(pivot){
+      convoHistory.push(pivot);
+      if(convoHistory.length > 12) convoHistory = convoHistory.slice(-10);
+    }
+  });
 
   function onTranscript(text){
     // ── Instant voice language switching ──────────────────────────────────
     var targetLang = detectLangCommand(text);
     if(targetLang && window.VentI18n){
-      VentI18n.setLang(targetLang);
+      VentI18n.setLang(targetLang); // fires ventLangChanged → pivot injected above
       var confirm = LANG_CONFIRM[targetLang];
       setState('speaking');
       answerEl.style.display = 'block';
