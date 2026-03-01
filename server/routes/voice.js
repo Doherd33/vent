@@ -54,10 +54,18 @@ module.exports = function(app, { anthropic, auth }) {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'ElevenLabs API key not configured' });
 
-    const { text, voiceId = 'pNInz6obpgDQGcFmaJgB', modelId = 'eleven_multilingual_v2' } = req.body;
+    const { text, voiceId = 'pNInz6obpgDQGcFmaJgB', modelId = 'eleven_multilingual_v2',
+            stability, similarity_boost, style, speed } = req.body;
     if (!text) return res.status(400).json({ error: 'Text is required' });
 
     try {
+      const voice_settings = {
+        stability:        (stability        !== undefined && stability        !== null) ? Number(stability)        : 0.5,
+        similarity_boost: (similarity_boost !== undefined && similarity_boost !== null) ? Number(similarity_boost) : 0.75,
+        style:            (style            !== undefined && style            !== null) ? Number(style)            : 0.3,
+        ...(speed !== undefined && speed !== null ? { speed: Number(speed) } : {}),
+      };
+
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: 'POST',
         headers: {
@@ -67,7 +75,7 @@ module.exports = function(app, { anthropic, auth }) {
         body: JSON.stringify({
           text,
           model_id: modelId,
-          voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.3 },
+          voice_settings,
         }),
       });
 

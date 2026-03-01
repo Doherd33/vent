@@ -851,6 +851,28 @@ body.hub-mode .tour-help-btn { opacity: 0; pointer-events: none; }
 }
 .profile-preset-save-btn:hover { background: hsla(var(--hue),80%,30%,.35); color: #fff; }
 
+/* ── Audio & Voice Settings ── */
+.voice-test-btn {
+  background: hsla(var(--hue),80%,30%,.15); border: 1px solid hsla(var(--hue),95%,45%,.2);
+  color: hsla(var(--hue),100%,60%,.6); font-size: 10px; padding: 5px 14px;
+  border-radius: 8px; cursor: pointer; font-family: inherit; transition: all .2s;
+  display: flex; align-items: center; gap: 6px; margin-top: 6px;
+}
+.voice-test-btn:hover { background: hsla(var(--hue),80%,30%,.3); color: #fff; border-color: hsla(var(--hue),95%,45%,.4); }
+.voice-test-btn:disabled { opacity: .4; cursor: default; }
+.voice-test-btn svg { flex-shrink: 0; }
+
+.voice-reset-btn {
+  background: none; border: none; color: rgba(180,210,255,.3);
+  font-size: 9px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px; padding: 2px 6px; transition: color .15s;
+}
+.voice-reset-btn:hover { color: rgba(180,210,255,.6); }
+
+.voice-section-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+
 @media (max-width: 640px) {
   .profile-panel-inner { width: calc(100vw - 32px); max-height: 85vh; }
 }
@@ -3202,6 +3224,43 @@ body.hub-mode .tour-help-btn { opacity: 0; pointer-events: none; }
       </div>
     </div>
 
+    <!-- Audio & Voice -->
+    <div class="profile-section">
+      <div class="voice-section-header">
+        <div class="profile-section-title" style="margin-bottom:0">AUDIO &amp; VOICE</div>
+        <button class="voice-reset-btn" id="voiceResetBtn" title="Reset to defaults">RESET</button>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Charlie volume</label>
+        <input type="range" class="profile-slider" id="voiceVolumeSlider" min="0" max="100" value="100">
+        <span class="profile-slider-val" id="voiceVolumeVal">100%</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Speed</label>
+        <input type="range" class="profile-slider" id="voiceSpeedSlider" min="50" max="200" value="100">
+        <span class="profile-slider-val" id="voiceSpeedVal">1.0×</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Stability</label>
+        <input type="range" class="profile-slider" id="voiceStabilitySlider" min="0" max="100" value="50">
+        <span class="profile-slider-val" id="voiceStabilityVal">50</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Clarity</label>
+        <input type="range" class="profile-slider" id="voiceClaritySlider" min="0" max="100" value="75">
+        <span class="profile-slider-val" id="voiceClarityVal">75</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Style</label>
+        <input type="range" class="profile-slider" id="voiceStyleSlider" min="0" max="100" value="30">
+        <span class="profile-slider-val" id="voiceStyleVal">30</span>
+      </div>
+      <button class="voice-test-btn" id="voiceTestBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Test voice
+      </button>
+    </div>
+
     <!-- Presets -->
     <div class="profile-section">
       <div class="profile-section-title">PRESETS</div>
@@ -3885,11 +3944,24 @@ window.VentAudio = (function(){
     var safety = setTimeout(function(){ console.warn('[VentAudio] safety timeout'); finish(); }, 25000);
     function finishClean(){ clearTimeout(safety); finish(); }
 
-    // Step 1: fetch TTS audio from server
+    // Step 1: fetch TTS audio from server (with user voice settings)
+    var vc = (window.getVentVoiceConfig ? window.getVentVoiceConfig() : null) || {};
+    var ttsBody = {
+      text: text,
+      voiceId: CHARLIE_VOICE_ID,
+      modelId: TTS_MODEL,
+      stability:        vc.stability !== undefined ? vc.stability / 100 : undefined,
+      similarity_boost:  vc.clarity   !== undefined ? vc.clarity  / 100 : undefined,
+      style:            vc.style     !== undefined ? vc.style    / 100 : undefined,
+      speed:            vc.speed     !== undefined ? vc.speed    / 100 : undefined
+    };
+    // Strip undefined keys
+    Object.keys(ttsBody).forEach(function(k){ if(ttsBody[k] === undefined) delete ttsBody[k]; });
+
     fetch(SERVER + '/tts', {
       method: 'POST',
       headers: Object.assign({'Content-Type':'application/json'}, getAuthHeaders()),
-      body: JSON.stringify({ text: text, voiceId: CHARLIE_VOICE_ID, modelId: TTS_MODEL })
+      body: JSON.stringify(ttsBody)
     })
     .then(function(r){
       if(!r.ok) throw new Error('TTS server returned ' + r.status);
@@ -3905,7 +3977,7 @@ window.VentAudio = (function(){
       // Step 2: create blob URL and play with plain Audio element
       var url = URL.createObjectURL(blob);
       currentAudio = new Audio(url);
-      currentAudio.volume = 1.0;
+      currentAudio.volume = vc.volume !== undefined ? vc.volume / 100 : 1.0;
 
       currentAudio.onended = function(){
         URL.revokeObjectURL(url);
@@ -9179,6 +9251,16 @@ function resetVpMicBtn() {
   var paletteGrid, presetGrid;
   var currentHue = 210;
 
+  // Voice settings elements
+  var voiceVolumeSlider, voiceVolumeVal;
+  var voiceSpeedSlider, voiceSpeedVal;
+  var voiceStabilitySlider, voiceStabilityVal;
+  var voiceClaritySlider, voiceClarityVal;
+  var voiceStyleSlider, voiceStyleVal;
+  var voiceTestBtn, voiceResetBtn;
+
+  var VOICE_DEFAULTS = { volume: 100, speed: 100, stability: 50, clarity: 75, style: 30 };
+
   function init(){
     panelEl = document.getElementById('profilePanel');
     if(!panelEl) return;
@@ -9195,6 +9277,20 @@ function resetVpMicBtn() {
     glowVal         = document.getElementById('glowVal');
     paletteGrid     = document.getElementById('paletteGrid');
     presetGrid      = document.getElementById('presetGrid');
+
+    // Voice settings DOM
+    voiceVolumeSlider    = document.getElementById('voiceVolumeSlider');
+    voiceVolumeVal       = document.getElementById('voiceVolumeVal');
+    voiceSpeedSlider     = document.getElementById('voiceSpeedSlider');
+    voiceSpeedVal        = document.getElementById('voiceSpeedVal');
+    voiceStabilitySlider = document.getElementById('voiceStabilitySlider');
+    voiceStabilityVal    = document.getElementById('voiceStabilityVal');
+    voiceClaritySlider   = document.getElementById('voiceClaritySlider');
+    voiceClarityVal      = document.getElementById('voiceClarityVal');
+    voiceStyleSlider     = document.getElementById('voiceStyleSlider');
+    voiceStyleVal        = document.getElementById('voiceStyleVal');
+    voiceTestBtn         = document.getElementById('voiceTestBtn');
+    voiceResetBtn        = document.getElementById('voiceResetBtn');
 
     // Populate profile info
     var profName = document.getElementById('profName');
@@ -9228,6 +9324,34 @@ function resetVpMicBtn() {
       applyMenuDesign();
     });
 
+    // ── Voice slider listeners ──
+    if(voiceVolumeSlider) voiceVolumeSlider.addEventListener('input', function(){
+      voiceVolumeVal.textContent = this.value + '%';
+      saveVoiceSettings();
+    });
+    if(voiceSpeedSlider) voiceSpeedSlider.addEventListener('input', function(){
+      voiceSpeedVal.textContent = (parseInt(this.value) / 100).toFixed(1) + '\u00d7';
+      saveVoiceSettings();
+    });
+    if(voiceStabilitySlider) voiceStabilitySlider.addEventListener('input', function(){
+      voiceStabilityVal.textContent = this.value;
+      saveVoiceSettings();
+    });
+    if(voiceClaritySlider) voiceClaritySlider.addEventListener('input', function(){
+      voiceClarityVal.textContent = this.value;
+      saveVoiceSettings();
+    });
+    if(voiceStyleSlider) voiceStyleSlider.addEventListener('input', function(){
+      voiceStyleVal.textContent = this.value;
+      saveVoiceSettings();
+    });
+    if(voiceTestBtn) voiceTestBtn.addEventListener('click', function(){
+      testVoice();
+    });
+    if(voiceResetBtn) voiceResetBtn.addEventListener('click', function(){
+      resetVoiceSettings();
+    });
+
     // Close on backdrop click
     panelEl.addEventListener('click', function(e){
       if(e.target === panelEl) toggleProfilePanel();
@@ -9253,6 +9377,58 @@ function resetVpMicBtn() {
     if(window.applyMenuConfig) window.applyMenuConfig(config);
     localStorage.setItem('vent_menu_config', JSON.stringify(config));
   }
+
+  // ── Voice Settings helpers ──
+  function getVoiceSettings(){
+    try { return JSON.parse(localStorage.getItem('vent_voice_config') || 'null') || Object.assign({}, VOICE_DEFAULTS); }
+    catch(e){ return Object.assign({}, VOICE_DEFAULTS); }
+  }
+
+  function saveVoiceSettings(){
+    var cfg = {
+      volume:    parseInt(voiceVolumeSlider.value),
+      speed:     parseInt(voiceSpeedSlider.value),
+      stability: parseInt(voiceStabilitySlider.value),
+      clarity:   parseInt(voiceClaritySlider.value),
+      style:     parseInt(voiceStyleSlider.value)
+    };
+    localStorage.setItem('vent_voice_config', JSON.stringify(cfg));
+    // Expose for VentAudio
+    window._ventVoiceConfig = cfg;
+  }
+
+  function loadVoiceSettings(){
+    var cfg = getVoiceSettings();
+    if(voiceVolumeSlider)    { voiceVolumeSlider.value    = cfg.volume;    voiceVolumeVal.textContent    = cfg.volume + '%'; }
+    if(voiceSpeedSlider)     { voiceSpeedSlider.value     = cfg.speed;     voiceSpeedVal.textContent     = (cfg.speed / 100).toFixed(1) + '\u00d7'; }
+    if(voiceStabilitySlider) { voiceStabilitySlider.value = cfg.stability; voiceStabilityVal.textContent = cfg.stability; }
+    if(voiceClaritySlider)   { voiceClaritySlider.value   = cfg.clarity;   voiceClarityVal.textContent   = cfg.clarity; }
+    if(voiceStyleSlider)     { voiceStyleSlider.value     = cfg.style;     voiceStyleVal.textContent     = cfg.style; }
+    window._ventVoiceConfig = cfg;
+  }
+
+  function resetVoiceSettings(){
+    localStorage.removeItem('vent_voice_config');
+    loadVoiceSettings();
+  }
+
+  function testVoice(){
+    if(!voiceTestBtn) return;
+    voiceTestBtn.disabled = true;
+    voiceTestBtn.textContent = 'Speaking…';
+    if(window.VentAudio){
+      VentAudio.speak('Hello, I\'m Charlie. How does this sound?', null, function(){
+        voiceTestBtn.disabled = false;
+        voiceTestBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Test voice';
+      });
+    } else {
+      voiceTestBtn.disabled = false;
+      voiceTestBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Test voice';
+    }
+  }
+
+  // Expose getter for VentAudio
+  window.getVentVoiceConfig = getVoiceSettings;
 
   function buildPalette(){
     if(!paletteGrid) return;
@@ -9380,6 +9556,8 @@ function resetVpMicBtn() {
         if(window.applyMenuConfig) window.applyMenuConfig(cfg);
       } catch(e){}
     }
+    // Load voice settings
+    loadVoiceSettings();
   }
 
   window.toggleProfilePanel = function(){
