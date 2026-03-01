@@ -139,7 +139,7 @@ ${transcriptText}`,
 
       const response = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
+        max_tokens: 1500,
         system: `You are Charlie, the voice assistant for Vent — a manufacturing intelligence platform used in pharmaceutical facilities. You are currently in FEEDBACK MODE.
 
 Your job is to have a natural, empathetic conversation to understand the operator's experience using Vent. You are a friendly, curious listener who wants to genuinely understand what is working, what is frustrating, and what is missing.
@@ -161,7 +161,8 @@ Conversation strategy:
 5. When the operator says they're done or you've covered enough ground, end the session.
 
 Respond with valid JSON only: { "answer": "...", "action": "continue"|"end_session" }
-Keep answers conversational (1-3 sentences). Respond in ${targetLang}. Be warm, encouraging, and make the operator feel heard.`,
+Keep answers conversational and natural. Use as many sentences as needed to respond fully — don't cut yourself off. Respond in ${targetLang}. Be warm, encouraging, and make the operator feel heard.`,
+
         messages,
       });
 

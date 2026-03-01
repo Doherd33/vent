@@ -1541,8 +1541,8 @@ function startListening() {
   var speechDetected = false;
   var silenceStart = 0;
   var SILENCE_THRESH = 12;
-  var SILENCE_MS = 1800;
-  var MAX_REC_MS = 15000;
+  var SILENCE_MS = 3000;
+  var MAX_REC_MS = 120000;
   var recStart = Date.now();
 
   VentAudio.recordSTT(function(text) {
@@ -1552,8 +1552,16 @@ function startListening() {
     sendChatMessage();
   }, function(err) {
     setVoiceState('idle');
-    voiceConvoMode = false;
-    if (err === 'mic') appendChatMsg('assistant', 'Microphone access denied. Please allow mic permissions or type your feedback.');
+    if (err === 'mic') {
+      voiceConvoMode = false;
+      appendChatMsg('assistant', 'Microphone access denied. Please allow mic permissions or type your feedback.');
+    } else if (err === 'empty') {
+      appendChatMsg('assistant', "I didn't catch that — could you try again? Speak clearly and I'll listen.");
+      // Stay in voice mode so they can retry without pressing the button again
+      if (voiceConvoMode) setTimeout(startListening, 800);
+    } else {
+      appendChatMsg('assistant', 'Something went wrong with the recording. Please try again.');
+    }
   });
 
   // Silence detection loop
