@@ -910,6 +910,61 @@ body.hub-mode .tour-help-btn { opacity: 0; pointer-events: none; }
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
 }
 
+.voice-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 0; margin-bottom: 6px;
+}
+.voice-toggle-label {
+  font-size: 11px; color: rgba(180,210,255,.5);
+}
+.voice-toggle {
+  position: relative; width: 34px; height: 18px; cursor: pointer;
+  -webkit-appearance: none; appearance: none; border: none; outline: none;
+  background: rgba(255,255,255,.1); border-radius: 10px; transition: background .2s;
+}
+.voice-toggle:checked { background: hsla(var(--hue),80%,45%,.5); }
+.voice-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: rgba(180,210,255,.6); transition: transform .2s;
+}
+.voice-toggle:checked::after {
+  transform: translateX(16px); background: #fff;
+}
+
+.voice-save-row {
+  display: flex; gap: 8px; margin-top: 10px; align-items: center;
+}
+.voice-save-btn {
+  flex: 1; background: hsla(var(--hue),80%,30%,.2); border: 1px solid hsla(var(--hue),95%,45%,.25);
+  color: hsla(var(--hue),100%,60%,.7); font-size: 11px; padding: 7px 14px;
+  border-radius: 8px; cursor: pointer; font-family: inherit; transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.voice-save-btn:hover { background: hsla(var(--hue),80%,30%,.4); color: #fff; border-color: hsla(var(--hue),95%,45%,.5); }
+.voice-save-btn.saved {
+  background: hsla(145,60%,35%,.25); border-color: hsla(145,80%,45%,.4);
+  color: hsl(145,80%,60%);
+}
+
+.voice-toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(60px);
+  background: hsla(145,60%,30%,.92); border: 1px solid hsla(145,80%,45%,.4);
+  color: hsl(145,80%,80%); padding: 10px 24px; border-radius: 12px;
+  font-size: 12px; font-family: 'DM Sans', sans-serif; z-index: 9999;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none;
+  display: flex; align-items: center; gap: 8px;
+}
+.voice-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.voice-subsection {
+  font-family: 'JetBrains Mono', monospace; font-size: 8px;
+  letter-spacing: 2px; color: rgba(180,210,255,.25); text-transform: uppercase;
+  margin: 12px 0 8px; padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.04);
+}
+
 @media (max-width: 640px) {
   .profile-panel-inner { width: calc(100vw - 32px); max-height: 85vh; }
 }
@@ -3293,10 +3348,48 @@ body.hub-mode .tour-help-btn { opacity: 0; pointer-events: none; }
         <input type="range" class="profile-slider" id="voiceStyleSlider" min="0" max="100" value="30">
         <span class="profile-slider-val" id="voiceStyleVal">30</span>
       </div>
-      <button class="voice-test-btn" id="voiceTestBtn">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Test voice
-      </button>
+      <div class="voice-toggle-row">
+        <span class="voice-toggle-label">Speaker boost</span>
+        <input type="checkbox" class="voice-toggle" id="voiceBoostToggle">
+      </div>
+
+      <div class="voice-subsection">Audio Processing</div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Pitch</label>
+        <input type="range" class="profile-slider" id="voicePitchSlider" min="-12" max="12" value="0">
+        <span class="profile-slider-val" id="voicePitchVal">0</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Bass</label>
+        <input type="range" class="profile-slider" id="voiceBassSlider" min="-12" max="12" value="0">
+        <span class="profile-slider-val" id="voiceBassVal">0 dB</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Treble</label>
+        <input type="range" class="profile-slider" id="voiceTrebleSlider" min="-12" max="12" value="0">
+        <span class="profile-slider-val" id="voiceTrebleVal">0 dB</span>
+      </div>
+
+      <div class="voice-subsection">Preferences</div>
+      <div class="voice-toggle-row">
+        <span class="voice-toggle-label">Use on Welcome page</span>
+        <input type="checkbox" class="voice-toggle" id="voiceWelcomeToggle" checked>
+      </div>
+      <div class="voice-toggle-row">
+        <span class="voice-toggle-label">Mute all voice</span>
+        <input type="checkbox" class="voice-toggle" id="voiceMuteToggle">
+      </div>
+
+      <div class="voice-save-row">
+        <button class="voice-test-btn" id="voiceTestBtn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Test voice
+        </button>
+        <button class="voice-save-btn" id="voiceSaveBtn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save settings
+        </button>
+      </div>
     </div>
 
     <!-- Presets -->
@@ -3970,6 +4063,11 @@ window.VentAudio = (function(){
   // No Web Audio, no BufferSource — get sound working first
   function speak(text, onBars, onEnd){
     if(!text){ if(onEnd) onEnd(); return; }
+
+    // Check global mute
+    var vc = (window.getVentVoiceConfig ? window.getVentVoiceConfig() : null) || {};
+    if(vc.mute){ if(onEnd) onEnd(); return; }
+
     stop();
     var gen = stopGen;                 // capture current generation
     var done = false;
@@ -3983,15 +4081,15 @@ window.VentAudio = (function(){
     function finishClean(){ clearTimeout(safety); finish(); }
 
     // Step 1: fetch TTS audio from server (with user voice settings)
-    var vc = (window.getVentVoiceConfig ? window.getVentVoiceConfig() : null) || {};
     var selectedVoice = (vc.voiceId) || CHARLIE_VOICE_ID;
     var ttsBody = {
       text: text,
       voiceId: selectedVoice,
       modelId: TTS_MODEL,
-      stability:        vc.stability !== undefined ? vc.stability / 100 : undefined,
-      similarity_boost:  vc.clarity   !== undefined ? vc.clarity  / 100 : undefined,
-      style:            vc.style     !== undefined ? vc.style    / 100 : undefined
+      stability:          vc.stability !== undefined ? vc.stability / 100 : undefined,
+      similarity_boost:   vc.clarity   !== undefined ? vc.clarity  / 100 : undefined,
+      style:              vc.style     !== undefined ? vc.style    / 100 : undefined,
+      use_speaker_boost:  vc.boost !== undefined ? vc.boost : undefined
     };
     // Strip undefined keys
     Object.keys(ttsBody).forEach(function(k){ if(ttsBody[k] === undefined) delete ttsBody[k]; });
@@ -4028,15 +4126,47 @@ window.VentAudio = (function(){
         finishClean();
       };
 
-      // Step 3: try to hook up Web Audio analyser for bar visualization
+      // Step 3: try to hook up Web Audio analyser + EQ for bar visualization
       try {
         var ctx = unlock();
         if(ctx.state === 'running'){
           var source = ctx.createMediaElementSource(currentAudio);
+
+          // Pitch shift via detune on a chain (semitones → cents)
+          // Note: detune works on BufferSource, for MediaElement we use playbackRate trick
+          // Apply pitch as a playbackRate offset: each semitone = 2^(1/12)
+          var pitchSemis = vc.pitch || 0;
+          if(pitchSemis !== 0){
+            currentAudio.playbackRate = (vc.speed !== undefined ? vc.speed / 100 : 1.0) * Math.pow(2, pitchSemis / 12);
+          }
+
+          // Bass EQ (lowshelf at 200Hz)
+          var bassFilter = null;
+          if(vc.bass && vc.bass !== 0){
+            bassFilter = ctx.createBiquadFilter();
+            bassFilter.type = 'lowshelf';
+            bassFilter.frequency.value = 200;
+            bassFilter.gain.value = vc.bass;
+          }
+
+          // Treble EQ (highshelf at 3000Hz)
+          var trebleFilter = null;
+          if(vc.treble && vc.treble !== 0){
+            trebleFilter = ctx.createBiquadFilter();
+            trebleFilter.type = 'highshelf';
+            trebleFilter.frequency.value = 3000;
+            trebleFilter.gain.value = vc.treble;
+          }
+
           analyser = ctx.createAnalyser();
           analyser.fftSize = 64;
           analyser.smoothingTimeConstant = 0.75;
-          source.connect(analyser);
+
+          // Chain: source → [bass] → [treble] → analyser → destination
+          var chain = source;
+          if(bassFilter)  { chain.connect(bassFilter);   chain = bassFilter; }
+          if(trebleFilter){ chain.connect(trebleFilter);  chain = trebleFilter; }
+          chain.connect(analyser);
           analyser.connect(ctx.destination);
         }
       } catch(e){
@@ -9296,9 +9426,17 @@ function resetVpMicBtn() {
   var voiceStabilitySlider, voiceStabilityVal;
   var voiceClaritySlider, voiceClarityVal;
   var voiceStyleSlider, voiceStyleVal;
-  var voiceTestBtn, voiceResetBtn, voicePickerGrid;
+  var voiceTestBtn, voiceResetBtn, voicePickerGrid, voiceSaveBtn;
+  var voiceBoostToggle, voicePitchSlider, voicePitchVal;
+  var voiceBassSlider, voiceBassVal, voiceTrebleSlider, voiceTrebleVal;
+  var voiceWelcomeToggle, voiceMuteToggle;
 
-  var VOICE_DEFAULTS = { volume: 100, speed: 100, stability: 50, clarity: 75, style: 30, voiceId: 'IKne3meq5aSn9XLyUdCD' };
+  var VOICE_DEFAULTS = {
+    volume: 100, speed: 100, stability: 50, clarity: 75, style: 30,
+    voiceId: 'IKne3meq5aSn9XLyUdCD', boost: false,
+    pitch: 0, bass: 0, treble: 0,
+    welcomeVoice: true, mute: false
+  };
 
   var VOICE_OPTIONS = [
     { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie',  tag: 'AUS M',   initial: 'C' },
@@ -9342,6 +9480,16 @@ function resetVpMicBtn() {
     voiceTestBtn         = document.getElementById('voiceTestBtn');
     voiceResetBtn        = document.getElementById('voiceResetBtn');
     voicePickerGrid      = document.getElementById('voicePickerGrid');
+    voiceSaveBtn         = document.getElementById('voiceSaveBtn');
+    voiceBoostToggle     = document.getElementById('voiceBoostToggle');
+    voicePitchSlider     = document.getElementById('voicePitchSlider');
+    voicePitchVal        = document.getElementById('voicePitchVal');
+    voiceBassSlider      = document.getElementById('voiceBassSlider');
+    voiceBassVal         = document.getElementById('voiceBassVal');
+    voiceTrebleSlider    = document.getElementById('voiceTrebleSlider');
+    voiceTrebleVal       = document.getElementById('voiceTrebleVal');
+    voiceWelcomeToggle   = document.getElementById('voiceWelcomeToggle');
+    voiceMuteToggle      = document.getElementById('voiceMuteToggle');
 
     // Populate profile info
     var profName = document.getElementById('profName');
@@ -9402,6 +9550,30 @@ function resetVpMicBtn() {
     if(voiceResetBtn) voiceResetBtn.addEventListener('click', function(){
       resetVoiceSettings();
     });
+    if(voiceBoostToggle) voiceBoostToggle.addEventListener('change', function(){
+      saveVoiceSettings();
+    });
+    if(voicePitchSlider) voicePitchSlider.addEventListener('input', function(){
+      voicePitchVal.textContent = (parseInt(this.value) > 0 ? '+' : '') + this.value;
+      saveVoiceSettings();
+    });
+    if(voiceBassSlider) voiceBassSlider.addEventListener('input', function(){
+      voiceBassVal.textContent = (parseInt(this.value) > 0 ? '+' : '') + this.value + ' dB';
+      saveVoiceSettings();
+    });
+    if(voiceTrebleSlider) voiceTrebleSlider.addEventListener('input', function(){
+      voiceTrebleVal.textContent = (parseInt(this.value) > 0 ? '+' : '') + this.value + ' dB';
+      saveVoiceSettings();
+    });
+    if(voiceWelcomeToggle) voiceWelcomeToggle.addEventListener('change', function(){
+      saveVoiceSettings();
+    });
+    if(voiceMuteToggle) voiceMuteToggle.addEventListener('change', function(){
+      saveVoiceSettings();
+    });
+    if(voiceSaveBtn) voiceSaveBtn.addEventListener('click', function(){
+      saveVoiceSettingsExplicit();
+    });
 
     // Close on backdrop click
     panelEl.addEventListener('click', function(e){
@@ -9442,11 +9614,44 @@ function resetVpMicBtn() {
       stability: parseInt(voiceStabilitySlider.value),
       clarity:   parseInt(voiceClaritySlider.value),
       style:     parseInt(voiceStyleSlider.value),
-      voiceId:   (window._ventVoiceConfig && window._ventVoiceConfig.voiceId) || VOICE_DEFAULTS.voiceId
+      voiceId:   (window._ventVoiceConfig && window._ventVoiceConfig.voiceId) || VOICE_DEFAULTS.voiceId,
+      boost:     voiceBoostToggle ? voiceBoostToggle.checked : false,
+      pitch:     voicePitchSlider  ? parseInt(voicePitchSlider.value)  : 0,
+      bass:      voiceBassSlider   ? parseInt(voiceBassSlider.value)   : 0,
+      treble:    voiceTrebleSlider ? parseInt(voiceTrebleSlider.value) : 0,
+      welcomeVoice: voiceWelcomeToggle ? voiceWelcomeToggle.checked : true,
+      mute:      voiceMuteToggle ? voiceMuteToggle.checked : false
     };
     localStorage.setItem('vent_voice_config', JSON.stringify(cfg));
-    // Expose for VentAudio
     window._ventVoiceConfig = cfg;
+  }
+
+  function saveVoiceSettingsExplicit(){
+    saveVoiceSettings();
+    // Visual confirmation on button
+    if(voiceSaveBtn){
+      voiceSaveBtn.classList.add('saved');
+      voiceSaveBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Saved!';
+      setTimeout(function(){
+        voiceSaveBtn.classList.remove('saved');
+        voiceSaveBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save settings';
+      }, 2200);
+    }
+    // Toast
+    showVoiceToast('Voice settings saved \u2714');
+  }
+
+  function showVoiceToast(msg){
+    var toast = document.getElementById('voiceToast');
+    if(!toast){
+      toast = document.createElement('div');
+      toast.className = 'voice-toast';
+      toast.id = 'voiceToast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(function(){ toast.classList.remove('show'); }, 2500);
   }
 
   function loadVoiceSettings(){
@@ -9456,6 +9661,12 @@ function resetVpMicBtn() {
     if(voiceStabilitySlider) { voiceStabilitySlider.value = cfg.stability; voiceStabilityVal.textContent = cfg.stability; }
     if(voiceClaritySlider)   { voiceClaritySlider.value   = cfg.clarity;   voiceClarityVal.textContent   = cfg.clarity; }
     if(voiceStyleSlider)     { voiceStyleSlider.value     = cfg.style;     voiceStyleVal.textContent     = cfg.style; }
+    if(voiceBoostToggle)     { voiceBoostToggle.checked   = !!cfg.boost; }
+    if(voicePitchSlider)     { voicePitchSlider.value     = cfg.pitch  || 0; voicePitchVal.textContent  = (cfg.pitch > 0 ? '+' : '') + (cfg.pitch || 0); }
+    if(voiceBassSlider)      { voiceBassSlider.value      = cfg.bass   || 0; voiceBassVal.textContent   = (cfg.bass > 0 ? '+' : '') + (cfg.bass || 0) + ' dB'; }
+    if(voiceTrebleSlider)    { voiceTrebleSlider.value    = cfg.treble || 0; voiceTrebleVal.textContent = (cfg.treble > 0 ? '+' : '') + (cfg.treble || 0) + ' dB'; }
+    if(voiceWelcomeToggle)   { voiceWelcomeToggle.checked = cfg.welcomeVoice !== false; }
+    if(voiceMuteToggle)      { voiceMuteToggle.checked    = !!cfg.mute; }
     window._ventVoiceConfig = cfg;
     buildVoicePicker(cfg.voiceId || VOICE_DEFAULTS.voiceId);
   }

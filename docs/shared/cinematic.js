@@ -305,21 +305,70 @@ function typewriter(element, text, speed = 50) {
 // ════════════════════════════════════════════════════════
 async function playVoiceGreeting() {
   try {
+    // Read saved voice config from localStorage (set in query.html profile panel)
+    let vc = {};
+    try { vc = JSON.parse(localStorage.getItem('vent_voice_config') || '{}') || {}; } catch(e){}
+
+    // If mute is on, skip greeting entirely
+    if (vc.mute) return false;
+
+    // If welcome voice toggle is explicitly off, skip greeting
+    if (vc.welcomeVoice !== undefined && !vc.welcomeVoice) return false;
+
+    // Build TTS body with saved settings
+    const voiceId = vc.voiceId || ELEVEN_CONFIG.voiceId;
+    const ttsBody = {
+      text:    ELEVEN_CONFIG.greeting,
+      voiceId: voiceId,
+      modelId: ELEVEN_CONFIG.modelId,
+    };
+    if (vc.stability !== undefined)  ttsBody.stability        = vc.stability / 100;
+    if (vc.clarity   !== undefined)  ttsBody.similarity_boost  = vc.clarity  / 100;
+    if (vc.style     !== undefined)  ttsBody.style             = vc.style    / 100;
+    if (vc.boost     !== undefined)  ttsBody.use_speaker_boost = !!vc.boost;
+
     const response = await fetch(SERVER + '/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text:    ELEVEN_CONFIG.greeting,
-        voiceId: ELEVEN_CONFIG.voiceId,
-        modelId: ELEVEN_CONFIG.modelId,
-      }),
+      body: JSON.stringify(ttsBody),
     });
     if (!response.ok) throw new Error('TTS request failed');
     const audioUrl = URL.createObjectURL(await response.blob());
     const audio    = new Audio(audioUrl);
+
+    // Apply volume
+    audio.volume = vc.volume !== undefined ? vc.volume / 100 : 1.0;
+
+    // Apply speed + pitch
+    const baseRate = vc.speed !== undefined ? vc.speed / 100 : 1.0;
+    const pitchSemitones = vc.pitch !== undefined ? (vc.pitch - 50) * 0.24 : 0;
+    audio.playbackRate = baseRate * Math.pow(2, pitchSemitones / 12);
+
     const ctx      = getAudioCtx();
     const source   = ctx.createMediaElementSource(audio);
-    source.connect(analyser);
+
+    // Build audio chain: source → [bass] → [treble] → analyser
+    let lastNode = source;
+    const bassVal = vc.bass !== undefined ? vc.bass : 50;
+    if (bassVal !== 50) {
+      const bassFilter = ctx.createBiquadFilter();
+      bassFilter.type = 'lowshelf';
+      bassFilter.frequency.value = 200;
+      bassFilter.gain.value = (bassVal - 50) * 0.3;
+      lastNode.connect(bassFilter);
+      lastNode = bassFilter;
+    }
+    const trebleVal = vc.treble !== undefined ? vc.treble : 50;
+    if (trebleVal !== 50) {
+      const trebleFilter = ctx.createBiquadFilter();
+      trebleFilter.type = 'highshelf';
+      trebleFilter.frequency.value = 3000;
+      trebleFilter.gain.value = (trebleVal - 50) * 0.3;
+      lastNode.connect(trebleFilter);
+      lastNode = trebleFilter;
+    }
+    lastNode.connect(analyser);
+
     isPlayingVoice = true;
     audio.play();
     audio.addEventListener('ended', () => {

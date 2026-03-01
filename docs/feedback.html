@@ -1074,6 +1074,14 @@ window.VentAudio = (function(){
 
   function speak(text, onBars, onEnd){
     if(!text){ if(onEnd) onEnd(); return; }
+
+    // Read user voice settings from localStorage (shared with query.html profile panel)
+    var vc = {};
+    try { vc = JSON.parse(localStorage.getItem('vent_voice_config') || '{}') || {}; } catch(e){}
+
+    // Global mute check
+    if(vc.mute){ if(onEnd) onEnd(); return; }
+
     stop();
     var gen = stopGen;
     var done = false;
@@ -1081,15 +1089,13 @@ window.VentAudio = (function(){
     var safety = setTimeout(function(){ finish(); }, 25000);
     function finishClean(){ clearTimeout(safety); finish(); }
 
-    // Read user voice settings from localStorage (shared with query.html profile panel)
-    var vc = {};
-    try { vc = JSON.parse(localStorage.getItem('vent_voice_config') || '{}') || {}; } catch(e){}
     var selectedVoice = vc.voiceId || CHARLIE_VOICE_ID;
     var ttsBody = {
       text: text, voiceId: selectedVoice, modelId: TTS_MODEL,
       stability:        vc.stability !== undefined ? vc.stability / 100 : undefined,
       similarity_boost: vc.clarity   !== undefined ? vc.clarity  / 100 : undefined,
-      style:            vc.style     !== undefined ? vc.style    / 100 : undefined
+      style:            vc.style     !== undefined ? vc.style    / 100 : undefined,
+      use_speaker_boost: vc.boost !== undefined ? !!vc.boost : undefined
     };
     Object.keys(ttsBody).forEach(function(k){ if(ttsBody[k] === undefined) delete ttsBody[k]; });
 
@@ -1105,7 +1111,10 @@ window.VentAudio = (function(){
       var url = URL.createObjectURL(blob);
       currentAudio = new Audio(url);
       currentAudio.volume = vc.volume !== undefined ? vc.volume / 100 : 1.0;
-      currentAudio.playbackRate = vc.speed !== undefined ? vc.speed / 100 : 1.0;
+      // Speed + pitch: combine speed slider with pitch semitone offset
+      var baseRate = vc.speed !== undefined ? vc.speed / 100 : 1.0;
+      var pitchSemitones = vc.pitch !== undefined ? (vc.pitch - 50) * 0.24 : 0;
+      currentAudio.playbackRate = baseRate * Math.pow(2, pitchSemitones / 12);
       currentAudio.onended = function(){ URL.revokeObjectURL(url); finishClean(); };
       currentAudio.onerror = function(){ URL.revokeObjectURL(url); finishClean(); };
       try {
@@ -1115,7 +1124,27 @@ window.VentAudio = (function(){
           analyser = ctx.createAnalyser();
           analyser.fftSize = 64;
           analyser.smoothingTimeConstant = 0.75;
-          source.connect(analyser);
+          // Build audio chain: source → bass → treble → analyser → destination
+          var lastNode = source;
+          var bassVal = vc.bass !== undefined ? vc.bass : 50;
+          if(bassVal !== 50){
+            var bassFilter = ctx.createBiquadFilter();
+            bassFilter.type = 'lowshelf';
+            bassFilter.frequency.value = 200;
+            bassFilter.gain.value = (bassVal - 50) * 0.3;
+            lastNode.connect(bassFilter);
+            lastNode = bassFilter;
+          }
+          var trebleVal = vc.treble !== undefined ? vc.treble : 50;
+          if(trebleVal !== 50){
+            var trebleFilter = ctx.createBiquadFilter();
+            trebleFilter.type = 'highshelf';
+            trebleFilter.frequency.value = 3000;
+            trebleFilter.gain.value = (trebleVal - 50) * 0.3;
+            lastNode.connect(trebleFilter);
+            lastNode = trebleFilter;
+          }
+          lastNode.connect(analyser);
           analyser.connect(ctx.destination);
         }
       } catch(e){ analyser = null; }
