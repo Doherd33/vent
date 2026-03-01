@@ -1030,6 +1030,7 @@ var centerView = 'transcript';
 var feedbackSessionId = null;  // active voice session
 var voiceState = 'idle';       // idle | listening | thinking | speaking
 var voiceConvoMode = false;    // continuous voice conversation mode
+var voiceRetryCount = 0;       // consecutive empty-STT retries
 
 function t(k) { return (window.VentI18n && VentI18n.t(k)) || k; }
 
@@ -1567,6 +1568,7 @@ function startListening() {
   var recStart = Date.now();
 
   VentAudio.recordSTT(function(text) {
+    voiceRetryCount = 0;
     setVoiceState('thinking');
     // Put transcribed text in input and auto-send
     document.getElementById('chatInput').value = text;
@@ -1575,18 +1577,38 @@ function startListening() {
     setVoiceState('idle');
     if (err === 'mic') {
       voiceConvoMode = false;
-      appendChatMsg('assistant', 'Microphone access denied. Please allow mic permissions or type your feedback.');
+      voiceRetryCount = 0;
+      appendChatMsg('assistant', 'Microphone access denied. Please allow mic permissions or type your feedback below.');
     } else if (err === 'stt_error') {
-      appendChatMsg('assistant', 'Speech recognition is unavailable right now — please type your feedback instead.');
       voiceConvoMode = false;
+      voiceRetryCount = 0;
       setChatBusy(false);
       chatBusy = false;
-    } else if (err === 'empty') {
-      appendChatMsg('assistant', "I didn't catch that — could you try again? Speak clearly and I'll listen.");
-      // Stay in voice mode so they can retry without pressing the button again
-      if (voiceConvoMode) setTimeout(startListening, 800);
+      appendChatMsg('assistant', 'Voice recognition is unavailable right now. Please type your feedback in the box below — I\'m still listening!');
+    } else if (err === 'empty' || err === 'no_speech') {
+      voiceRetryCount++;
+      if (!speechDetected) {
+        // User never spoke — don't show a message, just silently retry once
+        if (voiceConvoMode && voiceRetryCount <= 1) {
+          setTimeout(startListening, 500);
+        } else {
+          voiceConvoMode = false;
+          voiceRetryCount = 0;
+          appendChatMsg('assistant', 'No audio detected. Make sure your mic is working, or type your response below.');
+        }
+      } else if (voiceRetryCount <= 2) {
+        appendChatMsg('assistant', "I didn't quite catch that. Could you speak a little louder and try again?");
+        if (voiceConvoMode) setTimeout(startListening, 800);
+      } else {
+        // Too many failures — fall back to text
+        voiceConvoMode = false;
+        voiceRetryCount = 0;
+        appendChatMsg('assistant', 'Having trouble with the mic. Please type your feedback below instead.');
+      }
     } else {
-      appendChatMsg('assistant', 'Something went wrong with the recording. Please try again.');
+      voiceConvoMode = false;
+      voiceRetryCount = 0;
+      appendChatMsg('assistant', 'Something went wrong with the recording. Please try again or type below.');
     }
   });
 

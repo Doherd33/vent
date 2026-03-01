@@ -16,6 +16,8 @@ services:
         sync: false
       - key: VOYAGE_API_KEY
         sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
       - key: NODE_ENV
         value: production
       - key: RENDER_EXTERNAL_URL
