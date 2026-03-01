@@ -4534,7 +4534,34 @@ window.VentAudio = (function(){
   }
 
   // ── Transcript received → ask Claude ──
+  // Detect voice language-switch commands in any of the three languages.
+  // Returns target lang code or null.
+  function detectLangCommand(text){
+    var t = text.toLowerCase().trim();
+    // English triggers (EN / ES / ZH)
+    if(/\b(english|inglés|ingles|英语|英文|说英语|切换英语)\b/.test(t)) return 'en';
+    // Spanish triggers
+    if(/\b(spanish|español|espanol|en español|habla español|西班牙语|说西班牙语)\b/.test(t)) return 'es';
+    // Chinese / Mandarin triggers
+    if(/\b(chinese|mandarin|中文|普通话|说中文|切换中文|en chino|chino)\b/.test(t)) return 'zh';
+    return null;
+  }
+
+  var LANG_CONFIRM = { en: 'Switched to English.', es: 'Cambiado a Español.', zh: '已切换到中文。' };
+
   function onTranscript(text){
+    // ── Instant voice language switching ──────────────────────────────────
+    var targetLang = detectLangCommand(text);
+    if(targetLang && window.VentI18n){
+      VentI18n.setLang(targetLang);
+      var confirm = LANG_CONFIRM[targetLang];
+      setState('speaking');
+      answerEl.style.display = 'block';
+      answerEl.innerHTML = confirm;
+      VentAudio.speak(confirm, null, function(){ returnToReady(); });
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────
     setState('thinking');
     lastActivity = Date.now();
     answerEl.style.display = 'block';

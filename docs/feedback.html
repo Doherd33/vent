@@ -1626,6 +1626,32 @@ function startListening() {
 
   VentAudio.recordSTT(function(text) {
     voiceRetryCount = 0;
+
+    // ── Instant voice language switching ──────────────────────────────────
+    var LANG_CONFIRM = { en: 'Switched to English.', es: 'Cambiado a Español.', zh: '已切换到中文。' };
+    function detectLangCommand(raw){
+      var t = raw.toLowerCase().trim();
+      if(/\b(english|inglés|ingles|英语|英文|说英语|切换英语)\b/.test(t)) return 'en';
+      if(/\b(spanish|español|espanol|en español|habla español|西班牙语|说西班牙语)\b/.test(t)) return 'es';
+      if(/\b(chinese|mandarin|中文|普通话|说中文|切换中文|en chino|chino)\b/.test(t)) return 'zh';
+      return null;
+    }
+    var targetLang = detectLangCommand(text);
+    if(targetLang && window.VentI18n){
+      VentI18n.setLang(targetLang);
+      var confirmMsg = LANG_CONFIRM[targetLang];
+      setVoiceState('speaking');
+      appendChatMsg('assistant', confirmMsg);
+      VentAudio.speak(confirmMsg, null, function(){
+        setVoiceState('idle');
+        chatBusy = false;
+        setChatBusy(false);
+        if(voiceConvoMode) setTimeout(startListening, 400);
+      });
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     setVoiceState('thinking');
     // Put transcribed text in input and auto-send
     document.getElementById('chatInput').value = text;
