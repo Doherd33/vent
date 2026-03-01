@@ -1519,10 +1519,25 @@ async function sendChatMessage() {
       return;
     }
 
+    // Strip markdown before TTS so asterisks/bullets aren't read aloud
+    function stripTTSMarkdown(text){
+      if(!text) return text;
+      return text
+        .replace(/#{1,6}\s+/g, '')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/\*(.+?)\*/g, '$1')
+        .replace(/`(.+?)`/g, '$1')
+        .replace(/^\s*[-*•]\s+/gm, '')
+        .replace(/^\s*\d+\.\s+/gm, '')
+        .replace(/\n{2,}/g, '. ')
+        .replace(/\n/g, ' ')
+        .trim();
+    }
+
     // Voice path: speak Charlie's response via TTS, then auto-listen
     if (voiceConvoMode) {
       setVoiceState('speaking');
-      VentAudio.speak(data.answer, function(freqData) {
+      VentAudio.speak(stripTTSMarkdown(data.answer), function(freqData) {
         animateVCBars(freqData);
       }, function() {
         resetVCBars();
