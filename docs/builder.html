@@ -5,36 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vent · Document Builder</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:       #1e1e1e;
-  --s1:       #252526;
-  --s2:       #2d2d30;
-  --s3:       #333337;
-  --border:   #3c3c3c;
-  --borderhi: #5a5a5a;
-  --text:     #cccccc;
-  --mid:      #8e8e8e;
-  --dim:      #5a5a5a;
-  --accent:   #007acc;
-  --accent2:  rgba(0,122,204,0.15);
-  --accent3:  rgba(0,122,204,0.28);
-  --gold:     #ffc64d;
-  --gold2:    rgba(255,198,77,0.15);
-  --green:    #4ec9b0;
-  --green2:   rgba(78,201,176,0.15);
-  --red:      #f44747;
-  --red2:     rgba(244,71,71,0.15);
-  --teal:     #4ec9b0;
-  --teal2:    rgba(78,201,176,0.12);
-}
-
 body {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg);
-  color: var(--text);
   height: 100vh;
   display: grid;
   grid-template-rows: 42px 1fr 22px;
@@ -42,24 +15,6 @@ body {
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
-
-/* ── TITLE BAR (unified nav) ── */
-.title-bar { background:#323233; display:flex; align-items:center; justify-content:space-between; padding:0 16px; border-bottom:1px solid #111; user-select:none; height:42px; flex-shrink:0; }
-.title-bar-left { display:flex; align-items:center; gap:16px; }
-.app-name { font-family:'Instrument Serif',serif; font-size:16px; color:var(--text); display:flex; align-items:center; gap:7px; text-decoration:none; letter-spacing:-.02em; }
-.pip { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:breathe 3s ease-in-out infinite; display:inline-block; }
-@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
-.title-nav { display:flex; gap:2px; }
-.nav-tab { padding:4px 14px; font-size:12px; color:var(--mid); cursor:pointer; border-radius:5px; text-decoration:none; transition:all .15s; font-weight:300; display:none; }
-.nav-tab:hover { color:var(--text); background:#404040; }
-.nav-tab.active { color:#fff; background:var(--accent); font-weight:400; display:inline-block; }
-.title-bar-right { display:flex; align-items:center; gap:10px; font-size:11px; color:var(--mid); }
-.role-badge { font-size:10px; font-family:'JetBrains Mono',monospace; padding:2px 8px; border-radius:4px; letter-spacing:.05em; border:1px solid var(--border); }
-.user-name { font-weight:400; font-size:12px; }
-.sign-out-btn { background:none; border:1px solid var(--border); border-radius:4px; color:var(--dim); font-size:10px; padding:2px 8px; cursor:pointer; font-family:inherit; transition:all .15s; }
-.sign-out-btn:hover { color:var(--text); border-color:var(--borderhi); }
-.mobile-hamburger { display:none; background:none; border:none; color:var(--mid); cursor:pointer; padding:4px; }
-@media(max-width:768px){.mobile-hamburger{display:block}.title-nav{display:none;position:absolute;top:42px;left:0;right:0;background:#323233;flex-direction:column;padding:8px;border-bottom:1px solid #111;z-index:999}.title-nav.open{display:flex}.title-nav .nav-tab{display:block;padding:12px 16px;font-size:14px;border-radius:8px}}
 
 /* ── WORKBENCH ── */
 .workbench {
@@ -1065,35 +1020,8 @@ body {
 .modal-btn.primary:hover { background: #1a8ad4; }
 .modal-btn.primary:disabled { opacity: .4; cursor: default; }
 
-/* ── MOBILE HAMBURGER ── */
-.mobile-hamburger {
-  display: none; background: none;
-  border: 1px solid var(--border); color: var(--mid);
-  cursor: pointer; padding: 4px 6px; border-radius: 3px;
-  -webkit-tap-highlight-color: transparent; flex-shrink: 0;
-}
-.mobile-hamburger:hover { color: var(--text); background: #404040; }
-.mobile-hamburger svg { display: block; }
-
 /* ── MOBILE ── */
 @media (max-width: 768px) {
-  .mobile-hamburger { display: flex; align-items: center; justify-content: center; }
-  .title-nav {
-    display: none; position: absolute; top: 100%; left: 0; right: 0;
-    background: var(--s1); border-bottom: 1px solid var(--border);
-    flex-direction: column; padding: 6px; z-index: 500;
-    box-shadow: 0 8px 24px rgba(0,0,0,.4);
-  }
-  .title-nav.open { display: flex; }
-  .title-nav .nav-tab { display: block; padding: 12px 16px; font-size: 14px; border-radius: 8px; }
-  .title-bar { position: relative; padding: 0 10px; }
-  /* Hide role badge and username on mobile */
-  .title-bar-right .role-badge,
-  .title-bar-right .user-name { display: none; }
-  .title-bar-right { font-size: 10px; gap: 6px; }
-  .title-bar-right .s-sep { display: none; }
-  .sign-out-btn { font-size: 12px; padding: 6px 12px; }
-
   .workbench {
     grid-template-columns: 1fr !important;
     grid-template-rows: auto 1fr auto !important;
@@ -1206,10 +1134,8 @@ body {
 .td-foot-add { background: var(--accent); border: none; border-radius: 9px; color: #fff; cursor: pointer; padding: 10px 12px; display: flex; align-items: center; justify-content: center; transition: opacity .15s; flex-shrink: 0; }
 .td-foot-add:hover { opacity: .85; }
 </style>
-<script>
-if(!localStorage.getItem('vent_token')) window.location.replace('login.html');
-</script>
 <script src="i18n.js"></script>
+<script src="shared/nav.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 </head>
 <body>
@@ -1227,13 +1153,15 @@ if(!localStorage.getItem('vent_token')) window.location.replace('login.html');
       <a href="qa.html"          class="nav-tab" data-nav-key="QA Control" data-i18n="nav.qaControl">QA Control</a>
       <a href="workflow.html"    class="nav-tab" data-nav-key="Workflow" data-i18n="nav.workflow">Workflow</a>
       <a href="dashboard.html"   class="nav-tab" data-nav-key="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
+      <a href="feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
     </nav>
   </div>
   <div class="title-bar-right" id="titleBarRight">
     <div id="langSwitcher"></div>
     <span class="role-badge" id="roleBadge"></span>
     <span class="user-name" id="titleUser"></span>
-    <button class="sign-out-btn" onclick="localStorage.clear();location.href='login.html'" data-i18n="nav.signOut">Sign out</button>
+    <button class="sign-out-btn" onclick="location.href='query.html'" title="Back to Hub">Hub</button>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
   </div>
 </div>
 
@@ -1439,25 +1367,12 @@ if(!localStorage.getItem('vent_token')) window.location.replace('login.html');
 </div>
 
 <script>
-const SERVER = window.location.origin;
 const userName = localStorage.getItem('vent_name') || 'Operator';
 const userRole = localStorage.getItem('vent_role') || 'operator';
 
 // Set user display
 document.getElementById('titleUser').textContent = userName;
 document.getElementById('statusUser').textContent = userName;
-
-// ── NAV: role filtering + user display ──
-(function(){
-  var role=userRole;
-  var rules={operator:['Query SOPs','Doc Builder'],qa:['Submit','Query SOPs','Submissions','Doc Builder','QA Control'],director:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Dashboard'],msat:['Submit','Query SOPs','Submissions','Doc Builder'],engineering:['Submit','Query SOPs','Submissions','Doc Builder'],admin:['Submit','Query SOPs','Submissions','Doc Builder','QA Control','Workflow','Dashboard']};
-  var colors={operator:'var(--teal)',qa:'var(--accent)',director:'var(--gold)',msat:'var(--green)',engineering:'var(--mid)',admin:'var(--red)'};
-  var roleKeys={operator:'role.operator',qa:'role.qa',director:'role.director',msat:'role.msat',engineering:'role.engineering',admin:'role.admin'};
-  var badge=document.getElementById('roleBadge');
-  if(badge){badge.textContent=t(roleKeys[role]||'role.operator');badge.style.color=colors[role]||'var(--mid)';badge.style.background='var(--s3)';}
-  var allowed=rules[role]||[];
-  document.querySelectorAll('#mainNav .nav-tab').forEach(function(a){a.style.display=allowed.some(function(x){return(a.dataset.navKey||a.textContent.trim())===x})?'inline-block':'none';});
-})();
 
 // ── INDEXEDDB MEDIA STORE ──
 const MEDIA_DB_NAME = 'vent_media';
@@ -2458,12 +2373,7 @@ function updatePptxBtnState() {
   btn.disabled = !hasActiveSop;
 }
 
-function authFetch(url, opts = {}) {
-  const token = localStorage.getItem('vent_token');
-  opts.headers = opts.headers || {};
-  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
-  return fetch(url, opts);
-}
+
 
 function openSopSearch() {
   // Build context hint from active step/doc

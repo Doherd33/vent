@@ -106,10 +106,10 @@ A full IDE-style document authoring environment for creating, editing, and versi
 - **Version history** — every save creates a timestamped snapshot; previous versions can be viewed at any time
 - **Grouped by process area** — documents are automatically organised by upstream area (Media Prep, Bioreactor Ops, Sampling, etc.)
 - **Status tracking** — Draft → In Review → Approved lifecycle with visual badges
-- **Activity log** — real-time log of all document operations (create, edit, delete, version)
+- **AI Assist** — Claude-powered document operations: rewrite, expand, safety review, formatting, step generation from SOP context, and GMP compliance checking
+- **Electronic sign-off** — 21 CFR Part 11 compliant sign-off with user authentication and reason capture
+- **Server-side persistence** — documents stored in Supabase with full CRUD, versioning, and audit trail
 - **Search and filter** — instant filtering across all documents by title or content
-- **Local-first storage** — documents persist in localStorage for fast, offline-capable access
-- **AI Assist tab** — placeholder for future AI-powered document drafting and review
 
 The Document Builder gives operators and QA a structured tool to author the documents that drive manufacturing — living alongside the observation and SOP systems rather than sitting in separate, disconnected tools.
 
@@ -121,54 +121,107 @@ When a submission is created, all routed contacts receive notifications with:
 - Their assigned workflow phase
 - Why they specifically were routed (contextual reason from AI analysis)
 
+### 11. GDP Check
+
+Camera-based document review for Good Documentation Practice compliance. Operators photograph paper batch records and logbook entries directly from the manufacturing floor:
+
+- **Image preprocessing** — automatic contrast normalisation and sharpening for consistent AI analysis
+- **Blue ink detection** — pixel-grid flood-fill algorithm identifies handwritten entries and annotations, generating bounding regions for Claude's visual inspection
+- **AI-powered finding detection** — Claude vision analyses the document image against GDP rules: missing signatures, incorrect date formats, use of correction fluid, illegible entries, crossed-out text without countersignature
+- **Finding management** — each finding is categorised by severity, linked to a specific document region, and tracked through a correction workflow
+- **Document persistence** — GDP review documents are stored in Supabase with status tracking (draft → reviewed → corrected → closed)
+
+### 12. Charlie — Voice AI Assistant
+
+A conversational voice interface that lets operators interact with Vent hands-free:
+
+- **Speech-to-text** — operators dictate questions or observations using ElevenLabs STT
+- **Text-to-speech** — AI responses are spoken back for hands-free operation on the manufacturing floor
+- **Real-time translation** — instant translation between English, Chinese, and Spanish
+- **SOP-aware conversation** — `/charlie/ask` provides a Claude-backed conversational interface with full RAG context, so operators can ask SOP questions by voice and get spoken answers grounded in actual procedures
+
+### 13. Chat System
+
+Persistent chat sessions with Claude, backed by the full SOP RAG pipeline:
+
+- **Session management** — create, resume, and search across conversation threads
+- **SOP-grounded responses** — every answer is informed by relevant SOP context retrieved via vector search
+- **Analysis export** — conversation analysis can be exported directly to the Document Builder as a new document
+- **Personal todo list** — lightweight task tracking within the chat interface
+- **Conversation search** — full-text search across all chat sessions
+
+### 14. Feedback System
+
+Structured feedback collection from operators about their Vent experience:
+
+- **Categorised submissions** — feedback tagged by type (bug, feature request, usability, praise)
+- **AI-powered batch analysis** — Claude analyses groups of feedback entries, identifies themes and patterns, generates prioritised recommendations
+- **Prompt generation** — analysis results can be used to generate improvement prompts for product development
+- **Role-scoped access** — operators, QA, directors, and admins can all submit feedback; analysis tools are available to QA and above
+
+### 15. Internationalisation (i18n)
+
+Full multi-language support across the entire interface:
+
+- **Three languages** — English, Simplified Chinese (简体中文), and Spanish (Español)
+- **Comprehensive coverage** — all navigation labels, role names, form placeholders, status badges, and UI text are translated
+- **Persistent preference** — language selection stored in localStorage and applied on every page load
+- **Dynamic switching** — language can be changed at any time without page reload
+
 ---
 
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                        Frontend (docs/)                        │
-│  query.html · qa.html · workflow.html · dashboard.html         │
-│  submissions.html · builder.html · login.html                  │
-│  Static HTML/CSS/JS — served by Express                        │
-└────────────────────────┬───────────────────────────────────────┘
-                         │ REST API
-┌────────────────────────▼───────────────────────────────────────┐
-│                     Server (server/)                           │
-│  Express.js · Auth (HMAC tokens) · Role-based access           │
-│                                                                │
-│  Routes:                                                       │
-│    /submit          — observation submission + AI analysis      │
-│    /query           — SOP knowledge search                     │
-│    /submissions     — CRUD + status workflow                   │
-│    /sop/:docId      — SOP chunk retrieval                      │
-│    /sop-changes     — SOP change management                    │
-│    /sop-annotations — SOP change annotations                   │
-│    /capas           — CAPA tracking                            │
-│    /notifications   — user notification system                 │
-│    /analytics       — dashboard aggregations                   │
-│    /audit           — audit trail queries                      │
-│    /auth/*          — register, login, password management     │
-│    /ingest          — SOP ingestion pipeline                   │
-└──────┬──────────────────┬──────────────────┬───────────────────┘
-       │                  │                  │
-┌──────▼──────┐  ┌────────▼────────┐  ┌──────▼──────┐
-│  Claude AI  │  │    Supabase     │  │  VoyageAI   │
-│  (Anthropic)│  │  PostgreSQL +   │  │  Embeddings │
-│             │  │  Vector Search  │  │  voyage-3-  │
-│  Analysis,  │  │  + Storage      │  │  lite       │
-│  routing,   │  │                 │  │             │
-│  knowledge  │  │  Tables:        │  │  SOP chunks │
-│  queries    │  │  submissions    │  │  & queries  │
-│             │  │  sop_chunks     │  │  embedded   │
-│             │  │  audit_log      │  │  for vector │
-│             │  │  users          │  │  similarity │
-│             │  │  qa_notes       │  │  search     │
-│             │  │  sop_changes    │  │             │
-│             │  │  sop_annotations│  │             │
-│             │  │  notifications  │  │             │
-│             │  │  capas          │  │             │
-└─────────────┘  └─────────────────┘  └─────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        Frontend (docs/)                          │
+│  shared/styles.css · shared/nav.js · i18n.js                    │
+│                                                                  │
+│  index.html · query.html · qa.html · workflow.html               │
+│  dashboard.html · submissions.html · builder.html                │
+│  feedback.html · login.html                                      │
+│                                                                  │
+│  Static HTML/CSS/JS — served by Express                          │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │ REST API
+┌─────────────────────────▼───────────────────────────────────────┐
+│                     Server (server/)                              │
+│  Express.js · Auth (HMAC tokens) · Role-based access             │
+│                                                                  │
+│  lib/                          routes/                           │
+│    auth.js    (JWT, RBAC)        auth.js      (login, register)  │
+│    audit.js   (audit log)        admin.js     (setup, bootstrap) │
+│    rag.js     (embeddings)       submit.js    (observations)     │
+│    gdp-image.js (vision)         sop.js       (SOP search/CRUD) │
+│                                  capa.js      (CAPAs, analytics) │
+│                                  gdp.js       (GDP check)        │
+│                                  builder.js   (doc builder)      │
+│                                  chat.js      (chat sessions)    │
+│                                  voice.js     (STT/TTS/Charlie)  │
+│                                  feedback.js  (feedback loop)    │
+└──────┬──────────────┬──────────────┬──────────────┬─────────────┘
+       │              │              │              │
+┌──────▼──────┐ ┌─────▼──────┐ ┌─────▼──────┐ ┌────▼────────┐
+│  Claude AI  │ │  Supabase  │ │  VoyageAI  │ │ ElevenLabs  │
+│  (Anthropic)│ │ PostgreSQL │ │ Embeddings │ │  STT / TTS  │
+│             │ │ + pgvector │ │ voyage-3-  │ │             │
+│  Analysis,  │ │ + Storage  │ │ lite       │ │  Voice I/O  │
+│  routing,   │ │            │ │            │ │  for Charlie │
+│  knowledge, │ │ Tables:    │ │ SOP chunks │ │  and floor   │
+│  GDP check, │ │ submissions│ │ & queries  │ │  operators   │
+│  chat,      │ │ sop_chunks │ │ embedded   │ │             │
+│  doc assist │ │ audit_log  │ │ for vector │ └─────────────┘
+│             │ │ users      │ │ similarity │
+│             │ │ qa_notes   │ │ search     │
+│             │ │ sop_changes│ │            │
+│             │ │ sop_annot… │ └────────────┘
+│             │ │ notific…   │
+│             │ │ capas      │
+│             │ │ documents  │
+│             │ │ gdp_docs   │
+│             │ │ chat_sess… │
+│             │ │ feedback_… │
+└─────────────┘ └────────────┘
 ```
 
 ### Tech Stack
@@ -176,23 +229,27 @@ When a submission is created, all routed contacts receive notifications with:
 | Layer | Technology |
 |---|---|
 | Frontend | Static HTML/CSS/JS (no framework — intentionally lightweight) |
+| Shared Frontend | `shared/styles.css` (CSS variables, title bar, nav) + `shared/nav.js` (auth, role filtering) |
+| i18n | Custom `i18n.js` (English, Chinese, Spanish) |
 | Server | Node.js + Express 5 |
 | AI | Claude (Anthropic) via `@anthropic-ai/sdk` |
 | Embeddings | VoyageAI (`voyage-3-lite` model) |
+| Vision / Image | `sharp` (preprocessing, blue ink detection for GDP Check) |
+| Voice | ElevenLabs (speech-to-text, text-to-speech) |
 | Database | Supabase (PostgreSQL + pgvector + Row Level Security) |
 | Auth | Custom HMAC-signed JWT tokens with PBKDF2 password hashing |
 | Hosting | Railway |
 
 ### Roles
 
-| Role | Access |
+| Role | Nav Access |
 |---|---|
-| `operator` | Query SOPs, build documents, view own notifications |
-| `qa` | All operator access + QA control centre, status transitions, SOP changes, CAPAs |
-| `director` | All QA access + dashboard analytics, director sign-off |
-| `msat` | Specialist access for investigation phase |
-| `engineering` | Specialist access for technical investigation |
-| `admin` | Full access including SOP ingestion and system setup |
+| `operator` | Query SOPs, Doc Builder, Feedback |
+| `qa` | Submit, Query SOPs, Submissions, Doc Builder, QA Control, Feedback |
+| `director` | Submit, Query SOPs, Submissions, Doc Builder, QA Control, Dashboard, Feedback |
+| `msat` | Submit, Query SOPs, Submissions, Doc Builder |
+| `engineering` | Submit, Query SOPs, Submissions, Doc Builder |
+| `admin` | Full access — Submit, Query SOPs, Submissions, Doc Builder, QA Control, Workflow, Dashboard, Feedback |
 
 ---
 
@@ -201,9 +258,9 @@ When a submission is created, all routed contacts receive notifications with:
 Vent is built for GMP-regulated environments and implements:
 
 - **21 CFR Part 11 / EU Annex 11** — electronic signatures with user ID + reason for approval transitions
-- **Immutable audit trail** — every action (submission, status change, SOP change, CAPA update, login) is logged with SHA-256 checksums, timestamps, IP addresses, and user agents
+- **Immutable audit trail** — every action (submission, status change, SOP change, CAPA update, GDP review, document sign-off, login) is logged with SHA-256 checksums, timestamps, IP addresses, and user agents
 - **ALCOA+ principles** — data is Attributable, Legible, Contemporaneous, Original, and Accurate
-- **Role-based access control** — sensitive operations (status transitions, SOP changes, CAPA management) are restricted by role
+- **Role-based access control** — sensitive operations (status transitions, SOP changes, CAPA management, document sign-off) are restricted by role
 - **Row Level Security** — database-level access control via Supabase RLS policies
 
 ---
@@ -280,6 +337,7 @@ Operators already perform every SOP step, every shift. Vent gives them a way to 
 - Supabase project with pgvector extension enabled
 - Anthropic API key (Claude access)
 - VoyageAI API key
+- ElevenLabs API key (optional — for voice features)
 
 ### Environment Variables
 
@@ -289,6 +347,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-supabase-anon-key
 VOYAGE_API_KEY=your-voyage-key
 TOKEN_SECRET=your-token-secret
+ELEVENLABS_API_KEY=your-elevenlabs-key
 ```
 
 ### Setup
@@ -323,6 +382,11 @@ Start the server and visit `GET /admin/setup` to get the full SQL schema. Run it
 - `sop_annotations` — annotations on SOP changes
 - `notifications` — user notification queue
 - `capas` — corrective action tracking
+- `documents` — Document Builder documents with versioning
+- `gdp_documents` — GDP Check review documents and findings
+- `chat_sessions` — persistent chat conversation history
+- `feedback_entries` — operator feedback submissions
+- `feedback_analysis` — AI-generated feedback analysis results
 
 ---
 
@@ -330,24 +394,45 @@ Start the server and visit `GET /admin/setup` to get the full SQL schema. Run it
 
 ```
 vent/
-├── docs/                          # Frontend (static HTML/CSS/JS)
-│   ├── index.html                 # Observation submission
-│   ├── query.html                 # Operator SOP knowledge search
-│   ├── builder.html               # Document Builder (IDE-style editor)
-│   ├── qa.html                    # QA Control Centre
-│   ├── workflow.html              # Observation submission workflow
-│   ├── dashboard.html             # Director analytics dashboard
-│   ├── submissions.html           # Floor submissions view
-│   └── login.html                 # Authentication
+├── docs/                              # Frontend (static HTML/CSS/JS)
+│   ├── shared/
+│   │   ├── styles.css                 # Shared CSS variables, title bar, nav
+│   │   └── nav.js                     # Auth helpers, guard, role filtering
+│   ├── i18n.js                        # Internationalisation (EN, ZH, ES)
+│   ├── index.html                     # Observation submission
+│   ├── query.html                     # SOP knowledge search
+│   ├── builder.html                   # Document Builder (IDE-style)
+│   ├── qa.html                        # QA Control Centre
+│   ├── workflow.html                  # Observation workflow
+│   ├── dashboard.html                 # Director analytics
+│   ├── submissions.html               # Floor submissions
+│   ├── feedback.html                  # Operator feedback
+│   └── login.html                     # Authentication
 │
-└── server/                        # Backend
-    ├── index.js                   # Express server — all routes and logic
+└── server/                            # Backend
+    ├── index.js                       # Express app — middleware, mounts, listen (~140 lines)
     ├── package.json
+    ├── lib/
+    │   ├── auth.js                    # JWT tokens, password hashing, RBAC middleware
+    │   ├── audit.js                   # SHA-256 checksummed immutable audit log
+    │   ├── rag.js                     # VoyageAI embeddings, SOP context building
+    │   └── gdp-image.js              # Image preprocessing, blue ink detection
+    ├── routes/
+    │   ├── auth.js                    # Register, login, /me, change-password
+    │   ├── admin.js                   # DB setup, bootstrap, audit queries
+    │   ├── submit.js                  # Observation submission + AI analysis
+    │   ├── sop.js                     # SOP search, query, ingest, annotations
+    │   ├── capa.js                    # Notifications, CAPAs, analytics
+    │   ├── gdp.js                     # GDP Check + visual query + persistence
+    │   ├── builder.js                 # Doc Builder AI + sign-off
+    │   ├── chat.js                    # Chat sessions, todos, analysis
+    │   ├── voice.js                   # STT, TTS, translate, Charlie voice
+    │   └── feedback.js                # Feedback collection + AI analysis
     ├── data/
-    │   └── contacts.js            # Facility contacts directory
+    │   └── contacts.js                # Facility contacts directory
     ├── docs/
     │   ├── FEATURE-VISUAL-SOP-ENGINE.md  # Visual SOP Engine proposal
-    │   └── sops/                  # Source SOP documents (Markdown)
+    │   └── sops/                      # Source SOP documents (Markdown)
     │       ├── WX-SOP-1001-03.md
     │       ├── WX-SOP-1002-03.md
     │       ├── WX-SOP-1003-03.md
@@ -355,7 +440,7 @@ vent/
     │       ├── WX-SOP-1005-03.md
     │       └── WX-BPR-2001-03.md
     └── scripts/
-        └── ingest-sops.js         # SOP ingestion pipeline script
+        └── ingest-sops.js             # SOP ingestion pipeline
 ```
 
 ---
@@ -364,6 +449,6 @@ vent/
 
 Vent exists because the best ideas for improving a manufacturing process come from the people running it — and those ideas should never be lost to fear, bureaucracy, or forgetting.
 
-Every observation an operator submits makes the facility smarter. Every video they capture makes training better. Every pattern the AI detects makes quality stronger. The knowledge compounds.
+Every observation an operator submits makes the facility smarter. Every document they review for GDP compliance raises the bar. Every pattern the AI detects makes quality stronger. Every voice question asked on the floor makes SOPs more accessible. The knowledge compounds.
 
 The operators aren't just following procedures. They're building the most complete, living quality intelligence system in biologics manufacturing — and they're doing it anonymously, safely, and as part of their normal work.
