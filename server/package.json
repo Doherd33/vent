@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "ingest": "node scripts/ingest-sops.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +15,9 @@
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.76.0",
+    "@langchain/anthropic": "^1.3.21",
+    "@langchain/core": "^1.1.29",
+    "@langchain/langgraph": "^1.2.0",
     "@supabase/supabase-js": "^2.97.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
@@ -23,5 +27,8 @@
     "pdfjs-dist": "^4.4.168",
     "sharp": "^0.34.5",
     "voyageai": "^0.0.5"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
   }
 }

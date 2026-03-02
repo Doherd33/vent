@@ -34,6 +34,13 @@ const feedbackRoutes = require('./routes/feedback');
 const requestLogger = require('./middleware/request-logger');
 const errorHandler  = require('./middleware/error-handler');
 
+// ── Service factories ─────────────────────────────────────────────────────────
+const makeSubmissionService  = require('./services/submission.service');
+const makeSopService         = require('./services/sop.service');
+const makeCapaService        = require('./services/capa.service');
+const makeChatService        = require('./services/chat.service');
+const makeSubmissionPipeline = require('./graphs/submission-pipeline');
+
 // ── App + shared clients ──────────────────────────────────────────────────────
 const app  = express();
 const PORT = config.port;
@@ -158,8 +165,16 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ── Instantiate pipeline + services ───────────────────────────────────────────
+const submissionPipeline = makeSubmissionPipeline({ anthropic, rag, buildContactsContext });
+const submissionService  = makeSubmissionService({ supabase, anthropic, auditLog, rag, buildContactsContext, pipeline: submissionPipeline });
+const sopService         = makeSopService({ supabase, anthropic, auditLog, rag, getVoyageClient });
+const capaService        = makeCapaService({ supabase, auditLog });
+const chatService        = makeChatService({ supabase, anthropic });
+
 // ── Mount all route modules ───────────────────────────────────────────────────
-const deps = { supabase, anthropic, auditLog, rag, auth, gdpImage, getVoyageClient, buildContactsContext };
+const deps = { supabase, anthropic, auditLog, rag, auth, gdpImage, getVoyageClient, buildContactsContext,
+               submissionService, sopService, capaService, chatService };
 authRoutes(app, deps);
 adminRoutes(app, deps);
 submitRoutes(app, deps);

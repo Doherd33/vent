@@ -15,10 +15,10 @@ gantt
 
     section Phase 1 · Foundations
     LangSmith instrumentation ✓        :done, p1a, 2026-03-02, 1d
-    Config module + remove hardcoded keys :p1b, after p1a, 1d
-    Service layer extraction           :p1c, after p1b, 1d
-    Error handling + request logging middleware :p1d, after p1c, 1d
-    Basic test harness (Vitest)        :p1e, after p1d, 1d
+    Config module + remove hardcoded keys ✓ :done, p1b, after p1a, 1d
+    Error handling + request logging middleware ✓ :done, p1d, after p1b, 1d
+    Service layer extraction           :active, p1c, after p1d, 1d
+    Basic test harness (Vitest)        :p1e, after p1c, 1d
 
     section Phase 2 · Multi-Agent Pipeline
     Specialised agents (classifier, analyst, router, CAPA) :p2a, after p1e, 2d
