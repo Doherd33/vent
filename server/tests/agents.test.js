@@ -193,4 +193,43 @@ describe('agents', () => {
       expect(anthropic.messages.create).toHaveBeenCalledOnce();
     });
   });
+
+  // ── Charlie ─────────────────────────────────────────────────────────────
+
+  describe('CharlieAgent', () => {
+    const charlieResponse = JSON.stringify({
+      answer: 'Right, so the short answer is you should check viability every four hours during perfusion.',
+      action: 'search_sops',
+      params: { query: 'viability monitoring' },
+    });
+
+    it('invoke returns answer and action', async () => {
+      const anthropic = mockAnthropic(charlieResponse);
+      const agent = require('../agents/charlie')(anthropic);
+      const result = await agent.invoke({ question: 'When do I check viability?', lang: 'en' });
+
+      expect(result.answer).toContain('viability');
+      expect(result.action).toBe('search_sops');
+      expect(result.params.query).toBe('viability monitoring');
+      expect(anthropic.messages.create).toHaveBeenCalledOnce();
+    });
+
+    it('handles non-JSON Claude response gracefully', async () => {
+      const anthropic = mockAnthropic('Just check it every four hours, honestly.');
+      const agent = require('../agents/charlie')(anthropic);
+      const result = await agent.invoke({ question: 'When do I check viability?' });
+
+      expect(result.answer).toContain('four hours');
+      expect(result.action).toBe('none');
+    });
+
+    it('includes SOP context in system prompt when provided', async () => {
+      const anthropic = mockAnthropic(charlieResponse);
+      const agent = require('../agents/charlie')(anthropic);
+      await agent.invoke({ question: 'test', sopContext: 'SOP section 8.6.1.4' });
+
+      const systemPrompt = anthropic.messages.create.mock.calls[0][0].system;
+      expect(systemPrompt).toContain('SOP section 8.6.1.4');
+    });
+  });
 });

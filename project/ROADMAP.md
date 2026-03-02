@@ -17,14 +17,14 @@ gantt
     LangSmith instrumentation ✓        :done, p1a, 2026-03-02, 1d
     Config module + remove hardcoded keys ✓ :done, p1b, after p1a, 1d
     Error handling + request logging middleware ✓ :done, p1d, after p1b, 1d
-    Service layer extraction           :active, p1c, after p1d, 1d
-    Basic test harness (Vitest)        :p1e, after p1c, 1d
+    Service layer extraction ✓         :done, p1c, after p1d, 1d
+    Basic test harness (Vitest) ✓      :done, p1e, after p1c, 1d
 
     section Phase 2 · Multi-Agent Pipeline
-    Specialised agents (classifier, analyst, router, CAPA) :p2a, after p1e, 2d
-    LangGraph submission pipeline graph :p2b, after p2a, 2d
-    SOP query agent + builder agent    :p2c, after p2b, 1d
-    Charlie voice agent refactor       :p2d, after p2c, 1d
+    Specialised agents (classifier, analyst, router, CAPA) ✓ :done, p2a, after p1e, 2d
+    LangGraph submission pipeline graph ✓ :done, p2b, after p2a, 2d
+    SOP query agent + builder agent ✓  :done, p2c, after p2b, 1d
+    Charlie voice agent refactor ✓     :done, p2d, after p2c, 1d
 
     section Phase 3 · Voice
     VAPI integration + Charlie handoff  :p3a, after p2d, 1d

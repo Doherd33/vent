@@ -39,6 +39,7 @@ const makeSubmissionService  = require('./services/submission.service');
 const makeSopService         = require('./services/sop.service');
 const makeCapaService        = require('./services/capa.service');
 const makeChatService        = require('./services/chat.service');
+const makeVoiceService       = require('./services/voice.service');
 const makeSubmissionPipeline = require('./graphs/submission-pipeline');
 
 // ── App + shared clients ──────────────────────────────────────────────────────
@@ -171,10 +172,11 @@ const submissionService  = makeSubmissionService({ supabase, anthropic, auditLog
 const sopService         = makeSopService({ supabase, anthropic, auditLog, rag, getVoyageClient });
 const capaService        = makeCapaService({ supabase, auditLog });
 const chatService        = makeChatService({ supabase, anthropic });
+const voiceService       = makeVoiceService({ anthropic, rag, elevenLabsApiKey: config.elevenLabsApiKey });
 
 // ── Mount all route modules ───────────────────────────────────────────────────
 const deps = { supabase, anthropic, auditLog, rag, auth, gdpImage, getVoyageClient, buildContactsContext,
-               submissionService, sopService, capaService, chatService };
+               submissionService, sopService, capaService, chatService, voiceService };
 authRoutes(app, deps);
 adminRoutes(app, deps);
 submitRoutes(app, deps);
