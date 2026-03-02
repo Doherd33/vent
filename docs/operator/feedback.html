@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Feedback</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 260px 4px 1fr;
+  grid-template-rows: 1fr 4px 280px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── RESIZE HANDLES ── */
+.resizer { background: #3c3c3c; z-index: 10; transition: background 0.15s; }
+.resizer:hover, .resizer.dragging { background: #007acc; }
+.resizer-v { cursor: col-resize; grid-row: 1 / 4; }
+.resizer-h { cursor: row-resize; grid-column: 1 / 4; grid-row: 2; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  background: var(--s1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  grid-row: 1 / 4;
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--mid);
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+}
+.panel-badge {
+  background: var(--accent2);
+  color: var(--accent);
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 2px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.filter-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--dim);
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.filter-btn:hover { color: var(--mid); background: var(--s2); }
+.filter-btn.active { color: var(--accent); border-color: var(--accent2); background: var(--accent2); }
+
+/* Session list */
+.session-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+}
+.session-list::-webkit-scrollbar { width: 6px; }
+.session-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.session-card {
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.session-card:hover { background: var(--s2); }
+.session-card.active { background: var(--accent2); border-color: var(--accent3); }
+.session-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.session-user {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-role-badge {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: .04em;
+}
+.sev-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sev-low { background: #69db7c; }
+.sev-medium { background: #ffd43b; }
+.sev-high { background: #ffa94d; }
+.sev-critical { background: #ff6b6b; }
+.session-date {
+  font-size: 10px;
+  color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+.session-summary {
+  font-size: 11px;
+  color: var(--mid);
+  line-height: 1.4;
+  margin-top: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.session-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 5px;
+}
+.cat-tag {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--s3);
+  color: var(--mid);
+}
+.cat-tag.UX { background: rgba(0,122,204,0.15); color: #4fc1ff; }
+.cat-tag.missing_feature { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.cat-tag.bug { background: rgba(244,71,71,0.15); color: #f44747; }
+.cat-tag.workflow { background: rgba(78,201,176,0.15); color: #4ec9b0; }
+.cat-tag.sop_gap { background: rgba(197,134,192,0.15); color: #c586c0; }
+.cat-tag.training { background: rgba(156,220,254,0.15); color: #9cdcfe; }
+.cat-tag.performance { background: rgba(255,169,77,0.15); color: #ffa94d; }
+.cat-tag.praise { background: rgba(105,219,124,0.15); color: #69db7c; }
+
+.status-pill {
+  font-size: 9px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.status-active    { background: rgba(0,122,204,0.2); color: #4fc1ff; }
+.status-completed { background: rgba(255,198,77,0.2); color: #ffc64d; }
+.status-analysed  { background: rgba(78,201,176,0.2); color: #4ec9b0; }
+
+/* ── CENTER PANEL ── */
+.center-panel {
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.center-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--s2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+  gap: 2px;
+  min-height: 32px;
+}
+.center-tab {
+  padding: 6px 14px;
+  font-size: 11px;
+  color: var(--dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  background: none;
+  border-top: none; border-left: none; border-right: none;
+  font-family: inherit;
+}
+.center-tab:hover { color: var(--mid); }
+.center-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.center-tab-spacer { flex: 1; }
+.center-actions { display: flex; gap: 6px; align-items: center; }
+.action-btn {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--mid);
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.action-btn:hover { color: var(--text); border-color: var(--borderhi); background: var(--s3); }
+.action-btn.primary { background: var(--accent2); border-color: var(--accent3); color: hsl(var(--hue),100%,65%); }
+.action-btn.primary:hover { background: var(--accent3); color: #fff; }
+.action-btn:disabled { opacity: .5; cursor: default; }
+.action-btn svg { flex-shrink: 0; }
+.center-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+.center-content::-webkit-scrollbar { width: 6px; }
+.center-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--dim);
+  font-size: 13px;
+  gap: 8px;
+}
+
+/* Transcript view */
+.transcript-msg {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+.transcript-msg.operator { flex-direction: row; }
+.transcript-msg.assistant { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.msg-avatar.operator-av { background: var(--teal2); color: var(--teal); }
+.msg-avatar.charlie-av { background: var(--accent2); color: var(--accent); }
+.msg-bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.transcript-msg.operator .msg-bubble {
+  background: var(--s2);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+}
+.transcript-msg.assistant .msg-bubble {
+  background: var(--accent2);
+  border-bottom-right-radius: 4px;
+  color: var(--text);
+}
+.msg-time {
+  font-size: 9px;
+  color: var(--dim);
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Analysis view */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.analysis-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+.analysis-card.full-width { grid-column: 1 / -1; }
+.analysis-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--dim);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.analysis-value {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+.sentiment-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.sentiment-positive { background: rgba(105,219,124,0.15); color: #69db7c; }
+.sentiment-neutral  { background: rgba(142,142,142,0.15); color: #8e8e8e; }
+.sentiment-negative { background: rgba(244,71,71,0.15); color: #f44747; }
+.sentiment-mixed    { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.severity-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.severity-low      { background: rgba(105,219,124,0.15); color: #69db7c; }
+.severity-medium   { background: rgba(255,212,59,0.15); color: #ffd43b; }
+.severity-high     { background: rgba(255,169,77,0.15); color: #ffa94d; }
+.severity-critical { background: rgba(244,71,71,0.15); color: #f44747; }
+.quote-block {
+  border-left: 3px solid var(--accent);
+  padding: 6px 12px;
+  margin: 6px 0;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--mid);
+  background: var(--s2);
+  border-radius: 0 6px 6px 0;
+}
+.action-item {
+  padding: 8px 12px;
+  margin: 4px 0;
+  background: var(--s2);
+  border-radius: 6px;
+  border-left: 3px solid var(--accent);
+}
+.action-item-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.action-item-desc {
+  font-size: 11px;
+  color: var(--mid);
+}
+.action-item-priority {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  margin-right: 6px;
+}
+.priority-low      { background: rgba(105,219,124,0.15); color: #69db7c; }
+.priority-medium   { background: rgba(255,212,59,0.15); color: #ffd43b; }
+.priority-high     { background: rgba(255,169,77,0.15); color: #ffa94d; }
+.priority-critical { background: rgba(244,71,71,0.15); color: #f44747; }
+
+/* ── RIGHT PANEL — Prompt ── */
+.right-panel {
+  position: fixed;
+  top: 42px;
+  right: 0;
+  bottom: 22px;
+  width: 520px;
+  background: var(--s1);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 100;
+  transform: translateX(100%);
+  transition: transform .25s ease;
+  box-shadow: -4px 0 24px rgba(0,0,0,.5);
+}
+.right-panel.open {
+  transform: translateX(0);
+}
+.right-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--mid);
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+}
+.right-close {
+  background: none;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all .15s;
+}
+.right-close:hover { color: var(--text); background: var(--s3); }
+.right-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+}
+.right-content::-webkit-scrollbar { width: 6px; }
+.right-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.prompt-block {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #e0e0e0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent2);
+  border: 1px solid var(--accent3);
+  color: var(--accent);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: inherit;
+  margin-bottom: 12px;
+  transition: all .15s;
+  width: 100%;
+  justify-content: center;
+}
+.copy-btn:hover { background: var(--accent3); }
+@keyframes btnSpin { to { transform: rotate(360deg); } }
+
+/* ── BOTTOM PANEL ── */
+.bottom-panel {
+  background: var(--s1);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  grid-column: 1 / 4;
+}
+.bottom-tabs {
+  display: flex;
+  background: var(--s2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+  gap: 2px;
+  min-height: 28px;
+  align-items: center;
+}
+.bottom-tab {
+  padding: 4px 12px;
+  font-size: 10px;
+  color: var(--dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  background: none;
+  border-top: none; border-left: none; border-right: none;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.bottom-tab:hover { color: var(--mid); }
+.bottom-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.bottom-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.bottom-pane {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow-y: auto;
+  padding: 16px;
+}
+.bottom-pane.active { display: block; }
+.bottom-pane::-webkit-scrollbar { width: 6px; }
+.bottom-pane::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Chat Capture — JARVIS Voice Command Center ── */
+.chat-capture {
+  display: flex;
+  height: 100%;
+  gap: 0;
+}
+.chat-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.chat-thread::-webkit-scrollbar { width: 5px; }
+.chat-thread::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.chat-thread:empty::after {
+  content: 'Start a conversation with Charlie about your experience using Vent.';
+  color: var(--dim);
+  font-size: 11px;
+  text-align: center;
+  margin: auto;
+}
+.chat-msg {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  max-width: 85%;
+}
+.chat-msg.from-user { align-self: flex-end; flex-direction: row-reverse; }
+.chat-msg.from-charlie { align-self: flex-start; }
+.chat-msg-av {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 600; flex-shrink: 0;
+}
+.chat-msg-av.user-av { background: var(--teal2); color: var(--teal); }
+.chat-msg-av.charlie-av { background: var(--accent2); color: var(--accent); }
+.chat-msg-text {
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.chat-msg.from-user .chat-msg-text {
+  background: var(--s3);
+  color: var(--text);
+  border-bottom-right-radius: 3px;
+}
+.chat-msg.from-charlie .chat-msg-text {
+  background: var(--accent2);
+  color: var(--text);
+  border-bottom-left-radius: 3px;
+}
+.chat-msg-thinking {
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  background: var(--accent2);
+  color: var(--dim);
+  border-bottom-left-radius: 3px;
+}
+.chat-msg-thinking .dots span {
+  animation: dotPulse 1.4s infinite;
+  display: inline-block;
+}
+.chat-msg-thinking .dots span:nth-child(2) { animation-delay: .2s; }
+.chat-msg-thinking .dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes dotPulse { 0%,80%,100%{opacity:.3} 40%{opacity:1} }
+
+/* ── Voice Command Center ── */
+.voice-command {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, hsla(var(--hue),80%,20%,.12) 0%, transparent 70%);
+  cursor: pointer;
+}
+/* Scan lines overlay */
+.voice-command::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, hsla(var(--hue),100%,50%,.02) 3px, hsla(var(--hue),100%,50%,.02) 4px);
+  pointer-events: none;
+  z-index: 0;
+}
+/* Grid overlay */
+.voice-command::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(hsla(var(--hue),100%,50%,.03) 1px, transparent 1px),
+    linear-gradient(90deg, hsla(var(--hue),100%,50%,.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.vc-orb-wrap {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+/* Concentric rings */
+.vc-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid hsla(var(--hue),100%,50%,.08);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  transition: border-color .5s, opacity .5s;
+}
+.vc-ring-1 { width: 90px; height: 90px; }
+.vc-ring-2 { width: 120px; height: 120px; opacity: .5; }
+.vc-ring-3 { width: 150px; height: 150px; opacity: .25; }
+
+/* Ring animations per state */
+.chat-capture.state-listening .vc-ring {
+  border-color: hsla(var(--hue),100%,50%,.18);
+  animation: ringPulse 2s ease-in-out infinite;
+}
+.chat-capture.state-listening .vc-ring-2 { animation-delay: .3s; }
+.chat-capture.state-listening .vc-ring-3 { animation-delay: .6s; }
+@keyframes ringPulse {
+  0%,100% { transform: translate(-50%,-50%) scale(1); opacity: .3; }
+  50%     { transform: translate(-50%,-50%) scale(1.06); opacity: .6; }
+}
+
+.chat-capture.state-speaking .vc-ring {
+  border-color: hsla(var(--hue),100%,55%,.2);
+  animation: ringExpand 1.8s ease-out infinite;
+}
+.chat-capture.state-speaking .vc-ring-2 { animation-delay: .4s; }
+.chat-capture.state-speaking .vc-ring-3 { animation-delay: .8s; }
+@keyframes ringExpand {
+  0%   { transform: translate(-50%,-50%) scale(1); opacity: .35; }
+  100% { transform: translate(-50%,-50%) scale(1.25); opacity: 0; }
+}
+
+.chat-capture.state-thinking .vc-ring-1 {
+  border-color: transparent;
+  border-top-color: hsla(var(--hue),100%,55%,.5);
+  border-right-color: hsla(var(--hue),100%,55%,.2);
+  animation: spin 1.2s linear infinite;
+}
+@keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+/* Glowing core orb */
+.vc-core {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%,
+    hsla(var(--hue),100%,55%,.85),
+    hsla(var(--hue),80%,30%,.7));
+  box-shadow:
+    0 0 24px hsla(var(--hue),100%,50%,.45),
+    0 0 60px hsla(var(--hue),100%,50%,.12),
+    inset 0 0 12px hsla(var(--hue),100%,70%,.2);
+  z-index: 2;
+  transition: box-shadow .3s, transform .3s;
+  animation: coreBreath 4s ease-in-out infinite;
+}
+@keyframes coreBreath {
+  0%,100% { transform: scale(1); box-shadow: 0 0 24px hsla(var(--hue),100%,50%,.45), 0 0 60px hsla(var(--hue),100%,50%,.12); }
+  50%     { transform: scale(1.04); box-shadow: 0 0 32px hsla(var(--hue),100%,50%,.55), 0 0 80px hsla(var(--hue),100%,50%,.18); }
+}
+.chat-capture.state-listening .vc-core {
+  box-shadow: 0 0 30px hsla(var(--hue),100%,50%,.6), 0 0 80px hsla(var(--hue),100%,50%,.2);
+  animation: coreListen 1.5s ease-in-out infinite;
+}
+@keyframes coreListen {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.06); }
+}
+.chat-capture.state-speaking .vc-core {
+  box-shadow: 0 0 36px hsla(var(--hue),100%,55%,.7), 0 0 100px hsla(var(--hue),100%,50%,.25);
+}
+.chat-capture.state-thinking .vc-core {
+  animation: coreThink 0.8s ease-in-out infinite;
+}
+@keyframes coreThink {
+  0%,100% { opacity: 1; }
+  50%     { opacity: .6; }
+}
+
+/* Radial frequency bars */
+.vc-bars {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.vc-bar {
+  position: absolute;
+  left: calc(50% - 1.5px);
+  bottom: 50%;
+  width: 3px;
+  height: 33px; /* 30px spacer + 3px visible */
+  transform-origin: 1.5px 0;
+  background: linear-gradient(to top, transparent 30px, hsla(var(--hue),100%,58%,.35) 30px);
+  border-radius: 2px;
+  transition: height .05s linear;
+}
+.chat-capture.state-listening .vc-bar {
+  background: linear-gradient(to top, transparent 30px, hsla(var(--hue),100%,60%,.6) 30px);
+  filter: drop-shadow(0 0 2px hsla(var(--hue),100%,50%,.3));
+}
+.chat-capture.state-speaking .vc-bar {
+  background: linear-gradient(to top, transparent 30px, hsla(var(--hue),100%,65%,.75) 30px);
+  filter: drop-shadow(0 0 4px hsla(var(--hue),100%,50%,.4));
+}
+
+/* Status label */
+.vc-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: hsla(var(--hue),100%,60%,.5);
+  text-shadow: 0 0 8px hsla(var(--hue),100%,50%,.2);
+  z-index: 1;
+  margin-top: -8px;
+  transition: color .3s;
+}
+.chat-capture.state-listening .vc-status { color: hsla(var(--hue),100%,65%,.8); text-shadow: 0 0 12px hsla(var(--hue),100%,50%,.4); }
+.chat-capture.state-thinking .vc-status  { color: hsla(var(--hue),100%,60%,.7); }
+.chat-capture.state-speaking .vc-status  { color: hsla(var(--hue),100%,70%,.9); text-shadow: 0 0 16px hsla(var(--hue),100%,55%,.5); }
+
+.vc-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: hsla(var(--hue),100%,50%,.25);
+  z-index: 1;
+  margin-top: 4px;
+}
+
+/* ── Input Row ── */
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--s2);
+  flex-shrink: 0;
+}
+.chat-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 12px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-input::placeholder { color: var(--dim); }
+.chat-send-btn {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .15s;
+  flex-shrink: 0;
+}
+.chat-send-btn:hover { opacity: .85; }
+.chat-send-btn:disabled { opacity: .4; cursor: default; }
+
+/* Voice orb (inline input button) */
+.chat-orb-btn {
+  position: relative;
+  width: 30px; height: 30px;
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--mid);
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.chat-orb-btn:hover { border-color: var(--borderhi); color: var(--text); }
+.chat-orb-btn.recording { border-color: var(--red); color: var(--red); animation: recPulse 1.5s ease-in-out infinite; }
+.chat-orb-btn.thinking { border-color: var(--accent); color: var(--accent); animation: recPulse 1.2s ease-in-out infinite; }
+.chat-orb-btn.speaking { border-color: hsl(var(--hue),100%,55%); color: hsl(var(--hue),100%,55%); animation: speakPulse 0.8s ease-in-out infinite; }
+@keyframes recPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+@keyframes speakPulse { 0%,100%{box-shadow:0 0 0 0 hsla(var(--hue),100%,50%,.3)} 50%{box-shadow:0 0 0 6px hsla(var(--hue),100%,50%,0)} }
+
+.chat-end-btn {
+  background: var(--red2);
+  border: 1px solid rgba(244,71,71,0.3);
+  color: var(--red);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: all .15s;
+  flex-shrink: 0;
+  display: none;
+  letter-spacing: .03em;
+}
+.chat-end-btn:hover { background: rgba(244,71,71,0.35); color: #ff6b6b; }
+.chat-capture.has-session ~ .chat-input-row .chat-end-btn { display: block; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  color: rgba(255,255,255,.85);
+  gap: 14px;
+  height: 22px;
+}
+.status-item { display: flex; align-items: center; gap: 4px; }
+
+/* ── Trend Report ── */
+.trend-card { background:#2a2a2a; border:1px solid #3c3c3c; border-radius:8px; padding:16px; margin-bottom:12px; }
+.trend-title { color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:8px; }
+.trend-body { color:#999; font-size:12px; line-height:1.6; }
+
+/* ── Mobile ── */
+@media(max-width:768px) {
+  .workbench { grid-template-columns: 1fr !important; grid-template-rows: auto 1fr auto !important; }
+  .left-panel { max-height: 200px; border-right: none; border-bottom: 1px solid var(--border); }
+  .right-panel { display: none !important; }
+  .resizer-v { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="index.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="index.html"       class="nav-tab" data-nav-key="Submit" data-i18n="nav.submit">Submit</a>
+      <a href="query.html"       class="nav-tab" data-nav-key="Query SOPs" data-i18n="nav.query">Query SOPs</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="Submissions" data-i18n="nav.submissions">Submissions</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab" data-nav-key="QA Control" data-i18n="nav.qaControl">QA Control</a>
+      <a href="workflow.html"    class="nav-tab" data-nav-key="Workflow" data-i18n="nav.workflow">Workflow</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
+      <a href="feedback.html"    class="nav-tab active" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="location.href='query.html'" title="Back to Hub">Hub</button>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- WORKBENCH -->
+<div class="workbench" id="workbench">
+
+  <!-- LEFT PANEL — Session List -->
+  <div class="left-panel">
+    <div class="panel-header">
+      <span data-i18n="fb.sessions">Feedback Sessions</span>
+      <span class="panel-badge" id="sessionCount">0</span>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="" data-i18n="fb.filterAll">All</button>
+      <button class="filter-btn" data-filter="active" data-i18n="fb.filterActive">Active</button>
+      <button class="filter-btn" data-filter="completed" data-i18n="fb.filterCompleted">Completed</button>
+      <button class="filter-btn" data-filter="analysed" data-i18n="fb.filterAnalysed">Analysed</button>
+    </div>
+    <div class="session-list" id="sessionList"></div>
+  </div>
+
+  <!-- RESIZER V1 -->
+  <div class="resizer resizer-v" id="resizerV1"></div>
+
+  <!-- CENTER PANEL -->
+  <div class="center-panel" id="centerPanel">
+    <div class="center-tabs" id="centerTabs">
+      <button class="center-tab active" data-view="transcript" data-i18n="fb.transcript">Transcript</button>
+      <button class="center-tab" data-view="analysis" data-i18n="fb.analysis">Analysis</button>
+      <div class="center-tab-spacer"></div>
+      <div class="center-actions" id="centerActions" style="display:none;">
+        <button class="action-btn" id="btnReanalyse" onclick="reanalyseSession()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Summarise
+        </button>
+        <button class="action-btn primary" id="btnGenPrompt" onclick="generatePrompt()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Requirements Brief
+        </button>
+      </div>
+    </div>
+    <div class="center-content" id="centerContent">
+      <div class="empty-state" id="emptyState">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span data-i18n="fb.noSelection">Select a session to view details</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZER H -->
+  <div class="resizer resizer-h" id="resizerH"></div>
+
+  <!-- BOTTOM PANEL -->
+  <div class="bottom-panel">
+    <div class="bottom-tabs">
+      <button class="bottom-tab active" data-pane="voice" data-i18n="fb.chatWithCharlie">Chat with Charlie</button>
+      <button class="bottom-tab" data-pane="trends" data-i18n="fb.trendReport">Trend Report</button>
+      <button class="bottom-tab" data-pane="export" data-i18n="fb.export">Export</button>
+    </div>
+    <div class="bottom-content">
+      <!-- Chat Capture Pane -->
+      <div class="bottom-pane active" id="paneVoice">
+        <div class="chat-capture" id="chatCapture">
+          <div class="chat-thread" id="chatThread"></div>
+          <div class="voice-command" id="voiceCommand" onclick="toggleFeedbackVoice()">
+            <div class="vc-orb-wrap">
+              <div class="vc-ring vc-ring-3"></div>
+              <div class="vc-ring vc-ring-2"></div>
+              <div class="vc-ring vc-ring-1"></div>
+              <div class="vc-bars" id="vcBars"></div>
+              <div class="vc-core"></div>
+            </div>
+            <div class="vc-status" id="vcStatus">READY</div>
+            <div class="vc-label">CHARLIE</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <button class="chat-orb-btn" id="voiceBtn" onclick="toggleFeedbackVoice()" title="Hold to speak">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+          </button>
+          <input type="text" class="chat-input" id="chatInput" placeholder="Type your feedback to Charlie..." autocomplete="off" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}">
+          <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()" title="Send">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+          <button class="chat-end-btn" id="chatEndBtn" onclick="endFeedbackSession()">End</button>
+        </div>
+      </div>
+      <!-- Trend Report Pane -->
+      <div class="bottom-pane" id="paneTrends">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <button class="action-btn primary" onclick="generateTrendReport()" data-i18n="fb.generateTrend">Generate Trend Report</button>
+        </div>
+        <div id="trendContent">
+          <div class="empty-state" style="height:120px"><p style="color:var(--dim);font-size:12px">Click "Generate Trend Report" to analyse feedback trends.</p></div>
+        </div>
+      </div>
+      <!-- Export Pane -->
+      <div class="bottom-pane" id="paneExport">
+        <div style="display:flex;gap:8px;">
+          <button class="action-btn" onclick="exportFeedback('json')">Export JSON</button>
+          <button class="action-btn" onclick="exportFeedback('csv')">Export CSV</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RIGHT PANEL — Generated Prompt (overlay, outside grid) -->
+<div class="right-panel" id="rightPanel">
+  <div class="right-header">
+    <span>Requirements Brief</span>
+    <button class="right-close" onclick="closePromptPanel()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="right-content" id="promptContent">
+    <div class="empty-state"><p style="color:var(--dim);font-size:12px">Click "Requirements Brief" to generate from feedback.</p></div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span class="status-item" id="statusSessions">Sessions: 0</span>
+  <span class="status-item" id="statusActive"></span>
+</div>
+
+<!-- ═══ SCRIPTS ═══ -->
+<script src="shared/i18n.js"></script>
+<script src="shared/nav.js"></script>
+<script>
+// ── Globals ──
+var currentSessionId = null;
+var currentSession = null;
+var sessions = [];
+var currentFilter = '';
+var centerView = 'transcript';
+var feedbackSessionId = null;  // active voice session
+var voiceState = 'idle';       // idle | listening | thinking | speaking
+var voiceConvoMode = false;    // continuous voice conversation mode
+var voiceRetryCount = 0;       // consecutive empty-STT retries
+
+function t(k) { return (window.VentI18n && VentI18n.t(k)) || k; }
+
+// Whenever the language changes (button or voice), inject a pivot message into
+// the feedback session transcript so Charlie switches language on the next turn
+var PIVOT_TEXTS = { en: '(language changed to English)', es: '(idioma cambiado a Español)', zh: '（已切换到中文）' };
+window.addEventListener('ventLangChanged', function(e) {
+  var lang = e.detail && e.detail.lang;
+  if (!lang || !feedbackSessionId) return; // only if session is active
+  var pivotBody = { question: PIVOT_TEXTS[lang] || '(language changed)', lang: lang, sessionId: feedbackSessionId };
+  authFetch(SERVER + '/charlie/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(pivotBody)
+  }).catch(function() {}); // silent — just updating transcript context
+});
+
+</script>
+<script src="/shared/audio.js"></script>
+<script src="/operator/feedback/sessions.js"></script>
+<script src="/operator/feedback/chat.js"></script>
+<script src="/operator/feedback/actions.js"></script>
+<script src="/operator/feedback/voice-command.js"></script>
+</body>
+</html>

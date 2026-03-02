@@ -1,11 +1,14 @@
 'use strict';
 require('dotenv').config();
 
+// ── Config must load first — validates env vars and exits if required ones are missing
+const config = require('./lib/config');
+
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 const fs      = require('fs');
-const Anthropic      = require('@anthropic-ai/sdk');
+const Anthropic        = require('@anthropic-ai/sdk');
 const { createClient } = require('@supabase/supabase-js');
 
 // ── Core library modules ──────────────────────────────────────────────────────
@@ -27,12 +30,37 @@ const chatRoutes     = require('./routes/chat');
 const voiceRoutes    = require('./routes/voice');
 const feedbackRoutes = require('./routes/feedback');
 
+// ── Middleware modules ─────────────────────────────────────────────────────────
+const requestLogger = require('./middleware/request-logger');
+const errorHandler  = require('./middleware/error-handler');
+
 // ── App + shared clients ──────────────────────────────────────────────────────
 const app  = express();
-const PORT = process.env.PORT || 3001;
+const PORT = config.port;
 
-const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
-const supabase  = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const anthropic = (() => {
+  const client = new Anthropic.default({ apiKey: config.anthropicApiKey });
+  if (config.langsmithEnabled) {
+    // langsmith's traceable() reads LANGCHAIN_* env vars, not LANGSMITH_* ones.
+    // Set them programmatically so wrapSDK works regardless of which prefix the
+    // user supplied in their .env file.
+    process.env.LANGCHAIN_TRACING_V2 = 'true';
+    process.env.LANGCHAIN_API_KEY    = config.langsmithApiKey;
+    process.env.LANGCHAIN_PROJECT    = config.langsmithProject;
+
+    const { Client }  = require('langsmith');
+    const { wrapSDK } = require('langsmith/wrappers');
+
+    // Pass an explicit Client instance so tracing never falls back to env-var
+    // discovery and the project is always attributed correctly.
+    const lsClient = new Client({ apiKey: config.langsmithApiKey });
+    console.log(`[LANGSMITH] Tracing enabled — project: ${config.langsmithProject}`);
+    return wrapSDK(client, { client: lsClient });
+  }
+  console.log('[LANGSMITH] Tracing disabled — set LANGSMITH_API_KEY + LANGSMITH_TRACING_V2=true to enable');
+  return client;
+})();
+const supabase  = createClient(config.supabaseUrl, config.supabaseKey);
 const auditLog  = makeAuditLog(supabase);
 const rag       = makeRag(supabase);
 const auth      = { requireAuth, requireRole };
@@ -42,6 +70,7 @@ const gdpImage  = { preprocessImage, detectBlueInkRegions };
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(authMiddleware);
+app.use(requestLogger);
 
 // ── Static file serving ───────────────────────────────────────────────────────
 const docsFromServer = path.join(__dirname, '../docs');
@@ -66,18 +95,35 @@ app.get('/manual/:docId/pages', (req, res) => {
 });
 
 // Explicit HTML page routes (more reliable than express.static on Railway)
-['index', 'query', 'qa', 'workflow', 'dashboard', 'submissions', 'login', 'builder', 'readme', 'deck', 'feedback'].forEach(page => {
-  app.get(`/${page === 'index' ? '' : page + '.html'}`, (req, res) => {
-    const file = path.join(docsPath, page === 'index' ? 'index.html' : `${page}.html`);
+// Maps URL slug → file path relative to docsPath (now organised into subfolders)
+const PAGE_MAP = {
+  '':                 'operator/index.html',
+  'query.html':       'operator/query.html',
+  'feedback.html':    'operator/feedback.html',
+  'qa.html':          'qa/qa.html',
+  'workflow.html':    'qa/workflow.html',
+  'submissions.html': 'qa/submissions.html',
+  'dashboard.html':   'management/dashboard.html',
+  'builder.html':     'admin/builder.html',
+  'readme.html':      'admin/readme.html',
+  'login.html':       'auth/login.html',
+};
+Object.entries(PAGE_MAP).forEach(([urlSlug, filePath]) => {
+  app.get(`/${urlSlug}`, (req, res) => {
+    const file = path.join(docsPath, filePath);
     if (fs.existsSync(file)) return res.sendFile(file);
-    res.status(404).send(`${page}.html not found at ${file}`);
+    res.status(404).send(`${filePath} not found at ${file}`);
   });
 });
 
 // ── Debug + health routes ─────────────────────────────────────────────────────
 app.get('/debug-env', requireAuth, (req, res) => {
-  const voyageKeys = Object.keys(process.env).filter(k => k.toLowerCase().includes('voyage'));
-  res.json({ voyageKeys, allKeys: Object.keys(process.env).sort() });
+  res.json({
+    voyageKeySet:    !!config.voyageApiKey,
+    voyageKeyPrefix: config.voyageApiKey ? config.voyageApiKey.slice(0, 6) : null,
+    elevenLabsSet:   !!config.elevenLabsApiKey,
+    nodeEnv:         config.nodeEnv,
+  });
 });
 
 app.get('/debug-rag', requireAuth, async (req, res) => {
@@ -100,17 +146,15 @@ app.get('/debug-rag', requireAuth, async (req, res) => {
 
 app.get('/health', (req, res) => {
   res.json({
-    message: 'Vent server is running',
+    message:       'Vent server is running',
     authenticated: !!req.user,
-    user: req.user ? { name: req.user.name, role: req.user.role } : null,
+    user:          req.user ? { name: req.user.name, role: req.user.role } : null,
     env: {
-      ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
-      SUPABASE_URL:      !!process.env.SUPABASE_URL,
-      SUPABASE_KEY:      !!process.env.SUPABASE_KEY,
-      VOYAGE_API_KEY:    !!getVoyageClient().key,
-      VOYAGE_KEY_PREFIX: getVoyageClient().key ? getVoyageClient().key.slice(0, 6) : 'MISSING',
-      VOYAGE_RAW_PREFIX: process.env.VOYAGE_API_KEY ? process.env.VOYAGE_API_KEY.slice(0, 3) : 'MISSING'
-    }
+      anthropic:   true,  // guaranteed by config — server would have exited otherwise
+      supabase:    true,
+      voyage:      !!config.voyageApiKey,
+      elevenLabs:  !!config.elevenLabsApiKey,
+    },
   });
 });
 
@@ -127,15 +171,16 @@ chatRoutes(app, deps);
 voiceRoutes(app, deps);
 feedbackRoutes(app, deps);
 
+// ── Centralised error handler (must be last) ──────────────────────────────────
+app.use(errorHandler);
+
 // ── Start server ──────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  const keys = ['ANTHROPIC_API_KEY','SUPABASE_URL','SUPABASE_KEY','VOYAGE_API_KEY','VOYAGE_KEY','ELEVENLABS_API_KEY'];
-  keys.forEach(k => console.log(`[ENV] ${k}: ${process.env[k] ? 'SET' : 'MISSING'}`));
-  console.log('[VOYAGE] Using key prefix:', getVoyageClient().key.slice(0,6));
+  console.log(`[SERVER] ✓ Vent running on port ${PORT} (${config.nodeEnv})`);
 
   // Keep-alive: ping ourselves every 14 minutes to prevent Render free-tier sleep
   const KEEP_ALIVE_MS = 14 * 60 * 1000;
-  const selfUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  const selfUrl = config.renderExternalUrl || `http://localhost:${PORT}`;
   setInterval(() => {
     fetch(`${selfUrl}/health`).catch(() => {});
     console.log('[KEEP-ALIVE] pinged', selfUrl);

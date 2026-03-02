@@ -1,12 +1,10 @@
 'use strict';
 const { VoyageAIClient } = require('voyageai');
-
-// Hardcoded fallback ensures demo works even if Railway env var fails
-const VOYAGE_FALLBACK = 'pa-iSnF7DHwQ-E0D5ykTEo3UoNBMXUhYfyk9zlDBMekV_e';
+const config = require('./config');
 
 function getVoyageClient() {
-  const raw = process.env.VOYAGE_KEY || process.env.VOYAGE_API_KEY || VOYAGE_FALLBACK;
-  const key = raw.replace(/^["']|["']$/g, '');
+  const key = config.voyageApiKey;
+  if (!key) return { client: null, key: null };
   return { client: new VoyageAIClient({ apiKey: key }), key };
 }
 
