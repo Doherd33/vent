@@ -28,6 +28,7 @@ const gdpRoutes      = require('./routes/gdp');
 const builderRoutes  = require('./routes/builder');
 const chatRoutes     = require('./routes/chat');
 const voiceRoutes    = require('./routes/voice');
+const vapiRoutes     = require('./routes/vapi');
 const feedbackRoutes = require('./routes/feedback');
 
 // ── Middleware modules ─────────────────────────────────────────────────────────
@@ -186,6 +187,7 @@ gdpRoutes(app, deps);
 builderRoutes(app, deps);
 chatRoutes(app, deps);
 voiceRoutes(app, deps);
+vapiRoutes(app, deps);
 feedbackRoutes(app, deps);
 
 // ── Centralised error handler (must be last) ──────────────────────────────────

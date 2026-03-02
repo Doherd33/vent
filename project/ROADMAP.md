@@ -27,8 +27,8 @@ gantt
     Charlie voice agent refactor ✓     :done, p2d, after p2c, 1d
 
     section Phase 3 · Voice
-    VAPI integration + Charlie handoff  :p3a, after p2d, 1d
-    Real-time voice pipeline testing    :p3b, after p3a, 1d
+    VAPI integration + Charlie handoff ✓ :done, p3a, after p2d, 1d
+    Real-time voice pipeline testing    :active, p3b, after p3a, 1d
 
     section Phase 4 · Observability
     LangSmith eval datasets            :p4a, after p3b, 2d
