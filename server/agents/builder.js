@@ -24,14 +24,8 @@ const ACTIONS = {
   format: `Reformat the following content as a proper GMP SOP step. Structure it with: a clear objective, numbered sub-steps, acceptance criteria, and any critical control points marked. Use standard SOP language conventions.`,
 };
 
-const SYSTEM = `You are the SOP Builder Agent inside Vent — an AI system for regulated biologics manufacturing. You help create and improve SOP content that meets GMP standards.
-
-RULES:
-- Always use active voice and clear, unambiguous language.
-- Reference existing SOP sections when provided for cross-consistency.
-- Output must be audit-ready: precise, traceable, and verifiable.
-- Never invent technical data — only reformat and improve what is given.
-- Return ONLY valid JSON — no markdown fences, no preamble.`;
+const { loadPrompt } = require('../prompts/loader');
+const SYSTEM = loadPrompt('builder');
 
 function makeBuilderAgent(anthropic) {
   /**

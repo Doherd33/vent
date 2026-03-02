@@ -7,7 +7,9 @@
     "start": "node index.js",
     "ingest": "node scripts/ingest-sops.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "eval": "node evals/run-evals.js",
+    "eval:dry": "node evals/run-evals.js --dry-run"
   },
   "keywords": [],
   "author": "",

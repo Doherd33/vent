@@ -31,9 +31,9 @@ gantt
     Real-time voice pipeline testing ✓ :done, p3b, after p3a, 1d
 
     section Phase 4 · Observability
-    LangSmith eval datasets            :p4a, after p3b, 2d
-    Argilla annotation setup           :p4b, after p4a, 3d
-    Prompt versioning + regression tests :p4c, after p4b, 2d
+    LangSmith eval datasets ✓          :done, p4a, after p3b, 2d
+    Argilla annotation setup ✓         :done, p4b, after p4a, 3d
+    Prompt versioning + regression tests ✓ :done, p4c, after p4b, 2d
 ```
 
 ---
