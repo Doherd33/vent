@@ -18,7 +18,25 @@ services:
         sync: false
       - key: ELEVENLABS_API_KEY
         sync: false
+      - key: VAPI_API_KEY
+        sync: false
+      - key: VAPI_PRIVATE_KEY
+        sync: false
+      - key: VAPI_ASSISTANT_ID
+        sync: false
       - key: NODE_ENV
         value: production
       - key: RENDER_EXTERNAL_URL
         sync: false
+      - key: VAPI_API_KEY
+        sync: false
+      - key: VAPI_PRIVATE_KEY
+        sync: false
+      - key: VAPI_ASSISTANT_ID
+        sync: false
+      - key: LANGSMITH_API_KEY
+        sync: false
+      - key: LANGSMITH_TRACING_V2
+        value: "true"
+      - key: LANGSMITH_PROJECT
+        value: Vent

@@ -58,7 +58,9 @@ function makeCharlieAgent(anthropic) {
       messages,
     });
 
-    const raw = response.content[0].text;
+    let raw = response.content[0].text;
+    // Strip markdown fences Claude sometimes wraps around JSON
+    raw = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '').trim();
     let parsed;
     try {
       parsed = JSON.parse(raw);

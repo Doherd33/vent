@@ -19,6 +19,7 @@ const OPTIONAL = {
   VOYAGE_KEY:           null,  // alias some deployments use
   ELEVENLABS_API_KEY:   null,
   VAPI_API_KEY:         null,
+  VAPI_PRIVATE_KEY:     null,
   VAPI_ASSISTANT_ID:    null,
   RENDER_EXTERNAL_URL:  null,
   // LangSmith supports both LANGSMITH_* and LANGCHAIN_* prefixes — accept either
@@ -54,6 +55,7 @@ function load() {
     supabaseKey:        process.env.SUPABASE_KEY,
     voyageApiKey:       voyageKey || null,
     elevenLabsApiKey:   process.env.ELEVENLABS_API_KEY || null,    vapiApiKey:          process.env.VAPI_API_KEY || null,
+    vapiPrivateKey:      process.env.VAPI_PRIVATE_KEY || null,
     vapiAssistantId:     process.env.VAPI_ASSISTANT_ID || null,    renderExternalUrl:  process.env.RENDER_EXTERNAL_URL || null,
     // Accept both LANGSMITH_* and LANGCHAIN_* prefixes so either works in .env
     langsmithApiKey:    process.env.LANGSMITH_API_KEY || process.env.LANGCHAIN_API_KEY || null,
@@ -74,7 +76,7 @@ function load() {
   console.log(`[CONFIG]   SUPABASE_URL:      SET`);
   console.log(`[CONFIG]   VOYAGE_API_KEY:    ${config.voyageApiKey ? 'SET (' + config.voyageApiKey.slice(0, 6) + '...)' : 'MISSING — text search fallback active'}`);
   console.log(`[CONFIG]   ELEVENLABS_API_KEY:${config.elevenLabsApiKey ? ' SET' : ' MISSING — voice features disabled'}`);
-  console.log(`[CONFIG]   VAPI:              ${config.vapiApiKey ? 'SET (assistant: ' + (config.vapiAssistantId || 'none') + ')' : 'MISSING — VAPI disabled, ElevenLabs fallback active'}`);
+  console.log(`[CONFIG]   VAPI:              ${config.vapiApiKey && config.vapiAssistantId ? 'ENABLED (assistant: ' + config.vapiAssistantId.slice(0, 8) + '...)' : 'MISSING — VAPI disabled, ElevenLabs fallback active'}`);
   console.log(`[CONFIG]   LANGSMITH:         ${config.langsmithEnabled ? 'ENABLED (project: ' + config.langsmithProject + ')' : 'disabled — set LANGSMITH_API_KEY to enable tracing'}`);
 
   return config;
