@@ -28,7 +28,7 @@ gantt
 
     section Phase 3 · Voice
     VAPI integration + Charlie handoff ✓ :done, p3a, after p2d, 1d
-    Real-time voice pipeline testing    :active, p3b, after p3a, 1d
+    Real-time voice pipeline testing ✓ :done, p3b, after p3a, 1d
 
     section Phase 4 · Observability
     LangSmith eval datasets            :p4a, after p3b, 2d
