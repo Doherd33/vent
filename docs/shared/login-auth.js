@@ -145,6 +145,18 @@ function handleAuthSuccess(data) {
 }
 
 // ════════════════════════════════════════════════════════
+// DEMO LOGIN — bypass auth, admin access, launch tour
+// ════════════════════════════════════════════════════════
+function demoLogin() {
+  const name = localStorage.getItem('vent_first_name') || 'Admin';
+  localStorage.setItem('vent_token',   'demo');
+  localStorage.setItem('vent_role',    'admin');
+  localStorage.setItem('vent_name',    name);
+  localStorage.setItem('vent_user_id', 'demo-user');
+  window.location.href = 'query.html?demo=1';
+}
+
+// ════════════════════════════════════════════════════════
 // LOGIN
 // ════════════════════════════════════════════════════════
 async function doLogin() {

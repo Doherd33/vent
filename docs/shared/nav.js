@@ -29,10 +29,12 @@
 
   // ── Auth guard ──
   // Pages can set window.SKIP_AUTH_GUARD = true before loading this script to skip
+  // Demo mode: token 'demo' bypasses server validation for offline demos
   if (!window.SKIP_AUTH_GUARD) {
     (async function authGuard() {
       var token = localStorage.getItem('vent_token');
       if (!token) { window.location.replace('login.html'); return; }
+      if (token === 'demo') return; // Demo mode — skip server validation
       try {
         var res = await fetch(SERVER + '/auth/me', {
           headers: { 'Authorization': 'Bearer ' + token }

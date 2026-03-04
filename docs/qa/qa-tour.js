@@ -1,127 +1,63 @@
-// ─── VOICE-NARRATED PRODUCT TOUR (Charlie) ──────────────────────────────────
+// ─── QA CONTROL CENTRE DEMO TOUR (Charlie voice narration) ──────────────────
 (function(){
   var tourSteps = [
-    // 1 — Navigation Bar
-    { target:'.title-bar', titleKey:'tour.step1.title', descKey:'tour.step1.desc', voiceKey:'tour.step1.voice', pos:'bottom',
+    // 1 — QA Control Centre overview
+    { target:'.workbench', titleKey:'qtour.step1.title', descKey:'qtour.step1.desc', voiceKey:'qtour.step1.voice', pos:'bottom' },
+    // 2 — Submissions List
+    { target:'.left-panel', titleKey:'qtour.step2.title', descKey:'qtour.step2.desc', voiceKey:'qtour.step2.voice', pos:'right',
       sub:[
-        { target:'#mainNav', titleKey:'tour.step1.sub1.title', descKey:'tour.step1.sub1.desc', voiceKey:'tour.step1.sub1.voice', pos:'bottom' },
-        { target:'#roleBadge', titleKey:'tour.step1.sub2.title', descKey:'tour.step1.sub2.desc', voiceKey:'tour.step1.sub2.voice', pos:'bottom' },
-        { target:'.sign-out-btn:last-child', titleKey:'tour.step1.sub3.title', descKey:'tour.step1.sub3.desc', voiceKey:'tour.step1.sub3.voice', pos:'bottom' }
+        { target:'.filter-bar', titleKey:'qtour.step2.sub1.title', descKey:'qtour.step2.sub1.desc', voiceKey:'qtour.step2.sub1.voice', pos:'right' },
+        { target:'#subList', titleKey:'qtour.step2.sub2.title', descKey:'qtour.step2.sub2.desc', voiceKey:'qtour.step2.sub2.voice', pos:'right' },
+        { target:'.sub-card', titleKey:'qtour.step2.sub3.title', descKey:'qtour.step2.sub3.desc', voiceKey:'qtour.step2.sub3.voice', pos:'right', skipIfMissing:true }
       ]},
-    // 2 — Language Switcher
-    { target:'#langSwitcher', titleKey:'tour.step2.title', descKey:'tour.step2.desc', voiceKey:'tour.step2.voice', pos:'bottom' },
-    // 3 — Chat History
-    { target:'.history-toggle', titleKey:'tour.step3.title', descKey:'tour.step3.desc', voiceKey:'tour.step3.voice', pos:'bottom',
-      open:'openHistorySidebar', close:'closeHistorySidebar',
+    // 3 — Submission Detail
+    { target:'.center-panel', titleKey:'qtour.step3.title', descKey:'qtour.step3.desc', voiceKey:'qtour.step3.voice', pos:'left',
+      setup: function(){ autoSelectFirst(); },
       sub:[
-        { target:'.hs-new-btn', titleKey:'tour.step3.sub1.title', descKey:'tour.step3.sub1.desc', voiceKey:'tour.step3.sub1.voice', pos:'right' },
-        { target:'.hs-head-actions', titleKey:'tour.step3.sub2.title', descKey:'tour.step3.sub2.desc', voiceKey:'tour.step3.sub2.voice', pos:'right' },
-        { target:'#hsList', titleKey:'tour.step3.sub3.title', descKey:'tour.step3.sub3.desc', voiceKey:'tour.step3.sub3.voice', pos:'right' }
+        { target:'.status-badge', titleKey:'qtour.step3.sub1.title', descKey:'qtour.step3.sub1.desc', voiceKey:'qtour.step3.sub1.voice', pos:'bottom', skipIfMissing:true },
+        { target:'.obs-text', titleKey:'qtour.step3.sub2.title', descKey:'qtour.step3.sub2.desc', voiceKey:'qtour.step3.sub2.voice', pos:'left', skipIfMissing:true },
+        { target:'.sop-table', titleKey:'qtour.step3.sub3.title', descKey:'qtour.step3.sub3.desc', voiceKey:'qtour.step3.sub3.voice', pos:'left', skipIfMissing:true }
       ]},
-    // 4 — SOP Library
-    { target:'.sop-search-btn', titleKey:'tour.step4.title', descKey:'tour.step4.desc', voiceKey:'tour.step4.voice', pos:'bottom',
-      open:'openSopSidebar', close:'closeSopSidebar',
+    // 4 — Suggested Changes
+    { target:'.changes-list', titleKey:'qtour.step4.title', descKey:'qtour.step4.desc', voiceKey:'qtour.step4.voice', pos:'left', skipIfMissing:true },
+    // 5 — SOP Viewer
+    { target:'#rightPanel', titleKey:'qtour.step5.title', descKey:'qtour.step5.desc', voiceKey:'qtour.step5.voice', pos:'left',
+      setup: function(){ autoOpenSop(); },
       sub:[
-        { target:'.sop-discover-header', titleKey:'tour.step4.sub1.title', descKey:'tour.step4.sub1.desc', voiceKey:'tour.step4.sub1.voice', pos:'left' },
-        { target:'#sopSearchInput', titleKey:'tour.step4.sub2.title', descKey:'tour.step4.sub2.desc', voiceKey:'tour.step4.sub2.voice', pos:'left' },
-        { target:'#sopResults', titleKey:'tour.step4.sub3.title', descKey:'tour.step4.sub3.desc', voiceKey:'tour.step4.sub3.voice', pos:'left' }
+        { target:'#rightContent', titleKey:'qtour.step5.sub1.title', descKey:'qtour.step5.sub1.desc', voiceKey:'qtour.step5.sub1.voice', pos:'left', skipIfMissing:true },
+        { target:'.right-toolbar', titleKey:'qtour.step5.sub2.title', descKey:'qtour.step5.sub2.desc', voiceKey:'qtour.step5.sub2.voice', pos:'left', skipIfMissing:true }
       ]},
-    // 5 — To-do List
-    { target:'.todo-toggle', titleKey:'tour.step5.title', descKey:'tour.step5.desc', voiceKey:'tour.step5.voice', pos:'bottom',
-      open:'openTodoSidebar', close:'closeTodoSidebar',
-      sub:[
-        { target:'#todoProgress', titleKey:'tour.step5.sub1.title', descKey:'tour.step5.sub1.desc', voiceKey:'tour.step5.sub1.voice', pos:'right' },
-        { target:'#todoList', titleKey:'tour.step5.sub2.title', descKey:'tour.step5.sub2.desc', voiceKey:'tour.step5.sub2.voice', pos:'right' },
-        { target:'#todoNewInput', titleKey:'tour.step5.sub3.title', descKey:'tour.step5.sub3.desc', voiceKey:'tour.step5.sub3.voice', pos:'right' }
-      ]},
-    // 6 — Ask a Question
-    { target:'#qInput', titleKey:'tour.step6.title', descKey:'tour.step6.desc', voiceKey:'tour.step6.voice', pos:'top' },
-    // 7 — Facility Area
-    { target:'#areaSelect', titleKey:'tour.step7.title', descKey:'tour.step7.desc', voiceKey:'tour.step7.voice', pos:'top' },
-    // 8 — Photo Query
-    { target:'.cam-btn', titleKey:'tour.step8.title', descKey:'tour.step8.desc', voiceKey:'tour.step8.voice', pos:'top' },
-    // 9 — GDP Check
-    { target:'#gdpBtn', titleKey:'tour.step9.title', descKey:'tour.step9.desc', voiceKey:'tour.step9.voice', pos:'top',
-      open:'openGdpModal', close:'closeGdpModal',
-      sub:[
-        { target:'#gdpDropZone', titleKey:'tour.step9.sub1.title', descKey:'tour.step9.sub1.desc', voiceKey:'tour.step9.sub1.voice', pos:'right' },
-        { target:'.gdp-upload-action-btn.camera', titleKey:'tour.step9.sub2.title', descKey:'tour.step9.sub2.desc', voiceKey:'tour.step9.sub2.voice', pos:'bottom' },
-        { target:'#gdpRunBtn', titleKey:'tour.step9.sub3.title', descKey:'tour.step9.sub3.desc', voiceKey:'tour.step9.sub3.voice', pos:'top' },
-        { target:'#gdpHistoryBtn', titleKey:'tour.step9.sub4.title', descKey:'tour.step9.sub4.desc', voiceKey:'tour.step9.sub4.voice', pos:'bottom' }
-      ]},
-    // 10 — Send
-    { target:'.send-btn', titleKey:'tour.step10.title', descKey:'tour.step10.desc', voiceKey:'tour.step10.voice', pos:'top' },
-    // 11 — Quick Suggestions
-    { target:'.sug-chips', titleKey:'tour.step11.title', descKey:'tour.step11.desc', voiceKey:'tour.step11.voice', pos:'top' },
-    // 12 — Pinned Answers (skipIfMissing)
-    { target:'#bookmarksPanel', titleKey:'tour.step12.title', descKey:'tour.step12.desc', voiceKey:'tour.step12.voice', pos:'top', skipIfMissing:true,
-      setup:function(){ var p=document.getElementById('bookmarksPanel'); if(p) p.style.display='block'; },
-      teardown:function(){ var p=document.getElementById('bookmarksPanel'); if(p) p.style.display='none'; }},
-    // 13 — Scroll to Latest (skipIfMissing)
-    { target:'#scrollBottomBtn', titleKey:'tour.step13.title', descKey:'tour.step13.desc', voiceKey:'tour.step13.voice', pos:'top', skipIfMissing:true,
-      setup:function(){ var b=document.getElementById('scrollBottomBtn'); if(b) b.style.display='flex'; },
-      teardown:function(){ var b=document.getElementById('scrollBottomBtn'); if(b) b.style.display=''; }},
-    // 14 — Answer Actions (skipIfMissing)
-    { target:'.answer-actions', titleKey:'tour.step14.title', descKey:'tour.step14.desc', voiceKey:'tour.step14.voice', pos:'top', skipIfMissing:true,
-      sub:[
-        { target:'.answer-actions .act-btn:nth-child(1)', titleKey:'tour.step14.sub1.title', descKey:'tour.step14.sub1.desc', voiceKey:'tour.step14.sub1.voice', pos:'top' },
-        { target:'.answer-actions .act-btn:nth-child(2)', titleKey:'tour.step14.sub2.title', descKey:'tour.step14.sub2.desc', voiceKey:'tour.step14.sub2.voice', pos:'top' },
-        { target:'.answer-actions .act-btn:nth-child(3)', titleKey:'tour.step14.sub3.title', descKey:'tour.step14.sub3.desc', voiceKey:'tour.step14.sub3.voice', pos:'top' },
-        { target:'.answer-actions .act-btn:nth-child(5)', titleKey:'tour.step14.sub4.title', descKey:'tour.step14.sub4.desc', voiceKey:'tour.step14.sub4.voice', pos:'top' }
-      ]},
-    // 15 — Raise a Concern
-    { target:'.radial-trigger', titleKey:'tour.step15.title', descKey:'tour.step15.desc', voiceKey:'tour.step15.voice', pos:'left',
-      open:'openVentPanel', close:'closeVentPanel',
-      sub:[
-        { target:'#ventText', titleKey:'tour.step15.sub1.title', descKey:'tour.step15.sub1.desc', voiceKey:'tour.step15.sub1.voice', pos:'right' },
-        { target:'.vp-pri', titleKey:'tour.step15.sub2.title', descKey:'tour.step15.sub2.desc', voiceKey:'tour.step15.sub2.voice', pos:'right' },
-        { target:'#vpDrop', titleKey:'tour.step15.sub3.title', descKey:'tour.step15.sub3.desc', voiceKey:'tour.step15.sub3.voice', pos:'right' },
-        { target:'#ventSubmitBtn', titleKey:'tour.step15.sub4.title', descKey:'tour.step15.sub4.desc', voiceKey:'tour.step15.sub4.voice', pos:'right' }
-      ]},
-    // 16 — My Activity
-    { target:'.subs-trigger', titleKey:'tour.step16.title', descKey:'tour.step16.desc', voiceKey:'tour.step16.voice', pos:'top',
-      open:'openSubsDrawer', close:'closeSubsDrawer',
-      sub:[
-        { target:'.sd-tab:first-child', titleKey:'tour.step16.sub1.title', descKey:'tour.step16.sub1.desc', voiceKey:'tour.step16.sub1.voice', pos:'bottom' },
-        { target:'.sd-tab:nth-child(2)', titleKey:'tour.step16.sub2.title', descKey:'tour.step16.sub2.desc', voiceKey:'tour.step16.sub2.voice', pos:'bottom' }
-      ]}
+    // 6 — Audit Trail & E-Signature
+    { target:'.audit-section', titleKey:'qtour.step6.title', descKey:'qtour.step6.desc', voiceKey:'qtour.step6.voice', pos:'top', skipIfMissing:true,
+      setup: function(){ autoExpandAudit(); }},
+    // 7 — Outro
+    { target:'.title-bar', titleKey:'qtour.step7.title', descKey:'qtour.step7.desc', voiceKey:'qtour.step7.voice', pos:'bottom' }
   ];
 
-  // ── Demo-mode steps (focused tour: Search + Raise a Concern + transition) ──
-  var demoSteps = [
-    // D1 — Welcome
-    { target:'#qInput', titleKey:'demo.d1.title', descKey:'demo.d1.desc', voiceKey:'demo.d1.voice', pos:'top' },
-    // D2 — Intelligent SOP Search
-    { target:'#qInput', titleKey:'demo.d2.title', descKey:'demo.d2.desc', voiceKey:'demo.d2.voice', pos:'top' },
-    // D3 — SOP Library (with subs)
-    { target:'.sop-search-btn', titleKey:'demo.d3.title', descKey:'demo.d3.desc', voiceKey:'demo.d3.voice', pos:'bottom',
-      open:'openSopSidebar', close:'closeSopSidebar',
-      sub:[
-        { target:'.sop-discover-header', titleKey:'demo.d3.sub1.title', descKey:'demo.d3.sub1.desc', voiceKey:'demo.d3.sub1.voice', pos:'left' },
-        { target:'#sopSearchInput', titleKey:'demo.d3.sub2.title', descKey:'demo.d3.sub2.desc', voiceKey:'demo.d3.sub2.voice', pos:'left' },
-        { target:'#sopResults', titleKey:'demo.d3.sub3.title', descKey:'demo.d3.sub3.desc', voiceKey:'demo.d3.sub3.voice', pos:'left' }
-      ]},
-    // D4 — Raise a Concern (with subs)
-    { target:'.radial-trigger', titleKey:'demo.d4.title', descKey:'demo.d4.desc', voiceKey:'demo.d4.voice', pos:'left',
-      open:'openVentPanel', close:'closeVentPanel',
-      sub:[
-        { target:'#ventText', titleKey:'demo.d4.sub1.title', descKey:'demo.d4.sub1.desc', voiceKey:'demo.d4.sub1.voice', pos:'right' },
-        { target:'.vp-pri', titleKey:'demo.d4.sub2.title', descKey:'demo.d4.sub2.desc', voiceKey:'demo.d4.sub2.voice', pos:'right' },
-        { target:'#vpDrop', titleKey:'demo.d4.sub3.title', descKey:'demo.d4.sub3.desc', voiceKey:'demo.d4.sub3.voice', pos:'right' },
-        { target:'#ventSubmitBtn', titleKey:'demo.d4.sub4.title', descKey:'demo.d4.sub4.desc', voiceKey:'demo.d4.sub4.voice', pos:'right' }
-      ]},
-    // D5 — Transition to QA Control Centre
-    { target:'.title-bar', titleKey:'demo.d5.title', descKey:'demo.d5.desc', voiceKey:'demo.d5.voice', pos:'bottom', isTransition:true }
-  ];
-
-  var originalSteps = tourSteps;
-  var isDemoMode = false;
+  // ── Helpers: auto-select submission & open SOP so tour has content ──
+  function autoSelectFirst(){
+    if(typeof selected !== 'undefined' && selected) return;
+    var card = document.querySelector('.sub-card');
+    if(card) card.click();
+  }
+  function autoOpenSop(){
+    if(typeof selected !== 'undefined' && selected && selected.sops && selected.sops.length){
+      if(typeof openSop === 'function') openSop(0);
+    }
+  }
+  function autoExpandAudit(){
+    var btn = document.querySelector('.audit-toggle');
+    var content = document.getElementById('auditTrailContent');
+    if(btn && content && content.style.display === 'none'){
+      btn.click();
+    }
+  }
 
   var tourIdx = 0, subIdx = -1;
   var overlay, highlight, card, demoBanner;
   var openPanelClose = null;
   var voiceMuted = false;
-  var isVoiceTour = false;
+  var isVoiceTour = true;
 
   function buildOverlay(){
     overlay = document.createElement('div');
@@ -207,11 +143,11 @@
     if(openPanelClose){ try{ window[openPanelClose](); }catch(e){} openPanelClose = null; }
   }
 
-  // ── Voice narration (delegates to VentAudio) ──
-  function stopCurrentAudio(){ VentAudio.stop(); }
+  // ── Voice narration ──
+  function stopCurrentAudio(){ if(window.VentAudio) VentAudio.stop(); }
 
   function speakStep(text){
-    if(voiceMuted || !isVoiceTour || !text) return;
+    if(voiceMuted || !isVoiceTour || !text || !window.VentAudio) return;
     VentAudio.speak(text, function(freqData){
       var bars = card ? card.querySelectorAll('.tour-voice-bar') : [];
       bars.forEach(function(bar, i){
@@ -242,14 +178,13 @@
     if(voiceMuted) stopCurrentAudio();
   }
 
-  // ── Ask Charlie: voice Q&A during tour (uses VentAudio) ──
+  // ── Ask Charlie: voice Q&A during tour ──
   var tourConvoHistory = [];
   var lastAskStepIdx = -1;
   var lastAskSubIdx = -1;
-  var tourAskRecording = false;
 
   function askCharlieToggle(){
-    if(VentAudio.isRecording()){
+    if(window.VentAudio && VentAudio.isRecording()){
       VentAudio.stopRecording();
     } else {
       startTourAsk();
@@ -263,13 +198,10 @@
       btn.classList.add('recording');
       btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg> ' + t('tour.askStop');
     }
-    tourAskRecording = true;
     VentAudio.recordSTT(function(text){
-      tourAskRecording = false;
       setAskBtnThinking();
       sendTourQuestion(text);
     }, function(err){
-      tourAskRecording = false;
       if(err === 'mic'){
         var ans = card ? card.querySelector('#tourAskAnswer') : null;
         if(ans){ ans.style.display = 'block'; ans.textContent = t('tour.askMicError'); }
@@ -309,7 +241,6 @@
           ans.innerHTML = '<div class="tour-ask-q">\u201c' + question + '\u201d</div>' + answer;
         }
         speakStep(answer);
-        if(data.action && data.action !== 'none') dispatchAction(data.action, data.params || {});
       } else {
         var ans = card ? card.querySelector('#tourAskAnswer') : null;
         if(ans){ ans.style.display = 'block'; ans.textContent = t('tour.askError'); }
@@ -331,16 +262,10 @@
     }
   }
 
-  function teardownPrev(){
-    var ms = tourSteps[tourIdx];
-    if(ms && ms.teardown) try{ ms.teardown(); }catch(e){}
-  }
-
+  // ── Step rendering ──
   function renderStep(){
     stopCurrentAudio();
-    // Cancel any in-progress recording (don't process STT)
-    VentAudio.killRecording();
-    // Reset conversation when step changes
+    if(window.VentAudio) VentAudio.killRecording();
     if(tourIdx !== lastAskStepIdx || subIdx !== lastAskSubIdx){
       tourConvoHistory = [];
       lastAskStepIdx = tourIdx;
@@ -357,6 +282,11 @@
 
     var el = document.querySelector(step.target);
     if(!el){
+      if(step.skipIfMissing){
+        if(isSubStep){ subIdx++; if(subIdx >= mainStep.sub.length){ leaveSubTour(); nextMain(); } else renderStep(); }
+        else { tourIdx++; if(tourIdx >= tourSteps.length) endTourInner(); else renderStep(); }
+        return;
+      }
       if(isSubStep){ subIdx++; if(subIdx >= mainStep.sub.length){ leaveSubTour(); nextMain(); } else renderStep(); }
       else { if(step.teardown) try{ step.teardown(); }catch(e){} tourIdx++; if(tourIdx >= tourSteps.length) endTourInner(); else renderStep(); }
       return;
@@ -386,7 +316,6 @@
     var nextLabel = (isLastMain && !isSubStep && !hasSub) || (isLastMain && isLastSub) ? t('tour.done') : t('tour.next');
     btns += '<button class="tour-next" onclick="nextTourStep()">' + nextLabel + '</button>';
 
-    // Build voice bars HTML
     var voiceBarCount = 16;
     var barsHtml = '';
     for(var b=0; b<voiceBarCount; b++){
@@ -424,7 +353,6 @@
 
     positionCard(rect, step.pos);
 
-    // Trigger voice narration
     if(isVoiceTour && step.voiceKey){
       setTimeout(function(){ speakStep(t(step.voiceKey)); }, 400);
     }
@@ -490,20 +418,6 @@
   }
 
   function endTourInner(){
-    // Demo mode transition: navigate to QA page
-    // Check current or previous step for transition flag (nextMain increments before calling end)
-    var checkIdx = tourIdx < tourSteps.length ? tourIdx : tourIdx - 1;
-    if(isDemoMode && checkIdx >= 0 && tourSteps[checkIdx] && tourSteps[checkIdx].isTransition){
-      stopCurrentAudio();
-      closeOpenPanel();
-      removeDemoBanner();
-      if(overlay){ overlay.remove(); overlay = null; }
-      if(highlight){ highlight.remove(); highlight = null; }
-      if(card){ card.remove(); card = null; }
-      sessionStorage.setItem('vent_demo_tour','1');
-      window.location.href = '/qa.html';
-      return;
-    }
     stopCurrentAudio();
     var ms = tourSteps[tourIdx];
     if(ms && ms.teardown) try{ ms.teardown(); }catch(e){}
@@ -513,52 +427,22 @@
     if(highlight){ highlight.remove(); highlight = null; }
     if(card){ card.remove(); card = null; }
     isVoiceTour = false;
-    if(isDemoMode){
-      isDemoMode = false;
-      tourSteps = originalSteps;
-    }
-    localStorage.setItem('vent_tour_done','1');
   }
 
-  function start(withVoice){
-    tourIdx = 0;
-    subIdx = -1;
-    isVoiceTour = !!withVoice;
-    voiceMuted = false;
-    closeOpenPanel();
-    if(overlay) endTourInner();
-    buildOverlay();
-    if(isVoiceTour) showDemoBanner();
-    renderStep();
-  }
-
-  // ── Demo Tour entry point ──
-  function startDemo(){
-    // Clean up any existing tour first (before setting demo mode)
-    if(overlay){
-      stopCurrentAudio();
-      closeOpenPanel();
-      removeDemoBanner();
-      if(overlay){ overlay.remove(); overlay = null; }
-      if(highlight){ highlight.remove(); highlight = null; }
-      if(card){ card.remove(); card = null; }
-    }
+  function start(){
     tourIdx = 0;
     subIdx = -1;
     isVoiceTour = true;
     voiceMuted = false;
-    isDemoMode = true;
-    tourSteps = demoSteps;
-    closeOpenPanel();
+    if(overlay) endTourInner();
     buildOverlay();
     showDemoBanner();
-    renderStep();
+    // Give the page a moment to load submissions
+    setTimeout(renderStep, 300);
   }
 
   // Expose globally
-  window.startTour = function(){ start(false); };
-  window.startVoiceTour = function(){ start(true); };
-  window.startDemoTour = startDemo;
+  window.startQaTour = start;
   window.nextTourStep = nextStep;
   window.prevTourStep = prevStep;
   window.exploreTourStep = exploreStep;
@@ -571,7 +455,6 @@
     if(overlay){
       stopCurrentAudio();
       renderStep();
-      // Update demo banner text
       if(demoBanner){
         var sp = demoBanner.querySelector('.tour-demo-text');
         if(sp) sp.textContent = t('tour.demoBanner');
@@ -581,12 +464,11 @@
     }
   });
 
-  // Auto-trigger demo mode via URL param ?demo=1
-  if(new URLSearchParams(window.location.search).get('demo') === '1'){
-    setTimeout(function(){ startDemo(); }, 800);
-  }
-  // Auto-trigger on first visit (silent tour)
-  else if(!localStorage.getItem('vent_tour_done')){
-    setTimeout(function(){ start(false); }, 1000);
+  // Auto-start if chained from query.html demo tour
+  var demoSignal = sessionStorage.getItem('vent_demo_tour');
+  if(demoSignal === '1'){
+    sessionStorage.removeItem('vent_demo_tour');
+    // Wait for submissions to load, then start
+    setTimeout(function(){ start(); }, 1500);
   }
 })();

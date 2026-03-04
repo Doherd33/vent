@@ -376,8 +376,162 @@ body {
   .status-bar { font-size: 11px; gap: 8px; padding: 0 8px; }
   .s-right { gap: 8px; }
 }
+
+/* ── TOUR OVERLAY & CARD ── */
+.tour-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,.6);
+  transition: clip-path .3s ease;
+}
+.tour-highlight {
+  position: fixed; z-index: 9001;
+  border-radius: 8px;
+  box-shadow: 0 0 0 4px var(--accent), 0 0 24px rgba(0,122,204,.35);
+  pointer-events: none;
+  transition: top .3s ease, left .3s ease, width .3s ease, height .3s ease;
+  animation: tourPulse 2s ease-in-out infinite;
+}
+@keyframes tourPulse {
+  0%,100% { box-shadow: 0 0 0 4px var(--accent), 0 0 24px rgba(0,122,204,.35); }
+  50%     { box-shadow: 0 0 0 6px var(--accent), 0 0 36px rgba(0,122,204,.5); }
+}
+.tour-card {
+  position: fixed; z-index: 9002;
+  width: 330px; background: var(--s1);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px 20px 14px; box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  animation: fadeUp .25s ease;
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.tour-card-step {
+  font-size: 10px; color: var(--accent); font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+}
+.tour-card-title {
+  font-family: 'Instrument Serif', serif; font-size: 17px; color: var(--text);
+  margin-bottom: 6px;
+}
+.tour-card-desc {
+  font-size: 12.5px; color: var(--mid); line-height: 1.6; margin-bottom: 14px;
+}
+.tour-card-actions {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.tour-skip {
+  background: none; border: none; color: var(--dim); font-size: 11px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 4px 0;
+  transition: color .12s;
+}
+.tour-skip:hover { color: var(--text); }
+.tour-card-btns { display: flex; gap: 6px; }
+.tour-back, .tour-next {
+  padding: 6px 14px; border-radius: 6px; font-size: 12px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500;
+  transition: all .12s; border: none;
+}
+.tour-back {
+  background: var(--s2); color: var(--mid); border: 1px solid var(--border);
+}
+.tour-back:hover { color: var(--text); border-color: var(--borderhi); }
+.tour-next { background: var(--accent); color: #fff; }
+.tour-next:hover { background: #0088e0; }
+.tour-card-arrow {
+  position: absolute; width: 12px; height: 12px;
+  background: var(--s1); border: 1px solid var(--border);
+  transform: rotate(45deg);
+}
+.tour-card-arrow.arrow-top { top: -7px; left: 24px; border-bottom: none; border-right: none; }
+.tour-card-arrow.arrow-bottom { bottom: -7px; left: 24px; border-top: none; border-left: none; }
+.tour-card-arrow.arrow-left { left: -7px; top: 16px; border-top: none; border-right: none; }
+.tour-card-arrow.arrow-right { right: -7px; top: 16px; border-bottom: none; border-left: none; }
+.tour-card-step .tour-sub-counter { opacity: .6; margin-left: 4px; }
+.tour-explore {
+  padding: 6px 14px; border-radius: 6px; font-size: 12px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500;
+  transition: all .12s; border: 1px solid var(--accent);
+  background: transparent; color: var(--accent);
+}
+.tour-explore:hover { background: var(--accent); color: #fff; }
+
+/* Voice bars */
+.tour-voice-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; min-height: 28px;
+}
+.tour-voice-bars { display: flex; align-items: center; gap: 2px; height: 22px; }
+.tour-voice-bar {
+  width: 2.5px; border-radius: 100px;
+  background: linear-gradient(to top, var(--accent), var(--teal));
+  transition: height 0.08s ease;
+  box-shadow: 0 0 4px rgba(0,122,204,0.3);
+}
+.tour-voice-label {
+  font-size: 10px; color: var(--accent); font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .04em; display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.tour-voice-pip {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  animation: breathe 2s ease-in-out infinite; flex-shrink: 0;
+}
+.tour-voice-mute {
+  background: none; border: 1px solid var(--border); border-radius: 5px;
+  color: var(--dim); cursor: pointer; padding: 3px 6px; margin-left: auto;
+  font-size: 10px; font-family: 'DM Sans', sans-serif;
+  transition: all .15s; display: flex; align-items: center; gap: 3px;
+}
+.tour-voice-mute:hover { color: var(--text); border-color: var(--borderhi); }
+.tour-voice-mute.muted { color: var(--red); border-color: var(--red); }
+
+/* Demo banner */
+.tour-demo-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9003;
+  background: linear-gradient(90deg, #007acc, #0098e6);
+  padding: 8px 20px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-size: 12px; color: #fff; font-weight: 500;
+  box-shadow: 0 2px 12px rgba(0,122,204,0.3);
+  animation: fadeUp .3s ease;
+}
+.tour-demo-banner svg { flex-shrink: 0; }
+.tour-demo-exit {
+  background: rgba(255,255,255,0.2); border: none; border-radius: 5px;
+  color: #fff; font-size: 11px; font-family: 'DM Sans', sans-serif;
+  padding: 3px 10px; cursor: pointer; margin-left: 8px;
+  transition: background .15s;
+}
+.tour-demo-exit:hover { background: rgba(255,255,255,0.35); }
+
+/* Ask Charlie */
+.tour-ask-btn {
+  background: none; border: 1px solid var(--border); border-radius: 5px;
+  color: var(--dim); cursor: pointer; padding: 3px 7px; margin-left: 4px;
+  font-size: 10px; font-family: 'DM Sans', sans-serif;
+  transition: all .15s; display: flex; align-items: center; gap: 3px;
+}
+.tour-ask-btn:hover { color: var(--accent); border-color: var(--accent); }
+.tour-ask-btn.recording {
+  color: #fff; border-color: var(--red); background: var(--red);
+  animation: tourRecPulse 1.2s ease-in-out infinite;
+}
+.tour-ask-btn.thinking {
+  color: var(--accent); border-color: var(--accent); pointer-events: none; opacity: .7;
+}
+@keyframes tourRecPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
+  50%     { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+}
+.tour-ask-answer {
+  margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--accent);
+  background: var(--accent2); border-radius: 0 6px 6px 0;
+  font-size: 12px; color: var(--text); line-height: 1.6;
+}
+.tour-ask-answer .tour-ask-q {
+  font-size: 10px; color: var(--dim); margin-bottom: 4px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .02em;
+}
 </style>
 <script src="shared/i18n.js"></script>
+<script src="shared/audio.js"></script>
 <script src="shared/nav.js"></script>
 </head>
 <body>
@@ -1761,5 +1915,6 @@ loadSubmissions();
   });
 })();
 </script>
+<script src="qa-tour.js"></script>
 </body>
 </html>
