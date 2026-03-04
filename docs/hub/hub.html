@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+html { height: 100%; }
+body {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+@keyframes fadeUp   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes hubPulse {
+  0%   { transform: scale(1);    border-color: hsla(var(--hue),95%,42%,.25);
+         box-shadow: 0 0 50px hsla(var(--hue),85%,35%,.2),  0 0 100px hsla(var(--hue),80%,25%,.08), inset 0 0 25px hsla(var(--hue),80%,30%,.06); }
+  25%  { transform: scale(1.05); border-color: hsla(var(--hue),100%,52%,.5);
+         box-shadow: 0 0 90px hsla(var(--hue),95%,45%,.45), 0 0 180px hsla(var(--hue),80%,30%,.2),  inset 0 0 45px hsla(var(--hue),90%,38%,.15); }
+  40%  { transform: scale(1.03); border-color: hsla(var(--hue),100%,50%,.4);
+         box-shadow: 0 0 70px hsla(var(--hue),95%,42%,.35), 0 0 140px hsla(var(--hue),80%,27%,.15), inset 0 0 35px hsla(var(--hue),85%,35%,.1); }
+  100% { transform: scale(1);    border-color: hsla(var(--hue),95%,42%,.25);
+         box-shadow: 0 0 50px hsla(var(--hue),85%,35%,.2),  0 0 100px hsla(var(--hue),80%,25%,.08), inset 0 0 25px hsla(var(--hue),80%,30%,.06); }
+}
+@keyframes hubInnerRing {
+  0%, 100% { transform: scale(1);    opacity: .3; }
+  30%      { transform: scale(1.08); opacity: .7; }
+  50%      { transform: scale(1.04); opacity: .5; }
+}
+@keyframes hubSubPulse {
+  0%, 100% { color: hsla(var(--hue),100%,52%,.2); }
+  50%      { color: hsla(var(--hue),100%,52%,.45); }
+}
+@keyframes flowCW   { to { stroke-dashoffset: -200; } }
+@keyframes flowCCW  { to { stroke-dashoffset: 200; } }
+@keyframes nodePulse {
+  0%, 100% { fill: hsla(var(--hue),100%,50%,.15); r: 2; }
+  50%      { fill: hsla(var(--hue),100%,55%,.55); r: 3.5; }
+}
+@keyframes hubSpecular {
+  0%, 100% { transform: translate(0, 0); opacity: .4; }
+  50%      { transform: translate(12px, -6px); opacity: .8; }
+}
+
+/* ── HUB HERO ── */
+.hub-hero {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; z-index: 1;
+  padding: 40px 24px 20px;
+}
+
+.hub-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 40%, hsla(var(--hue),80%,30%,.12), transparent 70%);
+  pointer-events: none;
+}
+
+/* ── ORB ── */
+.hub-orb-wrap {
+  position: relative;
+  width: 260px; height: 260px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+}
+.hub-orb {
+  position: relative; z-index: 1;
+  width: 90px; height: 90px; border-radius: 50%;
+  background: radial-gradient(circle at 45% 38%, hsla(var(--hue),100%,55%,.22), hsla(var(--hue),80%,25%,.12) 60%, hsla(var(--hue),70%,12%,.08));
+  border: 2px solid hsla(var(--hue),95%,45%,.3);
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  animation: hubPulse 3.5s ease-in-out infinite;
+}
+.hub-orb::before {
+  content: ''; position: absolute; inset: -8px; border-radius: 50%;
+  border: 1.5px solid hsla(var(--hue),100%,48%,.12);
+  animation: hubInnerRing 3.5s ease-in-out infinite;
+}
+.hub-orb-label {
+  position: relative;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px; letter-spacing: 4px;
+  color: hsla(var(--hue),100%,52%,.7); text-transform: uppercase;
+  font-weight: 500;
+}
+.hub-orb-label::after {
+  content: ''; position: absolute;
+  top: -20px; left: -12px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(120,200,255,.12), transparent 70%);
+  animation: hubSpecular 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Flow loops */
+.hub-flow {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 260px; height: 260px;
+  pointer-events: none; z-index: 0;
+  overflow: visible;
+}
+.hub-flow-path { fill: none; stroke-linecap: round; }
+.hub-flow-inner { stroke: hsla(var(--hue),100%,48%,.14); stroke-width: 1.2; stroke-dasharray: 8 16; animation: flowCW 8s linear infinite; }
+.hub-flow-outer { stroke: hsla(var(--hue),95%,42%,.09); stroke-width: 1; stroke-dasharray: 12 22; animation: flowCCW 12s linear infinite; }
+.hub-flow-trace { stroke: hsla(var(--hue),90%,38%,.04); stroke-width: 0.7; stroke-dasharray: 6 30; animation: flowCW 20s linear infinite; }
+.hub-flow-node { fill: hsla(var(--hue),100%,50%,.3); animation: nodePulse 3.5s ease-in-out infinite; }
+.hub-flow-node-1 { animation-delay: 0s; }
+.hub-flow-node-2 { animation-delay: 0.9s; }
+.hub-flow-node-3 { animation-delay: 1.8s; }
+.hub-flow-node-4 { animation-delay: 2.7s; }
+
+/* ── GREETING ── */
+.hub-greeting {
+  text-align: center; margin-bottom: 8px;
+  animation: fadeUp .5s ease .1s both;
+}
+.hub-greeting-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px; color: var(--text);
+  letter-spacing: -.01em;
+}
+.hub-greeting-name em { color: var(--accent); font-style: italic; }
+.hub-subtitle {
+  font-size: 13px; color: var(--dim); margin-top: 4px;
+  letter-spacing: .02em;
+}
+
+/* ── STAT CHIPS ── */
+.hub-stats {
+  display: flex; gap: 12px; margin: 20px 0 32px;
+  animation: fadeUp .5s ease .2s both;
+}
+.hub-stat {
+  font-size: 11px; font-family: 'JetBrains Mono', monospace;
+  color: var(--mid); padding: 5px 12px; border-radius: 100px;
+  background: var(--s1); border: 1px solid var(--border);
+  display: flex; align-items: center; gap: 6px;
+}
+.hub-stat-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+.hub-stat-dot.active { background: var(--accent); }
+.hub-stat-dot.review { background: var(--gold); }
+.hub-stat-dot.resolved { background: var(--green); }
+
+/* ── FEATURE CARDS ── */
+.hub-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 580px; width: 100%;
+  animation: fadeUp .5s ease .3s both;
+}
+.hub-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .2s ease;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+}
+.hub-card:hover {
+  border-color: var(--accent);
+  background: var(--s2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.hub-card-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.hub-card-icon svg { width: 20px; height: 20px; }
+.hub-card-icon.charlie   { background: var(--accent2); color: var(--accent); }
+.hub-card-icon.observe   { background: var(--gold2);   color: var(--gold); }
+.hub-card-icon.qa        { background: var(--teal2);   color: var(--teal); }
+.hub-card-icon.analytics { background: var(--red2);    color: var(--red); }
+.hub-card-icon.builder   { background: hsla(270,60%,50%,.15); color: hsl(270,60%,60%); }
+.hub-card-icon.feedback  { background: var(--green2);  color: var(--green); }
+
+.hub-card-title {
+  font-size: 13px; font-weight: 400;
+  color: var(--text);
+}
+.hub-card-desc {
+  font-size: 11px; color: var(--dim);
+  line-height: 1.5;
+}
+
+/* ── DEMO TOUR BUTTON ── */
+.hub-demo-tour {
+  margin-top: 28px;
+  animation: fadeUp .5s ease .4s both;
+}
+.hub-demo-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none; border-radius: 100px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 400;
+  padding: 10px 28px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: all .2s;
+  letter-spacing: .02em;
+}
+.hub-demo-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px hsla(var(--hue),100%,40%,.4);
+}
+.hub-demo-btn svg { width: 14px; height: 14px; }
+
+/* ── DEMO COMPLETE STATE ── */
+.hub-complete {
+  display: none;
+  text-align: center;
+  margin-top: 24px;
+  animation: fadeUp .5s ease both;
+}
+.hub-complete.show { display: block; }
+.hub-complete-msg {
+  font-family: 'Instrument Serif', serif;
+  font-size: 20px; color: var(--green);
+  margin-bottom: 8px;
+}
+.hub-complete-sub {
+  font-size: 13px; color: var(--dim);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .hub-cards { grid-template-columns: repeat(2, 1fr); max-width: 360px; }
+  .hub-flow { width: 200px; height: 200px; }
+  .hub-orb { width: 70px; height: 70px; }
+  .hub-orb-label { font-size: 12px; letter-spacing: 3px; }
+  .hub-stats { flex-wrap: wrap; justify-content: center; }
+}
+</style>
+<script>if(!localStorage.getItem('vent_token'))window.location.replace('login.html');</script>
+<script>
+(function(){
+  var h = localStorage.getItem('vent_theme_hue');
+  if(h) document.documentElement.style.setProperty('--hue', h);
+})();
+</script>
+<script src="shared/i18n.js"></script>
+<script src="shared/nav.js"></script>
+</head>
+<body>
+
+<!-- ── TITLE BAR ── -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="query.html"       class="nav-tab" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
+      <a href="feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- ── HUB CONTENT ── -->
+<div class="hub-hero">
+
+  <!-- Orb with flow loops -->
+  <div class="hub-orb-wrap">
+    <svg class="hub-flow" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="250" cy="250" rx="105" ry="98" class="hub-flow-path hub-flow-inner"/>
+      <ellipse cx="250" cy="250" rx="160" ry="148" transform="rotate(-4 250 250)" class="hub-flow-path hub-flow-outer"/>
+      <ellipse cx="250" cy="250" rx="220" ry="205" transform="rotate(2 250 250)" class="hub-flow-path hub-flow-trace"/>
+      <circle cx="355" cy="250" r="2.5" class="hub-flow-node hub-flow-node-1"/>
+      <circle cx="250" cy="152" r="2.5" class="hub-flow-node hub-flow-node-2"/>
+      <circle cx="145" cy="250" r="2.5" class="hub-flow-node hub-flow-node-3"/>
+      <circle cx="250" cy="348" r="2.5" class="hub-flow-node hub-flow-node-4"/>
+    </svg>
+    <div class="hub-orb">
+      <div class="hub-orb-label">VENT</div>
+    </div>
+  </div>
+
+  <!-- Greeting -->
+  <div class="hub-greeting">
+    <div class="hub-greeting-name" id="hubGreeting">Welcome back<span style="color:var(--accent)">.</span></div>
+    <div class="hub-subtitle">Manufacturing Intelligence Platform</div>
+  </div>
+
+  <!-- Stat chips (demo mode) -->
+  <div class="hub-stats" id="hubStats" style="display:none;">
+    <div class="hub-stat"><span class="hub-stat-dot active"></span>3 active</div>
+    <div class="hub-stat"><span class="hub-stat-dot review"></span>2 under review</div>
+    <div class="hub-stat"><span class="hub-stat-dot resolved"></span>18 resolved</div>
+  </div>
+
+  <!-- Feature cards -->
+  <div class="hub-cards" id="hubCards">
+    <a href="query.html" class="hub-card" data-hub-key="charlie">
+      <div class="hub-card-icon charlie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="hub-card-title">Charlie AI</div>
+      <div class="hub-card-desc">Query SOPs, ask questions, get instant answers</div>
+    </a>
+
+    <a href="query.html?openVent=1" class="hub-card" data-hub-key="observe">
+      <div class="hub-card-icon observe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4m0 4h.01M3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0z"/></svg>
+      </div>
+      <div class="hub-card-title">Raise Observation</div>
+      <div class="hub-card-desc">Report concerns anonymously to trigger AI analysis</div>
+    </a>
+
+    <a href="qa.html" class="hub-card" data-hub-key="qa">
+      <div class="hub-card-icon qa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="hub-card-title">QA Centre</div>
+      <div class="hub-card-desc">Review submissions, cross-reference SOPs, sign off</div>
+    </a>
+
+    <a href="dashboard.html" class="hub-card" data-hub-key="analytics">
+      <div class="hub-card-icon analytics">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+      </div>
+      <div class="hub-card-title">Analytics</div>
+      <div class="hub-card-desc">Submission trends, CAPA metrics, priority breakdown</div>
+    </a>
+
+    <a href="builder.html" class="hub-card" data-hub-key="builder">
+      <div class="hub-card-icon builder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="hub-card-title">Doc Builder</div>
+      <div class="hub-card-desc">Draft SOPs and work instructions with AI assist</div>
+    </a>
+
+    <a href="feedback.html" class="hub-card" data-hub-key="feedback">
+      <div class="hub-card-icon feedback">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+      </div>
+      <div class="hub-card-title">Feedback</div>
+      <div class="hub-card-desc">Share suggestions, report bugs, improve the platform</div>
+    </a>
+  </div>
+
+  <!-- Demo tour button -->
+  <div class="hub-demo-tour" id="hubDemoTour" style="display:none;">
+    <button class="hub-demo-btn" onclick="startDemoTour()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+      Start Guided Tour
+    </button>
+  </div>
+
+  <!-- Demo complete state -->
+  <div class="hub-complete" id="hubComplete">
+    <div class="hub-complete-msg">Tour Complete</div>
+    <div class="hub-complete-sub">Explore any feature freely, or sign in to create a real account.</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var name = localStorage.getItem('vent_name') || localStorage.getItem('vent_first_name') || '';
+  var role = localStorage.getItem('vent_role') || 'operator';
+  var isDemo = localStorage.getItem('vent_token') === 'demo';
+  var params = new URLSearchParams(window.location.search);
+
+  // ── Greeting ──
+  var greetEl = document.getElementById('hubGreeting');
+  if (name) {
+    greetEl.innerHTML = 'Welcome back, <em>' + name + '</em><span style="color:var(--accent)">.</span>';
+  }
+
+  // ── Demo mode: show stats + tour button ──
+  if (isDemo) {
+    document.getElementById('hubStats').style.display = 'flex';
+    document.getElementById('hubDemoTour').style.display = 'block';
+  }
+
+  // ── Demo complete state ──
+  if (sessionStorage.getItem('vent_demo_complete') === '1') {
+    sessionStorage.removeItem('vent_demo_complete');
+    document.getElementById('hubComplete').classList.add('show');
+    document.getElementById('hubDemoTour').style.display = 'none';
+  }
+
+  // ── Role-filter cards ──
+  var cardRules = {
+    operator:    ['charlie', 'observe', 'feedback', 'builder'],
+    qa:          ['charlie', 'observe', 'qa', 'builder', 'feedback'],
+    director:    ['charlie', 'observe', 'qa', 'analytics', 'builder', 'feedback'],
+    msat:        ['charlie', 'observe', 'builder'],
+    engineering: ['charlie', 'observe', 'builder'],
+    admin:       ['charlie', 'observe', 'qa', 'analytics', 'builder', 'feedback']
+  };
+  var allowed = cardRules[role] || cardRules.operator;
+  document.querySelectorAll('.hub-card').forEach(function(card) {
+    var key = card.dataset.hubKey;
+    if (allowed.indexOf(key) === -1) card.style.display = 'none';
+  });
+
+  // ── Auto-start demo tour if ?demo=1 and coming from login ──
+  if (params.get('demo') === '1' && isDemo && !sessionStorage.getItem('vent_demo_complete')) {
+    // Brief pause to let user see the hub, then auto-start
+    // Only auto-redirect if not returning from tour
+    if (!sessionStorage.getItem('vent_demo_hub_seen')) {
+      sessionStorage.setItem('vent_demo_hub_seen', '1');
+    }
+  }
+
+  // ── Start guided tour ──
+  window.startDemoTour = function() {
+    window.location.href = 'query.html?demo=1';
+  };
+
+})();
+</script>
+</body>
+</html>

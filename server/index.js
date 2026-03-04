@@ -106,9 +106,11 @@ app.get('/manual/:docId/pages', (req, res) => {
 // Explicit HTML page routes (more reliable than express.static on Railway)
 // Maps URL slug → file path relative to docsPath (now organised into subfolders)
 const PAGE_MAP = {
-  '':                 'operator/index.html',
+  '':                 'hub/hub.html',
+  'hub.html':         'hub/hub.html',
   'query.html':       'operator/query.html',
   'feedback.html':    'operator/feedback.html',
+  'submit.html':      'operator/index.html',
   'qa.html':          'qa/qa.html',
   'workflow.html':    'qa/workflow.html',
   'submissions.html': 'qa/submissions.html',

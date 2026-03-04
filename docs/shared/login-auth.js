@@ -9,12 +9,12 @@
 const SERVER = window.location.origin;
 
 const ROLE_ROUTES = {
-  operator:    'query.html',
-  qa:          'qa.html',
-  director:    'dashboard.html',
-  msat:        'query.html',
-  engineering: 'qa.html',
-  admin:       'dashboard.html',
+  operator:    'hub.html',
+  qa:          'hub.html',
+  director:    'hub.html',
+  msat:        'hub.html',
+  engineering: 'hub.html',
+  admin:       'hub.html',
 };
 
 // ════════════════════════════════════════════════════════
@@ -25,7 +25,7 @@ const ROLE_ROUTES = {
   const role  = localStorage.getItem('vent_role');
   if (!token || !role) return;
   // Demo token: go straight to demo tour
-  if (token === 'demo') { window.location.replace('query.html?demo=1'); return; }
+  if (token === 'demo') { window.location.replace('hub.html?demo=1'); return; }
   try {
     const res = await fetch(SERVER + '/auth/me', {
       headers: { 'Authorization': 'Bearer ' + token },
@@ -155,7 +155,7 @@ function demoLogin() {
   localStorage.setItem('vent_role',    'admin');
   localStorage.setItem('vent_name',    name);
   localStorage.setItem('vent_user_id', 'demo-user');
-  window.location.href = 'query.html?demo=1';
+  window.location.href = 'hub.html?demo=1';
 }
 
 // Auto-demo: login.html?demo=1 skips cinematic/welcome entirely

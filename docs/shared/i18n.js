@@ -30,13 +30,12 @@
     // ─────────────────────────────────────────────────────────────────────────
     en: {
       // Navigation
-      'nav.submit':       'Submit',
-      'nav.query':        'Query SOPs',
-      'nav.submissions':  'Submissions',
+      'nav.charlie':      'Charlie AI',
+      'nav.activity':     'My Activity',
       'nav.docBuilder':   'Doc Builder',
-      'nav.qaControl':    'QA Control',
-      'nav.workflow':     'Workflow',
-      'nav.dashboard':    'Dashboard',
+      'nav.qaCentre':     'QA Centre',
+      'nav.analytics':    'Analytics',
+      'nav.feedback':     'Feedback',
       'nav.signOut':      'Sign out',
 
       // Cinematic intro
@@ -554,13 +553,12 @@
     // ─────────────────────────────────────────────────────────────────────────
     zh: {
       // Navigation
-      'nav.submit':       '提交',
-      'nav.query':        '查询SOP',
-      'nav.submissions':  '提交记录',
+      'nav.charlie':      'Charlie AI',
+      'nav.activity':     '我的活动',
       'nav.docBuilder':   '文档构建',
-      'nav.qaControl':    'QA控制',
-      'nav.workflow':     '工作流',
-      'nav.dashboard':    '仪表盘',
+      'nav.qaCentre':     'QA中心',
+      'nav.analytics':    '分析',
+      'nav.feedback':     '反馈',
       'nav.signOut':      '退出登录',
 
       // Cinematic intro
@@ -981,13 +979,12 @@
     // ─────────────────────────────────────────────────────────────────────────
     es: {
       // Navigation
-      'nav.submit':       'Enviar',
-      'nav.query':        'Consultar SOPs',
-      'nav.submissions':  'Env\u00edos',
+      'nav.charlie':      'Charlie AI',
+      'nav.activity':     'Mi Actividad',
       'nav.docBuilder':   'Constructor',
-      'nav.qaControl':    'Control QA',
-      'nav.workflow':     'Flujo',
-      'nav.dashboard':    'Panel',
+      'nav.qaCentre':     'Centro QA',
+      'nav.analytics':    'An\u00e1lisis',
+      'nav.feedback':     'Comentarios',
       'nav.signOut':      'Cerrar sesi\u00f3n',
 
       // Cinematic intro

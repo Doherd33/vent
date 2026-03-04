@@ -169,16 +169,14 @@ body {
 <!-- TITLE BAR -->
 <div class="title-bar">
   <div class="title-bar-left">
-    <a href="index.html" class="app-name">Vent<span class="pip"></span></a>
+    <a href="hub.html" class="app-name">Vent<span class="pip"></span></a>
     <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
     <nav class="title-nav" id="mainNav">
-      <a href="index.html"       class="nav-tab" data-nav-key="Submit" data-i18n="nav.submit">Submit</a>
-      <a href="query.html"       class="nav-tab" data-nav-key="Query SOPs" data-i18n="nav.query">Query SOPs</a>
-      <a href="submissions.html" class="nav-tab" data-nav-key="Submissions" data-i18n="nav.submissions">Submissions</a>
+      <a href="query.html"       class="nav-tab" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
       <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
-      <a href="qa.html"          class="nav-tab" data-nav-key="QA Control" data-i18n="nav.qaControl">QA Control</a>
-      <a href="workflow.html"    class="nav-tab" data-nav-key="Workflow" data-i18n="nav.workflow">Workflow</a>
-      <a href="dashboard.html"   class="nav-tab active" data-nav-key="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
+      <a href="qa.html"          class="nav-tab" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="dashboard.html"   class="nav-tab active" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
       <a href="feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
     </nav>
   </div>
@@ -196,7 +194,36 @@ body {
 </div>
 
 <script>
+var DEMO_ANALYTICS = {
+  total: 47,
+  byPriority: { High: 12, Medium: 22, Low: 13 },
+  byStatus: { new: 5, acknowledged: 4, under_review: 7, corrective_action: 3, qa_approved: 6, closed: 18, rejected: 4 },
+  byArea: { 'Upstream Bioreactor': 14, 'Downstream Chromatography': 11, 'Utilities WFI': 8, 'Cleanroom Ops': 7, 'Quality Control Lab': 7 },
+  openCount: 19, closedCount: 22, inReview: 6,
+  capas: { total: 15, open: 6, overdue: 2, closed: 9 },
+  trend: { thisWeek: 8, lastWeek: 6, percentChange: 33 },
+  recentSubmissions: [
+    { ref: 'VENT-2026-0047', area: 'Upstream Bioreactor', priority: 'High', status: 'under_review', date: '2026-03-04' },
+    { ref: 'VENT-2026-0046', area: 'Utilities WFI', priority: 'Medium', status: 'acknowledged', date: '2026-03-03' },
+    { ref: 'VENT-2026-0045', area: 'Downstream Chromatography', priority: 'High', status: 'corrective_action', date: '2026-03-03' },
+    { ref: 'VENT-2026-0044', area: 'Cleanroom Ops', priority: 'Low', status: 'new', date: '2026-03-02' },
+    { ref: 'VENT-2026-0043', area: 'Quality Control Lab', priority: 'Medium', status: 'closed', date: '2026-03-01' },
+    { ref: 'VENT-2026-0042', area: 'Upstream Bioreactor', priority: 'Medium', status: 'closed', date: '2026-02-28' }
+  ],
+  recentCapas: [
+    { capa_id: 'CAPA-015', submission_ref: 'VENT-2026-0047', title: 'Bioreactor pH excursion corrective action', owner: 'Dr. Robert Kim', due_date: '2026-03-10', status: 'open' },
+    { capa_id: 'CAPA-014', submission_ref: 'VENT-2026-0045', title: 'Column integrity test failure investigation', owner: 'Aoife Brennan', due_date: '2026-03-01', status: 'open' },
+    { capa_id: 'CAPA-013', submission_ref: 'VENT-2026-0041', title: 'WFI conductivity drift root cause analysis', owner: 'Brian Gallagher', due_date: '2026-03-15', status: 'in_progress' },
+    { capa_id: 'CAPA-012', submission_ref: 'VENT-2026-0038', title: 'Cleanroom gown breach documentation update', owner: 'Sinéad Kelly', due_date: '2026-02-20', status: 'closed' }
+  ]
+};
+
 async function loadDashboard() {
+  // Demo mode: use pre-populated analytics
+  if (localStorage.getItem('vent_token') === 'demo') {
+    renderDashboard(DEMO_ANALYTICS);
+    return;
+  }
   try {
     const res = await authFetch(SERVER + '/analytics');
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -377,6 +404,83 @@ function renderDashboard(d) {
 }
 
 loadDashboard();
+
+// ── Demo Tour: highlight key dashboard sections ──
+(function(){
+  var demoSignal = sessionStorage.getItem('vent_demo_dashboard');
+  if(demoSignal !== '1') return;
+  sessionStorage.removeItem('vent_demo_dashboard');
+
+  var tourIdx = 0;
+  var overlay, highlight, card;
+
+  var steps = [
+    { selector: '.stat-row', title: 'Live Metrics', desc: 'Real-time submission counts, priority breakdown, CAPA status, and closure rates — all updated automatically.', pos: 'bottom' },
+    { selector: '.chart-row', title: 'Visual Analytics', desc: 'Charts show priority distribution and open/closed status across all observations. Directors and QA leads use this to spot trends.', pos: 'bottom' },
+    { selector: '.section', title: 'Activity Feed', desc: 'Recent submissions and CAPAs with direct links to the QA Centre for review. Everything is audit-trailed.', pos: 'top' }
+  ];
+
+  function buildOverlay(){
+    overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.65);transition:opacity .3s;';
+    document.body.appendChild(overlay);
+  }
+
+  function showStep(){
+    if(tourIdx >= steps.length){
+      cleanup();
+      // Demo complete — return to hub
+      sessionStorage.setItem('vent_demo_complete', '1');
+      window.location.href = '/hub.html';
+      return;
+    }
+    var step = steps[tourIdx];
+    var el = document.querySelector(step.selector);
+    if(!el){ tourIdx++; showStep(); return; }
+
+    // Highlight target
+    if(highlight) highlight.remove();
+    var rect = el.getBoundingClientRect();
+    highlight = document.createElement('div');
+    highlight.style.cssText = 'position:fixed;z-index:9999;border:2px solid var(--accent);border-radius:12px;pointer-events:none;box-shadow:0 0 30px hsla(var(--hue),100%,40%,.3);transition:all .3s;';
+    highlight.style.top = (rect.top - 6) + 'px';
+    highlight.style.left = (rect.left - 6) + 'px';
+    highlight.style.width = (rect.width + 12) + 'px';
+    highlight.style.height = (rect.height + 12) + 'px';
+    document.body.appendChild(highlight);
+
+    // Info card
+    if(card) card.remove();
+    card = document.createElement('div');
+    card.style.cssText = 'position:fixed;z-index:10000;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.5);';
+
+    var top = step.pos === 'top' ? (rect.top - 140) : (rect.bottom + 16);
+    card.style.top = Math.max(10, top) + 'px';
+    card.style.left = Math.max(10, rect.left) + 'px';
+
+    card.innerHTML = '<div style="font-family:\'Instrument Serif\',serif;font-size:18px;color:var(--text);margin-bottom:6px">' + step.title + '</div>' +
+      '<div style="font-size:13px;color:var(--mid);line-height:1.6;margin-bottom:14px">' + step.desc + '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+        '<span style="font-size:11px;color:var(--dim);font-family:\'JetBrains Mono\',monospace;align-self:center">' + (tourIdx + 1) + '/' + steps.length + '</span>' +
+        '<button onclick="window._dashTourNext()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 18px;font-family:\'DM Sans\',sans-serif;font-size:12px;cursor:pointer">' + (tourIdx === steps.length - 1 ? 'Finish Tour' : 'Next') + '</button>' +
+      '</div>';
+    document.body.appendChild(card);
+  }
+
+  function cleanup(){
+    if(overlay){ overlay.remove(); overlay = null; }
+    if(highlight){ highlight.remove(); highlight = null; }
+    if(card){ card.remove(); card = null; }
+  }
+
+  window._dashTourNext = function(){ tourIdx++; showStep(); };
+
+  // Wait for dashboard to render, then start tour
+  setTimeout(function(){
+    buildOverlay();
+    showStep();
+  }, 800);
+})();
 </script>
 </body>
 </html>

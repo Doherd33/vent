@@ -56,12 +56,12 @@
     var name = localStorage.getItem('vent_name') || '';
 
     var rules = {
-      operator:    ['Query SOPs', 'Doc Builder', 'Feedback'],
-      qa:          ['Submit', 'Query SOPs', 'Submissions', 'Doc Builder', 'QA Control', 'Feedback'],
-      director:    ['Submit', 'Query SOPs', 'Submissions', 'Doc Builder', 'QA Control', 'Dashboard', 'Feedback'],
-      msat:        ['Submit', 'Query SOPs', 'Submissions', 'Doc Builder'],
-      engineering: ['Submit', 'Query SOPs', 'Submissions', 'Doc Builder'],
-      admin:       ['Submit', 'Query SOPs', 'Submissions', 'Doc Builder', 'QA Control', 'Workflow', 'Dashboard', 'Feedback']
+      operator:    ['Charlie AI', 'My Activity', 'Doc Builder', 'Feedback'],
+      qa:          ['Charlie AI', 'My Activity', 'Doc Builder', 'QA Centre', 'Feedback'],
+      director:    ['Charlie AI', 'My Activity', 'Doc Builder', 'QA Centre', 'Analytics', 'Feedback'],
+      msat:        ['Charlie AI', 'My Activity', 'Doc Builder'],
+      engineering: ['Charlie AI', 'My Activity', 'Doc Builder'],
+      admin:       ['Charlie AI', 'My Activity', 'Doc Builder', 'QA Centre', 'Analytics', 'Feedback']
     };
     var colors = {
       operator: 'var(--teal)', qa: 'var(--accent)', director: 'var(--gold)',
@@ -97,5 +97,29 @@
     });
     location.href = 'login.html';
   };
+
+  // ── Smooth page transitions ──
+  document.querySelectorAll('#mainNav .nav-tab, .app-name').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      if (a.classList.contains('active')) return;
+      e.preventDefault();
+      document.body.classList.add('page-transitioning');
+      var href = a.href || a.getAttribute('href');
+      setTimeout(function () { window.location.href = href; }, 200);
+    });
+  });
+
+  // ── Global demo banner ──
+  if (localStorage.getItem('vent_token') === 'demo') {
+    var titleBar = document.querySelector('.title-bar');
+    if (titleBar) {
+      var banner = document.createElement('div');
+      banner.className = 'demo-banner';
+      banner.innerHTML = '<span class="demo-banner-dot"></span>' +
+        '<span>DEMO MODE</span>' +
+        '<button class="demo-banner-exit" onclick="ventSignOut()">Exit Demo</button>';
+      titleBar.parentNode.insertBefore(banner, titleBar.nextSibling);
+    }
+  }
 
 })();

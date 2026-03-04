@@ -3407,16 +3407,14 @@ body.hub-mode .tour-help-btn { opacity: 0; pointer-events: none; }
 <!-- TITLE BAR -->
 <div class="title-bar">
   <div class="title-bar-left">
-    <a href="index.html" class="app-name">Vent<span class="pip"></span></a>
+    <a href="hub.html" class="app-name">Vent<span class="pip"></span></a>
     <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
     <nav class="title-nav" id="mainNav">
-      <a href="index.html"       class="nav-tab" data-nav-key="Submit" data-i18n="nav.submit">Submit</a>
-      <a href="query.html"       class="nav-tab active" data-nav-key="Query SOPs" data-i18n="nav.query">Query SOPs</a>
-      <a href="submissions.html" class="nav-tab" data-nav-key="Submissions" data-i18n="nav.submissions">Submissions</a>
+      <a href="query.html"       class="nav-tab active" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
       <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
-      <a href="qa.html"          class="nav-tab" data-nav-key="QA Control" data-i18n="nav.qaControl">QA Control</a>
-      <a href="workflow.html"    class="nav-tab" data-nav-key="Workflow" data-i18n="nav.workflow">Workflow</a>
-      <a href="dashboard.html"   class="nav-tab" data-nav-key="Dashboard" data-i18n="nav.dashboard">Dashboard</a>
+      <a href="qa.html"          class="nav-tab" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
       <a href="feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
     </nav>
   </div>
@@ -4030,5 +4028,46 @@ body.hub-mode .tour-help-btn { opacity: 0; pointer-events: none; }
 <script src="/operator/query/submissions.js"></script>
 <script src="/operator/query/tour.js"></script>
 <script src="/operator/query/settings.js"></script>
+<script>
+// ── Seed demo chat so the page looks alive ──
+(function(){
+  if(localStorage.getItem('vent_token') !== 'demo') return;
+  var params = new URLSearchParams(window.location.search);
+  // Only seed if not in active tour mode (tour handles its own content)
+  if(params.get('demo') === '1') return;
+
+  var inner = document.getElementById('chatInner');
+  var empty = document.getElementById('emptyState');
+  if(!inner || !empty) return;
+
+  empty.style.display = 'none';
+
+  var turn = document.createElement('div');
+  turn.className = 'chat-turn';
+  turn.innerHTML =
+    '<div class="turn-q"><div class="turn-q-bubble">What is the target pH range for the N-1 bioreactor and how is it controlled?</div></div>' +
+    '<div class="answer-card"><div class="answer-head">' +
+      '<div class="answer-cat-icon cat-proc"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
+      '<div><div class="answer-cat-label">PROCEDURE</div></div>' +
+    '</div><div class="answer-body">' +
+      '<div class="answer-summary">The target pH for the N-1 bioreactor is <strong>7.0 \u00b1 0.1</strong> (operational range 6.9\u20137.1). pH is maintained using an automated cascade control system:<br><br>' +
+      '<strong>1.</strong> CO\u2082 gas sparging for pH reduction (acidification)<br>' +
+      '<strong>2.</strong> 1M NaOH addition via peristaltic pump for pH increase<br>' +
+      '<strong>3.</strong> Dead-band of \u00b10.05 pH units before correction triggers<br><br>' +
+      'The pH probe must be calibrated with pH 4.0 and pH 7.0 buffer solutions within 4 hours before inoculation. Calibration slope must be between 95\u2013102%.</div>' +
+      '<div class="section-head">SOP REFERENCE</div>' +
+      '<div style="font-size:12px;color:var(--dim);font-family:\'JetBrains Mono\',monospace">WX-SOP-1001-03 \u00b7 Cell Culture Preparation \u00b7 Section 8.4.2</div>' +
+    '</div></div>';
+  inner.insertBefore(turn, inner.firstChild);
+})();
+
+// ── Handle ?openVent=1 to auto-open the observation panel ──
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('openVent') === '1' && typeof openVentPanel === 'function'){
+    setTimeout(function(){ openVentPanel(); }, 500);
+  }
+})();
+</script>
 </body>
 </html>

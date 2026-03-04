@@ -430,6 +430,12 @@
     if(highlight){ highlight.remove(); highlight = null; }
     if(card){ card.remove(); card = null; }
     isVoiceTour = false;
+
+    // Chain to dashboard if in demo mode
+    if(localStorage.getItem('vent_token') === 'demo'){
+      sessionStorage.setItem('vent_demo_dashboard', '1');
+      window.location.href = '/dashboard.html?demo=1';
+    }
   }
 
   function start(){
