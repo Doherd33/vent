@@ -732,6 +732,46 @@ function transformSub(row){
   };
 }
 
+// Demo fallback data — used when no submissions exist or API fails in demo mode
+var DEMO_SUBMISSIONS = [
+  { id:'VENT-2026-0041', priority:'High', area:'Upstream – Bioreactor', operator:'Operator', date:'4 Mar 2026 09:12',
+    rawDate:'2026-03-04T09:12:00Z', status:'new',
+    title:'PBR mismatch — ATF filter flush volume incorrect',
+    obs:'During ATF filter flush on Bioreactor 3, the Process Batch Record (PBR) states flush with 100 litres of WFI. However, the SOP (SOP-BIO-047 §4.3) specifies 150 litres for this tubing length. The 100L volume is insufficient to clear the dead volume in the tubing run. ATF filter costs ~€50,000. Incorrect flush risks filter damage or batch contamination.',
+    sops:[
+      { code:'SOP-BIO-047', title:'ATF Filter Assembly & Maintenance', section:'§4.3', flag:'mismatch', issue:'PBR states 100L WFI flush, SOP specifies 150L for this skid configuration' },
+      { code:'PBR-UPS-2026-0312', title:'Process Batch Record – Campaign 12', section:'§3.7', flag:'mismatch', issue:'Flush volume 100L does not match SOP requirement of 150L' }
+    ],
+    changes:[
+      { title:'Update PBR flush volume to 150L', desc:'Amend PBR-UPS-2026-0312 §3.7: change ATF filter WFI flush from 100L to 150L to match SOP-BIO-047 §4.3. This prevents insufficient flushing of the tubing dead volume.' },
+      { title:'Add verification checkpoint', desc:'Add operator verification step: confirm WFI flush volume matches SOP before proceeding to filtration. Cross-reference SOP-BIO-047 §4.3.' }
+    ],
+    sciEval:{ summary:'Documentation mismatch between PBR and SOP for ATF filter flush volume. Risk: filter damage (€50K) or batch contamination (€1-5M).', severity:'High', rootCause:'PBR not updated when SOP was revised' },
+    contacts:[], timeline:[] },
+  { id:'VENT-2026-0040', priority:'Medium', area:'Downstream – Chromatography', operator:'Operator', date:'3 Mar 2026 14:30',
+    rawDate:'2026-03-03T14:30:00Z', status:'under_review',
+    title:'Column packing pressure exceeds SOP limit',
+    obs:'During CHROM-2 column packing, observed packing pressure reached 3.2 bar. SOP-DS-023 §2.5 specifies maximum 2.8 bar for this resin type. Continued operation at this pressure may compromise resin bead integrity.',
+    sops:[
+      { code:'SOP-DS-023', title:'Chromatography Column Packing', section:'§2.5', flag:'mismatch', issue:'Observed 3.2 bar exceeds SOP max of 2.8 bar' }
+    ],
+    changes:[
+      { title:'Recalibrate packing system pressure limits', desc:'Set hard pressure limit to 2.8 bar on packing system PLC. Add alarm at 2.5 bar as early warning per SOP-DS-023 §2.5.' }
+    ],
+    sciEval:{ summary:'Column packing pressure exceeds SOP specification. Risk: resin damage affecting separation quality.', severity:'Medium', rootCause:'Pressure limits not configured on automated system' },
+    contacts:[], timeline:[] },
+  { id:'VENT-2026-0039', priority:'Low', area:'Utilities – WFI', operator:'Operator', date:'2 Mar 2026 08:45',
+    rawDate:'2026-03-02T08:45:00Z', status:'resolved',
+    title:'WFI temperature log gap — 15 min recording lapse',
+    obs:'WFI loop temperature logger had a 15-minute data gap between 06:15 and 06:30. All manual readings within spec. Logger restarted automatically.',
+    sops:[
+      { code:'SOP-UT-011', title:'WFI System Monitoring', section:'§3.2', flag:'ok', issue:'Data gap noted but manual readings confirm compliance' }
+    ],
+    changes:[],
+    sciEval:{ summary:'Minor logging gap on WFI temperature. No quality impact confirmed by manual readings.', severity:'Low', rootCause:'Logger software auto-restart after update' },
+    contacts:[], timeline:[] }
+];
+
 async function loadSubmissions(){
   try {
     addLog('Fetching live submissions…','info');
@@ -743,6 +783,11 @@ async function loadSubmissions(){
   } catch(err){
     addLog('Failed to load submissions: '+err.message,'error');
     console.error('loadSubmissions error:', err);
+  }
+  // Demo mode fallback: if no submissions loaded, use demo data
+  if(MOCK.length === 0 && localStorage.getItem('vent_token') === 'demo'){
+    MOCK = DEMO_SUBMISSIONS;
+    addLog('Demo mode: loaded '+MOCK.length+' sample submissions','info');
   }
   renderLeft();
   renderTabs();
