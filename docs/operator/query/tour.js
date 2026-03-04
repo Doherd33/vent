@@ -87,26 +87,67 @@
       ]}
   ];
 
+  // ── Demo helpers: typewriter effect for inputs ──
+  var demoTypeTimer = null;
+  function demoType(el, text, speed){
+    if(demoTypeTimer) clearInterval(demoTypeTimer);
+    el.value = '';
+    var i = 0;
+    demoTypeTimer = setInterval(function(){
+      if(i < text.length){ el.value += text.charAt(i); i++; el.dispatchEvent(new Event('input')); }
+      else { clearInterval(demoTypeTimer); demoTypeTimer = null; }
+    }, speed || 40);
+  }
+  function demoClearType(){
+    if(demoTypeTimer){ clearInterval(demoTypeTimer); demoTypeTimer = null; }
+  }
+
   // ── Demo-mode steps (focused tour: Search + Raise a Concern + transition) ──
   var demoSteps = [
     // D1 — Welcome
     { target:'#qInput', titleKey:'demo.d1.title', descKey:'demo.d1.desc', voiceKey:'demo.d1.voice', pos:'top' },
-    // D2 — Intelligent SOP Search
-    { target:'#qInput', titleKey:'demo.d2.title', descKey:'demo.d2.desc', voiceKey:'demo.d2.voice', pos:'top' },
+    // D2 — SOP Search: type the ATF filter question
+    { target:'#qInput', titleKey:'demo.d2.title', descKey:'demo.d2.desc', voiceKey:'demo.d2.voice', pos:'top',
+      setup: function(){
+        var inp = document.getElementById('qInput');
+        if(inp) demoType(inp, 'What WFI volume is needed for ATF filter flush?', 45);
+      },
+      teardown: function(){ demoClearType(); }
+    },
     // D3 — SOP Library (with subs)
     { target:'.sop-search-btn', titleKey:'demo.d3.title', descKey:'demo.d3.desc', voiceKey:'demo.d3.voice', pos:'bottom',
       open:'openSopSidebar', close:'closeSopSidebar',
       sub:[
         { target:'.sop-discover-header', titleKey:'demo.d3.sub1.title', descKey:'demo.d3.sub1.desc', voiceKey:'demo.d3.sub1.voice', pos:'left' },
-        { target:'#sopSearchInput', titleKey:'demo.d3.sub2.title', descKey:'demo.d3.sub2.desc', voiceKey:'demo.d3.sub2.voice', pos:'left' },
+        { target:'#sopSearchInput', titleKey:'demo.d3.sub2.title', descKey:'demo.d3.sub2.desc', voiceKey:'demo.d3.sub2.voice', pos:'left',
+          setup: function(){
+            var inp = document.getElementById('sopSearchInput');
+            if(inp) demoType(inp, 'ATF filter flush', 50);
+          },
+          teardown: function(){ demoClearType(); }
+        },
         { target:'#sopResults', titleKey:'demo.d3.sub3.title', descKey:'demo.d3.sub3.desc', voiceKey:'demo.d3.sub3.voice', pos:'left' }
       ]},
     // D4 — Raise a Concern (with subs)
     { target:'.radial-trigger', titleKey:'demo.d4.title', descKey:'demo.d4.desc', voiceKey:'demo.d4.voice', pos:'left',
       open:'openVentPanel', close:'closeVentPanel',
       sub:[
-        { target:'#ventText', titleKey:'demo.d4.sub1.title', descKey:'demo.d4.sub1.desc', voiceKey:'demo.d4.sub1.voice', pos:'right' },
-        { target:'.vp-pri', titleKey:'demo.d4.sub2.title', descKey:'demo.d4.sub2.desc', voiceKey:'demo.d4.sub2.voice', pos:'right' },
+        { target:'#ventText', titleKey:'demo.d4.sub1.title', descKey:'demo.d4.sub1.desc', voiceKey:'demo.d4.sub1.voice', pos:'right',
+          setup: function(){
+            var inp = document.getElementById('ventText');
+            if(inp) demoType(inp, 'PBR step 3.7 states flush ATF filter with 100L WFI, but SOP-BIO-047 §4.3 specifies 150L for this tubing configuration. Insufficient flush risks damaging the €50K filter or contaminating the batch.', 30);
+          },
+          teardown: function(){ demoClearType(); }
+        },
+        { target:'.vp-pri', titleKey:'demo.d4.sub2.title', descKey:'demo.d4.sub2.desc', voiceKey:'demo.d4.sub2.voice', pos:'right',
+          setup: function(){
+            // Click the High priority button
+            var btns = document.querySelectorAll('.vp-pri .pri-btn');
+            btns.forEach(function(b){ b.classList.remove('active'); });
+            var highBtn = document.querySelector('.vp-pri .pri-btn[data-pri="high"], .vp-pri .pri-btn:last-child');
+            if(highBtn){ highBtn.classList.add('active'); highBtn.click(); }
+          }
+        },
         { target:'#vpDrop', titleKey:'demo.d4.sub3.title', descKey:'demo.d4.sub3.desc', voiceKey:'demo.d4.sub3.voice', pos:'right' },
         { target:'#ventSubmitBtn', titleKey:'demo.d4.sub4.title', descKey:'demo.d4.sub4.desc', voiceKey:'demo.d4.sub4.voice', pos:'right' }
       ]},
@@ -350,6 +391,7 @@
     var step, isSubStep = subIdx >= 0;
     if(isSubStep){
       step = mainStep.sub[subIdx];
+      if(step.setup) try{ step.setup(); }catch(e){}
     } else {
       step = mainStep;
       if(step.setup) try{ step.setup(); }catch(e){}
@@ -447,6 +489,8 @@
   function nextStep(){
     var mainStep = tourSteps[tourIdx];
     if(subIdx >= 0){
+      var prevSub = mainStep.sub[subIdx];
+      if(prevSub && prevSub.teardown) try{ prevSub.teardown(); }catch(e){}
       subIdx++;
       if(subIdx >= mainStep.sub.length){
         leaveSubTour();

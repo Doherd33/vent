@@ -24,6 +24,8 @@ const ROLE_ROUTES = {
   const token = localStorage.getItem('vent_token');
   const role  = localStorage.getItem('vent_role');
   if (!token || !role) return;
+  // Demo token: go straight to demo tour
+  if (token === 'demo') { window.location.replace('query.html?demo=1'); return; }
   try {
     const res = await fetch(SERVER + '/auth/me', {
       headers: { 'Authorization': 'Bearer ' + token },
@@ -154,6 +156,11 @@ function demoLogin() {
   localStorage.setItem('vent_name',    name);
   localStorage.setItem('vent_user_id', 'demo-user');
   window.location.href = 'query.html?demo=1';
+}
+
+// Auto-demo: login.html?demo=1 skips cinematic/welcome entirely
+if (new URLSearchParams(window.location.search).get('demo') === '1') {
+  demoLogin();
 }
 
 // ════════════════════════════════════════════════════════

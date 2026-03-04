@@ -275,6 +275,7 @@
     var step, isSubStep = subIdx >= 0;
     if(isSubStep){
       step = mainStep.sub[subIdx];
+      if(step.setup) try{ step.setup(); }catch(e){}
     } else {
       step = mainStep;
       if(step.setup) try{ step.setup(); }catch(e){}
@@ -375,6 +376,8 @@
   function nextStep(){
     var mainStep = tourSteps[tourIdx];
     if(subIdx >= 0){
+      var prevSub = mainStep.sub[subIdx];
+      if(prevSub && prevSub.teardown) try{ prevSub.teardown(); }catch(e){}
       subIdx++;
       if(subIdx >= mainStep.sub.length){
         leaveSubTour();
