@@ -578,6 +578,8 @@
 
   // ── Demo Tour entry point ──
   function startDemo(){
+    // Dismiss the hub landing screen so the query UI is visible
+    if(typeof dismissVentHub === 'function') dismissVentHub();
     // Clean up any existing tour first (before setting demo mode)
     if(overlay){
       stopCurrentAudio();
@@ -593,10 +595,13 @@
     voiceMuted = false;
     isDemoMode = true;
     tourSteps = demoSteps;
-    closeOpenPanel();
-    buildOverlay();
-    showDemoBanner();
-    renderStep();
+    // Wait for hub dismiss animation before rendering tour
+    setTimeout(function(){
+      closeOpenPanel();
+      buildOverlay();
+      showDemoBanner();
+      renderStep();
+    }, 700);
   }
 
   // Expose globally
