@@ -30,95 +30,65 @@ function playSfx(type) {
   const ctx = getAudioCtx();
   const now = ctx.currentTime;
 
+  // ── Hover: soft, barely-there glass tap ──
   if (type === 'hover') {
     const osc = ctx.createOscillator(), gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
+    const filt = ctx.createBiquadFilter();
+    osc.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(2400, now);
-    osc.frequency.exponentialRampToValueAtTime(1800, now + 0.04);
-    gain.gain.setValueAtTime(0.06, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-    osc.start(now); osc.stop(now + 0.05);
+    osc.frequency.setValueAtTime(880, now);
+    filt.type = 'lowpass'; filt.frequency.value = 1200;
+    gain.gain.setValueAtTime(0.03, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc.start(now); osc.stop(now + 0.08);
   }
 
+  // ── Click: clean two-note confirmation (like a medical device acknowledge) ──
   if (type === 'click') {
-    const osc = ctx.createOscillator(), gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(1200, now);
-    osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-    osc.start(now); osc.stop(now + 0.12);
-
-    const buf  = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.1;
-    const noise = ctx.createBufferSource(), ng = ctx.createGain();
-    noise.buffer = buf;
-    noise.connect(ng); ng.connect(ctx.destination);
-    ng.gain.setValueAtTime(0.12, now);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-    noise.start(now); noise.stop(now + 0.03);
-  }
-
-  if (type === 'enter') {
-    const osc1 = ctx.createOscillator(), osc2 = ctx.createOscillator();
-    const gain1 = ctx.createGain(), gain2 = ctx.createGain();
-    osc1.connect(gain1); gain1.connect(ctx.destination);
-    osc2.connect(gain2); gain2.connect(ctx.destination);
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(200, now);
-    osc1.frequency.exponentialRampToValueAtTime(800, now + 0.5);
-    gain1.gain.setValueAtTime(0.0001, now);
-    gain1.gain.exponentialRampToValueAtTime(0.15, now + 0.15);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(400, now);
-    osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.4);
-    gain2.gain.setValueAtTime(0.0001, now);
-    gain2.gain.exponentialRampToValueAtTime(0.08, now + 0.1);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-    osc1.start(now); osc1.stop(now + 0.5);
-    osc2.start(now); osc2.stop(now + 0.4);
-
-    const buf  = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
-    const d    = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.08;
-    const noise  = ctx.createBufferSource();
-    const filter = ctx.createBiquadFilter(), ng = ctx.createGain();
-    noise.buffer = buf;
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(500, now);
-    filter.frequency.exponentialRampToValueAtTime(4000, now + 0.4);
-    filter.Q.value = 2;
-    noise.connect(filter); filter.connect(ng); ng.connect(ctx.destination);
-    ng.gain.setValueAtTime(0.0001, now);
-    ng.gain.exponentialRampToValueAtTime(0.15, now + 0.15);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-    noise.start(now); noise.stop(now + 0.6);
-  }
-
-  if (type === 'ambient') {
-    const osc    = ctx.createOscillator(), gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-    osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine'; osc.frequency.value = 80;
-    filter.type = 'lowpass'; filter.frequency.value = 200;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.04, now + 2);
-    gain.gain.setValueAtTime(0.04, now + 6);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 10);
-    osc.start(now); osc.stop(now + 10);
-
+    const osc1 = ctx.createOscillator(), g1 = ctx.createGain();
     const osc2 = ctx.createOscillator(), g2 = ctx.createGain();
+    osc1.connect(g1); g1.connect(ctx.destination);
     osc2.connect(g2); g2.connect(ctx.destination);
-    osc2.type = 'sine'; osc2.frequency.value = 120;
+    osc1.type = 'sine'; osc1.frequency.value = 523;  // C5
+    g1.gain.setValueAtTime(0.07, now);
+    g1.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc1.start(now); osc1.stop(now + 0.1);
+    osc2.type = 'sine'; osc2.frequency.value = 659;  // E5
     g2.gain.setValueAtTime(0.0001, now);
-    g2.gain.exponentialRampToValueAtTime(0.02, now + 3);
-    g2.gain.setValueAtTime(0.02, now + 7);
-    g2.gain.exponentialRampToValueAtTime(0.001, now + 10);
-    osc2.start(now); osc2.stop(now + 10);
+    g2.gain.exponentialRampToValueAtTime(0.06, now + 0.06);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc2.start(now + 0.05); osc2.stop(now + 0.15);
+  }
+
+  // ── Enter: gentle rising chord — clean, clinical, confident ──
+  if (type === 'enter') {
+    var notes = [261.6, 329.6, 392.0];  // C4, E4, G4 — major triad
+    notes.forEach(function(freq, i) {
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      var filt = ctx.createBiquadFilter();
+      osc.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      filt.type = 'lowpass'; filt.frequency.value = 2000;
+      var offset = i * 0.12;
+      gain.gain.setValueAtTime(0.0001, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.06, now + offset + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.7);
+      osc.start(now + offset); osc.stop(now + offset + 0.7);
+    });
+  }
+
+  // ── Ambient: low filtered drone — barely audible, feels like a cleanroom hum ──
+  if (type === 'ambient') {
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    var filt = ctx.createBiquadFilter();
+    osc.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.value = 65;   // Low C2
+    filt.type = 'lowpass'; filt.frequency.value = 120;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.025, now + 3);
+    gain.gain.setValueAtTime(0.025, now + 7);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 12);
+    osc.start(now); osc.stop(now + 12);
   }
 }
 
