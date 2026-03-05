@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Training Matrix</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 280px 4px 1fr;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+}
+
+/* ── RESIZER ── */
+.resizer {
+  background: #3c3c3c;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background 0.15s;
+}
+.resizer:hover, .resizer.dragging { background: #007acc; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  background: var(--s1);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 8px 12px;
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #bbbbbb; background: var(--s2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.panel-badge {
+  background: var(--accent); color: #fff;
+  font-size: 10px; padding: 1px 7px;
+  border-radius: 10px; font-weight: 700;
+}
+.filter-bar {
+  padding: 6px 8px; display: flex; gap: 4px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.filter-btn {
+  padding: 3px 10px; border-radius: 2px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--mid); font-size: 11px; cursor: pointer; transition: all 0.15s;
+  font-family: inherit;
+}
+.filter-btn:hover { color: var(--text); border-color: #6c6c6c; }
+.filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.assign-list { flex: 1; overflow-y: auto; padding: 4px; }
+.assign-list::-webkit-scrollbar { width: 4px; }
+.assign-list::-webkit-scrollbar-thumb { background: #424242; border-radius: 2px; }
+
+.assign-card {
+  padding: 8px 10px; border-radius: 2px; margin-bottom: 1px;
+  cursor: pointer; transition: background 0.1s;
+  border-left: 2px solid transparent;
+}
+.assign-card:hover { background: #2a2d2e; }
+.assign-card.active { background: #094771; border-left-color: var(--accent); }
+.card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+.card-id { font-size: 10px; font-weight: 600; color: #9cdcfe; font-family: 'Courier New', monospace; }
+.card-title { font-size: 11px; color: var(--text); margin-bottom: 3px; line-height: 1.3; }
+.card-meta { font-size: 10px; color: var(--dim); }
+.priority-badge { font-size: 9px; padding: 1px 6px; border-radius: 2px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.priority-high   { background: rgba(244,71,71,0.2);  color: #f44747; border: 1px solid rgba(244,71,71,0.35); }
+.priority-normal { background: rgba(0,122,204,0.18); color: #4fc1ff; border: 1px solid rgba(0,122,204,0.3); }
+.priority-low    { background: rgba(78,201,176,0.15); color: #4ec9b0; border: 1px solid rgba(78,201,176,0.3); }
+.status-chip { display: inline-block; font-size: 9px; padding: 1px 6px; border-radius: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.st-assigned  { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.st-completed { background: rgba(78,201,176,0.15); color: #4ec9b0; }
+.st-failed    { background: rgba(244,71,71,0.15);  color: #f44747; }
+.st-overdue   { background: rgba(244,71,71,0.25);  color: #ff6b6b; }
+
+/* ── CENTER PANEL ── */
+.center-panel {
+  display: flex; flex-direction: column; overflow: hidden; background: var(--bg);
+}
+.center-tabs {
+  display: flex; align-items: center; background: var(--s2);
+  border-bottom: 1px solid var(--border); height: 35px; flex-shrink: 0;
+}
+.center-tab {
+  padding: 0 16px; height: 100%; display: flex; align-items: center;
+  font-size: 12px; color: var(--mid); cursor: pointer;
+  border-right: 1px solid var(--border); transition: all 0.15s; user-select: none;
+  font-family: inherit;
+}
+.center-tab:hover { color: var(--text); }
+.center-tab.active { background: var(--bg); color: #fff; border-top: 1px solid var(--accent); }
+.center-content { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.center-content::-webkit-scrollbar { width: 6px; }
+.center-content::-webkit-scrollbar-track { background: var(--bg); }
+.center-content::-webkit-scrollbar-thumb { background: #424242; border-radius: 3px; }
+
+/* ── DETAIL VIEW ── */
+.detail-section { margin-bottom: 24px; }
+.section-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1px; color: #6c6c6c; margin-bottom: 8px;
+  padding-bottom: 4px; border-bottom: 1px solid var(--s2);
+}
+.detail-grid {
+  display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px;
+  font-size: 12px;
+}
+.detail-label { color: var(--mid); font-weight: 500; }
+.detail-value { color: var(--text); }
+
+/* ── MATRIX TABLE ── */
+.matrix-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.matrix-table th {
+  text-align: left; padding: 6px 10px; background: var(--s2);
+  color: #6c6c6c; font-weight: 600; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;
+}
+.matrix-table td {
+  padding: 7px 10px; border-bottom: 1px solid #2a2a2a;
+  color: var(--text); vertical-align: middle;
+}
+.matrix-table tr:hover td { background: #2a2d2e; }
+.cell-ok   { color: #4ec9b0; text-align: center; }
+.cell-miss { color: #f44747; text-align: center; }
+.cell-pend { color: #ffc64d; text-align: center; }
+.cell-na   { color: var(--dim); text-align: center; }
+
+/* ── COMPLIANCE CARDS ── */
+.compliance-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.comp-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 4px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;
+}
+.comp-card-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--mid); }
+.comp-card-value { font-size: 26px; font-weight: 300; font-family: 'JetBrains Mono', monospace; }
+.comp-card-value.ok    { color: #4ec9b0; }
+.comp-card-value.warn  { color: #ffc64d; }
+.comp-card-value.alert { color: #f44747; }
+.comp-card-sub { font-size: 10px; color: var(--dim); }
+
+/* ── ASSIGN MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 900; display: none; align-items: center; justify-content: center; }
+.modal-overlay.visible { display: flex; }
+.modal {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 6px;
+  width: 460px; max-width: 94vw; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+.modal-header { padding: 14px 18px 10px; border-bottom: 1px solid var(--border); }
+.modal-header h3 { margin: 0; font-size: 13px; color: #e0e0e0; font-weight: 600; }
+.modal-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+.modal-body label { font-size: 11px; color: var(--mid); display: flex; flex-direction: column; gap: 3px; }
+.modal-body input, .modal-body select, .modal-body textarea {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+  padding: 6px 8px; color: #e0e0e0; font-size: 12px; font-family: inherit;
+}
+.modal-body textarea { resize: vertical; min-height: 48px; }
+.modal-body input:focus, .modal-body select:focus, .modal-body textarea:focus { border-color: var(--accent); outline: none; }
+.modal-footer { padding: 10px 18px 14px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); }
+.modal-btn {
+  padding: 5px 14px; border-radius: 3px; font-size: 12px; cursor: pointer;
+  font-family: inherit; border: 1px solid var(--border); transition: all 0.15s;
+}
+.modal-btn.cancel { background: var(--s2); color: var(--text); }
+.modal-btn.cancel:hover { background: var(--s3); }
+.modal-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.modal-btn.primary:hover { background: #1a8ad4; }
+
+/* ── COMPLETE MODAL ── */
+.complete-modal .modal { width: 420px; }
+
+/* ── AI PANEL ── */
+.ai-panel {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 4px;
+  padding: 14px 16px; margin-bottom: 16px;
+}
+.ai-panel-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ai-tag { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 2px; background: rgba(206,145,255,0.15); color: #ce91ff; letter-spacing: 0.5px; text-transform: uppercase; }
+.ai-panel-title { font-size: 12px; font-weight: 600; color: var(--text); }
+.ai-btn {
+  padding: 5px 14px; border-radius: 3px; font-size: 11px; cursor: pointer;
+  font-family: inherit; border: 1px solid rgba(206,145,255,0.35);
+  background: rgba(206,145,255,0.08); color: #ce91ff; transition: all 0.15s;
+}
+.ai-btn:hover { background: rgba(206,145,255,0.18); }
+.ai-result { margin-top: 10px; font-size: 11px; color: var(--text); line-height: 1.6; }
+.ai-gap-card {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+  padding: 10px 12px; margin-bottom: 6px;
+}
+.ai-gap-risk { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; text-transform: uppercase; }
+.ai-gap-risk.high   { background: rgba(244,71,71,0.15); color: #f44747; }
+.ai-gap-risk.medium { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.ai-gap-risk.low    { background: rgba(78,201,176,0.15); color: #4ec9b0; }
+
+/* ── EMPTY STATE ── */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; user-select: none; }
+.empty-state .ei { font-size: 36px; }
+.empty-state p { font-size: 13px; color: var(--dim); }
+
+/* ── STATUS BAR ── */
+.sb { background: var(--accent); display: flex; align-items: center; padding: 0 10px; gap: 14px; font-size: 11px; color: rgba(255,255,255,0.85); user-select: none; }
+.s-sep { color: rgba(255,255,255,0.35); }
+.s-right { margin-left: auto; display: flex; gap: 14px; }
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .workbench { grid-template-columns: 1fr !important; grid-template-rows: auto 1fr !important; }
+  .resizer { display: none; }
+  .left-panel { max-height: 220px; border-right: none; border-bottom: 1px solid var(--border); }
+  .center-content { padding: 16px 14px; }
+}
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.fade-in { animation: fadeUp 0.2s ease forwards; }
+</style>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="../hub/hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="../operator/query.html" class="nav-tab" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="../qa/submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
+      <a href="../admin/builder.html"  class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="../qa/qa.html"          class="nav-tab" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="matrix.html"            class="nav-tab active" data-nav-key="Training" data-i18n="nav.training">Training</a>
+      <a href="../management/dashboard.html" class="nav-tab" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
+      <a href="../operator/feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- WORKBENCH -->
+<div class="workbench" id="workbench">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="panel-header">
+      Assignments
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span class="panel-badge" id="assignCount">0</span>
+        <button class="filter-btn" style="padding:2px 8px;font-size:10px;" onclick="showAssignModal()" title="New Assignment">+ New</button>
+      </span>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('assigned',this)">Pending</button>
+      <button class="filter-btn" onclick="setFilter('completed',this)">Done</button>
+      <button class="filter-btn" onclick="setFilter('overdue',this)">Overdue</button>
+    </div>
+    <div class="assign-list" id="assignList"></div>
+  </div>
+
+  <!-- RESIZER -->
+  <div class="resizer" id="resizerLC"></div>
+
+  <!-- CENTER PANEL -->
+  <div class="center-panel">
+    <div class="center-tabs" id="centerTabs">
+      <div class="center-tab active" onclick="switchView('detail',this)">Detail</div>
+      <div class="center-tab" onclick="switchView('matrix',this)">Matrix</div>
+      <div class="center-tab" onclick="switchView('compliance',this)">Compliance</div>
+      <div class="center-tab" onclick="switchView('ai',this)">AI Insights</div>
+    </div>
+    <div class="center-content" id="centerContent">
+      <div class="empty-state" id="emptyState">
+        <div class="ei">&#128218;</div>
+        <p>Select an assignment or switch to Matrix view</p>
+      </div>
+      <div id="detailView" style="display:none;"></div>
+      <div id="matrixView" style="display:none;"></div>
+      <div id="complianceView" style="display:none;"></div>
+      <div id="aiView" style="display:none;"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div class="sb">
+  <span>&#128218; Training Matrix</span>
+  <span class="s-sep">|</span>
+  <span id="statusAssign">Loading...</span>
+  <span class="s-sep">|</span>
+  <span id="statusSel">No selection</span>
+  <div class="s-right">
+    <span id="statusCompliance"></span>
+    <span>&#127866; Connected</span>
+  </div>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="modal-overlay" id="assignModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Assign Training</h3></div>
+    <div class="modal-body">
+      <label>Title <input id="aTitle" placeholder="e.g. SOP-101 Revision Retraining"></label>
+      <label>Description <textarea id="aDesc" placeholder="Training requirements..."></textarea></label>
+      <label>SOP Code (optional) <input id="aSop" placeholder="e.g. SOP-101"></label>
+      <label>Assigned To <input id="aTo" placeholder="User name"></label>
+      <label>Role
+        <select id="aRole">
+          <option value="operator">Operator</option>
+          <option value="qa">QA</option>
+          <option value="msat">MSAT</option>
+          <option value="engineering">Engineering</option>
+          <option value="director">Director</option>
+        </select>
+      </label>
+      <label>Priority
+        <select id="aPriority">
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+      </label>
+      <label>Training Type
+        <select id="aType">
+          <option value="initial">Initial</option>
+          <option value="retraining">Retraining</option>
+          <option value="refresher">Refresher</option>
+        </select>
+      </label>
+      <label>Due Date <input id="aDue" type="date"></label>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn cancel" onclick="hideAssignModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="submitAssignment()">Assign</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLETE MODAL -->
+<div class="modal-overlay complete-modal" id="completeModal">
+  <div class="modal">
+    <div class="modal-header"><h3>Record Completion</h3></div>
+    <div class="modal-body">
+      <label>Score (optional) <input id="cScore" type="number" min="0" max="100" placeholder="0-100"></label>
+      <label>Passed?
+        <select id="cPassed">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </label>
+      <label>Evidence <textarea id="cEvidence" placeholder="Evidence or notes..."></textarea></label>
+      <label>Assessor <input id="cAssessor" placeholder="Assessor name"></label>
+      <label>E-Signature <input id="cSig" type="password" placeholder="Enter password to sign"></label>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn cancel" onclick="hideCompleteModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="submitCompletion()">Complete</button>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/i18n.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+'use strict';
+
+var SERVER = window.SERVER || window.location.origin;
+var assignments = [];
+var currentFilter = 'all';
+var selectedId = null;
+var currentView = 'detail';
+
+// ── Load assignments ────────────────────────────────────────────────────
+
+async function loadAssignments() {
+  try {
+    var res = await authFetch(SERVER + '/training/assignments');
+    if (res.ok) assignments = await res.json();
+  } catch (e) { console.error('Load failed:', e); }
+  renderList();
+}
+
+function getDisplayStatus(a) {
+  if (a.status !== 'completed' && a.due_date && new Date(a.due_date) < new Date()) return 'overdue';
+  return a.status;
+}
+
+function renderList() {
+  var list = document.getElementById('assignList');
+  var filtered = assignments;
+  if (currentFilter === 'overdue') {
+    filtered = assignments.filter(function(a) { return getDisplayStatus(a) === 'overdue'; });
+  } else if (currentFilter !== 'all') {
+    filtered = assignments.filter(function(a) { return a.status === currentFilter; });
+  }
+
+  document.getElementById('assignCount').textContent = filtered.length;
+  document.getElementById('statusAssign').textContent = assignments.length + ' assignments';
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state" style="padding:40px 0"><p>No assignments found</p></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(function(a) {
+    var ds = getDisplayStatus(a);
+    var stClass = ds === 'completed' ? 'st-completed' : ds === 'failed' ? 'st-failed' : ds === 'overdue' ? 'st-overdue' : 'st-assigned';
+    var pClass = a.priority === 'high' ? 'priority-high' : a.priority === 'low' ? 'priority-low' : 'priority-normal';
+    return '<div class="assign-card' + (a.training_id === selectedId ? ' active' : '') + '" onclick="selectAssignment(\'' + a.training_id + '\')">'
+      + '<div class="card-top"><span class="card-id">' + a.training_id + '</span><span class="priority-badge ' + pClass + '">' + a.priority + '</span></div>'
+      + '<div class="card-title">' + escHtml(a.title) + '</div>'
+      + '<div class="card-meta">' + escHtml(a.assigned_to) + ' &middot; <span class="status-chip ' + stClass + '">' + ds + '</span>'
+      + (a.due_date ? ' &middot; Due ' + a.due_date : '') + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ── Select assignment ───────────────────────────────────────────────────
+
+function selectAssignment(id) {
+  selectedId = id;
+  renderList();
+  if (currentView === 'detail') renderDetail();
+  document.getElementById('statusSel').textContent = id;
+}
+
+function renderDetail() {
+  var a = assignments.find(function(x) { return x.training_id === selectedId; });
+  var el = document.getElementById('detailView');
+  if (!a) { el.style.display = 'none'; document.getElementById('emptyState').style.display = ''; return; }
+
+  document.getElementById('emptyState').style.display = 'none';
+  el.style.display = '';
+  var ds = getDisplayStatus(a);
+  var stClass = ds === 'completed' ? 'st-completed' : ds === 'failed' ? 'st-failed' : ds === 'overdue' ? 'st-overdue' : 'st-assigned';
+
+  el.innerHTML = '<div class="detail-section fade-in">'
+    + '<div class="section-label">Assignment Details</div>'
+    + '<div class="detail-grid">'
+    + '<span class="detail-label">Training ID</span><span class="detail-value" style="font-family:\'Courier New\',monospace;color:#9cdcfe">' + a.training_id + '</span>'
+    + '<span class="detail-label">Title</span><span class="detail-value">' + escHtml(a.title) + '</span>'
+    + '<span class="detail-label">Description</span><span class="detail-value">' + escHtml(a.description || 'None') + '</span>'
+    + '<span class="detail-label">SOP Code</span><span class="detail-value" style="font-family:\'Courier New\',monospace;color:#9cdcfe">' + (a.sop_code || '—') + '</span>'
+    + '<span class="detail-label">Assigned To</span><span class="detail-value">' + escHtml(a.assigned_to) + '</span>'
+    + '<span class="detail-label">Role</span><span class="detail-value">' + a.assigned_role + '</span>'
+    + '<span class="detail-label">Priority</span><span class="detail-value">' + a.priority + '</span>'
+    + '<span class="detail-label">Type</span><span class="detail-value">' + (a.training_type || 'initial') + '</span>'
+    + '<span class="detail-label">Status</span><span class="detail-value"><span class="status-chip ' + stClass + '">' + ds + '</span></span>'
+    + '<span class="detail-label">Due Date</span><span class="detail-value">' + (a.due_date || '—') + '</span>'
+    + '<span class="detail-label">Assigned By</span><span class="detail-value">' + escHtml(a.assigned_by) + '</span>'
+    + '<span class="detail-label">Created</span><span class="detail-value">' + fmtDate(a.created_at) + '</span>'
+    + '</div></div>'
+    + (a.status !== 'completed' ? '<div style="margin-top:16px"><button class="modal-btn primary" onclick="showCompleteModal(\'' + a.training_id + '\')">Record Completion</button></div>' : '');
+}
+
+// ── Views ───────────────────────────────────────────────────────────────
+
+function switchView(view, tabEl) {
+  currentView = view;
+  document.querySelectorAll('.center-tab').forEach(function(t) { t.classList.remove('active'); });
+  if (tabEl) tabEl.classList.add('active');
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('detailView').style.display = 'none';
+  document.getElementById('matrixView').style.display = 'none';
+  document.getElementById('complianceView').style.display = 'none';
+  document.getElementById('aiView').style.display = 'none';
+
+  if (view === 'detail') {
+    if (selectedId) renderDetail();
+    else document.getElementById('emptyState').style.display = '';
+  } else if (view === 'matrix') {
+    loadMatrix();
+  } else if (view === 'compliance') {
+    loadCompliance();
+  } else if (view === 'ai') {
+    renderAiView();
+  }
+}
+
+async function loadMatrix() {
+  var el = document.getElementById('matrixView');
+  el.style.display = '';
+  el.innerHTML = '<p style="color:var(--mid);font-size:12px;">Loading matrix...</p>';
+
+  try {
+    var res = await authFetch(SERVER + '/training/matrix');
+    var data = await res.json();
+    renderMatrix(data);
+  } catch (e) {
+    el.innerHTML = '<p style="color:#f44747">Failed to load matrix: ' + e.message + '</p>';
+  }
+}
+
+function renderMatrix(data) {
+  var el = document.getElementById('matrixView');
+  var matrix = data.matrix || {};
+  var users = Object.keys(matrix);
+
+  if (!users.length) {
+    el.innerHTML = '<div class="empty-state"><p>No training data yet</p></div>';
+    return;
+  }
+
+  // Collect all training IDs
+  var allIds = {};
+  users.forEach(function(u) {
+    Object.keys(matrix[u]).forEach(function(tid) { allIds[tid] = matrix[u][tid].title; });
+  });
+  var tids = Object.keys(allIds);
+
+  var html = '<div class="detail-section fade-in"><div class="section-label">Training Matrix</div>'
+    + '<div style="overflow-x:auto"><table class="matrix-table"><thead><tr><th>User</th>';
+  tids.forEach(function(tid) {
+    html += '<th title="' + escHtml(allIds[tid]) + '">' + tid + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  users.forEach(function(u) {
+    html += '<tr><td style="font-weight:500">' + escHtml(u) + '</td>';
+    tids.forEach(function(tid) {
+      var cell = matrix[u][tid];
+      if (!cell) {
+        html += '<td class="cell-na">—</td>';
+      } else if (cell.status === 'completed') {
+        html += '<td class="cell-ok">&#10003;</td>';
+      } else if (cell.status === 'failed') {
+        html += '<td class="cell-miss">&#10007;</td>';
+      } else {
+        html += '<td class="cell-pend">&#9679;</td>';
+      }
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+}
+
+async function loadCompliance() {
+  var el = document.getElementById('complianceView');
+  el.style.display = '';
+  el.innerHTML = '<p style="color:var(--mid);font-size:12px;">Loading compliance data...</p>';
+
+  try {
+    var res = await authFetch(SERVER + '/training/compliance');
+    var data = await res.json();
+    renderCompliance(data);
+  } catch (e) {
+    el.innerHTML = '<p style="color:#f44747">Failed to load compliance: ' + e.message + '</p>';
+  }
+}
+
+function renderCompliance(data) {
+  var el = document.getElementById('complianceView');
+  var rateClass = data.complianceRate >= 90 ? 'ok' : data.complianceRate >= 70 ? 'warn' : 'alert';
+
+  var html = '<div class="fade-in">';
+  html += '<div class="compliance-row">'
+    + compCard('Compliance Rate', data.complianceRate + '%', rateClass, '')
+    + compCard('Total', data.total, '', '')
+    + compCard('Completed', data.completed, 'ok', '')
+    + compCard('Pending', data.pending, 'warn', '')
+    + compCard('Overdue', data.overdue, data.overdue > 0 ? 'alert' : '', '')
+    + compCard('Failed', data.failed, data.failed > 0 ? 'alert' : '', '')
+    + '</div>';
+
+  // Per-user table
+  var byUser = data.byUser || {};
+  var users = Object.keys(byUser);
+  if (users.length) {
+    html += '<div class="detail-section"><div class="section-label">Compliance by User</div>'
+      + '<table class="matrix-table"><thead><tr><th>User</th><th>Role</th><th>Total</th><th>Completed</th><th>Overdue</th><th>Rate</th></tr></thead><tbody>';
+    users.forEach(function(u) {
+      var info = byUser[u];
+      var rate = info.total > 0 ? Math.round((info.completed / info.total) * 100) : 100;
+      var rc = rate >= 90 ? 'cell-ok' : rate >= 70 ? 'cell-pend' : 'cell-miss';
+      html += '<tr><td>' + escHtml(u) + '</td><td>' + info.role + '</td><td>' + info.total + '</td><td>' + info.completed + '</td><td>' + info.overdue + '</td><td class="' + rc + '">' + rate + '%</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // Per-SOP table
+  var bySop = data.bySop || {};
+  var sops = Object.keys(bySop);
+  if (sops.length) {
+    html += '<div class="detail-section"><div class="section-label">Compliance by SOP</div>'
+      + '<table class="matrix-table"><thead><tr><th>SOP</th><th>Total</th><th>Completed</th><th>Rate</th></tr></thead><tbody>';
+    sops.forEach(function(s) {
+      var info = bySop[s];
+      var rate = info.total > 0 ? Math.round((info.completed / info.total) * 100) : 100;
+      var rc = rate >= 90 ? 'cell-ok' : rate >= 70 ? 'cell-pend' : 'cell-miss';
+      html += '<tr><td style="font-family:\'Courier New\',monospace;color:#9cdcfe">' + escHtml(s) + '</td><td>' + info.total + '</td><td>' + info.completed + '</td><td class="' + rc + '">' + rate + '%</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+  document.getElementById('statusCompliance').textContent = 'Compliance: ' + data.complianceRate + '%';
+}
+
+function compCard(label, value, cls, sub) {
+  return '<div class="comp-card"><div class="comp-card-label">' + label + '</div><div class="comp-card-value ' + cls + '">' + value + '</div>' + (sub ? '<div class="comp-card-sub">' + sub + '</div>' : '') + '</div>';
+}
+
+// ── AI Insights ─────────────────────────────────────────────────────────
+
+function renderAiView() {
+  var el = document.getElementById('aiView');
+  el.style.display = '';
+  el.innerHTML = '<div class="fade-in">'
+    + '<div class="ai-panel"><div class="ai-panel-header"><span class="ai-tag">AI</span><span class="ai-panel-title">Training Gap Analysis</span></div>'
+    + '<p style="font-size:11px;color:var(--mid);margin-bottom:10px;">Analyse current training data to identify gaps, at-risk areas, and compliance forecasts.</p>'
+    + '<button class="ai-btn" id="aiGapBtn" onclick="runGapAnalysis()">Run Gap Analysis</button>'
+    + '<div class="ai-result" id="aiGapResult"></div></div>'
+    + '<div class="ai-panel"><div class="ai-panel-header"><span class="ai-tag">AI</span><span class="ai-panel-title">SOP Change → Training Requirements</span></div>'
+    + '<p style="font-size:11px;color:var(--mid);margin-bottom:10px;">Auto-generate training requirements from an SOP revision.</p>'
+    + '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">'
+    + '<input id="aiSopCode" placeholder="SOP Code" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:5px 8px;color:var(--text);font-size:11px;width:120px;font-family:inherit">'
+    + '<input id="aiChangeDesc" placeholder="Describe the change..." style="background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:5px 8px;color:var(--text);font-size:11px;flex:1;min-width:200px;font-family:inherit">'
+    + '</div>'
+    + '<button class="ai-btn" id="aiReqBtn" onclick="runSopRequirements()">Generate Requirements</button>'
+    + '<div class="ai-result" id="aiReqResult"></div></div>'
+    + '</div>';
+}
+
+async function runGapAnalysis() {
+  var btn = document.getElementById('aiGapBtn');
+  var result = document.getElementById('aiGapResult');
+  btn.disabled = true; btn.textContent = 'Analysing...';
+  result.innerHTML = '';
+  try {
+    var res = await authFetch(SERVER + '/training/ai/gaps');
+    var data = await res.json();
+    if (data.gaps && data.gaps.length) {
+      result.innerHTML = data.gaps.map(function(g) {
+        return '<div class="ai-gap-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="ai-gap-risk ' + (g.risk || 'low') + '">' + (g.risk || 'low') + '</span><strong style="font-size:11px">' + escHtml(g.area) + '</strong></div>'
+          + '<div style="font-size:11px;color:var(--text);margin-bottom:3px">' + escHtml(g.description) + '</div>'
+          + '<div style="font-size:10px;color:var(--accent)">' + escHtml(g.recommendation) + '</div></div>';
+      }).join('');
+    } else {
+      result.innerHTML = '<p style="color:var(--green);font-size:11px">No training gaps identified.</p>';
+    }
+  } catch (e) {
+    result.innerHTML = '<p style="color:#f44747;font-size:11px">Error: ' + e.message + '</p>';
+  }
+  btn.disabled = false; btn.textContent = 'Run Gap Analysis';
+}
+
+async function runSopRequirements() {
+  var btn = document.getElementById('aiReqBtn');
+  var result = document.getElementById('aiReqResult');
+  var sopCode = document.getElementById('aiSopCode').value.trim();
+  var desc = document.getElementById('aiChangeDesc').value.trim();
+  if (!sopCode || !desc) { result.innerHTML = '<p style="color:#ffc64d;font-size:11px">Enter SOP code and change description.</p>'; return; }
+
+  btn.disabled = true; btn.textContent = 'Generating...';
+  result.innerHTML = '';
+  try {
+    var res = await authFetch(SERVER + '/training/ai/requirements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sopCode: sopCode, changeDescription: desc })
+    });
+    var data = await res.json();
+    if (data.requirements && data.requirements.length) {
+      result.innerHTML = '<div style="margin-top:6px">' + data.requirements.map(function(r) {
+        return '<div class="ai-gap-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="ai-gap-risk ' + (r.priority || 'normal') + '">' + (r.priority || 'normal') + '</span><strong style="font-size:11px">' + escHtml(r.title) + '</strong></div>'
+          + '<div style="font-size:11px;color:var(--text);margin-bottom:3px">' + escHtml(r.description) + '</div>'
+          + '<div style="font-size:10px;color:var(--mid)">Roles: ' + (r.roles || []).join(', ') + ' &middot; Type: ' + (r.trainingType || 'new') + '</div></div>';
+      }).join('') + '</div>';
+    } else {
+      result.innerHTML = '<p style="color:var(--mid);font-size:11px">No requirements generated.</p>';
+    }
+  } catch (e) {
+    result.innerHTML = '<p style="color:#f44747;font-size:11px">Error: ' + e.message + '</p>';
+  }
+  btn.disabled = false; btn.textContent = 'Generate Requirements';
+}
+
+// ── Modals ───────────────────────────────────────────────────────────────
+
+function showAssignModal() { document.getElementById('assignModal').classList.add('visible'); }
+function hideAssignModal() { document.getElementById('assignModal').classList.remove('visible'); }
+
+var completingId = null;
+function showCompleteModal(id) { completingId = id; document.getElementById('completeModal').classList.add('visible'); }
+function hideCompleteModal() { document.getElementById('completeModal').classList.remove('visible'); completingId = null; }
+
+async function submitAssignment() {
+  var body = {
+    title:        document.getElementById('aTitle').value.trim(),
+    description:  document.getElementById('aDesc').value.trim(),
+    sopCode:      document.getElementById('aSop').value.trim() || undefined,
+    assignedTo:   document.getElementById('aTo').value.trim(),
+    assignedRole: document.getElementById('aRole').value,
+    priority:     document.getElementById('aPriority').value,
+    trainingType: document.getElementById('aType').value,
+    dueDate:      document.getElementById('aDue').value || undefined,
+  };
+  if (!body.title || !body.assignedTo) return alert('Title and Assigned To are required');
+  try {
+    var res = await authFetch(SERVER + '/training/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    var result = await res.json();
+    if (result.ok) {
+      hideAssignModal();
+      ['aTitle','aDesc','aSop','aTo','aDue'].forEach(function(id) { document.getElementById(id).value = ''; });
+      loadAssignments();
+    } else {
+      alert(result.error || 'Failed to assign');
+    }
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function submitCompletion() {
+  if (!completingId) return;
+  var body = {
+    score:      document.getElementById('cScore').value ? parseInt(document.getElementById('cScore').value) : undefined,
+    passed:     document.getElementById('cPassed').value === 'true',
+    evidence:   document.getElementById('cEvidence').value.trim() || undefined,
+    assessor:   document.getElementById('cAssessor').value.trim() || undefined,
+    eSignature: document.getElementById('cSig').value || undefined,
+  };
+  try {
+    var res = await authFetch(SERVER + '/training/' + completingId + '/complete', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    var result = await res.json();
+    if (result.ok) {
+      hideCompleteModal();
+      ['cScore','cEvidence','cAssessor','cSig'].forEach(function(id) { document.getElementById(id).value = ''; });
+      loadAssignments();
+      if (currentView === 'detail') setTimeout(renderDetail, 300);
+    } else {
+      alert(result.error || 'Failed to complete');
+    }
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+// ── Filter ──────────────────────────────────────────────────────────────
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  renderList();
+}
+
+// ── Resizer ─────────────────────────────────────────────────────────────
+
+(function initResizer() {
+  var resizer = document.getElementById('resizerLC');
+  var wb = document.getElementById('workbench');
+  var dragging = false;
+  resizer.addEventListener('mousedown', function(e) {
+    dragging = true; resizer.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var x = e.clientX;
+    if (x < 180) x = 180;
+    if (x > 500) x = 500;
+    wb.style.gridTemplateColumns = x + 'px 4px 1fr';
+  });
+  document.addEventListener('mouseup', function() {
+    if (dragging) { dragging = false; resizer.classList.remove('dragging'); }
+  });
+})();
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + ' ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+// ── Init ────────────────────────────────────────────────────────────────
+loadAssignments();
+</script>
+</body>
+</html>

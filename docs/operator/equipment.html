@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Equipment Logbook</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 300px 4px 1fr;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── RESIZE HANDLE ── */
+.resizer {
+  background: #3c3c3c;
+  z-index: 10;
+  cursor: col-resize;
+  transition: background 0.15s;
+}
+.resizer:hover, .resizer.dragging { background: var(--accent); }
+
+/* ── LEFT PANEL (Equipment List) ── */
+.left-panel {
+  background: var(--s1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 8px 12px;
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #bbb; background: var(--s2);
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.panel-badge {
+  background: var(--accent2); color: var(--accent);
+  font-size: 10px; padding: 1px 7px; border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.filter-bar {
+  display: flex; gap: 2px; padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.filter-btn {
+  flex: 1; background: transparent; border: 1px solid var(--border);
+  color: var(--mid); font-size: 11px; padding: 4px 6px; border-radius: 4px;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.filter-btn:hover { color: var(--text); border-color: var(--borderhi); }
+.filter-btn.active { background: var(--accent2); color: var(--accent); border-color: var(--accent); }
+.equip-list {
+  flex: 1; overflow-y: auto; padding: 4px 0;
+}
+.equip-item {
+  padding: 8px 12px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background .12s;
+}
+.equip-item:hover { background: var(--s2); }
+.equip-item.selected { background: var(--accent2); border-left: 2px solid var(--accent); }
+.equip-item-name { font-size: 13px; font-weight: 400; color: var(--text); }
+.equip-item-meta { font-size: 11px; color: var(--mid); margin-top: 2px; }
+.equip-status {
+  display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .03em;
+}
+.equip-status.active   { background: var(--green2); color: var(--green); }
+.equip-status.inactive { background: var(--red2); color: var(--red); }
+.equip-status.maintenance { background: var(--gold2); color: var(--gold); }
+
+/* ── RIGHT PANEL (Detail + Logs) ── */
+.right-panel {
+  display: flex; flex-direction: column;
+  overflow: hidden; background: var(--bg);
+}
+.detail-header {
+  padding: 16px 20px; background: var(--s1);
+  border-bottom: 1px solid var(--border);
+}
+.detail-title { font-size: 18px; font-weight: 400; color: #fff; margin-bottom: 4px; }
+.detail-subtitle { font-size: 12px; color: var(--mid); }
+.detail-meta {
+  display: flex; gap: 16px; padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--s1); flex-wrap: wrap;
+}
+.meta-chip {
+  font-size: 11px; color: var(--mid);
+}
+.meta-chip strong { color: var(--text); font-weight: 400; }
+.detail-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border);
+  background: var(--s2); padding: 0 12px;
+}
+.detail-tab {
+  padding: 8px 16px; font-size: 12px; color: var(--mid);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all .15s; background: none; border-top: none;
+  border-left: none; border-right: none; font-family: inherit;
+}
+.detail-tab:hover { color: var(--text); }
+.detail-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.detail-body {
+  flex: 1; overflow-y: auto; padding: 16px 20px;
+}
+.empty-state {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: var(--dim); font-size: 14px;
+  flex-direction: column; gap: 8px;
+}
+
+/* ── LOG ENTRIES ── */
+.log-entry {
+  padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: 6px; margin-bottom: 8px; background: var(--s1);
+  transition: border-color .15s;
+}
+.log-entry:hover { border-color: var(--borderhi); }
+.log-entry-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 4px;
+}
+.log-type {
+  font-size: 10px; padding: 2px 8px; border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .03em;
+}
+.log-type.usage       { background: var(--blue2); color: var(--blue); }
+.log-type.cleaning    { background: var(--green2); color: var(--green); }
+.log-type.maintenance { background: var(--gold2); color: var(--gold); }
+.log-type.alarm       { background: var(--red2); color: var(--red); }
+.log-type.calibration { background: rgba(156,120,255,.15); color: #9c78ff; }
+.log-entry-title { font-size: 13px; color: var(--text); }
+.log-entry-desc  { font-size: 12px; color: var(--mid); margin-top: 4px; }
+.log-entry-footer {
+  display: flex; justify-content: space-between; margin-top: 6px;
+  font-size: 11px; color: var(--dim);
+}
+.log-esig { color: var(--green); font-size: 10px; }
+
+/* ── AI PANEL ── */
+.ai-panel {
+  padding: 16px; background: var(--s1); border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.ai-panel h3 { font-size: 13px; color: var(--accent); margin-bottom: 10px; font-weight: 500; }
+.ai-section { margin-bottom: 14px; }
+.ai-section h4 { font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.ai-item { font-size: 12px; color: var(--text); padding: 4px 0; border-bottom: 1px solid var(--border); }
+.risk-badge {
+  display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.risk-badge.low    { background: var(--green2); color: var(--green); }
+.risk-badge.medium { background: var(--gold2); color: var(--gold); }
+.risk-badge.high   { background: var(--red2); color: var(--red); }
+
+/* ── FORMS / MODALS ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: none; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 8px; padding: 24px; width: 460px; max-width: 90vw;
+  max-height: 85vh; overflow-y: auto;
+}
+.modal-box h2 { font-size: 16px; color: #fff; margin-bottom: 16px; font-weight: 400; }
+.form-group { margin-bottom: 12px; }
+.form-group label {
+  display: block; font-size: 11px; color: var(--mid);
+  margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em;
+}
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; background: var(--s2); border: 1px solid var(--border);
+  color: var(--text); padding: 8px 10px; border-radius: 4px;
+  font-size: 13px; font-family: inherit; outline: none;
+  transition: border-color .15s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--accent);
+}
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-actions {
+  display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;
+}
+.btn {
+  padding: 8px 16px; border-radius: 4px; font-size: 12px;
+  cursor: pointer; font-family: inherit; border: 1px solid var(--border);
+  transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { filter: brightness(1.15); }
+.btn-secondary { background: transparent; color: var(--text); }
+.btn-secondary:hover { background: var(--s3); }
+.btn-danger { background: var(--red2); color: var(--red); border-color: transparent; }
+.btn-danger:hover { filter: brightness(1.2); }
+.btn-ai { background: rgba(156,120,255,.15); color: #9c78ff; border-color: transparent; }
+.btn-ai:hover { filter: brightness(1.15); }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: var(--accent); color: #fff; font-size: 11px;
+  display: flex; align-items: center; padding: 0 12px; gap: 8px;
+  user-select: none;
+}
+.status-bar .s-sep { opacity: .4; }
+.status-bar .s-right { margin-left: auto; display: flex; gap: 10px; }
+
+/* ── Add button ── */
+.add-btn {
+  background: var(--accent); color: #fff; border: none;
+  width: 28px; height: 28px; border-radius: 4px;
+  cursor: pointer; font-size: 16px; display: flex;
+  align-items: center; justify-content: center;
+  transition: filter .15s;
+}
+.add-btn:hover { filter: brightness(1.2); }
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .workbench { grid-template-columns: 1fr; }
+  .resizer { display: none; }
+  .left-panel { max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border); }
+  .detail-meta { flex-direction: column; gap: 4px; }
+}
+</style>
+<script src="shared/i18n.js"></script>
+<script src="shared/nav.js"></script>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="query.html"       class="nav-tab" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="equipment.html"   class="nav-tab active" data-nav-key="Equipment">Equipment</a>
+      <a href="qa.html"          class="nav-tab" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
+      <a href="feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- WORKBENCH -->
+<div class="workbench" id="workbench">
+
+  <!-- LEFT PANEL: Equipment List -->
+  <div class="left-panel">
+    <div class="panel-header">
+      Equipment
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span class="panel-badge" id="equipCount">0</span>
+        <button class="add-btn" onclick="openModal('equip')" title="Register equipment">+</button>
+      </span>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('active',this)">Active</button>
+      <button class="filter-btn" onclick="setFilter('maintenance',this)">Maint.</button>
+      <button class="filter-btn" onclick="setFilter('inactive',this)">Inactive</button>
+    </div>
+    <div class="equip-list" id="equipList"></div>
+  </div>
+
+  <!-- RESIZER -->
+  <div class="resizer" id="resizer"></div>
+
+  <!-- RIGHT PANEL: Detail + Logs -->
+  <div class="right-panel" id="rightPanel">
+    <div class="empty-state" id="emptyState">
+      <span style="font-size:28px;opacity:.3;">&#9881;</span>
+      Select equipment to view logbook
+    </div>
+    <div id="detailView" style="display:none;flex-direction:column;height:100%;">
+      <div class="detail-header">
+        <div class="detail-title" id="detailTitle"></div>
+        <div class="detail-subtitle" id="detailSubtitle"></div>
+      </div>
+      <div class="detail-meta" id="detailMeta"></div>
+      <div class="detail-tabs">
+        <button class="detail-tab active" onclick="setTab('logs',this)">Log Entries</button>
+        <button class="detail-tab" onclick="setTab('ai',this)">AI Analysis</button>
+        <button class="detail-tab" onclick="setTab('audit',this)">Audit Trail</button>
+      </div>
+      <div style="padding:8px 20px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--border);background:var(--s2);">
+        <button class="btn btn-primary" onclick="openModal('log')" style="font-size:11px;padding:5px 12px;">+ New Entry</button>
+        <select id="logTypeFilter" onchange="filterLogs()" style="background:var(--s3);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px 8px;border-radius:4px;">
+          <option value="">All Types</option>
+          <option value="usage">Usage</option>
+          <option value="cleaning">Cleaning</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="alarm">Alarm</option>
+          <option value="calibration">Calibration</option>
+        </select>
+        <button class="btn btn-ai" onclick="runAnalysis()" style="font-size:11px;padding:5px 12px;margin-left:auto;">&#9733; AI Analyse</button>
+      </div>
+      <div class="detail-body" id="detailBody"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>&#9881; Equipment Logbook</span>
+  <span class="s-sep">|</span>
+  <span id="statusCount">Loading&#8230;</span>
+  <span class="s-sep">|</span>
+  <span id="statusSel">No selection</span>
+  <div class="s-right">
+    <span>21 CFR Part 11</span>
+    <span class="s-sep">|</span>
+    <span>&#127866; Connected</span>
+  </div>
+</div>
+
+<!-- MODAL: Register Equipment -->
+<div class="modal-overlay" id="modalEquip">
+  <div class="modal-box">
+    <h2>Register Equipment</h2>
+    <div class="form-group"><label>Name *</label><input id="eqName" placeholder="e.g. Bioreactor BR-01"></div>
+    <div class="form-group"><label>Type</label>
+      <select id="eqType">
+        <option value="bioreactor">Bioreactor</option>
+        <option value="centrifuge">Centrifuge</option>
+        <option value="chromatography">Chromatography System</option>
+        <option value="filtration">Filtration Unit</option>
+        <option value="incubator">Incubator</option>
+        <option value="autoclave">Autoclave</option>
+        <option value="freezer">Freezer / Cold Storage</option>
+        <option value="balance">Balance / Scale</option>
+        <option value="ph_meter">pH Meter</option>
+        <option value="general">General</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Location</label><input id="eqLocation" placeholder="e.g. Clean Room A"></div>
+    <div class="form-group"><label>Serial Number</label><input id="eqSerial"></div>
+    <div class="form-group"><label>Model</label><input id="eqModel"></div>
+    <div class="form-group"><label>Manufacturer</label><input id="eqManufacturer"></div>
+    <div class="form-group"><label>Commissioned Date</label><input type="date" id="eqCommissioned"></div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEquipment()">Register</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: New Log Entry -->
+<div class="modal-overlay" id="modalLog">
+  <div class="modal-box">
+    <h2>New Log Entry</h2>
+    <div class="form-group"><label>Entry Type *</label>
+      <select id="logType">
+        <option value="usage">Usage</option>
+        <option value="cleaning">Cleaning</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="alarm">Alarm</option>
+        <option value="calibration">Calibration</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Title *</label><input id="logTitle" placeholder="e.g. Routine CIP cycle"></div>
+    <div class="form-group"><label>Description</label><textarea id="logDesc" placeholder="Details of work performed..."></textarea></div>
+    <div class="form-group"><label>Performed At</label><input type="datetime-local" id="logPerformedAt"></div>
+    <div class="form-group"><label>Duration (minutes)</label><input type="number" id="logDuration" min="0"></div>
+    <div id="alarmFields" style="display:none;">
+      <div class="form-group"><label>Alarm Severity</label>
+        <select id="logAlarmSeverity">
+          <option value="info">Info</option>
+          <option value="warning">Warning</option>
+          <option value="critical">Critical</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="border-top:1px solid var(--border);padding-top:12px;margin-top:8px;">
+      <label>E-Signature (21 CFR Part 11)</label>
+      <input id="logEsigUser" placeholder="Full name for e-signature">
+      <input id="logEsigReason" placeholder="Reason / meaning of signature" style="margin-top:6px;">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitLogEntry()">Submit Entry</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── State ──
+  var equipment = [];
+  var selected = null;
+  var logs = [];
+  var filter = 'all';
+  var activeTab = 'logs';
+  var DEMO = (localStorage.getItem('vent_token') === 'demo');
+
+  // ── Demo data ──
+  var DEMO_EQUIPMENT = [
+    { equip_id: 'EQ-2001', name: 'Bioreactor BR-01', type: 'bioreactor', location: 'Clean Room A', serial_number: 'BR-2024-0471', model: 'Biostat STR 50L', manufacturer: 'Sartorius', status: 'active', commissioned_at: '2024-06-15', created_at: '2024-06-15T10:00:00Z' },
+    { equip_id: 'EQ-2002', name: 'Centrifuge CF-03', type: 'centrifuge', location: 'Process Hall B', serial_number: 'CF-2023-1122', model: 'Avanti JXN-26', manufacturer: 'Beckman Coulter', status: 'active', commissioned_at: '2023-11-20', created_at: '2023-11-20T08:00:00Z' },
+    { equip_id: 'EQ-2003', name: 'Autoclave AC-01', type: 'autoclave', location: 'Utilities', serial_number: 'AC-2022-0890', model: 'Steris Amsco 400', manufacturer: 'Steris', status: 'maintenance', commissioned_at: '2022-03-10', created_at: '2022-03-10T09:00:00Z' },
+    { equip_id: 'EQ-2004', name: 'pH Meter Lab-02', type: 'ph_meter', location: 'QC Lab', serial_number: 'PH-2025-0033', model: 'SevenExcellence', manufacturer: 'Mettler Toledo', status: 'active', commissioned_at: '2025-01-08', created_at: '2025-01-08T14:00:00Z' },
+    { equip_id: 'EQ-2005', name: 'Freezer ULT-05', type: 'freezer', location: 'Cold Storage', serial_number: 'ULT-2021-0556', model: 'TSX600', manufacturer: 'Thermo Fisher', status: 'inactive', commissioned_at: '2021-09-01', created_at: '2021-09-01T07:00:00Z' },
+  ];
+
+  var DEMO_LOGS = {
+    'EQ-2001': [
+      { log_id: 'EQLOG-3001', equip_id: 'EQ-2001', entry_type: 'usage', title: 'Fed-batch run #FB-042', description: 'CHO cell culture, 12-day fed-batch. All parameters nominal.', performed_by: 'Sarah Chen', performed_role: 'operator', performed_at: '2026-03-04T08:00:00Z', duration_min: 480, status: 'complete', esig_user: 'Sarah Chen', esig_reason: 'Batch execution confirmed' },
+      { log_id: 'EQLOG-3002', equip_id: 'EQ-2001', entry_type: 'cleaning', title: 'CIP cycle post-batch', description: 'NaOH 0.5M 30min, WFI rinse, conductivity verified <1.0 uS/cm.', performed_by: 'Mike O\'Brien', performed_role: 'operator', performed_at: '2026-03-04T18:30:00Z', duration_min: 90, status: 'complete', esig_user: 'Mike O\'Brien', esig_reason: 'CIP completion verified' },
+      { log_id: 'EQLOG-3003', equip_id: 'EQ-2001', entry_type: 'alarm', title: 'DO probe drift detected', description: 'Dissolved oxygen probe reading 3% below setpoint. Recalibration required.', performed_by: 'System', performed_role: 'engineering', performed_at: '2026-03-03T14:22:00Z', duration_min: null, status: 'complete', alarm_severity: 'warning' },
+      { log_id: 'EQLOG-3004', equip_id: 'EQ-2001', entry_type: 'maintenance', title: 'Quarterly PM - Q1 2026', description: 'Replaced agitator seal, calibrated pH/DO probes, verified load cells.', performed_by: 'James Kelly', performed_role: 'engineering', performed_at: '2026-02-28T09:00:00Z', duration_min: 240, status: 'complete', esig_user: 'James Kelly', esig_reason: 'PM completion' },
+      { log_id: 'EQLOG-3005', equip_id: 'EQ-2001', entry_type: 'calibration', title: 'pH probe 2-point calibration', description: 'pH 4.01 and 7.00 buffers. Slope: 98.2%. Offset: +12mV.', performed_by: 'James Kelly', performed_role: 'engineering', performed_at: '2026-02-28T11:00:00Z', duration_min: 30, status: 'complete', esig_user: 'James Kelly', esig_reason: 'Calibration verified' },
+    ],
+    'EQ-2002': [
+      { log_id: 'EQLOG-3010', equip_id: 'EQ-2002', entry_type: 'usage', title: 'Harvest clarification', description: 'Cell harvest from BR-01, 8000 RPM, 30 min.', performed_by: 'Sarah Chen', performed_role: 'operator', performed_at: '2026-03-04T20:00:00Z', duration_min: 45, status: 'complete' },
+    ],
+    'EQ-2003': [
+      { log_id: 'EQLOG-3020', equip_id: 'EQ-2003', entry_type: 'maintenance', title: 'Door gasket replacement', description: 'Replaced main door gasket. Leak test passed.', performed_by: 'James Kelly', performed_role: 'engineering', performed_at: '2026-03-02T10:00:00Z', duration_min: 180, status: 'complete', esig_user: 'James Kelly', esig_reason: 'Maintenance verified' },
+      { log_id: 'EQLOG-3021', equip_id: 'EQ-2003', entry_type: 'alarm', title: 'Chamber pressure out of spec', description: 'Pressure failed to reach 121C/15psi within cycle time. Cycle aborted.', performed_by: 'System', performed_role: 'engineering', performed_at: '2026-03-01T15:45:00Z', alarm_severity: 'critical', status: 'complete' },
+    ],
+  };
+
+  // ── Load equipment ──
+  async function loadEquipment() {
+    if (DEMO) {
+      equipment = DEMO_EQUIPMENT;
+    } else {
+      try {
+        var res = await authFetch(SERVER + '/equipment');
+        if (res.ok) equipment = await res.json();
+        else equipment = [];
+      } catch (e) {
+        console.error('Failed to load equipment:', e);
+        equipment = [];
+      }
+    }
+    renderList();
+    document.getElementById('equipCount').textContent = equipment.length;
+    document.getElementById('statusCount').textContent = equipment.length + ' registered';
+  }
+
+  // ── Load logs for selected equipment ──
+  async function loadLogs(equipId) {
+    if (DEMO) {
+      logs = DEMO_LOGS[equipId] || [];
+    } else {
+      try {
+        var res = await authFetch(SERVER + '/equipment/' + equipId + '/logs');
+        if (res.ok) logs = await res.json();
+        else logs = [];
+      } catch (e) {
+        console.error('Failed to load logs:', e);
+        logs = [];
+      }
+    }
+    renderLogs();
+  }
+
+  // ── Render equipment list ──
+  function renderList() {
+    var list = document.getElementById('equipList');
+    var filtered = equipment.filter(function (e) {
+      if (filter === 'all') return true;
+      return e.status === filter;
+    });
+    if (!filtered.length) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px;">No equipment found</div>';
+      return;
+    }
+    list.innerHTML = filtered.map(function (e) {
+      var sel = selected && selected.equip_id === e.equip_id ? ' selected' : '';
+      return '<div class="equip-item' + sel + '" onclick="selectEquipment(\'' + e.equip_id + '\')">'
+        + '<div class="equip-item-name">' + esc(e.name) + '</div>'
+        + '<div class="equip-item-meta">'
+        + '<span class="equip-status ' + e.status + '">' + e.status + '</span> '
+        + esc(e.type) + ' &middot; ' + esc(e.location || 'No location')
+        + '</div></div>';
+    }).join('');
+  }
+
+  // ── Select equipment ──
+  window.selectEquipment = function (equipId) {
+    selected = equipment.find(function (e) { return e.equip_id === equipId; });
+    if (!selected) return;
+    document.getElementById('emptyState').style.display = 'none';
+    var dv = document.getElementById('detailView');
+    dv.style.display = 'flex';
+    document.getElementById('detailTitle').textContent = selected.name;
+    document.getElementById('detailSubtitle').textContent = selected.equip_id + ' · ' + selected.type;
+    document.getElementById('detailMeta').innerHTML =
+      '<span class="meta-chip"><strong>Status:</strong> <span class="equip-status ' + selected.status + '">' + selected.status + '</span></span>'
+      + '<span class="meta-chip"><strong>Location:</strong> ' + esc(selected.location || '—') + '</span>'
+      + '<span class="meta-chip"><strong>S/N:</strong> ' + esc(selected.serial_number || '—') + '</span>'
+      + '<span class="meta-chip"><strong>Model:</strong> ' + esc(selected.model || '—') + '</span>'
+      + '<span class="meta-chip"><strong>Manufacturer:</strong> ' + esc(selected.manufacturer || '—') + '</span>'
+      + '<span class="meta-chip"><strong>Commissioned:</strong> ' + (selected.commissioned_at ? selected.commissioned_at.slice(0, 10) : '—') + '</span>';
+    document.getElementById('statusSel').textContent = selected.equip_id + ' — ' + selected.name;
+    renderList();
+    loadLogs(equipId);
+    setTab('logs', document.querySelector('.detail-tab'));
+  };
+
+  // ── Render log entries ──
+  function renderLogs() {
+    var body = document.getElementById('detailBody');
+    var typeFilter = document.getElementById('logTypeFilter').value;
+    var filtered = logs.filter(function (l) {
+      if (!typeFilter) return true;
+      return l.entry_type === typeFilter;
+    });
+    if (!filtered.length) {
+      body.innerHTML = '<div class="empty-state" style="height:auto;padding:40px 0;">No log entries' + (typeFilter ? ' for type "' + typeFilter + '"' : '') + '</div>';
+      return;
+    }
+    body.innerHTML = filtered.map(function (l) {
+      var footer = '<span>' + esc(l.performed_by) + ' (' + l.performed_role + ') &middot; ' + fmtDate(l.performed_at) + '</span>';
+      if (l.duration_min) footer += '<span>' + l.duration_min + ' min</span>';
+      var esig = l.esig_user ? '<div class="log-esig">&#10003; e-signed: ' + esc(l.esig_user) + (l.esig_reason ? ' — ' + esc(l.esig_reason) : '') + '</div>' : '';
+      var alarm = l.alarm_severity ? ' <span class="risk-badge ' + (l.alarm_severity === 'critical' ? 'high' : l.alarm_severity === 'warning' ? 'medium' : 'low') + '">' + l.alarm_severity + '</span>' : '';
+      return '<div class="log-entry">'
+        + '<div class="log-entry-header"><span class="log-type ' + l.entry_type + '">' + l.entry_type + '</span>' + alarm + '</div>'
+        + '<div class="log-entry-title">' + esc(l.title) + '</div>'
+        + (l.description ? '<div class="log-entry-desc">' + esc(l.description) + '</div>' : '')
+        + esig
+        + '<div class="log-entry-footer">' + footer + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  // ── Tabs ──
+  window.setTab = function (tab, btn) {
+    activeTab = tab;
+    document.querySelectorAll('.detail-tab').forEach(function (t) { t.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    var body = document.getElementById('detailBody');
+    if (tab === 'logs') {
+      renderLogs();
+    } else if (tab === 'ai') {
+      body.innerHTML = '<div class="empty-state" style="height:auto;padding:40px 0;">Click "AI Analyse" to generate insights</div>';
+    } else if (tab === 'audit') {
+      loadAuditTrail();
+    }
+  };
+
+  // ── Load audit trail ──
+  async function loadAuditTrail() {
+    var body = document.getElementById('detailBody');
+    if (!selected) return;
+    if (DEMO) {
+      body.innerHTML = '<div class="empty-state" style="height:auto;padding:40px 0;">Audit trail not available in demo mode</div>';
+      return;
+    }
+    body.innerHTML = '<div style="padding:20px;color:var(--dim);">Loading audit trail...</div>';
+    try {
+      var res = await authFetch(SERVER + '/audit/' + selected.equip_id);
+      if (!res.ok) throw new Error('Failed');
+      var data = await res.json();
+      if (!data.length) {
+        body.innerHTML = '<div class="empty-state" style="height:auto;padding:40px 0;">No audit entries</div>';
+        return;
+      }
+      body.innerHTML = data.map(function (a) {
+        return '<div class="log-entry">'
+          + '<div class="log-entry-header"><span class="log-type usage">' + esc(a.action) + '</span><span style="font-size:11px;color:var(--dim);">' + fmtDate(a.timestamp) + '</span></div>'
+          + '<div class="log-entry-title">' + esc(a.user_id) + ' (' + esc(a.user_role) + ')</div>'
+          + (a.reason ? '<div class="log-entry-desc">' + esc(a.reason) + '</div>' : '')
+          + '<div class="log-entry-footer"><span style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--dim);">' + (a.checksum || '').slice(0, 16) + '...</span></div>'
+          + '</div>';
+      }).join('');
+    } catch (e) {
+      body.innerHTML = '<div class="empty-state" style="height:auto;padding:40px 0;">Failed to load audit trail</div>';
+    }
+  }
+
+  // ── Filter ──
+  window.setFilter = function (f, btn) {
+    filter = f;
+    document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    renderList();
+  };
+
+  window.filterLogs = function () { renderLogs(); };
+
+  // ── Show/hide alarm fields ──
+  document.getElementById('logType').addEventListener('change', function () {
+    document.getElementById('alarmFields').style.display = this.value === 'alarm' ? 'block' : 'none';
+  });
+
+  // ── Modals ──
+  window.openModal = function (type) {
+    if (type === 'equip') document.getElementById('modalEquip').classList.add('visible');
+    if (type === 'log') {
+      if (!selected) return alert('Select equipment first');
+      document.getElementById('modalLog').classList.add('visible');
+    }
+  };
+  window.closeModals = function () {
+    document.querySelectorAll('.modal-overlay').forEach(function (m) { m.classList.remove('visible'); });
+  };
+
+  // ── Submit new equipment ──
+  window.submitEquipment = async function () {
+    var name = document.getElementById('eqName').value.trim();
+    if (!name) return alert('Name is required');
+    var payload = {
+      name: name,
+      type: document.getElementById('eqType').value,
+      location: document.getElementById('eqLocation').value.trim(),
+      serialNumber: document.getElementById('eqSerial').value.trim(),
+      model: document.getElementById('eqModel').value.trim(),
+      manufacturer: document.getElementById('eqManufacturer').value.trim(),
+      commissionedAt: document.getElementById('eqCommissioned').value || null,
+    };
+    if (DEMO) {
+      var fakeId = 'EQ-' + Math.floor(1000 + Math.random() * 8999);
+      equipment.unshift(Object.assign({ equip_id: fakeId, status: 'active', created_at: new Date().toISOString() }, payload));
+      closeModals();
+      renderList();
+      document.getElementById('equipCount').textContent = equipment.length;
+      return;
+    }
+    try {
+      var res = await authFetch(SERVER + '/equipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      var data = await res.json();
+      if (!res.ok) return alert(data.error || 'Failed');
+      closeModals();
+      document.getElementById('eqName').value = '';
+      loadEquipment();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  };
+
+  // ── Submit new log entry ──
+  window.submitLogEntry = async function () {
+    if (!selected) return;
+    var title = document.getElementById('logTitle').value.trim();
+    var entryType = document.getElementById('logType').value;
+    if (!title) return alert('Title is required');
+    var payload = {
+      entryType: entryType,
+      title: title,
+      description: document.getElementById('logDesc').value.trim(),
+      performedAt: document.getElementById('logPerformedAt').value || undefined,
+      durationMin: parseInt(document.getElementById('logDuration').value, 10) || undefined,
+      alarmSeverity: entryType === 'alarm' ? document.getElementById('logAlarmSeverity').value : undefined,
+      esigUser: document.getElementById('logEsigUser').value.trim() || undefined,
+      esigReason: document.getElementById('logEsigReason').value.trim() || undefined,
+    };
+    if (DEMO) {
+      var fakeLog = Object.assign({
+        log_id: 'EQLOG-' + Math.floor(1000 + Math.random() * 8999),
+        equip_id: selected.equip_id,
+        performed_by: localStorage.getItem('vent_name') || 'Demo User',
+        performed_role: localStorage.getItem('vent_role') || 'operator',
+        performed_at: payload.performedAt || new Date().toISOString(),
+        status: 'complete',
+      }, payload);
+      logs.unshift(fakeLog);
+      closeModals();
+      renderLogs();
+      return;
+    }
+    try {
+      var res = await authFetch(SERVER + '/equipment/' + selected.equip_id + '/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      var data = await res.json();
+      if (!res.ok) return alert(data.error || 'Failed');
+      closeModals();
+      document.getElementById('logTitle').value = '';
+      document.getElementById('logDesc').value = '';
+      document.getElementById('logEsigUser').value = '';
+      document.getElementById('logEsigReason').value = '';
+      loadLogs(selected.equip_id);
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  };
+
+  // ── AI Analysis ──
+  window.runAnalysis = async function () {
+    if (!selected) return;
+    var body = document.getElementById('detailBody');
+    setTab('ai', document.querySelectorAll('.detail-tab')[1]);
+    body.innerHTML = '<div style="padding:20px;color:var(--dim);">Analysing equipment data...</div>';
+    if (DEMO) {
+      setTimeout(function () {
+        renderAiResults({
+          risk_score: 'medium',
+          summary: 'Bioreactor BR-01 shows normal usage patterns with one notable DO probe drift alarm. Recommend scheduling probe replacement within 30 days.',
+          maintenance_alerts: [
+            'DO probe calibration drift detected — replacement recommended within 30 days',
+            'Agitator seal replaced Feb 2026 — next replacement due Q3 2026',
+          ],
+          usage_patterns: [
+            'Average batch duration: 12 days with consistent 90-min CIP cycles',
+            'Equipment utilisation: ~75% (good for fed-batch operations)',
+          ],
+          anomalies: [
+            'DO probe drift of 3% below setpoint is approaching action limit (5%)',
+          ],
+        });
+      }, 1500);
+      return;
+    }
+    try {
+      var res = await authFetch(SERVER + '/equipment/' + selected.equip_id + '/analyse');
+      if (!res.ok) throw new Error('Analysis failed');
+      var data = await res.json();
+      renderAiResults(data);
+    } catch (e) {
+      body.innerHTML = '<div class="empty-state" style="height:auto;padding:40px 0;">Analysis failed: ' + esc(e.message) + '</div>';
+    }
+  };
+
+  function renderAiResults(data) {
+    var body = document.getElementById('detailBody');
+    var html = '<div class="ai-panel">';
+    html += '<h3>Equipment Analysis — ' + esc(selected.name) + '</h3>';
+    if (data.risk_score) {
+      html += '<div style="margin-bottom:12px;">Risk Score: <span class="risk-badge ' + data.risk_score + '">' + data.risk_score.toUpperCase() + '</span></div>';
+    }
+    if (data.summary) {
+      html += '<div style="margin-bottom:14px;font-size:13px;color:var(--text);line-height:1.5;">' + esc(data.summary) + '</div>';
+    }
+    if (data.maintenance_alerts && data.maintenance_alerts.length) {
+      html += '<div class="ai-section"><h4>Maintenance Alerts</h4>';
+      data.maintenance_alerts.forEach(function (a) { html += '<div class="ai-item">' + esc(a) + '</div>'; });
+      html += '</div>';
+    }
+    if (data.usage_patterns && data.usage_patterns.length) {
+      html += '<div class="ai-section"><h4>Usage Patterns</h4>';
+      data.usage_patterns.forEach(function (a) { html += '<div class="ai-item">' + esc(a) + '</div>'; });
+      html += '</div>';
+    }
+    if (data.anomalies && data.anomalies.length) {
+      html += '<div class="ai-section"><h4>Anomaly Detection</h4>';
+      data.anomalies.forEach(function (a) { html += '<div class="ai-item">' + esc(a) + '</div>'; });
+      html += '</div>';
+    }
+    html += '</div>';
+    body.innerHTML = html;
+  }
+
+  // ── Resizer ──
+  (function () {
+    var resizer = document.getElementById('resizer');
+    var wb = document.getElementById('workbench');
+    var dragging = false;
+    resizer.addEventListener('mousedown', function (e) {
+      dragging = true;
+      resizer.classList.add('dragging');
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      var w = Math.max(200, Math.min(500, e.clientX));
+      wb.style.gridTemplateColumns = w + 'px 4px 1fr';
+    });
+    document.addEventListener('mouseup', function () {
+      dragging = false;
+      resizer.classList.remove('dragging');
+    });
+  })();
+
+  // ── Helpers ──
+  function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    return d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })
+      + ' ' + d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ── Init ──
+  loadEquipment();
+
+})();
+</script>
+</body>
+</html>

@@ -56,19 +56,20 @@
     var name = localStorage.getItem('vent_name') || '';
 
     var rules = {
-      operator:    ['Charlie AI', 'My Activity', 'Doc Builder', 'Feedback'],
-      qa:          ['Charlie AI', 'My Activity', 'Doc Builder', 'QA Centre', 'Feedback'],
-      director:    ['Charlie AI', 'My Activity', 'Doc Builder', 'QA Centre', 'Analytics', 'Feedback'],
+      operator:    ['Charlie AI', 'My Activity', 'Doc Builder', 'Equipment', 'Feedback'],
+      training:    ['Charlie AI', 'My Activity', 'Doc Builder', 'Training', 'Feedback'],
+      qa:          ['Charlie AI', 'My Activity', 'Doc Builder', 'QA Centre', 'Training', 'Feedback'],
+      director:    ['Charlie AI', 'My Activity', 'Doc Builder', 'QA Centre', 'Training', 'Analytics', 'Feedback'],
       msat:        ['Charlie AI', 'My Activity', 'Doc Builder'],
-      engineering: ['Charlie AI', 'My Activity', 'Doc Builder'],
-      admin:       ['Charlie AI', 'My Activity', 'Doc Builder', 'QA Centre', 'Analytics', 'Feedback']
+      engineering: ['Charlie AI', 'My Activity', 'Doc Builder', 'Equipment'],
+      admin:       ['Charlie AI', 'My Activity', 'Doc Builder', 'QA Centre', 'Training', 'Analytics', 'Equipment', 'Feedback']
     };
     var colors = {
-      operator: 'var(--teal)', qa: 'var(--accent)', director: 'var(--gold)',
+      operator: 'var(--teal)', training: 'var(--gold)', qa: 'var(--accent)', director: 'var(--gold)',
       msat: 'var(--green)', engineering: 'var(--mid)', admin: 'var(--red)'
     };
     var roleKeys = {
-      operator: 'role.operator', qa: 'role.qa', director: 'role.director',
+      operator: 'role.operator', training: 'role.training', qa: 'role.qa', director: 'role.director',
       msat: 'role.msat', engineering: 'role.engineering', admin: 'role.admin'
     };
 

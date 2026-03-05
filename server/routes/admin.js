@@ -283,6 +283,360 @@ DO $$ BEGIN
   CREATE POLICY feedback_all ON operator_feedback FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- ── Deviations (Quality Deviation Tracking) ─────────────────
+CREATE TABLE IF NOT EXISTS deviations (
+  id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  dev_id              TEXT UNIQUE NOT NULL,
+  title               TEXT NOT NULL,
+  description         TEXT DEFAULT '',
+  severity            TEXT NOT NULL DEFAULT 'minor',
+  status              TEXT NOT NULL DEFAULT 'draft',
+  source              TEXT DEFAULT '',
+  source_type         TEXT DEFAULT 'observation',
+  process_area        TEXT DEFAULT '',
+  equipment_ref       TEXT DEFAULT '',
+  classification      JSONB DEFAULT '{}'::jsonb,
+  five_why            JSONB DEFAULT '[]'::jsonb,
+  ishikawa            JSONB DEFAULT '{}'::jsonb,
+  root_cause          TEXT DEFAULT '',
+  root_cause_category TEXT DEFAULT '',
+  capa_id             TEXT,
+  reported_by         TEXT NOT NULL DEFAULT 'unknown',
+  owner               TEXT DEFAULT 'Unassigned',
+  assigned_to         TEXT DEFAULT '',
+  owner_role          TEXT DEFAULT '',
+  due_date            DATE,
+  closed_at           TIMESTAMPTZ,
+  closed_by           TEXT,
+  ai_severity         TEXT,
+  ai_summary          TEXT DEFAULT '',
+  ai_investigation    JSONB DEFAULT '{}'::jsonb,
+  escalation_history  JSONB DEFAULT '[]'::jsonb,
+  created_at          TIMESTAMPTZ DEFAULT now(),
+  updated_at          TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_dev_severity ON deviations(severity);
+CREATE INDEX IF NOT EXISTS idx_dev_status   ON deviations(status);
+CREATE INDEX IF NOT EXISTS idx_dev_owner    ON deviations(owner);
+CREATE INDEX IF NOT EXISTS idx_dev_area     ON deviations(process_area);
+CREATE INDEX IF NOT EXISTS idx_dev_capa     ON deviations(capa_id);
+CREATE INDEX IF NOT EXISTS idx_dev_created  ON deviations(created_at DESC);
+
+ALTER TABLE deviations ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY deviations_all ON deviations FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Equipment (Logbook Master) ─────────────────────────────
+CREATE TABLE IF NOT EXISTS equipment (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  equip_id        TEXT UNIQUE NOT NULL,
+  name            TEXT NOT NULL,
+  type            TEXT NOT NULL DEFAULT 'general',
+  location        TEXT DEFAULT '',
+  serial_number   TEXT DEFAULT '',
+  model           TEXT DEFAULT '',
+  manufacturer    TEXT DEFAULT '',
+  status          TEXT DEFAULT 'active',
+  commissioned_at TIMESTAMPTZ,
+  created_by      TEXT NOT NULL DEFAULT 'system',
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_equipment_status ON equipment(status);
+CREATE INDEX IF NOT EXISTS idx_equipment_type   ON equipment(type);
+
+ALTER TABLE equipment ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY equipment_all ON equipment FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Equipment Log Entries ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS equipment_log_entries (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  log_id          TEXT UNIQUE NOT NULL,
+  equip_id        TEXT NOT NULL,
+  entry_type      TEXT NOT NULL DEFAULT 'usage',
+  title           TEXT NOT NULL DEFAULT '',
+  description     TEXT DEFAULT '',
+  performed_by    TEXT NOT NULL DEFAULT 'unknown',
+  performed_role  TEXT NOT NULL DEFAULT 'operator',
+  performed_at    TIMESTAMPTZ DEFAULT now(),
+  duration_min    INT,
+  status          TEXT DEFAULT 'complete',
+  alarm_severity  TEXT,
+  esig_user       TEXT,
+  esig_at         TIMESTAMPTZ,
+  esig_reason     TEXT,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_eqlog_equip  ON equipment_log_entries(equip_id);
+CREATE INDEX IF NOT EXISTS idx_eqlog_type   ON equipment_log_entries(entry_type);
+CREATE INDEX IF NOT EXISTS idx_eqlog_date   ON equipment_log_entries(performed_at DESC);
+
+ALTER TABLE equipment_log_entries ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY eqlog_all ON equipment_log_entries FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ══════════════════════════════════════════════════════════════
+-- INCUBATOR LOGBOOK (CO2 Incubator Management)
+-- ══════════════════════════════════════════════════════════════
+
+-- ── Incubator Units ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS incubator_units (
+  id                 UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  incubator_id       TEXT UNIQUE NOT NULL,
+  name               TEXT NOT NULL,
+  model              TEXT DEFAULT '',
+  serial_number      TEXT DEFAULT '',
+  location           TEXT DEFAULT '',
+  status             TEXT DEFAULT 'active',
+  co2_setpoint       NUMERIC(5,2),
+  temp_setpoint      NUMERIC(5,2),
+  humidity_setpoint   NUMERIC(5,2),
+  created_by         TEXT NOT NULL DEFAULT 'system',
+  created_at         TIMESTAMPTZ DEFAULT now(),
+  updated_at         TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_incu_status   ON incubator_units(status);
+CREATE INDEX IF NOT EXISTS idx_incu_location ON incubator_units(location);
+
+ALTER TABLE incubator_units ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY incubator_units_all ON incubator_units FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+COMMENT ON TABLE incubator_units IS 'CO2 incubator registration — 21 CFR Part 11 compliant equipment logbook.';
+
+-- ── Incubator Environmental Logs ────────────────────────────
+CREATE TABLE IF NOT EXISTS incubator_logs (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  log_id          TEXT UNIQUE NOT NULL,
+  incubator_id    TEXT NOT NULL,
+  recorded_by     TEXT NOT NULL,
+  recorded_role   TEXT NOT NULL DEFAULT 'operator',
+  recorded_at     TIMESTAMPTZ DEFAULT now(),
+  temperature     NUMERIC(5,2),
+  co2_level       NUMERIC(5,2),
+  humidity        NUMERIC(5,2),
+  door_openings   INT,
+  notes           TEXT DEFAULT '',
+  status          TEXT DEFAULT 'normal',
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ilog_incubator ON incubator_logs(incubator_id);
+CREATE INDEX IF NOT EXISTS idx_ilog_status    ON incubator_logs(status);
+CREATE INDEX IF NOT EXISTS idx_ilog_recorded  ON incubator_logs(recorded_at DESC);
+
+ALTER TABLE incubator_logs ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY incubator_logs_all ON incubator_logs FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Incubator Alarms ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS incubator_alarms (
+  id               UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  alarm_id         TEXT UNIQUE NOT NULL,
+  incubator_id     TEXT NOT NULL,
+  alarm_type       TEXT NOT NULL,
+  severity         TEXT DEFAULT 'warning',
+  triggered_at     TIMESTAMPTZ DEFAULT now(),
+  acknowledged_by  TEXT,
+  acknowledged_at  TIMESTAMPTZ,
+  resolved_at      TIMESTAMPTZ,
+  notes            TEXT DEFAULT '',
+  created_at       TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ialm_incubator ON incubator_alarms(incubator_id);
+CREATE INDEX IF NOT EXISTS idx_ialm_severity  ON incubator_alarms(severity);
+CREATE INDEX IF NOT EXISTS idx_ialm_triggered ON incubator_alarms(triggered_at DESC);
+
+ALTER TABLE incubator_alarms ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY incubator_alarms_all ON incubator_alarms FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Incubator Calibrations (21 CFR Part 11 e-sig) ──────────
+CREATE TABLE IF NOT EXISTS incubator_calibrations (
+  id               UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  calibration_id   TEXT UNIQUE NOT NULL,
+  incubator_id     TEXT NOT NULL,
+  calibrated_by    TEXT NOT NULL,
+  calibrated_role  TEXT NOT NULL DEFAULT 'engineering',
+  calibration_date DATE NOT NULL,
+  next_due         DATE,
+  temp_offset      NUMERIC(5,3),
+  co2_offset       NUMERIC(5,3),
+  humidity_offset   NUMERIC(5,3),
+  result           TEXT DEFAULT 'pass',
+  certificate_ref  TEXT DEFAULT '',
+  notes            TEXT DEFAULT '',
+  esig_user        TEXT,
+  esig_at          TIMESTAMPTZ,
+  esig_reason      TEXT,
+  created_at       TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ical_incubator ON incubator_calibrations(incubator_id);
+CREATE INDEX IF NOT EXISTS idx_ical_result    ON incubator_calibrations(result);
+CREATE INDEX IF NOT EXISTS idx_ical_next_due  ON incubator_calibrations(next_due);
+
+ALTER TABLE incubator_calibrations ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY incubator_calibrations_all ON incubator_calibrations FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+COMMENT ON TABLE incubator_calibrations IS 'Calibration records with e-signature — 21 CFR Part 11.';
+
+-- ── Incubator Maintenance ───────────────────────────────────
+CREATE TABLE IF NOT EXISTS incubator_maintenance (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  maintenance_id  TEXT UNIQUE NOT NULL,
+  incubator_id    TEXT NOT NULL,
+  type            TEXT NOT NULL DEFAULT 'preventive',
+  description     TEXT DEFAULT '',
+  performed_by    TEXT NOT NULL,
+  performed_role  TEXT NOT NULL DEFAULT 'engineering',
+  performed_at    TIMESTAMPTZ DEFAULT now(),
+  next_due        DATE,
+  status          TEXT DEFAULT 'completed',
+  notes           TEXT DEFAULT '',
+  esig_user       TEXT,
+  esig_at         TIMESTAMPTZ,
+  esig_reason     TEXT,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_imnt_incubator ON incubator_maintenance(incubator_id);
+CREATE INDEX IF NOT EXISTS idx_imnt_type      ON incubator_maintenance(type);
+CREATE INDEX IF NOT EXISTS idx_imnt_status    ON incubator_maintenance(status);
+CREATE INDEX IF NOT EXISTS idx_imnt_next_due  ON incubator_maintenance(next_due);
+
+ALTER TABLE incubator_maintenance ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY incubator_maintenance_all ON incubator_maintenance FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Media & Buffer Prep Records ──────────────────────────────
+CREATE TABLE IF NOT EXISTS media_buffer_records (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  record_id         TEXT UNIQUE NOT NULL,
+  recipe_name       TEXT NOT NULL,
+  recipe_type       TEXT NOT NULL DEFAULT 'media',
+  batch_id          TEXT,
+  status            TEXT DEFAULT 'draft',
+  components        JSONB DEFAULT '[]'::jsonb,
+  ph_target         NUMERIC(5,2),
+  ph_actual         NUMERIC(5,2),
+  ph_adjusted       BOOLEAN DEFAULT false,
+  ph_adjusted_by    TEXT,
+  ph_adjusted_at    TIMESTAMPTZ,
+  filter_type       TEXT,
+  filter_lot        TEXT,
+  filter_integrity  TEXT DEFAULT 'pending',
+  filter_tested_by  TEXT,
+  filter_tested_at  TIMESTAMPTZ,
+  hold_time_hours   INT,
+  hold_start        TIMESTAMPTZ,
+  hold_expiry       TIMESTAMPTZ,
+  volume_litres     NUMERIC(10,2),
+  temperature_c     NUMERIC(5,1),
+  prepared_by       TEXT NOT NULL DEFAULT 'unknown',
+  prepared_role     TEXT NOT NULL DEFAULT 'operator',
+  verified_by       TEXT,
+  verified_at       TIMESTAMPTZ,
+  esig_user         TEXT,
+  esig_at           TIMESTAMPTZ,
+  esig_reason       TEXT,
+  notes             TEXT DEFAULT '',
+  ai_analysis       JSONB,
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_prep_status  ON media_buffer_records(status);
+CREATE INDEX IF NOT EXISTS idx_media_prep_type    ON media_buffer_records(recipe_type);
+CREATE INDEX IF NOT EXISTS idx_media_prep_batch   ON media_buffer_records(batch_id);
+CREATE INDEX IF NOT EXISTS idx_media_prep_created ON media_buffer_records(created_at DESC);
+
+ALTER TABLE media_buffer_records ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY media_prep_all ON media_buffer_records FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Training Assignments ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS training_assignments (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  training_id     TEXT UNIQUE NOT NULL,
+  title           TEXT NOT NULL,
+  description     TEXT DEFAULT '',
+  sop_code        TEXT,
+  sop_change_key  TEXT,
+  assigned_to     TEXT NOT NULL,
+  assigned_role   TEXT NOT NULL,
+  assigned_by     TEXT NOT NULL,
+  due_date        DATE,
+  priority        TEXT DEFAULT 'normal',
+  status          TEXT DEFAULT 'assigned',
+  training_type   TEXT DEFAULT 'initial',
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_training_assign_to ON training_assignments(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_training_assign_status ON training_assignments(status);
+CREATE INDEX IF NOT EXISTS idx_training_assign_sop ON training_assignments(sop_code);
+CREATE INDEX IF NOT EXISTS idx_training_assign_due ON training_assignments(due_date);
+
+ALTER TABLE training_assignments ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY training_assignments_all ON training_assignments FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Training Completions ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS training_completions (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  assignment_id   UUID NOT NULL REFERENCES training_assignments(id) ON DELETE CASCADE,
+  training_id     TEXT NOT NULL,
+  completed_by    TEXT NOT NULL,
+  completed_at    TIMESTAMPTZ DEFAULT now(),
+  score           INT,
+  passed          BOOLEAN DEFAULT true,
+  evidence        TEXT,
+  assessor        TEXT,
+  assessor_role   TEXT,
+  notes           TEXT DEFAULT '',
+  e_signature     TEXT,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_training_comp_assign ON training_completions(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_training_comp_tid ON training_completions(training_id);
+CREATE INDEX IF NOT EXISTS idx_training_comp_by ON training_completions(completed_by);
+
+ALTER TABLE training_completions ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY training_completions_all ON training_completions FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
   `.trim();
     res.type('text/plain').send(sql);
   });

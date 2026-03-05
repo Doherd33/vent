@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Deviation Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 260px 4px 1fr;
+  grid-template-rows: 1fr 4px 140px;
+  overflow: hidden;
+}
+
+/* ── RESIZE HANDLES ── */
+.resizer { background: #3c3c3c; z-index: 10; transition: background 0.15s; position: relative; }
+.resizer:hover, .resizer.dragging { background: #007acc; }
+.resizer-v { cursor: col-resize; grid-row: 1; }
+.resizer-h { cursor: row-resize; grid-column: 1 / 4; grid-row: 2; }
+.resizer::after { content: ''; position: absolute; inset: 0; }
+.resizer-v::after  { left: -4px; right: -4px; }
+.resizer-h::after  { top: -4px; bottom: -4px; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  grid-column: 1; grid-row: 1 / 2;
+  background: #252526; border-right: 1px solid #3c3c3c;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-header {
+  padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: #8e8e8e; border-bottom: 1px solid #3c3c3c;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-badge {
+  background: #007acc; color: #fff; font-size: 10px; padding: 1px 6px;
+  border-radius: 8px; font-weight: 600;
+}
+.filter-bar {
+  display: flex; gap: 2px; padding: 6px 8px; border-bottom: 1px solid #2d2d30;
+}
+.filter-btn {
+  background: none; border: 1px solid #3c3c3c; color: #8e8e8e; font-size: 10px;
+  padding: 2px 8px; border-radius: 2px; cursor: pointer; transition: all .15s;
+}
+.filter-btn:hover { color: #ccc; border-color: #5a5a5a; }
+.filter-btn.active { background: #007acc; color: #fff; border-color: #007acc; }
+.submission-list { flex: 1; overflow-y: auto; }
+
+/* ── DEV CARD ── */
+.dev-card {
+  padding: 8px 10px; border-radius: 2px; margin-bottom: 1px;
+  cursor: pointer; transition: background 0.1s; border-left: 2px solid transparent;
+}
+.dev-card:hover { background: #2a2d2e; }
+.dev-card.active { background: #094771; border-left-color: #007acc; }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.card-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #9cdcfe; }
+.card-title { font-size: 11px; color: #d4d4d4; line-height: 1.4; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { font-size: 10px; color: #5a5a5a; display: flex; align-items: center; gap: 6px; }
+
+/* ── SEVERITY BADGES ── */
+.risk-badge { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; text-transform: uppercase; letter-spacing: .03em; }
+.sev-critical { background: rgba(244,71,71,0.2);  color: #f44747; border: 1px solid rgba(244,71,71,0.35); }
+.sev-major    { background: rgba(255,198,77,0.15); color: #ffc64d; border: 1px solid rgba(255,198,77,0.3); }
+.sev-minor    { background: rgba(78,201,176,0.15); color: #4ec9b0; border: 1px solid rgba(78,201,176,0.3); }
+
+/* ── STATUS BADGES ── */
+.status-badge { font-size: 9px; padding: 1px 6px; border-radius: 2px; text-transform: capitalize; }
+.dev-status-draft              { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+.dev-status-open               { background: rgba(0,122,204,0.18); color: #4fc1ff; }
+.dev-status-investigating      { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.dev-status-root_cause_identified { background: rgba(206,145,255,0.15); color: #ce91ff; }
+.dev-status-capa_linked        { background: rgba(77,200,110,0.15); color: #4dc86e; }
+.dev-status-closed             { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+
+/* ── CENTER PANEL ── */
+.center-panel {
+  grid-column: 3; grid-row: 1 / 2;
+  background: var(--bg, #1e1e1e); display: flex; flex-direction: column; overflow: hidden;
+}
+.editor-tabs {
+  display: flex; gap: 0; background: #252526; border-bottom: 1px solid #3c3c3c;
+  min-height: 34px; align-items: flex-end; overflow-x: auto;
+}
+.editor-tab {
+  padding: 6px 14px; font-size: 11px; color: #8e8e8e; cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s;
+}
+.editor-tab:hover { color: #ccc; }
+.editor-tab.active { color: #fff; border-bottom-color: #007acc; }
+.center-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-state .ei { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.empty-state p { color: #5a5a5a; font-size: 12px; }
+
+/* ── DETAIL SECTIONS ── */
+.detail-section { margin-bottom: 20px; }
+.section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #8e8e8e; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #2d2d30;
+  display: flex; align-items: center; gap: 8px;
+}
+.obs-text { font-size: 12px; color: #b0b0b0; line-height: 1.6; white-space: pre-wrap; }
+.sop-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.sop-table td { padding: 4px 0; color: #cccccc; border-bottom: 1px solid #2d2d30; }
+.sop-highlight { background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; padding: 10px 12px; font-size: 12px; color: #cccccc; line-height: 1.5; }
+
+/* ── WORKFLOW BUTTONS ── */
+.wf-btn {
+  padding: 5px 14px; font-size: 11px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.wf-btn:hover { border-color: #5a5a5a; color: #fff; }
+.wf-primary { background: #007acc; border-color: #007acc; color: #fff; }
+.wf-primary:hover { background: #0098ff; }
+.wf-danger { background: rgba(244,71,71,0.15); border-color: rgba(244,71,71,0.4); color: #f44747; }
+.wf-danger:hover { background: rgba(244,71,71,0.25); }
+.action-btn {
+  padding: 4px 10px; font-size: 10px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.action-btn:hover { border-color: #5a5a5a; color: #fff; }
+.action-btn.primary { background: #007acc; border-color: #007acc; color: #fff; }
+.action-btn.primary:hover { background: #0098ff; }
+
+/* ── 5-WHY CHAIN ── */
+.why-chain { display: flex; flex-direction: column; gap: 0; position: relative; padding-left: 20px; }
+.why-step { position: relative; padding: 12px 0 12px 16px; border-left: 2px solid #3c3c3c; }
+.why-step:last-child { border-left-color: transparent; }
+.why-step::before {
+  content: ''; position: absolute; left: -7px; top: 16px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #007acc; border: 2px solid #1e1e1e;
+}
+.why-step.root::before { background: #f44747; }
+.why-level { font-size: 10px; font-weight: 700; color: #007acc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.why-question { font-size: 12px; color: #e0e0e0; font-weight: 600; margin-bottom: 4px; }
+.why-answer { font-size: 11px; color: #8e8e8e; line-height: 1.5; }
+.why-input {
+  width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 11px; font-family: inherit; padding: 6px 8px; outline: none;
+}
+.why-input:focus { border-color: #007acc; }
+.why-ai-badge { font-size: 9px; background: rgba(0,122,204,0.15); color: #007acc; padding: 1px 6px; border-radius: 2px; margin-left: 6px; }
+
+/* ── ISHIKAWA (FISHBONE) ── */
+.fishbone-container { width: 100%; overflow-x: auto; padding: 20px 0; }
+.fishbone-svg { min-width: 800px; height: 420px; }
+.ishikawa-categories { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+.ishi-cat { background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; padding: 10px 12px; }
+.ishi-cat-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #3c3c3c; }
+.ishi-cause-item { font-size: 11px; color: #cccccc; padding: 4px 0; border-bottom: 1px solid #2d2d30; display: flex; align-items: flex-start; gap: 6px; }
+.ishi-cause-item::before { content: ''; width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+.ishi-cat.cat-man .ishi-cause-item::before         { background: #f44747; }
+.ishi-cat.cat-machine .ishi-cause-item::before      { background: #ffc64d; }
+.ishi-cat.cat-method .ishi-cause-item::before       { background: #007acc; }
+.ishi-cat.cat-material .ishi-cause-item::before     { background: #4ec9b0; }
+.ishi-cat.cat-measurement .ishi-cause-item::before  { background: #ce91ff; }
+.ishi-cat.cat-environment .ishi-cause-item::before  { background: #569cd6; }
+
+/* ── BOTTOM PANEL ── */
+.bottom-panel { grid-column: 1 / 4; grid-row: 3; background: #252526; border-top: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; }
+.bottom-tabs { display: flex; gap: 0; border-bottom: 1px solid #2d2d30; }
+.bottom-tab { padding: 4px 12px; font-size: 10px; color: #8e8e8e; cursor: pointer; border-bottom: 2px solid transparent; }
+.bottom-tab.active { color: #ccc; border-bottom-color: #007acc; }
+.bottom-content { flex: 1; overflow-y: auto; padding: 6px 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.log-line { padding: 1px 0; color: #8e8e8e; }
+.log-time { color: #5a5a5a; margin-right: 8px; }
+.log-info { color: #4ec9b0; }
+.log-warn { color: #ffc64d; }
+.log-error { color: #f44747; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: #007acc; display: flex; align-items: center; padding: 0 10px;
+  font-size: 11px; color: #fff; gap: 6px;
+}
+.status-bar .s-sep { color: rgba(255,255,255,0.4); }
+.status-bar .s-right { margin-left: auto; }
+
+/* ── MODAL ── */
+.esig-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.esig-modal { background: #252526; border: 1px solid #3c3c3c; border-radius: 4px; width: 520px; max-width: 90vw; }
+.esig-header { padding: 16px 20px; border-bottom: 1px solid #3c3c3c; }
+.esig-header h3 { font-size: 14px; color: #e0e0e0; margin: 0 0 4px 0; }
+.esig-header p { font-size: 11px; color: #8e8e8e; margin: 0; }
+.esig-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.esig-body label { font-size: 11px; color: #8e8e8e; display: flex; flex-direction: column; gap: 4px; }
+.esig-body input, .esig-body textarea, .esig-body select {
+  background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 12px; font-family: inherit; padding: 6px 8px; outline: none;
+}
+.esig-body input:focus, .esig-body textarea:focus, .esig-body select:focus { border-color: #007acc; }
+.esig-footer { padding: 12px 20px; border-top: 1px solid #3c3c3c; display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── AUDIT TRAIL ── */
+.audit-list { display: flex; flex-direction: column; gap: 6px; }
+.audit-entry { background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; padding: 8px 12px; font-size: 11px; }
+.audit-entry.ae-create { border-left: 3px solid #4ec9b0; }
+.audit-entry.ae-status { border-left: 3px solid #007acc; }
+.audit-entry.ae-esig   { border-left: 3px solid #ffc64d; }
+.audit-time { color: #5a5a5a; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+.audit-action { color: #ccc; font-weight: 600; margin: 2px 0; }
+.audit-user { color: #8e8e8e; }
+.audit-reason { color: #6c6c6c; font-style: italic; margin-top: 2px; }
+.audit-hash { color: #3c3c3c; font-family: 'JetBrains Mono', monospace; font-size: 9px; margin-top: 2px; }
+
+/* ── LOADING SPINNER ── */
+.ai-loading { text-align: center; padding: 20px; color: #8e8e8e; font-size: 11px; }
+.ai-loading::before { content: ''; display: inline-block; width: 14px; height: 14px; border: 2px solid #3c3c3c; border-top-color: #007acc; border-radius: 50%; animation: spin .8s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<script src="shared/i18n.js"></script>
+<script src="shared/audio.js"></script>
+<script src="shared/nav.js"></script>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="query.html"       class="nav-tab" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab active" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
+      <a href="feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- WORKBENCH -->
+<div class="workbench" id="workbench">
+
+  <!-- LEFT PANEL: Deviation List -->
+  <div class="left-panel">
+    <div class="panel-header">
+      Deviations
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span class="panel-badge" id="devCount">0</span>
+        <button class="action-btn primary" onclick="showCreateModal()" style="font-size:10px;padding:2px 8px;">+ New</button>
+      </span>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('critical',this)">Critical</button>
+      <button class="filter-btn" onclick="setFilter('major',this)">Major</button>
+      <button class="filter-btn" onclick="setFilter('minor',this)">Minor</button>
+    </div>
+    <div class="submission-list" id="devList"></div>
+  </div>
+
+  <!-- RESIZER -->
+  <div class="resizer resizer-v" id="resizerLC"></div>
+
+  <!-- CENTER PANEL: Detail -->
+  <div class="center-panel">
+    <div class="editor-tabs" id="editorTabs">
+      <div class="editor-tab active" data-tab="detail" onclick="switchTab('detail',this)">Detail</div>
+      <div class="editor-tab" data-tab="investigate" onclick="switchTab('investigate',this)">Investigation</div>
+      <div class="editor-tab" data-tab="ishikawa" onclick="switchTab('ishikawa',this)">Ishikawa</div>
+      <div class="editor-tab" data-tab="capa" onclick="switchTab('capa',this)">CAPA Link</div>
+      <div class="editor-tab" data-tab="audit" onclick="switchTab('audit',this)">Audit Trail</div>
+    </div>
+    <div class="center-content" id="centerContent">
+      <div class="empty-state">
+        <div class="ei">&#9888;</div>
+        <p>Select a deviation from the left panel or create a new one</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZER: horizontal -->
+  <div class="resizer resizer-h" id="resizerBottom"></div>
+
+  <!-- BOTTOM PANEL: Activity Log -->
+  <div class="bottom-panel">
+    <div class="bottom-tabs">
+      <div class="bottom-tab active">Activity Log</div>
+    </div>
+    <div class="bottom-content" id="bottomContent"></div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>&#9888; Deviation Manager</span>
+  <span class="s-sep">|</span>
+  <span id="statusDevs">Loading...</span>
+  <span class="s-sep">|</span>
+  <span id="statusSel">No selection</span>
+  <div class="s-right">
+    <span>Connected</span>
+  </div>
+</div>
+
+<!-- CREATE MODAL -->
+<div class="esig-overlay" id="createModal" style="display:none">
+  <div class="esig-modal">
+    <div class="esig-header">
+      <h3>Initiate Deviation</h3>
+      <p>Describe the deviation. AI will auto-classify severity.</p>
+    </div>
+    <div class="esig-body">
+      <label>Title <input id="newDevTitle" placeholder="Brief deviation title"></label>
+      <label>Description <textarea id="newDevDesc" rows="4" placeholder="What happened? Include equipment, area, and observed impact."></textarea></label>
+      <label>Process Area
+        <select id="newDevArea">
+          <option value="">Select...</option>
+          <option>Upstream - Bioreactor</option>
+          <option>Downstream - Chromatography</option>
+          <option>Downstream - TFF</option>
+          <option>Media Prep</option>
+          <option>Utilities - WFI</option>
+          <option>Utilities - CIP/SIP</option>
+          <option>QC / In-Process</option>
+          <option>Warehouse / Materials</option>
+          <option>Packaging / Labelling</option>
+        </select>
+      </label>
+      <label>Source Reference <input id="newDevSource" placeholder="e.g. VNT-2026-0041, EQ-1234"></label>
+      <label>Equipment Reference <input id="newDevEquip" placeholder="e.g. Bioreactor 3, CHROM-2"></label>
+    </div>
+    <div class="esig-footer">
+      <button class="wf-btn" onclick="hideCreateModal()">Cancel</button>
+      <button class="wf-btn wf-primary" id="createBtn" onclick="createDeviation()">Create &amp; Auto-Classify</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   DEVIATION MANAGER — Client-side Application
+   ═══════════════════════════════════════════════════════════════ */
+
+var SERVER = window.VENT_SERVER || '';
+var deviations = [];
+var filter = 'all';
+var selected = null;
+var currentTab = 'detail';
+
+// ── Demo data (used when token === 'demo') ──────────────────
+var DEMO_DEVIATIONS = [
+  {
+    dev_id: 'DEV-4201', title: 'PBR mismatch — ATF filter flush volume incorrect',
+    description: 'During ATF filter flush in Bioreactor 3, the PBR states 100L WFI flush but SOP-BIO-047 §4.3 specifies 150L. Operator followed PBR resulting in 50L shortfall.',
+    severity: 'major', status: 'investigating', source: 'VNT-2026-0041', source_type: 'observation',
+    process_area: 'Upstream - Bioreactor', equipment_ref: 'Bioreactor 3', reported_by: 'O. Murphy',
+    owner: 'Dr. S. Chen', assigned_to: 'O. Murphy', owner_role: 'qa', due_date: '2026-03-15',
+    ai_severity: 'major', ai_summary: '', classification: { severity: 'major', confidence: 0.88, reasoning: 'SOP/PBR discrepancy affecting validated process parameter' },
+    five_why: [
+      { level: 1, question: 'Why was the flush volume incorrect?', answer: 'PBR specified 100L but SOP requires 150L.', ai_suggested: true },
+      { level: 2, question: 'Why did the PBR differ from the SOP?', answer: 'PBR was not updated when SOP-BIO-047 was revised in Jan 2026.', ai_suggested: true },
+      { level: 3, question: 'Why was the PBR not updated?', answer: 'No change control trigger linked SOP revisions to PBR review.', ai_suggested: true },
+      { level: 4, question: 'Why is there no linked change control?', answer: 'Document management system lacks cross-reference automation.', ai_suggested: true },
+      { level: 5, question: 'Why lacks the DMS cross-reference automation?', answer: 'Legacy system; automation upgrade was deprioritised in 2025 budget.', ai_suggested: true }
+    ],
+    ishikawa: {
+      man: ['Operator followed PBR without cross-checking SOP', 'Training gap on SOP revision awareness'],
+      machine: ['DMS lacks automated cross-referencing', 'No alert for PBR/SOP discrepancy'],
+      method: ['No change control link between SOP and PBR', 'PBR review cycle not triggered by SOP update'],
+      material: ['WFI flush volume insufficient — potential contamination risk'],
+      measurement: ['No inline verification of flush volume against SOP'],
+      environment: ['Cleanroom differential pressure within spec — no contributing factor']
+    },
+    root_cause: 'PBR not updated when SOP-BIO-047 was revised; no change control trigger links SOP revisions to PBR review.',
+    root_cause_category: 'process_gap',
+    capa_id: null, ai_investigation: {}, escalation_history: [],
+    created_at: '2026-03-01T10:30:00Z', updated_at: '2026-03-03T14:20:00Z', closed_at: null, closed_by: null
+  },
+  {
+    dev_id: 'DEV-4202', title: 'Temperature excursion in cold room CR-02 during weekend',
+    description: 'Temperature monitoring alarm triggered at 03:42 on Saturday. CR-02 reached 9.1°C (limit: 2-8°C) for approximately 47 minutes before auto-recovery.',
+    severity: 'critical', status: 'open', source: 'ALARM-CR02-0312', source_type: 'process_monitoring',
+    process_area: 'Warehouse / Materials', equipment_ref: 'Cold Room CR-02', reported_by: 'BMS Auto',
+    owner: 'Unassigned', assigned_to: '', owner_role: '', due_date: '2026-03-08',
+    ai_severity: 'critical', ai_summary: '', classification: { severity: 'critical', confidence: 0.95, reasoning: 'Temperature excursion beyond validated range — potential impact on stored biologics' },
+    five_why: [], ishikawa: {}, root_cause: '', root_cause_category: '', capa_id: null,
+    ai_investigation: {}, escalation_history: [],
+    created_at: '2026-03-02T04:00:00Z', updated_at: '2026-03-02T04:00:00Z', closed_at: null, closed_by: null
+  },
+  {
+    dev_id: 'DEV-4203', title: 'Logbook entry missing operator signature — BR2 inoculation',
+    description: 'During QA review of batch BR2-2026-0089, logbook entry for inoculation step 3.4 was found without operator signature. Operator confirmed the step was performed correctly.',
+    severity: 'minor', status: 'draft', source: 'BR2-2026-0089', source_type: 'audit',
+    process_area: 'Upstream - Bioreactor', equipment_ref: 'Bioreactor 2', reported_by: 'QA Reviewer',
+    owner: 'Unassigned', assigned_to: '', owner_role: '', due_date: null,
+    ai_severity: 'minor', ai_summary: '', classification: { severity: 'minor', confidence: 0.92, reasoning: 'Documentation lapse with no process impact; operator confirmed correct execution' },
+    five_why: [], ishikawa: {}, root_cause: '', root_cause_category: '', capa_id: null,
+    ai_investigation: {}, escalation_history: [],
+    created_at: '2026-03-04T09:15:00Z', updated_at: '2026-03-04T09:15:00Z', closed_at: null, closed_by: null
+  }
+];
+
+// ── Detect server URL ───────────────────────────────────────
+(function() {
+  if (SERVER) return;
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    SERVER = 'http://localhost:' + (location.port || '3000');
+  } else {
+    SERVER = location.origin;
+  }
+})();
+
+// ── Load deviations ─────────────────────────────────────────
+async function loadDeviations() {
+  try {
+    var res = await authFetch(SERVER + '/deviations');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    deviations = await res.json();
+    if ((!deviations || deviations.length === 0) && localStorage.getItem('vent_token') === 'demo') {
+      deviations = DEMO_DEVIATIONS;
+    }
+    addLog(deviations.length + ' deviations loaded', 'info');
+  } catch (err) {
+    addLog('Failed to load: ' + err.message + ' — using demo data', 'warn');
+    if (localStorage.getItem('vent_token') === 'demo') deviations = DEMO_DEVIATIONS;
+    else deviations = [];
+  }
+  renderLeft();
+  document.getElementById('statusDevs').textContent = deviations.length + ' deviations';
+}
+
+// ── Render left panel ───────────────────────────────────────
+function renderLeft() {
+  var list = document.getElementById('devList');
+  var filtered = filter === 'all' ? deviations : deviations.filter(function(d) { return d.severity === filter; });
+  document.getElementById('devCount').textContent = filtered.length;
+
+  list.innerHTML = filtered.map(function(d) {
+    return '<div class="dev-card ' + (selected && selected.dev_id === d.dev_id ? 'active' : '') + '" onclick="selectDeviation(\'' + d.dev_id + '\')">' +
+      '<div class="card-top">' +
+        '<span class="card-id">' + d.dev_id + '</span>' +
+        '<span class="risk-badge sev-' + d.severity + '">' + d.severity + '</span>' +
+      '</div>' +
+      '<div class="card-title">' + escHtml(d.title) + '</div>' +
+      '<div class="card-meta">' +
+        '<span class="status-badge dev-status-' + d.status + '">' + d.status.replace(/_/g, ' ') + '</span>' +
+        ' &middot; ' + new Date(d.created_at).toLocaleDateString() +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Select deviation ────────────────────────────────────────
+async function selectDeviation(devId) {
+  // Check demo mode first
+  if (localStorage.getItem('vent_token') === 'demo') {
+    selected = deviations.find(function(d) { return d.dev_id === devId; }) || null;
+    renderLeft();
+    renderCenter();
+    document.getElementById('statusSel').textContent = devId;
+    return;
+  }
+  try {
+    var res = await authFetch(SERVER + '/deviations/' + devId);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    selected = await res.json();
+    renderLeft();
+    renderCenter();
+    document.getElementById('statusSel').textContent = devId;
+  } catch (err) {
+    addLog('Failed to load deviation: ' + err.message, 'error');
+  }
+}
+
+// ── Render center panel ─────────────────────────────────────
+function renderCenter() {
+  if (!selected) return;
+  var content = document.getElementById('centerContent');
+  switch (currentTab) {
+    case 'detail':      content.innerHTML = renderDetailTab(selected); break;
+    case 'investigate': content.innerHTML = renderInvestigateTab(selected); break;
+    case 'ishikawa':    renderIshikawaTab(selected, content); break;
+    case 'capa':        content.innerHTML = renderCapaTab(selected); break;
+    case 'audit':       loadAuditTrail(selected.dev_id, content); break;
+  }
+}
+
+// ── Detail tab ──────────────────────────────────────────────
+function renderDetailTab(dev) {
+  return '<div class="detail-section">' +
+    '<div class="section-label">Deviation ' + dev.dev_id + '</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+      '<span class="status-badge dev-status-' + dev.status + '">' + dev.status.replace(/_/g, ' ') + '</span>' +
+      '<span class="risk-badge sev-' + dev.severity + '">' + dev.severity + '</span>' +
+      (dev.ai_severity && dev.ai_severity !== dev.severity ? '<span class="why-ai-badge">AI suggested: ' + dev.ai_severity + '</span>' : '') +
+    '</div>' +
+    '<h3 style="color:#e0e0e0;font-size:14px;margin:0 0 12px 0;">' + escHtml(dev.title) + '</h3>' +
+    '<div class="obs-text">' + escHtml(dev.description) + '</div>' +
+  '</div>' +
+  '<div class="detail-section">' +
+    '<div class="section-label">Details</div>' +
+    '<table class="sop-table">' +
+      '<tr><td style="color:#6c6c6c;width:140px;">Process Area</td><td>' + (dev.process_area || '--') + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Source</td><td>' + (dev.source || '--') + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Equipment</td><td>' + (dev.equipment_ref || '--') + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Owner</td><td>' + (dev.owner || '--') + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Assigned To</td><td>' + (dev.assigned_to || '--') + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Reported By</td><td>' + (dev.reported_by || '--') + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Due Date</td><td>' + (dev.due_date || '--') + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Created</td><td>' + new Date(dev.created_at).toLocaleString() + '</td></tr>' +
+    '</table>' +
+  '</div>' +
+  (dev.ai_summary ? '<div class="detail-section"><div class="section-label">AI Investigation Summary <span class="why-ai-badge">AI</span></div><div class="obs-text">' + escHtml(dev.ai_summary) + '</div></div>' : '') +
+  (dev.root_cause ? '<div class="detail-section"><div class="section-label">Root Cause</div><div class="sop-highlight"><strong>' + (dev.root_cause_category || '').replace(/_/g, ' ').toUpperCase() + '</strong><br>' + escHtml(dev.root_cause) + '</div></div>' : '') +
+  '<div class="detail-section" style="display:flex;gap:6px;flex-wrap:wrap;">' + renderWorkflowButtons(dev) + '</div>';
+}
+
+// ── Investigation tab (5-Why) ───────────────────────────────
+function renderInvestigateTab(dev) {
+  var whys = dev.five_why || [];
+  var html = '<div class="detail-section">' +
+    '<div class="section-label">5-Why Root Cause Analysis</div>' +
+    '<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;">' +
+      '<button class="action-btn primary" onclick="runAiInvestigation(\'five_why\')">AI: Generate 5-Why</button>' +
+      '<button class="action-btn" onclick="runAiInvestigation(\'root_cause\')">AI: Suggest Root Cause</button>' +
+      '<button class="action-btn" onclick="runAiInvestigation(\'summary\')">AI: Summary</button>' +
+    '</div>' +
+    '<div class="why-chain">';
+
+  for (var i = 0; i < 5; i++) {
+    var w = whys[i];
+    html += '<div class="why-step ' + (i === 4 ? 'root' : '') + '">' +
+      '<div class="why-level">Why ' + (i + 1) + (w && w.ai_suggested ? ' <span class="why-ai-badge">AI</span>' : '') + '</div>' +
+      '<div class="why-question">' + (w ? escHtml(w.question) : 'Click AI button or type below') + '</div>' +
+      '<div class="why-answer">' + (w ? escHtml(w.answer) : '') + '</div>' +
+      (!w ? '<input class="why-input" placeholder="Enter answer for Why ' + (i + 1) + '..." onchange="saveWhyAnswer(' + i + ', this.value)">' : '') +
+    '</div>';
+  }
+
+  html += '</div></div>';
+
+  if (dev.root_cause) {
+    html += '<div class="detail-section">' +
+      '<div class="section-label">Root Cause</div>' +
+      '<div class="sop-highlight">' +
+        '<strong>' + (dev.root_cause_category || '').replace(/_/g, ' ').toUpperCase() + '</strong><br>' +
+        escHtml(dev.root_cause) +
+      '</div></div>';
+  }
+
+  return html;
+}
+
+// ── Ishikawa tab ────────────────────────────────────────────
+function renderIshikawaTab(dev, containerEl) {
+  var ishikawa = dev.ishikawa || {};
+  var cats = ['man', 'machine', 'method', 'material', 'measurement', 'environment'];
+  var labels = { man: 'Man', machine: 'Machine', method: 'Method', material: 'Material', measurement: 'Measurement', environment: 'Environment' };
+  var colors = { man: '#f44747', machine: '#ffc64d', method: '#007acc', material: '#4ec9b0', measurement: '#ce91ff', environment: '#569cd6' };
+
+  var html = '<div class="detail-section">' +
+    '<div class="section-label">Ishikawa (Fishbone) Diagram</div>' +
+    '<div style="margin-bottom:12px;">' +
+      '<button class="action-btn primary" onclick="runAiInvestigation(\'ishikawa\')">AI: Populate Causes</button>' +
+    '</div>' +
+    '<div class="fishbone-container" id="fishboneContainer"></div>' +
+  '</div>' +
+  '<div class="detail-section">' +
+    '<div class="section-label">Cause Categories</div>' +
+    '<div class="ishikawa-categories">';
+
+  cats.forEach(function(cat) {
+    var causes = ishikawa[cat] || [];
+    html += '<div class="ishi-cat cat-' + cat + '">' +
+      '<div class="ishi-cat-title" style="color:' + colors[cat] + ';">' + labels[cat] + ' (' + causes.length + ')</div>' +
+      causes.map(function(c) { return '<div class="ishi-cause-item">' + escHtml(c) + '</div>'; }).join('') +
+      '<input class="why-input" style="margin-top:6px;" placeholder="Add ' + labels[cat] + ' cause..." onkeydown="if(event.key===\'Enter\')addCause(\'' + cat + '\',this.value,this)">' +
+    '</div>';
+  });
+
+  html += '</div></div>';
+  containerEl.innerHTML = html;
+
+  setTimeout(function() {
+    var fb = document.getElementById('fishboneContainer');
+    if (fb) renderFishbone(ishikawa, fb);
+  }, 0);
+}
+
+// ── Fishbone SVG renderer ───────────────────────────────────
+function renderFishbone(ishikawa, containerEl) {
+  var W = 800, H = 420, MID = H / 2;
+  var categories = [
+    { key: 'man',         label: 'MAN',         x: 160, side: -1, color: '#f44747' },
+    { key: 'machine',     label: 'MACHINE',     x: 320, side: -1, color: '#ffc64d' },
+    { key: 'method',      label: 'METHOD',      x: 480, side: -1, color: '#007acc' },
+    { key: 'material',    label: 'MATERIAL',    x: 160, side: 1,  color: '#4ec9b0' },
+    { key: 'measurement', label: 'MEASUREMENT', x: 320, side: 1,  color: '#ce91ff' },
+    { key: 'environment', label: 'ENVIRONMENT', x: 480, side: 1,  color: '#569cd6' },
+  ];
+
+  var svg = '<svg class="fishbone-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+
+  // Spine
+  svg += '<line x1="60" y1="' + MID + '" x2="720" y2="' + MID + '" stroke="#5a5a5a" stroke-width="2"/>';
+
+  // Head
+  svg += '<polygon points="720,' + (MID - 12) + ' 750,' + MID + ' 720,' + (MID + 12) + '" fill="#f44747"/>';
+  svg += '<text x="720" y="' + (MID + 30) + '" text-anchor="middle" font-size="11" fill="#f44747" font-weight="700" font-family="JetBrains Mono, monospace">DEVIATION</text>';
+
+  categories.forEach(function(cat) {
+    var causes = (ishikawa[cat.key] || []);
+    var boneEndY = MID + cat.side * -140;
+
+    // Bone
+    svg += '<line x1="' + cat.x + '" y1="' + MID + '" x2="' + (cat.x - 60) + '" y2="' + boneEndY + '" stroke="#3c3c3c" stroke-width="1.5"/>';
+
+    // Label
+    svg += '<text x="' + (cat.x - 65) + '" y="' + (boneEndY + (cat.side < 0 ? -8 : 16)) + '" font-size="11" font-weight="700" fill="' + cat.color + '" font-family="JetBrains Mono, monospace" text-transform="uppercase">' + cat.label + '</text>';
+
+    // Cause branches
+    causes.forEach(function(cause, i) {
+      var t = (i + 1) / (causes.length + 1);
+      var cx = cat.x - t * 60;
+      var cy = MID + (boneEndY - MID) * t;
+      var bx = cx - 40;
+      var by = cy + cat.side * -20;
+
+      svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + bx + '" y2="' + by + '" stroke="#454545" stroke-width="1"/>';
+      var label = cause.length > 35 ? cause.slice(0, 32) + '...' : cause;
+      svg += '<text x="' + (bx - 4) + '" y="' + (by + (cat.side < 0 ? -4 : 12)) + '" font-size="10" fill="#cccccc" text-anchor="end" font-family="DM Sans, sans-serif"><title>' + escHtml(cause) + '</title>' + escHtml(label) + '</text>';
+    });
+  });
+
+  svg += '</svg>';
+  containerEl.innerHTML = svg;
+}
+
+// ── CAPA Link tab ───────────────────────────────────────────
+function renderCapaTab(dev) {
+  if (dev.capa_id) {
+    return '<div class="detail-section">' +
+      '<div class="section-label">Linked CAPA</div>' +
+      '<div class="sop-highlight">' +
+        '<strong>' + dev.capa_id + '</strong><br>' +
+        'This deviation has been linked to a CAPA action.' +
+      '</div></div>';
+  }
+  return '<div class="detail-section">' +
+    '<div class="section-label">Link CAPA</div>' +
+    '<p style="color:#8e8e8e;font-size:12px;">No CAPA linked yet. Enter a CAPA ID to link.</p>' +
+    '<div style="display:flex;gap:6px;margin-top:8px;">' +
+      '<input id="capaIdInput" class="why-input" style="width:200px;" placeholder="e.g. CAPA-1234">' +
+      '<button class="action-btn primary" onclick="linkCapa()">Link CAPA</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── Audit trail tab ─────────────────────────────────────────
+async function loadAuditTrail(devId, containerEl) {
+  containerEl.innerHTML = '<div class="ai-loading">Loading audit trail...</div>';
+  try {
+    var res = await authFetch(SERVER + '/audit/' + devId);
+    var entries = await res.json();
+    if (!entries || entries.length === 0) {
+      containerEl.innerHTML = '<div class="detail-section"><div class="section-label">Audit Trail</div><p style="color:#5a5a5a;font-size:12px;">No audit entries found.</p></div>';
+      return;
+    }
+    containerEl.innerHTML = '<div class="detail-section">' +
+      '<div class="section-label">Audit Trail (' + entries.length + ' entries)</div>' +
+      '<div class="audit-list">' +
+        entries.map(function(e) {
+          var cls = e.action.indexOf('create') >= 0 ? 'ae-create' : (e.action.indexOf('status') >= 0 || e.action.indexOf('escalat') >= 0 ? 'ae-status' : 'ae-esig');
+          return '<div class="audit-entry ' + cls + '">' +
+            '<div class="audit-time">' + new Date(e.timestamp).toLocaleString() + '</div>' +
+            '<div class="audit-action">' + e.action.replace(/_/g, ' ') + '</div>' +
+            '<div class="audit-user">' + e.user_id + ' (' + e.user_role + ')</div>' +
+            (e.reason ? '<div class="audit-reason">' + escHtml(e.reason) + '</div>' : '') +
+            '<div class="audit-hash" title="Integrity checksum">' + (e.checksum || '').slice(0, 16) + '...</div>' +
+          '</div>';
+        }).join('') +
+      '</div></div>';
+  } catch (err) {
+    containerEl.innerHTML = '<p style="color:#5a5a5a;padding:20px;">Could not load audit trail.</p>';
+  }
+}
+
+// ── Create deviation ────────────────────────────────────────
+async function createDeviation() {
+  var title = document.getElementById('newDevTitle').value.trim();
+  var description = document.getElementById('newDevDesc').value.trim();
+  var processArea = document.getElementById('newDevArea').value;
+  var source = document.getElementById('newDevSource').value.trim();
+  var equipmentRef = document.getElementById('newDevEquip').value.trim();
+
+  if (!title) { alert('Title is required'); return; }
+
+  var btn = document.getElementById('createBtn');
+  btn.disabled = true; btn.textContent = 'Classifying...';
+
+  try {
+    var res = await authFetch(SERVER + '/deviations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title, description: description, processArea: processArea, source: source, equipmentRef: equipmentRef }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    var result = await res.json();
+    addLog('Deviation ' + result.devId + ' created (AI severity: ' + (result.aiSeverity || '?') + ')', 'info');
+    hideCreateModal();
+    await loadDeviations();
+    selectDeviation(result.devId);
+  } catch (err) {
+    addLog('Create failed: ' + err.message, 'error');
+    alert('Create failed: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create & Auto-Classify';
+  }
+}
+
+// ── AI Investigation ────────────────────────────────────────
+async function runAiInvestigation(mode) {
+  if (!selected) return;
+  addLog('Running AI investigation (' + mode + ') on ' + selected.dev_id + '...', 'info');
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">AI is analysing — ' + mode.replace(/_/g, ' ') + '...</div>';
+
+  try {
+    var res = await authFetch(SERVER + '/deviations/' + selected.dev_id + '/investigate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: mode }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var result = await res.json();
+    addLog('AI investigation complete: ' + mode, 'info');
+    await selectDeviation(selected.dev_id);
+  } catch (err) {
+    addLog('AI investigation failed: ' + err.message, 'error');
+    renderCenter();
+  }
+}
+
+// ── Escalate ────────────────────────────────────────────────
+async function escalateDeviation(newSeverity) {
+  if (!selected) return;
+  var reason = prompt('Reason for escalation to ' + newSeverity + ':');
+  if (!reason) return;
+  try {
+    var res = await authFetch(SERVER + '/deviations/' + selected.dev_id + '/escalate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newSeverity: newSeverity, reason: reason }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    addLog('Escalated ' + selected.dev_id + ' to ' + newSeverity, 'warn');
+    await loadDeviations();
+    await selectDeviation(selected.dev_id);
+  } catch (err) {
+    addLog('Escalation failed: ' + err.message, 'error');
+  }
+}
+
+// ── Advance status ──────────────────────────────────────────
+async function advanceStatus(newStatus) {
+  if (!selected) return;
+  try {
+    var res = await authFetch(SERVER + '/deviations/' + selected.dev_id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus, reason: 'Status advanced to ' + newStatus }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    addLog(selected.dev_id + ' → ' + newStatus.replace(/_/g, ' '), 'info');
+    await loadDeviations();
+    await selectDeviation(selected.dev_id);
+  } catch (err) {
+    addLog('Status update failed: ' + err.message, 'error');
+  }
+}
+
+// ── Link CAPA ───────────────────────────────────────────────
+async function linkCapa() {
+  if (!selected) return;
+  var capaId = document.getElementById('capaIdInput').value.trim();
+  if (!capaId) { alert('Enter a CAPA ID'); return; }
+  try {
+    var res = await authFetch(SERVER + '/deviations/' + selected.dev_id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capaId: capaId, status: 'capa_linked', reason: 'Linked to CAPA ' + capaId }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    addLog('Linked ' + selected.dev_id + ' to ' + capaId, 'info');
+    await selectDeviation(selected.dev_id);
+  } catch (err) {
+    addLog('Link CAPA failed: ' + err.message, 'error');
+  }
+}
+
+// ── Save manual 5-Why answer ────────────────────────────────
+async function saveWhyAnswer(index, value) {
+  if (!selected || !value.trim()) return;
+  var whys = selected.five_why ? selected.five_why.slice() : [];
+  while (whys.length <= index) whys.push({ level: whys.length + 1, question: 'Why ' + (whys.length + 1) + '?', answer: '', ai_suggested: false });
+  whys[index].answer = value.trim();
+  whys[index].ai_suggested = false;
+
+  try {
+    await authFetch(SERVER + '/deviations/' + selected.dev_id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fiveWhy: whys }),
+    });
+    selected.five_why = whys;
+    addLog('Why ' + (index + 1) + ' saved', 'info');
+  } catch (err) {
+    addLog('Save failed: ' + err.message, 'error');
+  }
+}
+
+// ── Add Ishikawa cause ──────────────────────────────────────
+async function addCause(category, value, inputEl) {
+  if (!selected || !value.trim()) return;
+  var ish = selected.ishikawa ? JSON.parse(JSON.stringify(selected.ishikawa)) : {};
+  if (!ish[category]) ish[category] = [];
+  ish[category].push(value.trim());
+
+  try {
+    await authFetch(SERVER + '/deviations/' + selected.dev_id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ishikawa: ish }),
+    });
+    selected.ishikawa = ish;
+    inputEl.value = '';
+    renderIshikawaTab(selected, document.getElementById('centerContent'));
+    addLog('Cause added to ' + category, 'info');
+  } catch (err) {
+    addLog('Add cause failed: ' + err.message, 'error');
+  }
+}
+
+// ── Workflow buttons ────────────────────────────────────────
+function renderWorkflowButtons(dev) {
+  var transitions = {
+    draft: [{ label: 'Open', status: 'open', cls: 'wf-primary' }],
+    open: [{ label: 'Start Investigation', status: 'investigating', cls: 'wf-primary' }],
+    investigating: [{ label: 'Root Cause Identified', status: 'root_cause_identified', cls: 'wf-primary' }],
+    root_cause_identified: [{ label: 'Link CAPA', status: 'capa_linked', cls: 'wf-primary' }],
+    capa_linked: [{ label: 'Close Deviation', status: 'closed', cls: 'wf-primary' }],
+    closed: []
+  };
+  var actions = transitions[dev.status] || [];
+  var html = actions.map(function(a) {
+    return '<button class="wf-btn ' + a.cls + '" onclick="advanceStatus(\'' + a.status + '\')">' + a.label + '</button>';
+  }).join('');
+
+  if (dev.severity !== 'critical' && dev.status !== 'closed') {
+    var next = dev.severity === 'minor' ? 'major' : 'critical';
+    html += '<button class="wf-btn wf-danger" onclick="escalateDeviation(\'' + next + '\')">Escalate to ' + next + '</button>';
+  }
+
+  return html;
+}
+
+// ── Utility ─────────────────────────────────────────────────
+function addLog(msg, level) {
+  var el = document.getElementById('bottomContent');
+  var time = new Date().toLocaleTimeString();
+  el.innerHTML += '<div class="log-line"><span class="log-time">' + time + '</span><span class="log-' + (level || 'info') + '">' + msg + '</span></div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.editor-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  renderCenter();
+}
+
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderLeft();
+}
+
+function showCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
+function hideCreateModal() {
+  document.getElementById('createModal').style.display = 'none';
+  document.getElementById('newDevTitle').value = '';
+  document.getElementById('newDevDesc').value = '';
+  document.getElementById('newDevArea').value = '';
+  document.getElementById('newDevSource').value = '';
+  document.getElementById('newDevEquip').value = '';
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Resizer ─────────────────────────────────────────────────
+(function() {
+  var resizer = document.getElementById('resizerLC');
+  var wb = document.getElementById('workbench');
+  var dragging = false;
+  resizer.addEventListener('mousedown', function(e) {
+    dragging = true; resizer.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var x = Math.max(180, Math.min(e.clientX, 500));
+    wb.style.gridTemplateColumns = x + 'px 4px 1fr';
+  });
+  document.addEventListener('mouseup', function() {
+    dragging = false; resizer.classList.remove('dragging');
+  });
+
+  var resizerH = document.getElementById('resizerBottom');
+  var draggingH = false;
+  resizerH.addEventListener('mousedown', function(e) {
+    draggingH = true; resizerH.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!draggingH) return;
+    var bottomH = Math.max(60, Math.min(window.innerHeight - e.clientY - 64, 400));
+    wb.style.gridTemplateRows = '1fr 4px ' + bottomH + 'px';
+  });
+  document.addEventListener('mouseup', function() {
+    draggingH = false; resizerH.classList.remove('dragging');
+  });
+})();
+
+// ── Init ────────────────────────────────────────────────────
+loadDeviations();
+</script>
+</body>
+</html>
