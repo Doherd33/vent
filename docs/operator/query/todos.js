@@ -106,7 +106,25 @@ async function searchSops() {
       </div>`
     ).join('');
   } catch (err) {
-    results.innerHTML = `<div style="color:var(--red);font-size:12px;padding:16px">Error: ${escHtml(err.message)}</div>`;
+    // Demo mode fallback: show realistic SOP results if server unavailable
+    if (localStorage.getItem('vent_token') === 'demo') {
+      const demoSops = [
+        { doc_id: 'SOP-BIO-047', section_title: 'ATF Filter Preparation & Flush Procedure', content: 'Section 4.3: Flush ATF filter with 150L purified WFI at 25±5°C through retentate loop. Verify permeate TOC ≤ 500 ppb...' },
+        { doc_id: 'WX-SOP-1001', section_title: 'Cell Culture Preparation — Equipment Setup', content: 'Section 8.4.2: All single-use assemblies must be flushed per SOP-BIO-047 prior to inoculation...' },
+        { doc_id: 'SOP-BIO-052', section_title: 'TFF Cassette Filter Cleaning & Flush', content: 'Section 3.2: Tangential flow filtration cassettes require different flush volumes based on membrane area...' },
+        { doc_id: 'SOP-QC-018', section_title: 'WFI Quality Specifications', content: 'Section 2.1: Water for Injection used in equipment flush must meet USP <1231> and conductivity ≤ 1.3 µS/cm...' },
+        { doc_id: 'SOP-BIO-039', section_title: 'Bioreactor Assembly — Single-Use Systems', content: 'Section 5.1: Connect single-use bag assemblies per AD-UP-001. Perform integrity test before flush...' }
+      ];
+      results.innerHTML = demoSops.map(row =>
+        `<div class="sop-result-item" onclick="openSopDoc('${escHtml(row.doc_id)}')">
+          <div class="sop-result-doc">${escHtml(row.doc_id)}</div>
+          <div class="sop-result-section">${escHtml(row.section_title)}</div>
+          <div class="sop-result-preview">${escHtml((row.content || '').substring(0, 100))}</div>
+        </div>`
+      ).join('');
+    } else {
+      results.innerHTML = `<div style="color:var(--red);font-size:12px;padding:16px">Error: ${escHtml(err.message)}</div>`;
+    }
   } finally {
     btn.disabled = false;
   }

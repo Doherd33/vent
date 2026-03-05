@@ -258,8 +258,8 @@ body::before {
   if(h) document.documentElement.style.setProperty('--hue', h);
 })();
 </script>
-<script src="shared/i18n.js"></script>
-<script src="shared/nav.js"></script>
+<script src="shared/i18n.js?v=2"></script>
+<script src="shared/nav.js?v=2"></script>
 </head>
 <body>
 
@@ -429,10 +429,12 @@ body::before {
 
   // ── Auto-start demo tour if ?demo=1 and coming from login ──
   if (params.get('demo') === '1' && isDemo && !sessionStorage.getItem('vent_demo_complete')) {
-    // Brief pause to let user see the hub, then auto-start
-    // Only auto-redirect if not returning from tour
     if (!sessionStorage.getItem('vent_demo_hub_seen')) {
       sessionStorage.setItem('vent_demo_hub_seen', '1');
+      // Auto-navigate to query page after a brief pause to show the hub
+      setTimeout(function(){
+        window.location.href = 'query.html?demo=1';
+      }, 2500);
     }
   }
 

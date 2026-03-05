@@ -109,17 +109,5 @@
     });
   });
 
-  // ── Global demo banner ──
-  if (localStorage.getItem('vent_token') === 'demo') {
-    var titleBar = document.querySelector('.title-bar');
-    if (titleBar) {
-      var banner = document.createElement('div');
-      banner.className = 'demo-banner';
-      banner.innerHTML = '<span class="demo-banner-dot"></span>' +
-        '<span>DEMO MODE</span>' +
-        '<button class="demo-banner-exit" onclick="ventSignOut()">Exit Demo</button>';
-      titleBar.parentNode.insertBefore(banner, titleBar.nextSibling);
-    }
-  }
 
 })();

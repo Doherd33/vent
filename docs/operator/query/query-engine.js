@@ -86,20 +86,29 @@ async function runQuery() {
   } catch (err) {
     clearTimeout(_queryTimeout);
     thinkStages.forEach(clearTimeout);
-    // Remove the failed user message from history so retry works cleanly
-    _chatHistory.pop();
-    const thinkEl = document.getElementById(thinkId);
-    const retryQ = escHtml(q).replace(/'/g, '&#39;');
-    thinkEl.outerHTML = `<div class="answer-card"><div class="answer-body">
-      <div class="error-card">
-        <div class="error-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-        <div class="error-card-msg">${escHtml(err.message)}</div>
-        <div class="error-card-actions">
-          <button class="retry-btn" onclick="retryQuery('${retryQ}')">Retry</button>
-          <button class="retry-btn" style="border-color:var(--border);color:var(--mid)" onclick="startNewChat()">New chat</button>
+
+    // Demo mode fallback: if server is unavailable, use fallback response
+    if (localStorage.getItem('vent_token') === 'demo' && typeof DEMO_FALLBACK_RESPONSE !== 'undefined') {
+      const data = DEMO_FALLBACK_RESPONSE;
+      _chatHistory.push({ role: 'assistant', summary: data.summary || '', fullResponse: data });
+      const thinkEl = document.getElementById(thinkId);
+      thinkEl.outerHTML = buildAnswerHtml(data);
+    } else {
+      // Remove the failed user message from history so retry works cleanly
+      _chatHistory.pop();
+      const thinkEl = document.getElementById(thinkId);
+      const retryQ = escHtml(q).replace(/'/g, '&#39;');
+      thinkEl.outerHTML = `<div class="answer-card"><div class="answer-body">
+        <div class="error-card">
+          <div class="error-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <div class="error-card-msg">${escHtml(err.message)}</div>
+          <div class="error-card-actions">
+            <button class="retry-btn" onclick="retryQuery('${retryQ}')">Retry</button>
+            <button class="retry-btn" style="border-color:var(--border);color:var(--mid)" onclick="startNewChat()">New chat</button>
+          </div>
         </div>
-      </div>
-    </div></div>`;
+      </div></div>`;
+    }
   } finally {
     btn.disabled = false;
     scrollToBottom();

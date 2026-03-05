@@ -118,6 +118,7 @@ const PAGE_MAP = {
   'builder.html':     'admin/builder.html',
   'readme.html':      'admin/readme.html',
   'login.html':       'auth/login.html',
+  'dev.html':         'dev.html',
 };
 Object.entries(PAGE_MAP).forEach(([urlSlug, filePath]) => {
   app.get(`/${urlSlug}`, (req, res) => {

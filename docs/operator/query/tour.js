@@ -102,57 +102,166 @@
     if(demoTypeTimer){ clearInterval(demoTypeTimer); demoTypeTimer = null; }
   }
 
-  // ── Demo-mode steps (focused tour: Search + Raise a Concern + transition) ──
+  // ── Demo fallback response (used when server unavailable) ──
+  // Exposed globally so query-engine.js can use it
+  window.DEMO_FALLBACK_RESPONSE = {
+    category: 'procedure',
+    summary: 'The required WFI volume for ATF filter flush is 150L per SOP-BIO-047 §4.3. The flush must be performed using purified WFI at 25±5°C through the retentate loop before product contact.',
+    steps: [
+      { n: 1, action: 'Verify ATF filter integrity test is complete', detail: 'Check integrity test certificate is attached to batch record', critical: true },
+      { n: 2, action: 'Connect WFI supply line to retentate inlet', detail: 'Use TC clamp with new gasket', value: '150L WFI at 25±5°C' },
+      { n: 3, action: 'Set recirculation pump speed', detail: 'Gradually increase to operating speed', value: '3,500 rpm ± 200' },
+      { n: 4, action: 'Flush for minimum 30 minutes', detail: 'Monitor permeate flow rate — must exceed 5 LMH', critical: true },
+      { n: 5, action: 'Sample permeate for TOC and conductivity', detail: 'TOC ≤ 500 ppb, Conductivity ≤ 1.3 µS/cm', value: 'Pass criteria per WX-SOP-1001' }
+    ],
+    params: [
+      { name: 'WFI Volume', value: '150', unit: 'litres', range: '150–200L', flag: 'critical' },
+      { name: 'Temperature', value: '25 ± 5', unit: '°C' },
+      { name: 'Pump Speed', value: '3,500 ± 200', unit: 'rpm' },
+      { name: 'Flush Duration', value: '≥ 30', unit: 'minutes' }
+    ],
+    warnings: ['PBR step 3.7 references 100L — this conflicts with SOP-BIO-047 §4.3 which requires 150L. Use the SOP value (150L). Insufficient flush volume risks filter damage (€50K replacement cost) or batch contamination.'],
+    notes: [
+      'The 150L requirement applies specifically to the 0.2µm hollow-fibre ATF configuration used in the N-1 and production bioreactors.',
+      'For tangential-flow cassette filters, refer to SOP-BIO-052 §3.2 for alternative flush volumes.'
+    ],
+    sources: [
+      { code: 'SOP-BIO-047', title: 'ATF Filter Preparation & Flush', section: '4.3' },
+      { code: 'WX-SOP-1001', title: 'Cell Culture Preparation', section: '8.4.2' }
+    ],
+    followUps: [
+      'What is the integrity test acceptance criteria for ATF filters?',
+      'Show me the flush sequence for TFF cassettes',
+      'What are the permeate sampling requirements?'
+    ]
+  };
+
+  // ── Demo question ──
+  var DEMO_QUESTION = 'What WFI volume is needed for ATF filter flush?';
+
+  // ── Demo-mode steps (focused tour: Search + AI Response + Observe + transition) ──
   var demoSteps = [
     // D1 — Welcome
     { target:'#qInput', titleKey:'demo.d1.title', descKey:'demo.d1.desc', voiceKey:'demo.d1.voice', pos:'top' },
-    // D2 — SOP Search: type the ATF filter question
+    // D2 — Ask Charlie: type the question, inject thinking + answer (no server call)
     { target:'#qInput', titleKey:'demo.d2.title', descKey:'demo.d2.desc', voiceKey:'demo.d2.voice', pos:'top',
       setup: function(){
+        var empty = document.getElementById('emptyState');
+        if(empty) empty.style.display = 'none';
         var inp = document.getElementById('qInput');
-        if(inp) demoType(inp, 'What WFI volume is needed for ATF filter flush?', 45);
+        if(!inp) return;
+        demoType(inp, DEMO_QUESTION, 45);
+        var typeLen = DEMO_QUESTION.length * 45 + 400;
+        setTimeout(function(){
+          demoClearType();
+          inp.value = '';
+          inp.style.height = 'auto';
+          // Inject question bubble + thinking animation
+          var inner = document.getElementById('chatInner');
+          if(!inner) return;
+          var turn = document.createElement('div');
+          turn.className = 'chat-turn';
+          turn.id = 'demoTurn';
+          turn.innerHTML =
+            '<div class="turn-q-meta">Upstream Bioreactor</div>' +
+            '<div class="turn-q"><div class="turn-q-bubble">' + DEMO_QUESTION + '</div></div>' +
+            '<div class="thinking" id="demoThinking">' +
+              '<div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div>' +
+              '<span class="think-text">Searching SOPs\u2026</span>' +
+            '</div>';
+          inner.appendChild(turn);
+          if(typeof scrollToBottom === 'function') scrollToBottom();
+          // Stage 2: "Analysing context..."
+          setTimeout(function(){
+            var tt = document.querySelector('#demoThinking .think-text');
+            if(tt){ tt.classList.add('switching'); setTimeout(function(){ tt.textContent = 'Analysing context\u2026'; tt.classList.remove('switching'); }, 150); }
+          }, 1200);
+          // Stage 3: "Generating answer..."
+          setTimeout(function(){
+            var tt = document.querySelector('#demoThinking .think-text');
+            if(tt){ tt.classList.add('switching'); setTimeout(function(){ tt.textContent = 'Generating answer\u2026'; tt.classList.remove('switching'); }, 150); }
+          }, 2400);
+          // Stage 4: Replace with curated answer
+          setTimeout(function(){
+            var think = document.getElementById('demoThinking');
+            if(think && typeof buildAnswerHtml === 'function'){
+              think.outerHTML = buildAnswerHtml(DEMO_FALLBACK_RESPONSE);
+            }
+            if(typeof scrollToBottom === 'function') scrollToBottom();
+          }, 3200);
+        }, typeLen);
       },
-      teardown: function(){ demoClearType(); }
+      teardown: function(){
+        demoClearType();
+        // Ensure answer is injected if user clicks Next before animation completes
+        var think = document.getElementById('demoThinking');
+        if(think && typeof buildAnswerHtml === 'function'){
+          think.outerHTML = buildAnswerHtml(DEMO_FALLBACK_RESPONSE);
+        }
+        // If no turn was injected at all, inject everything
+        if(!document.querySelector('.answer-card')){
+          var inner = document.getElementById('chatInner');
+          if(inner && typeof buildAnswerHtml === 'function'){
+            var empty = document.getElementById('emptyState');
+            if(empty) empty.style.display = 'none';
+            var turn = document.createElement('div');
+            turn.className = 'chat-turn';
+            turn.innerHTML =
+              '<div class="turn-q"><div class="turn-q-bubble">' + DEMO_QUESTION + '</div></div>' +
+              buildAnswerHtml(DEMO_FALLBACK_RESPONSE);
+            inner.appendChild(turn);
+          }
+        }
+        if(typeof scrollToBottom === 'function') scrollToBottom();
+      }
     },
-    // D3 — SOP Library (with subs)
-    { target:'.sop-search-btn', titleKey:'demo.d3.title', descKey:'demo.d3.desc', voiceKey:'demo.d3.voice', pos:'bottom',
+    // D3 — Charlie's Answer: highlight the answer card
+    { target:'.answer-card', titleKey:'demo.d3.title', descKey:'demo.d3.desc', voiceKey:'demo.d3.voice', pos:'left' },
+    // D4 — SOP Library (with subs)
+    { target:'.sop-search-btn', titleKey:'demo.d4.title', descKey:'demo.d4.desc', voiceKey:'demo.d4.voice', pos:'bottom',
       open:'openSopSidebar', close:'closeSopSidebar',
       sub:[
-        { target:'.sop-discover-header', titleKey:'demo.d3.sub1.title', descKey:'demo.d3.sub1.desc', voiceKey:'demo.d3.sub1.voice', pos:'left' },
-        { target:'#sopSearchInput', titleKey:'demo.d3.sub2.title', descKey:'demo.d3.sub2.desc', voiceKey:'demo.d3.sub2.voice', pos:'left',
+        { target:'.sop-discover-header', titleKey:'demo.d4.sub1.title', descKey:'demo.d4.sub1.desc', voiceKey:'demo.d4.sub1.voice', pos:'left' },
+        { target:'#sopSearchInput', titleKey:'demo.d4.sub2.title', descKey:'demo.d4.sub2.desc', voiceKey:'demo.d4.sub2.voice', pos:'left',
           setup: function(){
             var inp = document.getElementById('sopSearchInput');
-            if(inp) demoType(inp, 'ATF filter flush', 50);
+            if(inp){
+              demoType(inp, 'ATF filter flush', 50);
+              // Auto-trigger search after typing
+              setTimeout(function(){
+                demoClearType();
+                if(typeof searchSops === 'function') searchSops();
+              }, 'ATF filter flush'.length * 50 + 400);
+            }
           },
           teardown: function(){ demoClearType(); }
         },
-        { target:'#sopResults', titleKey:'demo.d3.sub3.title', descKey:'demo.d3.sub3.desc', voiceKey:'demo.d3.sub3.voice', pos:'left' }
+        { target:'#sopResults', titleKey:'demo.d4.sub3.title', descKey:'demo.d4.sub3.desc', voiceKey:'demo.d4.sub3.voice', pos:'left' }
       ]},
-    // D4 — Raise a Concern (with subs)
-    { target:'.radial-trigger', titleKey:'demo.d4.title', descKey:'demo.d4.desc', voiceKey:'demo.d4.voice', pos:'left',
+    // D5 — Raise a Concern (with subs)
+    { target:'.radial-trigger', titleKey:'demo.d5.title', descKey:'demo.d5.desc', voiceKey:'demo.d5.voice', pos:'left',
       open:'openVentPanel', close:'closeVentPanel',
       sub:[
-        { target:'#ventText', titleKey:'demo.d4.sub1.title', descKey:'demo.d4.sub1.desc', voiceKey:'demo.d4.sub1.voice', pos:'right',
+        { target:'#ventText', titleKey:'demo.d5.sub1.title', descKey:'demo.d5.sub1.desc', voiceKey:'demo.d5.sub1.voice', pos:'right',
           setup: function(){
             var inp = document.getElementById('ventText');
             if(inp) demoType(inp, 'PBR step 3.7 states flush ATF filter with 100L WFI, but SOP-BIO-047 §4.3 specifies 150L for this tubing configuration. Insufficient flush risks damaging the €50K filter or contaminating the batch.', 30);
           },
           teardown: function(){ demoClearType(); }
         },
-        { target:'.vp-pri', titleKey:'demo.d4.sub2.title', descKey:'demo.d4.sub2.desc', voiceKey:'demo.d4.sub2.voice', pos:'right',
+        { target:'.vp-pri', titleKey:'demo.d5.sub2.title', descKey:'demo.d5.sub2.desc', voiceKey:'demo.d5.sub2.voice', pos:'right',
           setup: function(){
-            // Click the High priority button
             var btns = document.querySelectorAll('.vp-pri .pri-btn');
             btns.forEach(function(b){ b.classList.remove('active'); });
             var highBtn = document.querySelector('.vp-pri .pri-btn[data-pri="high"], .vp-pri .pri-btn:last-child');
             if(highBtn){ highBtn.classList.add('active'); highBtn.click(); }
           }
         },
-        { target:'#vpDrop', titleKey:'demo.d4.sub3.title', descKey:'demo.d4.sub3.desc', voiceKey:'demo.d4.sub3.voice', pos:'right' },
-        { target:'#ventSubmitBtn', titleKey:'demo.d4.sub4.title', descKey:'demo.d4.sub4.desc', voiceKey:'demo.d4.sub4.voice', pos:'right' }
+        { target:'#vpDrop', titleKey:'demo.d5.sub3.title', descKey:'demo.d5.sub3.desc', voiceKey:'demo.d5.sub3.voice', pos:'right' },
+        { target:'#ventSubmitBtn', titleKey:'demo.d5.sub4.title', descKey:'demo.d5.sub4.desc', voiceKey:'demo.d5.sub4.voice', pos:'right' }
       ]},
-    // D5 — Transition to QA Control Centre
-    { target:'.title-bar', titleKey:'demo.d5.title', descKey:'demo.d5.desc', voiceKey:'demo.d5.voice', pos:'bottom', isTransition:true }
+    // D6 — Transition to QA Control Centre
+    { target:'.title-bar', titleKey:'demo.d6.title', descKey:'demo.d6.desc', voiceKey:'demo.d6.voice', pos:'bottom', isTransition:true }
   ];
 
   var originalSteps = tourSteps;
@@ -177,14 +286,8 @@
   }
 
   function showDemoBanner(){
-    if(demoBanner) return;
-    demoBanner = document.createElement('div');
-    demoBanner.className = 'tour-demo-banner';
-    demoBanner.innerHTML =
-      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>' +
-      '<span class="tour-demo-text">' + t('tour.demoBanner') + '</span>' +
-      '<button class="tour-demo-exit" onclick="endTour()">' + t('tour.exitDemo') + '</button>';
-    document.body.appendChild(demoBanner);
+    // Removed — the banner was too intrusive and obscured the UI during demos
+    return;
   }
 
   function removeDemoBanner(){
