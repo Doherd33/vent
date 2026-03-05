@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent — Manufacturing Site Platform</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0e0e12;color:#c8c8d0;font-family:'DM Sans',system-ui,sans-serif;padding:1.5rem;min-height:100vh}
+  h1{font-family:'Instrument Serif',Georgia,serif;font-size:1.8rem;color:#fff;margin-bottom:.2rem}
+  .subtitle{color:#666;font-size:.8rem;margin-bottom:1.5rem}
+  .top-bar{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .role-bar{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+  .role-btn{padding:.3rem .7rem;border-radius:5px;border:1px solid #2a2a35;background:#16161e;color:#888;cursor:pointer;font-size:.7rem;transition:all .15s}
+  .role-btn:hover{border-color:#555;color:#ccc}
+  .role-btn.active{border-color:#6c5ce7;color:#6c5ce7;background:#6c5ce71a}
+  .quick-actions{display:flex;gap:.4rem;flex-wrap:wrap}
+  .qa-btn{padding:.3rem .6rem;border-radius:5px;border:1px solid #2a2a35;background:#16161e;color:#888;cursor:pointer;font-size:.7rem;transition:all .15s}
+  .qa-btn:hover{border-color:#6c5ce7;color:#ccc}
+
+  /* Filter bar */
+  .filter-bar{display:flex;gap:.4rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+  .filter-btn{padding:.25rem .6rem;border-radius:4px;border:1px solid #2a2a35;background:transparent;color:#555;cursor:pointer;font-size:.65rem;transition:all .15s}
+  .filter-btn:hover{color:#ccc;border-color:#555}
+  .filter-btn.active{color:#fff;border-color:#fff;background:#ffffff10}
+  .filter-btn.f-live{color:#00b894;border-color:#00b89440}
+  .filter-btn.f-live.active{background:#00b89420;border-color:#00b894}
+  .filter-btn.f-wip{color:#fdcb6e;border-color:#fdcb6e40}
+  .filter-btn.f-wip.active{background:#fdcb6e20;border-color:#fdcb6e}
+  .filter-btn.f-planned{color:#74b9ff;border-color:#74b9ff40}
+  .filter-btn.f-planned.active{background:#74b9ff20;border-color:#74b9ff}
+
+  /* Stats */
+  .stats{display:flex;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap}
+  .stat{font-size:.7rem;color:#555}
+  .stat strong{color:#ccc;font-size:.85rem}
+
+  /* Board */
+  .board{display:flex;gap:.75rem;overflow-x:auto;padding-bottom:1rem;align-items:flex-start}
+  .column{min-width:240px;max-width:270px;flex-shrink:0;background:#13131a;border:1px solid #2a2a35;border-radius:10px;display:flex;flex-direction:column;transition:opacity .2s}
+  .column.filtered-out{opacity:.15;pointer-events:none}
+  .col-header{padding:.6rem .75rem;display:flex;align-items:center;justify-content:space-between;cursor:grab;border-bottom:1px solid #1e1e28;user-select:none}
+  .col-header:active{cursor:grabbing}
+  .col-title{color:#fff;font-size:.78rem;font-weight:600}
+  .col-dept{color:#444;font-size:.6rem;margin-top:.1rem}
+  .col-count{color:#555;font-size:.65rem;white-space:nowrap}
+  .col-body{padding:.4rem;display:flex;flex-direction:column;gap:.4rem;min-height:50px;max-height:70vh;overflow-y:auto}
+  .col-body::-webkit-scrollbar{width:3px}
+  .col-body::-webkit-scrollbar-thumb{background:#2a2a35;border-radius:3px}
+
+  /* Cards */
+  .card{background:#16161e;border:1px solid #2a2a35;border-radius:7px;padding:.75rem;cursor:grab;transition:all .15s;text-decoration:none;display:block;color:inherit}
+  .card:active{cursor:grabbing}
+  .card:hover{border-color:#6c5ce7;box-shadow:0 2px 12px #6c5ce720}
+  .card.status-live{border-left:2px solid #00b894}
+  .card.status-wip{border-left:2px solid #fdcb6e}
+  .card.status-planned{border-left:2px solid #74b9ff}
+  .card-top{display:flex;align-items:center;gap:.35rem;margin-bottom:.3rem;flex-wrap:wrap}
+  .card-title{color:#fff;font-size:.8rem;font-weight:600}
+  .card-desc{color:#555;font-size:.68rem;line-height:1.35}
+  .card-path{color:#333;font-size:.6rem;margin-top:.3rem;font-family:'JetBrains Mono',monospace}
+  .card-badge{display:inline-block;padding:.1rem .35rem;border-radius:3px;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .badge-live{background:#00b89425;color:#00b894}
+  .badge-wip{background:#fdcb6e25;color:#fdcb6e}
+  .badge-planned{background:#74b9ff20;color:#74b9ff}
+  .card-roles{margin-top:.3rem;display:flex;gap:.25rem;flex-wrap:wrap}
+  .card-role{font-size:.55rem;color:#444;background:#ffffff06;padding:.1rem .3rem;border-radius:3px}
+
+  /* Drag states */
+  .card.dragging{opacity:.4;transform:scale(.95)}
+  .column.drag-over{border-color:#6c5ce7;background:#6c5ce708}
+  .column.col-dragging{opacity:.5;transform:scale(.97)}
+
+  .status-bar{position:fixed;bottom:1rem;right:1rem;padding:.4rem .8rem;border-radius:5px;font-size:.7rem;background:#00b89420;color:#00b894;border:1px solid #00b89440}
+  .hint{color:#333;font-size:.65rem;margin-bottom:.75rem}
+</style>
+</head>
+<body>
+
+<h1>Vent — Manufacturing Site Platform</h1>
+<p class="subtitle">Full facility coverage. Every department, every workflow, every role.</p>
+
+<div class="top-bar">
+  <div class="role-bar" id="roleBar">
+    <span style="color:#444;font-size:.7rem;margin-right:.25rem">Role:</span>
+    <button class="role-btn" data-role="operator">Operator</button>
+    <button class="role-btn" data-role="qa">QA</button>
+    <button class="role-btn" data-role="qc">QC</button>
+    <button class="role-btn" data-role="director">Director</button>
+    <button class="role-btn" data-role="msat">MSAT</button>
+    <button class="role-btn" data-role="engineering">Engineering</button>
+    <button class="role-btn" data-role="validation">Validation</button>
+    <button class="role-btn" data-role="supply_chain">Supply Chain</button>
+    <button class="role-btn" data-role="ehs">EHS</button>
+    <button class="role-btn" data-role="regulatory">Regulatory</button>
+    <button class="role-btn" data-role="training">Training</button>
+    <button class="role-btn" data-role="it">IT / Digital</button>
+    <button class="role-btn active" data-role="admin">Admin</button>
+  </div>
+  <div class="quick-actions">
+    <button class="qa-btn" onclick="clearAndLogin()">Re-auth</button>
+    <button class="qa-btn" onclick="openDemo()">Demo tour</button>
+    <button class="qa-btn" onclick="resetBoard()">Reset layout</button>
+    <button class="qa-btn" onclick="localStorage.clear();location.reload()">Nuke</button>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <span style="color:#444;font-size:.65rem;margin-right:.25rem">Show:</span>
+  <button class="filter-btn f-live active" data-filter="live" onclick="toggleFilter(this)">Live</button>
+  <button class="filter-btn f-wip active" data-filter="wip" onclick="toggleFilter(this)">In Progress</button>
+  <button class="filter-btn f-planned active" data-filter="planned" onclick="toggleFilter(this)">Planned</button>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<p class="hint">Drag columns to reorder. Drag cards between columns. Double-click to open live pages. Layout persists.</p>
+
+<div class="board" id="board"></div>
+
+<div class="status-bar" id="status">Authenticated as <strong>admin</strong></div>
+
+<script>
+// ── Module definitions: entire manufacturing facility ──
+var ALL_PAGES = [
+
+  // ═══════════════════════════════════════════════════════════════════
+  // OPERATOR CORE — What every operator uses every shift
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'charlie',         title:'Charlie AI',              desc:'Ask SOPs in plain language. Get sourced, step-by-step answers. Works with gloves on via voice.',  path:'/query.html',        status:'live',    roles:['operator','qa','msat','engineering','admin'] },
+  { id:'hub',             title:'Hub',                     desc:'Central landing — role-filtered feature cards, batch status, shift info.',                        path:'/hub.html',          status:'live',    roles:['all'] },
+  { id:'voice',           title:'Voice Assistant',         desc:'Hands-free voice interface. Ask Charlie without touching a screen.',                              path:'/submit.html',       status:'live',    roles:['operator','qa','admin'] },
+  { id:'raise-obs',       title:'Raise Observation',       desc:'Flag a concern in 30 seconds. Voice or text. Auto-classified by LangGraph, auto-routed to QA.',  path:'/query.html',        status:'live',    roles:['operator','qa','msat','engineering','admin'] },
+  { id:'activity',        title:'My Activity',             desc:'Track your submissions, CAPAs, and action items through the workflow pipeline.',                  path:'/submissions.html',  status:'live',    roles:['operator','qa','msat','engineering','admin'] },
+  { id:'shift-handover',  title:'Shift Handover',          desc:'Structured handover: open batches, pending samples, equipment holds, voice notes from outgoing shift.', path:null,            status:'planned', roles:['operator','qa'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // BATCH EXECUTION — The PBR/MBR replacement. This is the money.
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'batch-exec',      title:'Batch Execution',         desc:'Step-by-step PBR on iPad/tablet. Enforced sequencing, e-signatures, barcode scanning, auto-calcs.', path:null,              status:'planned', roles:['operator'] },
+  { id:'batch-setup',     title:'Line Clearance & Setup',  desc:'Pre-batch checklist: room clearance, equipment ID verification, material staging, second-person checks.', path:null,          status:'planned', roles:['operator'] },
+  { id:'batch-ipc',       title:'In-Process Controls',     desc:'Record CPPs in real-time: pH, DO, temp, VCD, viability, glucose, lactate, osmolality. Auto-flag OOL.', path:null,            status:'planned', roles:['operator','qc'] },
+  { id:'batch-sampling',  title:'Sampling & Chain of Custody', desc:'Sample collection, labelling, chain of custody to QC. Barcode-tracked, time-stamped.',          path:null,              status:'planned', roles:['operator','qc'] },
+  { id:'batch-weight',    title:'Weighing & Dispensing',   desc:'Material verification by barcode, tare/gross/net auto-calc, yield calculations, tolerance checks.', path:null,              status:'planned', roles:['operator'] },
+  { id:'batch-cip',       title:'CIP/SIP Records',         desc:'Clean-in-place and sterilise-in-place execution records. Cycle params, conductivity, integrity tests.', path:null,            status:'planned', roles:['operator','engineering'] },
+  { id:'batch-review',    title:'Review by Exception',     desc:'AI pre-screens completed batch records. Flags anomalies, missing entries, OOL values. QA reviews exceptions only.', path:null, status:'planned', roles:['qa','operator'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // INOCULATION — Cell bank, thaw, seed train, scale-up to production
+  // Almost a separate division. Dedicated cleanroom, dedicated team.
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'inoc-cell-bank',    title:'Cell Bank Management',     desc:'MCB/WCB inventory at -150°C to -196°C LN2. Vial accounting, location tracking, expiry alerts, chain of custody, certificate of analysis linkage.', path:null, status:'planned', roles:['operator','qa','msat'] },
+  { id:'inoc-thaw',         title:'Cell Thaw & Revival',      desc:'WCB thaw protocol execution: 37°C water bath timing, cryoprotectant removal, post-thaw viability (>70% threshold), seeding density calc, revival incubation conditions.', path:null, status:'planned', roles:['operator','msat'] },
+  { id:'inoc-passage',      title:'Passage Tracker',          desc:'T-flask → shake flask → spinner flask → WAVE bag expansion. Passage number tracking, split ratios, population doubling times, cumulative PDL, morphology checks.', path:null, status:'planned', roles:['operator','msat'] },
+  { id:'inoc-seed-train',   title:'Seed Train Monitor',       desc:'N-3 → N-2 → N-1 bioreactor expansion. Growth kinetics (VCD, viability), metabolite trending (glucose, lactate, glutamine, ammonia), pH/DO/temp control.', path:null, status:'planned', roles:['operator','msat','engineering'] },
+  { id:'inoc-media-prep',   title:'Inoc Media & Feeds',       desc:'Media warming, supplement addition (L-glutamine, anti-foam, growth factors), sterility testing, hold time tracking, media lot traceability.', path:null, status:'planned', roles:['operator'] },
+  { id:'inoc-qc-checks',    title:'Inoculation QC',           desc:'Cell counts (Cedex HiRes / Vi-CELL), viability trending, mycoplasma PCR, sterility (14-day BacT/ALERT), identity confirmation (STR), adventitious agent panel.', path:null, status:'planned', roles:['operator','qc','msat'] },
+  { id:'inoc-scaleup',      title:'Scale-up Decision Gate',   desc:'Go/no-go criteria at each expansion stage. Min viability (≥90%), target VCD, doubling time within range, passage limit check, metabolite ratios, contamination-free status.', path:null, status:'planned', roles:['operator','msat','qa'] },
+  { id:'inoc-contam',       title:'Contamination Control',    desc:'EM monitoring for inoc suite (settle plates, active air, surface swabs), bioburden trending, gowning compliance, decontamination protocols, incident response workflow.', path:null, status:'planned', roles:['operator','qa','qc'] },
+  { id:'inoc-incubator',    title:'Incubator Management',     desc:'CO2 incubator logbooks: temp (36.5-37.5°C), CO2 (5±0.5%), humidity (≥85% RH). Alarm history, calibration status, preventive maintenance, capacity planning.', path:null, status:'planned', roles:['operator','engineering'] },
+  { id:'inoc-handoff',      title:'Production Inoculation',   desc:'Final transfer to production bioreactor. Inoculum volume calc, aseptic transfer protocol, pre-inoculation bioreactor readiness checklist, time-zero sampling.', path:null, status:'planned', roles:['operator','msat'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // UPSTREAM — Bioreactor ops, perfusion, fed-batch (post-inoculation)
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'us-bioreactor',   title:'Bioreactor Dashboard',    desc:'Live bioreactor status: pH, DO, temp, agitation, feed volumes, gas overlay. Fed-batch and perfusion modes.',     path:null,    status:'planned', roles:['operator','msat','engineering'] },
+  { id:'us-media-prep',   title:'Media & Buffer Prep',     desc:'Recipe execution for media, feeds, buffers. Component verification, pH adjustment, filter integrity, hold times.', path:null,  status:'planned', roles:['operator'] },
+  { id:'us-perfusion',    title:'Perfusion Monitor',       desc:'ATF filter status, cell bleed tracking, perfusion rate, harvest collection. Daily operator checklist for 30-60 day runs.', path:null, status:'planned', roles:['operator','msat'] },
+  { id:'us-harvest',      title:'Harvest & Clarification', desc:'Centrifugation, depth filtration, 0.2um filtration. Turbidity, yield, hold time tracking.',                     path:null,    status:'planned', roles:['operator'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // DOWNSTREAM — Purification, chromatography, viral clearance
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'ds-chrom',        title:'Chromatography',          desc:'Protein A capture, CEX/AEX polish steps. Column packing, HETP/asymmetry, load/wash/elute execution.',            path:null,    status:'planned', roles:['operator','msat'] },
+  { id:'ds-viral',        title:'Viral Clearance',         desc:'Low pH inactivation hold timer, viral filtration (Planova/Viresolve), filter integrity pre/post-use.',            path:null,    status:'planned', roles:['operator','qa'] },
+  { id:'ds-ufdf',         title:'UF/DF Operations',        desc:'Ultrafiltration/diafiltration: concentration, buffer exchange. TMP, flux, diavolume tracking.',                  path:null,    status:'planned', roles:['operator'] },
+  { id:'ds-buffer-prep',  title:'DS Buffer Prep',          desc:'Downstream buffer and solution preparation. Recipe execution, pH/conductivity verification, hold times.',         path:null,    status:'planned', roles:['operator'] },
+  { id:'ds-column-qual',  title:'Column Qualification',    desc:'Column packing records, HETP/asymmetry acceptance, lifetime tracking (cycles), repack scheduling.',               path:null,    status:'planned', roles:['operator','validation','msat'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // DRUG PRODUCT — Fill-finish, formulation, visual inspection
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'dp-formulation',  title:'Formulation & Pooling',   desc:'Drug substance pooling, excipient addition, final concentration adjustment, sterile filtration.',                 path:null,    status:'planned', roles:['operator'] },
+  { id:'dp-filling',      title:'Aseptic Fill',            desc:'Sterile filling operations: vials, syringes, cartridges. Line speed, fill weight, intervention log.',             path:null,    status:'planned', roles:['operator'] },
+  { id:'dp-lyo',          title:'Lyophilisation',          desc:'Freeze-dry cycle execution and monitoring. Shelf temp, chamber pressure, product temp, cycle completion.',        path:null,    status:'planned', roles:['operator'] },
+  { id:'dp-vi',           title:'Visual Inspection',       desc:'Manual and automated visual inspection. Accept/reject tracking, defect classification, AQL trending.',            path:null,    status:'planned', roles:['operator','qc'] },
+  { id:'dp-packaging',    title:'Packaging & Labelling',   desc:'Secondary packaging, label reconciliation, serialisation, shipping preparation.',                                 path:null,    status:'planned', roles:['operator','supply_chain'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // EQUIPMENT & CLEANING — Cross-cutting operations
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'equip-logbook',   title:'Equipment Logbook',       desc:'GMP-compliant e-logbook per equipment ID. Usage, cleaning, maintenance, alarms. 21 CFR Part 11 audit trail.',     path:null,    status:'planned', roles:['operator','engineering'] },
+  { id:'equip-status',    title:'Equipment Status Board',  desc:'Real-time status of all production equipment: available, in-use, cleaning, maintenance, hold.',                   path:null,    status:'planned', roles:['operator','engineering','qa'] },
+  { id:'cleaning-records',title:'Cleaning Records',        desc:'Manual and CIP cleaning records. Detergent lot, rinse conductivity, visual inspection, hold time tracking.',      path:null,    status:'planned', roles:['operator'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // QUALITY ASSURANCE
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'qa-centre',       title:'QA Centre',               desc:'Submission review workbench. SOP cross-reference, investigation notes, approval workflow.',                       path:'/qa.html',           status:'live',    roles:['qa','director','admin'] },
+  { id:'qa-workflow',     title:'QA Workflow',              desc:'Workflow management and status tracking across all quality events.',                                              path:'/workflow.html',     status:'live',    roles:['qa','director','admin'] },
+  { id:'deviation-mgr',   title:'Deviation Manager',       desc:'Full lifecycle: initiate, classify (critical/major/minor), investigate (5-Why, Ishikawa), root cause, CAPA link, close.', path:null, status:'planned', roles:['qa','operator','msat','engineering'] },
+  { id:'capa-tracker',    title:'CAPA Tracker',            desc:'Corrective/preventive actions. Assign owners, track deadlines, verify effectiveness 30-90 days post-implementation.', path:null, status:'wip',     roles:['qa','director','admin'] },
+  { id:'change-control',  title:'Change Control',          desc:'Cross-functional impact assessment, regulatory classification (Type IA/IB/II), implementation tracking, closure.', path:null,  status:'planned', roles:['qa','regulatory','validation','engineering','msat'] },
+  { id:'batch-disposition',title:'Batch Disposition',      desc:'Batch record review queue, QA release checklist, QP certification. AI-powered review by exception.',               path:null,  status:'planned', roles:['qa','director'] },
+  { id:'doc-control',     title:'Document Control',        desc:'SOP lifecycle: draft, review, approve, distribute, train, retire. Version control, periodic review scheduling.',   path:null,  status:'planned', roles:['qa','admin'] },
+  { id:'supplier-quality', title:'Supplier Quality',       desc:'Supplier qualification, quality agreements, audit scheduling, performance scorecards, approved supplier list.',    path:null,  status:'planned', roles:['qa'] },
+  { id:'complaint-mgr',   title:'Complaints & Recalls',   desc:'Product complaint intake, investigation, batch linkage, trending, recall execution tracking.',                    path:null,  status:'planned', roles:['qa','director'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // QUALITY CONTROL
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'qc-lab',          title:'QC Lab Dashboard',        desc:'Sample queue, test status, analyst workload, instrument schedule. Priority flagging for batch-critical tests.',    path:null,  status:'planned', roles:['qc','qa'] },
+  { id:'oos-invest',      title:'OOS Investigation',       desc:'Phase I (lab checks within 1 day) and Phase II (full-scale). Enforced timeline, cross-batch impact assessment.',  path:null,  status:'planned', roles:['qc','qa'] },
+  { id:'env-monitoring',  title:'Environmental Monitoring', desc:'Viable/non-viable particle trending, EM schedule, excursion alerts, cleanroom status board.',                    path:null,  status:'planned', roles:['qc','qa','operator'] },
+  { id:'stability',       title:'Stability Program',       desc:'ICH stability study tracking (25/60, 30/65, 40/75). Pull scheduling, trend analysis, OOT alerts.',                path:null,  status:'planned', roles:['qc','qa','regulatory'] },
+  { id:'gdp-check',       title:'GDP Document Check',      desc:'AI vision analysis of paper batch records. Detect handwriting errors, missing entries, calculation mistakes.',     path:'/query.html', status:'live', roles:['qc','qa','operator'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ENGINEERING
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'maintenance',     title:'Maintenance Hub',         desc:'Work order queue, preventive/predictive schedule, equipment history, spare parts inventory.',                      path:null,  status:'planned', roles:['engineering'] },
+  { id:'calibration',     title:'Calibration Tracker',     desc:'Instrument calibration schedule, out-of-tolerance alerts, certificates, deviation linkage.',                       path:null,  status:'planned', roles:['engineering'] },
+  { id:'facilities',      title:'Facilities & Utilities',  desc:'HVAC, WFI, purified water, clean steam, compressed air. Status, alerts, trending, sampling schedule.',             path:null,  status:'planned', roles:['engineering'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // MSAT / VALIDATION
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'cpv-dashboard',   title:'CPV Dashboard',           desc:'Continued process verification. CPP/CQA control charts, Nelson rules, process capability (Cpk), alert triggers.', path:null,  status:'planned', roles:['msat','qa','director'] },
+  { id:'tech-transfer',   title:'Tech Transfer',           desc:'New product introduction: protocol tracker, comparability studies, gap analysis, site readiness.',                 path:null,  status:'planned', roles:['msat','qa','validation'] },
+  { id:'val-tracker',     title:'Validation Tracker',      desc:'IQ/OQ/PQ protocol status, equipment qualification, requalification schedule, CSV register.',                      path:null,  status:'planned', roles:['validation','qa','engineering'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SUPPLY CHAIN / EHS / REGULATORY / TRAINING / IT
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'production-plan', title:'Production Schedule',     desc:'Batch campaign planning, suite allocation, material availability, resource scheduling.',                           path:null,  status:'planned', roles:['supply_chain','operator','director'] },
+  { id:'warehouse',       title:'Warehouse & Materials',   desc:'Goods receipt, material status (quarantine/released/rejected), cold chain, dispensing records.',                    path:null,  status:'planned', roles:['supply_chain'] },
+  { id:'ehs-dashboard',   title:'EHS Dashboard',           desc:'Safety metrics (TRIR), incident log, near-miss reporting, permit tracking, chemical safety.',                      path:null,  status:'planned', roles:['ehs','director','admin'] },
+  { id:'incident-report', title:'Incident Reporter',       desc:'Safety incident capture. Voice or text, auto-classification, investigation workflow.',                             path:null,  status:'planned', roles:['ehs','operator','engineering'] },
+  { id:'reg-intelligence',title:'Regulatory Intelligence', desc:'Change impact classification (Type IA/IB/II), submission tracker, MA status, variation management.',               path:null,  status:'planned', roles:['regulatory','qa'] },
+  { id:'apqr',            title:'Annual Product Review',   desc:'Auto-aggregated APR/PQR: batch data, deviations, stability, CAPAs, complaints. AI draft narrative.',              path:null,  status:'planned', roles:['regulatory','qa','director'] },
+  { id:'training-matrix', title:'Training Matrix',         desc:'Role-based training assignments, SOP revision retraining cascades, compliance status, effectiveness tracking.',    path:null,  status:'planned', roles:['training','qa','admin'] },
+  { id:'training-assess', title:'Competency Assessment',   desc:'AI-generated assessments from SOPs. Scenario-based, not just read-and-understand. Measures real comprehension.',   path:null,  status:'planned', roles:['training','qa'] },
+  { id:'data-integrity',  title:'Data Integrity',          desc:'ALCOA+ compliance dashboard. Audit trail monitoring, anomaly detection, electronic record review.',                path:null,  status:'planned', roles:['it','qa','admin'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SITE LEADERSHIP
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'analytics',       title:'Site Analytics',          desc:'KPIs across all departments: RFT rate, deviation backlog, CAPA on-time, batch cycle time, OEE.',                  path:'/dashboard.html', status:'live', roles:['director','admin'] },
+  { id:'audit-mgr',       title:'Audit Manager',           desc:'Internal audit schedule, finding tracker, inspection readiness score, CAPA follow-through.',                      path:null,  status:'planned', roles:['qa','director','admin'] },
+  { id:'opex',            title:'Operational Excellence',  desc:'Lean/Six Sigma project board, OEE tracking, Kaizen event log, value stream maps.',                                path:null,  status:'planned', roles:['director','admin'] },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PLATFORM
+  // ═══════════════════════════════════════════════════════════════════
+  { id:'builder',         title:'Doc Builder',             desc:'AI-assisted SOP/document creation. 21 CFR Part 11 electronic sign-off. Version history.',                          path:'/builder.html',  status:'live', roles:['qa','msat','admin'] },
+  { id:'feedback',        title:'Feedback Engine',         desc:'Voice feedback collection, auto-analysis, sentiment detection, implementation brief generation.',                  path:'/feedback.html', status:'live', roles:['all'] },
+  { id:'login',           title:'Login',                   desc:'Cinematic intro, name capture, auth flow, role assignment.',                                                       path:'/login.html',    status:'live', roles:['all'] },
+  { id:'login-demo',      title:'Demo Mode',               desc:'Full guided demo tour with voice narration. The NDRC pitch flow.',                                                path:'/login.html?demo=1', status:'live', roles:['all'] },
+];
+
+var DEFAULT_COLUMNS = [
+  { id:'col-operator',    title:'Operator Core',              cards:['charlie','hub','voice','raise-obs','activity','shift-handover'] },
+  { id:'col-batch',       title:'Batch Execution (MES)',      cards:['batch-exec','batch-setup','batch-ipc','batch-sampling','batch-weight','batch-cip','batch-review'] },
+  { id:'col-inoc',        title:'Inoculation',                  cards:['inoc-cell-bank','inoc-thaw','inoc-passage','inoc-seed-train','inoc-media-prep','inoc-qc-checks','inoc-scaleup','inoc-contam','inoc-incubator','inoc-handoff'] },
+  { id:'col-upstream',    title:'Upstream',                    cards:['us-bioreactor','us-media-prep','us-perfusion','us-harvest'] },
+  { id:'col-downstream',  title:'Downstream',                  cards:['ds-chrom','ds-viral','ds-ufdf','ds-buffer-prep','ds-column-qual'] },
+  { id:'col-dp',          title:'Drug Product',                cards:['dp-formulation','dp-filling','dp-lyo','dp-vi','dp-packaging'] },
+  { id:'col-equip',       title:'Equipment & Cleaning',        cards:['equip-logbook','equip-status','cleaning-records'] },
+  { id:'col-qa',          title:'Quality Assurance',           cards:['qa-centre','qa-workflow','deviation-mgr','capa-tracker','change-control','batch-disposition','doc-control','supplier-quality','complaint-mgr'] },
+  { id:'col-qc',          title:'Quality Control',             cards:['qc-lab','oos-invest','env-monitoring','stability','gdp-check'] },
+  { id:'col-eng',         title:'Engineering',                 cards:['maintenance','calibration','facilities'] },
+  { id:'col-msat',        title:'MSAT / Validation',           cards:['cpv-dashboard','tech-transfer','val-tracker'] },
+  { id:'col-support',     title:'Supply Chain / EHS / Reg',    cards:['production-plan','warehouse','ehs-dashboard','incident-report','reg-intelligence','apqr','training-matrix','training-assess','data-integrity'] },
+  { id:'col-site',        title:'Site Leadership',              cards:['analytics','audit-mgr','opex'] },
+  { id:'col-platform',    title:'Platform',                     cards:['builder','feedback','login','login-demo'] },
+];
+
+var STORAGE_KEY = 'vent_dev_board_v4';
+var activeFilters = { live:true, wip:true, planned:true };
+
+function getPageById(id){ return ALL_PAGES.find(function(p){ return p.id === id; }); }
+
+// ── Stats ──
+function renderStats(){
+  var live = ALL_PAGES.filter(function(p){ return p.status === 'live'; }).length;
+  var wip = ALL_PAGES.filter(function(p){ return p.status === 'wip'; }).length;
+  var planned = ALL_PAGES.filter(function(p){ return p.status === 'planned'; }).length;
+  document.getElementById('stats').innerHTML =
+    '<div class="stat"><strong style="color:#00b894">' + live + '</strong> live</div>' +
+    '<div class="stat"><strong style="color:#fdcb6e">' + wip + '</strong> in progress</div>' +
+    '<div class="stat"><strong style="color:#74b9ff">' + planned + '</strong> planned</div>' +
+    '<div class="stat"><strong style="color:#fff">' + ALL_PAGES.length + '</strong> total modules</div>' +
+    '<div class="stat"><strong style="color:#fff">' + DEFAULT_COLUMNS.length + '</strong> columns</div>';
+}
+
+// ── Filters ──
+function toggleFilter(btn){
+  var f = btn.dataset.filter;
+  activeFilters[f] = !activeFilters[f];
+  btn.classList.toggle('active', activeFilters[f]);
+  applyFilters();
+}
+
+function applyFilters(){
+  document.querySelectorAll('.card').forEach(function(card){
+    var page = getPageById(card.dataset.id);
+    if(!page) return;
+    var visible = activeFilters[page.status];
+    card.style.display = visible ? '' : 'none';
+  });
+  updateCounts();
+}
+
+// ── Load/save layout ──
+function loadLayout(){
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(saved && saved.length) return saved;
+  } catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_COLUMNS));
+}
+
+function saveLayout(){
+  var cols = [];
+  document.querySelectorAll('.column').forEach(function(colEl){
+    var cards = [];
+    colEl.querySelectorAll('.card').forEach(function(c){ cards.push(c.dataset.id); });
+    cols.push({ id: colEl.dataset.colId, title: colEl.querySelector('.col-title').textContent, cards: cards });
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cols));
+}
+
+// ── Auth ──
+function setAuth(role){
+  localStorage.setItem('vent_token', 'demo');
+  localStorage.setItem('vent_role', role || 'admin');
+  localStorage.setItem('vent_name', 'Dev');
+  localStorage.setItem('vent_user_id', 'dev-user');
+}
+setAuth(localStorage.getItem('vent_role') || 'admin');
+
+// ── Render board ──
+function renderBoard(){
+  var board = document.getElementById('board');
+  board.innerHTML = '';
+  var layout = loadLayout();
+
+  layout.forEach(function(col){
+    var colEl = document.createElement('div');
+    colEl.className = 'column';
+    colEl.dataset.colId = col.id;
+
+    var visibleCount = 0;
+    var liveCount = 0;
+
+    var header = document.createElement('div');
+    header.className = 'col-header';
+    header.draggable = true;
+
+    var body = document.createElement('div');
+    body.className = 'col-body';
+
+    col.cards.forEach(function(cardId){
+      var page = getPageById(cardId);
+      if(!page) return;
+      if(page.status === 'live') liveCount++;
+
+      var card = document.createElement('div');
+      card.className = 'card status-' + page.status;
+      card.draggable = true;
+      card.dataset.id = page.id;
+
+      var rolesHtml = '';
+      if(page.roles && page.roles[0] !== 'all'){
+        page.roles.slice(0,4).forEach(function(r){
+          rolesHtml += '<span class="card-role">' + r + '</span>';
+        });
+        if(page.roles.length > 4) rolesHtml += '<span class="card-role">+' + (page.roles.length - 4) + '</span>';
+      }
+
+      card.innerHTML =
+        '<div class="card-top">' +
+          '<span class="card-badge badge-' + page.status + '">' + page.status.toUpperCase() + '</span>' +
+          '<span class="card-title">' + page.title + '</span>' +
+        '</div>' +
+        '<div class="card-desc">' + page.desc + '</div>' +
+        (page.path ? '<div class="card-path">' + page.path + '</div>' : '') +
+        (rolesHtml ? '<div class="card-roles">' + rolesHtml + '</div>' : '');
+
+      if(!activeFilters[page.status]) card.style.display = 'none';
+      else visibleCount++;
+
+      // Double-click to navigate (live pages only)
+      if(page.path){
+        card.addEventListener('dblclick', function(e){
+          e.preventDefault();
+          window.location.href = page.path;
+        });
+      }
+
+      body.appendChild(card);
+    });
+
+    header.innerHTML =
+      '<div><span class="col-title">' + col.title + '</span></div>' +
+      '<span class="col-count">' + liveCount + '/' + col.cards.length + '</span>';
+
+    colEl.appendChild(header);
+    colEl.appendChild(body);
+    board.appendChild(colEl);
+  });
+
+  setupDragAndDrop();
+  renderStats();
+}
+
+// ── Drag & Drop ──
+var dragItem = null;
+var dragType = null;
+
+function setupDragAndDrop(){
+  document.querySelectorAll('.card').forEach(function(card){
+    card.addEventListener('dragstart', function(e){
+      dragItem = card;
+      dragType = 'card';
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+    });
+    card.addEventListener('dragend', function(){
+      card.classList.remove('dragging');
+      dragItem = null;
+      dragType = null;
+      saveLayout();
+    });
+  });
+
+  document.querySelectorAll('.col-header').forEach(function(header){
+    header.addEventListener('dragstart', function(e){
+      var col = header.closest('.column');
+      dragItem = col;
+      dragType = 'column';
+      col.classList.add('col-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', col.dataset.colId);
+    });
+    header.addEventListener('dragend', function(){
+      header.closest('.column').classList.remove('col-dragging');
+      dragItem = null;
+      dragType = null;
+      saveLayout();
+    });
+  });
+
+  document.querySelectorAll('.col-body').forEach(function(body){
+    body.addEventListener('dragover', function(e){
+      if(dragType !== 'card') return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      body.closest('.column').classList.add('drag-over');
+      var after = getAfter(body, e.clientY);
+      if(after) body.insertBefore(dragItem, after);
+      else body.appendChild(dragItem);
+    });
+    body.addEventListener('dragleave', function(e){
+      var col = body.closest('.column');
+      if(!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+    });
+    body.addEventListener('drop', function(e){
+      e.preventDefault();
+      body.closest('.column').classList.remove('drag-over');
+      updateCounts();
+      saveLayout();
+    });
+  });
+
+  var board = document.getElementById('board');
+  board.addEventListener('dragover', function(e){
+    if(dragType !== 'column') return;
+    e.preventDefault();
+    var after = getAfterCol(board, e.clientX);
+    if(after) board.insertBefore(dragItem, after);
+    else board.appendChild(dragItem);
+  });
+  board.addEventListener('drop', function(e){
+    if(dragType !== 'column') return;
+    e.preventDefault();
+    saveLayout();
+  });
+}
+
+function getAfter(container, y){
+  var els = Array.from(container.querySelectorAll('.card:not(.dragging)'));
+  var closest = null, closestOff = Number.NEGATIVE_INFINITY;
+  els.forEach(function(el){
+    var box = el.getBoundingClientRect();
+    var off = y - box.top - box.height/2;
+    if(off < 0 && off > closestOff){ closestOff = off; closest = el; }
+  });
+  return closest;
+}
+
+function getAfterCol(board, x){
+  var cols = Array.from(board.querySelectorAll('.column:not(.col-dragging)'));
+  var closest = null, closestOff = Number.NEGATIVE_INFINITY;
+  cols.forEach(function(col){
+    var box = col.getBoundingClientRect();
+    var off = x - box.left - box.width/2;
+    if(off < 0 && off > closestOff){ closestOff = off; closest = col; }
+  });
+  return closest;
+}
+
+function updateCounts(){
+  document.querySelectorAll('.column').forEach(function(col){
+    var total = col.querySelectorAll('.card').length;
+    var live = col.querySelectorAll('.card.status-live').length;
+    col.querySelector('.col-count').textContent = live + '/' + total;
+  });
+}
+
+// ── Actions ──
+function clearAndLogin(){
+  setAuth(localStorage.getItem('vent_role') || 'admin');
+  document.getElementById('status').innerHTML = 'Session refreshed as <strong>' + (localStorage.getItem('vent_role') || 'admin') + '</strong>';
+}
+
+function openDemo(){
+  localStorage.setItem('vent_token', 'demo');
+  localStorage.setItem('vent_role', 'admin');
+  localStorage.setItem('vent_name', 'Demo Admin');
+  localStorage.removeItem('vent_tour_done');
+  window.location.href = '/hub.html?demo=1';
+}
+
+function resetBoard(){
+  localStorage.removeItem(STORAGE_KEY);
+  renderBoard();
+}
+
+// Role switching
+document.getElementById('roleBar').addEventListener('click', function(e){
+  var btn = e.target.closest('.role-btn');
+  if(!btn) return;
+  document.querySelectorAll('.role-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  setAuth(btn.dataset.role);
+  document.getElementById('status').innerHTML = 'Authenticated as <strong>' + btn.dataset.role + '</strong>';
+});
+
+var currentRole = localStorage.getItem('vent_role') || 'admin';
+document.querySelectorAll('.role-btn').forEach(function(b){
+  if(b.dataset.role === currentRole) b.classList.add('active');
+  else b.classList.remove('active');
+});
+
+// ── Init ──
+// Force clear old board layouts that may have stale card IDs
+try {
+  ['vent_dev_board','vent_dev_board_v2','vent_dev_board_v3'].forEach(function(k){ localStorage.removeItem(k); });
+  var v2Board = localStorage.getItem(STORAGE_KEY);
+  if(v2Board){
+    var parsed = JSON.parse(v2Board);
+    // Validate: check first column's first card exists in ALL_PAGES
+    if(parsed && parsed.length && parsed[0].cards && parsed[0].cards.length){
+      var testId = parsed[0].cards[0];
+      if(!getPageById(testId)){
+        // Stale data — nuke it
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }
+} catch(e){ localStorage.removeItem(STORAGE_KEY); }
+
+try {
+  renderBoard();
+} catch(err){
+  document.getElementById('board').innerHTML =
+    '<div style="color:#e17260;padding:2rem;font-size:.85rem">' +
+    '<strong>Board render error:</strong> ' + err.message +
+    '<br><br><button onclick="localStorage.removeItem(\'' + STORAGE_KEY + '\');location.reload()" ' +
+    'style="padding:.5rem 1rem;background:#e17260;color:#fff;border:none;border-radius:6px;cursor:pointer">' +
+    'Clear board data &amp; reload</button></div>';
+}
+</script>
+</body>
+</html>

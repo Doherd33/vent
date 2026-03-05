@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent — Project Command Centre</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0f;--surface:#111118;--surface2:#16161e;--border:#1e1e28;--border2:#2a2a35;
+    --text:#c8c8d0;--text2:#888;--text3:#555;--text4:#333;
+    --white:#fff;--accent:#6c5ce7;--accent-dim:#6c5ce720;
+    --green:#00b894;--gold:#fdcb6e;--blue:#74b9ff;--red:#e17055;
+    --teal:#00cec9;--pink:#ff7675;--lavender:#a29bfe;--orange:#f39c12;
+    --phase1:#6c5ce7;--phase2:#00b894;--phase3:#00cec9;--phase4:#e17055;
+    --phase5:#fdcb6e;--phase6:#74b9ff;--phase7:#a29bfe;--phase8:#ff7675;
+  }
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,sans-serif;min-height:100vh;overflow-x:hidden}
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  /* ── Header ── */
+  .header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;position:sticky;top:0;z-index:100;background:var(--bg);backdrop-filter:blur(20px)}
+  .header-left{display:flex;align-items:center;gap:1rem}
+  .logo{font-family:'Instrument Serif',Georgia,serif;font-size:1.4rem;color:var(--white);letter-spacing:-.02em}
+  .logo span{color:var(--accent);font-weight:400}
+  .subtitle{color:var(--text3);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase}
+
+  /* ── View Tabs ── */
+  .view-tabs{display:flex;gap:.25rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px}
+  .view-tab{padding:.35rem .75rem;border-radius:6px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:.7rem;font-weight:600;transition:all .15s;font-family:inherit}
+  .view-tab:hover{color:var(--text)}
+  .view-tab.active{background:var(--accent);color:var(--white)}
+
+  /* ── Stats Bar ── */
+  .stats-bar{display:flex;gap:1.5rem;padding:.75rem 1.5rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+  .stat{display:flex;align-items:baseline;gap:.35rem;font-size:.7rem;color:var(--text3)}
+  .stat strong{font-size:1rem;font-weight:700}
+  .stat-divider{width:1px;height:20px;background:var(--border);margin:0 .25rem}
+
+  /* ── Phase Legend ── */
+  .phase-legend{display:flex;gap:.5rem;flex-wrap:wrap;padding:.5rem 1.5rem;border-bottom:1px solid var(--border)}
+  .phase-pill{padding:.2rem .5rem;border-radius:4px;font-size:.6rem;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .15s;opacity:.7}
+  .phase-pill:hover,.phase-pill.active{opacity:1;border-color:currentColor}
+  .phase-pill.active{opacity:1}
+
+  /* ── Filter Bar ── */
+  .filter-bar{display:flex;gap:.4rem;padding:.5rem 1.5rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+  .filter-group{display:flex;gap:.25rem;align-items:center}
+  .filter-label{color:var(--text4);font-size:.6rem;margin-right:.25rem;text-transform:uppercase;letter-spacing:.05em}
+  .filter-btn{padding:.2rem .5rem;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-size:.6rem;transition:all .15s;font-family:inherit}
+  .filter-btn:hover{border-color:var(--text3);color:var(--text)}
+  .filter-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+  .search-box{padding:.3rem .6rem;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.7rem;font-family:inherit;width:200px;outline:none;transition:border-color .15s}
+  .search-box:focus{border-color:var(--accent)}
+  .search-box::placeholder{color:var(--text4)}
+
+  /* ── Main Content ── */
+  .main{padding:0}
+  .view{display:none}
+  .view.active{display:block}
+
+  /* ═══ GANTT VIEW ═══ */
+  .gantt-container{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 200px);position:relative}
+  .gantt{display:grid;min-width:1800px;position:relative}
+  .gantt-header{display:grid;grid-template-columns:280px repeat(46, 1fr);position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+  .gantt-header-label{padding:.4rem .75rem;font-size:.6rem;color:var(--text4);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center}
+  .gantt-week{padding:.3rem .2rem;font-size:.55rem;color:var(--text4);text-align:center;border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+  .gantt-week.month-start{border-left:1px solid var(--text4)}
+
+  .gantt-phase-row{display:grid;grid-template-columns:280px repeat(46, 1fr);border-bottom:1px solid var(--border);background:var(--surface)}
+  .gantt-phase-label{padding:.35rem .75rem;font-size:.7rem;font-weight:700;color:var(--white);display:flex;align-items:center;gap:.5rem}
+  .gantt-phase-label .phase-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .gantt-phase-bg{grid-column:span 46;position:relative}
+
+  .gantt-row{display:grid;grid-template-columns:280px repeat(46, 1fr);border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer;min-height:32px}
+  .gantt-row:hover{background:var(--surface)}
+  .gantt-module-label{padding:.3rem .75rem .3rem 1.5rem;font-size:.68rem;color:var(--text);display:flex;align-items:center;gap:.4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gantt-module-label .complexity-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .gantt-module-label .status-icon{font-size:.5rem;flex-shrink:0}
+  .gantt-timeline{grid-column:2 / -1;position:relative;display:grid;grid-template-columns:repeat(46, 1fr)}
+
+  .gantt-bar{position:absolute;top:4px;bottom:4px;border-radius:4px;display:flex;align-items:center;padding:0 .4rem;font-size:.55rem;font-weight:600;color:var(--white);overflow:hidden;white-space:nowrap;transition:all .15s;min-width:20px;cursor:pointer;z-index:2}
+  .gantt-bar:hover{filter:brightness(1.2);transform:scaleY(1.15)}
+  .gantt-bar.status-live{opacity:1}
+  .gantt-bar.status-wip{opacity:.85;background-image:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.08) 3px,rgba(255,255,255,.08) 6px)}
+  .gantt-bar.status-planned{opacity:.6}
+
+  .gantt-gridline{position:absolute;top:0;bottom:0;width:1px;background:var(--border);z-index:1}
+  .gantt-gridline.month{background:var(--text4);opacity:.3}
+
+  /* Progress overlay on gantt bar */
+  .gantt-progress{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.15);border-radius:4px 0 0 4px;transition:width .3s}
+
+  /* ═══ BOARD VIEW ═══ */
+  .board{display:flex;gap:.75rem;padding:1rem 1.5rem;overflow-x:auto;align-items:flex-start}
+  .board-column{min-width:260px;max-width:290px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+  .board-col-header{padding:.6rem .75rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .board-col-title{font-size:.75rem;font-weight:700;color:var(--white);display:flex;align-items:center;gap:.4rem}
+  .board-col-title .phase-dot{width:8px;height:8px;border-radius:50%}
+  .board-col-count{font-size:.6rem;color:var(--text3)}
+  .board-col-body{padding:.4rem;display:flex;flex-direction:column;gap:.35rem;max-height:65vh;overflow-y:auto}
+  .board-col-body::-webkit-scrollbar{width:3px}
+  .board-col-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+  .board-card{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:.6rem;cursor:pointer;transition:all .15s}
+  .board-card:hover{border-color:var(--accent);box-shadow:0 2px 12px var(--accent-dim)}
+  .board-card-top{display:flex;align-items:center;gap:.3rem;margin-bottom:.25rem;flex-wrap:wrap}
+  .board-card-title{font-size:.72rem;font-weight:600;color:var(--white)}
+  .board-card-desc{font-size:.6rem;color:var(--text3);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .board-card-meta{display:flex;gap:.3rem;margin-top:.3rem;flex-wrap:wrap}
+  .board-card-meta span{font-size:.5rem;padding:.1rem .3rem;border-radius:3px;background:rgba(255,255,255,.04);color:var(--text3)}
+
+  /* ═══ REGISTRY VIEW ═══ */
+  .registry{padding:1rem 1.5rem}
+  .registry-table{width:100%;border-collapse:collapse;font-size:.68rem}
+  .registry-table th{text-align:left;padding:.5rem .6rem;color:var(--text3);font-weight:600;font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);cursor:pointer;user-select:none}
+  .registry-table th:hover{color:var(--text)}
+  .registry-table td{padding:.4rem .6rem;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+  .registry-table tr{cursor:pointer;transition:background .1s}
+  .registry-table tr:hover{background:var(--surface)}
+
+  /* ═══ PROGRESS VIEW ═══ */
+  .progress-view{padding:1.5rem}
+  .progress-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:1rem;margin-bottom:1.5rem}
+  .progress-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem}
+  .progress-card-title{font-size:.75rem;font-weight:700;color:var(--white);margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem}
+  .progress-card-title .phase-dot{width:8px;height:8px;border-radius:50%}
+  .progress-bar-bg{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:.5rem}
+  .progress-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+  .progress-stats{display:flex;gap:.75rem;font-size:.6rem;color:var(--text3)}
+  .progress-stats strong{color:var(--text)}
+
+  .progress-overall{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin-bottom:1.5rem}
+  .progress-overall-title{font-size:.85rem;font-weight:700;color:var(--white);margin-bottom:.75rem}
+  .progress-overall-bar{height:12px;background:var(--border);border-radius:6px;overflow:hidden;margin-bottom:.5rem;display:flex}
+  .progress-segment{height:100%;transition:width .3s}
+  .progress-overall-stats{display:flex;gap:1.5rem;font-size:.7rem;color:var(--text3)}
+  .progress-overall-stats strong{color:var(--white);font-size:.9rem}
+
+  /* Burndown chart */
+  .burndown{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem}
+  .burndown-title{font-size:.85rem;font-weight:700;color:var(--white);margin-bottom:.75rem}
+  .burndown-canvas{width:100%;height:200px}
+
+  /* ═══ MODULE DETAIL PANEL ═══ */
+  .detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;justify-content:flex-end;backdrop-filter:blur(4px)}
+  .detail-overlay.active{display:flex}
+  .detail-panel{width:520px;max-width:90vw;background:var(--surface);border-left:1px solid var(--border);height:100vh;overflow-y:auto;padding:0}
+  .detail-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1}
+  .detail-header-left{flex:1}
+  .detail-id{font-size:.6rem;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:.2rem}
+  .detail-title{font-size:1.1rem;font-weight:700;color:var(--white);margin-bottom:.3rem}
+  .detail-desc{font-size:.72rem;color:var(--text2);line-height:1.4}
+  .detail-close{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+  .detail-close:hover{border-color:var(--red);color:var(--red)}
+
+  .detail-body{padding:1.25rem}
+  .detail-section{margin-bottom:1.25rem}
+  .detail-section-title{font-size:.65rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;display:flex;align-items:center;gap:.35rem}
+  .detail-meta{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  .detail-meta-item{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:.5rem .6rem}
+  .detail-meta-label{font-size:.55rem;color:var(--text4);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.15rem}
+  .detail-meta-value{font-size:.75rem;color:var(--white);font-weight:600}
+
+  .detail-list{list-style:none;padding:0}
+  .detail-list li{padding:.3rem .5rem;font-size:.68rem;color:var(--text);border-left:2px solid var(--border);margin-bottom:.25rem;font-family:'JetBrains Mono',monospace}
+  .detail-list li.highlight{border-left-color:var(--accent);color:var(--accent)}
+
+  .detail-tags{display:flex;flex-wrap:wrap;gap:.25rem}
+  .detail-tag{padding:.15rem .4rem;border-radius:3px;font-size:.58rem;font-weight:600}
+
+  .detail-deps{display:flex;flex-direction:column;gap:.25rem}
+  .detail-dep{padding:.3rem .5rem;border-radius:4px;font-size:.65rem;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;gap:.35rem;cursor:pointer;transition:all .15s}
+  .detail-dep:hover{border-color:var(--accent)}
+  .detail-dep .dep-status{width:6px;height:6px;border-radius:50%}
+
+  /* Progress slider in detail */
+  .detail-progress{margin-top:.5rem}
+  .detail-progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem}
+  .detail-progress-pct{font-size:.85rem;font-weight:700;color:var(--white)}
+  .detail-progress input[type=range]{width:100%;-webkit-appearance:none;height:6px;background:var(--border);border-radius:3px;outline:none}
+  .detail-progress input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--accent);border-radius:50%;cursor:pointer}
+
+  /* ── Badges ── */
+  .badge{display:inline-block;padding:.1rem .35rem;border-radius:3px;font-size:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .badge-live{background:#00b89425;color:var(--green)}
+  .badge-wip{background:#fdcb6e25;color:var(--gold)}
+  .badge-planned{background:#74b9ff20;color:var(--blue)}
+  .badge-s{background:var(--green);color:#000}
+  .badge-m{background:var(--gold);color:#000}
+  .badge-l{background:var(--orange);color:#000}
+  .badge-xl{background:var(--red);color:#fff}
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--text4)}
+
+  /* ═══ ROUNDS VIEW ═══ */
+  .rounds-view{padding:1.5rem}
+  .rounds-info{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem}
+  .rounds-info-title{font-size:.85rem;font-weight:700;color:var(--white);margin-bottom:.3rem}
+  .rounds-info-desc{font-size:.68rem;color:var(--text2);line-height:1.5}
+  .round-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:1rem;overflow:hidden}
+  .round-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+  .round-header:hover{background:var(--surface2)}
+  .round-title{font-size:.8rem;font-weight:700;color:var(--white);display:flex;align-items:center;gap:.5rem}
+  .round-title .round-num{background:var(--accent);color:var(--white);width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
+  .round-meta{display:flex;gap:.75rem;font-size:.6rem;color:var(--text3)}
+  .round-body{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:.5rem;padding:.75rem}
+  .round-module{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:.75rem;cursor:pointer;transition:all .15s;position:relative}
+  .round-module:hover{border-color:var(--accent);box-shadow:0 2px 12px var(--accent-dim)}
+  .round-module-top{display:flex;align-items:center;gap:.3rem;margin-bottom:.25rem;flex-wrap:wrap}
+  .round-module-title{font-size:.75rem;font-weight:600;color:var(--white)}
+  .round-module-branch{font-size:.55rem;color:var(--text4);font-family:'JetBrains Mono',monospace;margin-top:.2rem;display:flex;align-items:center;gap:.3rem}
+  .round-module-branch code{background:var(--bg);padding:.1rem .3rem;border-radius:3px;color:var(--accent)}
+  .round-module-desc{font-size:.6rem;color:var(--text3);line-height:1.3;margin-top:.2rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .round-module-stats{display:flex;gap:.4rem;margin-top:.35rem;flex-wrap:wrap}
+  .round-module-stats span{font-size:.5rem;padding:.1rem .3rem;border-radius:3px;background:rgba(255,255,255,.04);color:var(--text3)}
+
+  /* Agent spec modal */
+  .spec-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:none;justify-content:center;align-items:center;backdrop-filter:blur(4px)}
+  .spec-overlay.active{display:flex}
+  .spec-modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:700px;max-width:92vw;max-height:85vh;display:flex;flex-direction:column}
+  .spec-modal-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .spec-modal-title{font-size:.8rem;font-weight:700;color:var(--white)}
+  .spec-modal-actions{display:flex;gap:.4rem}
+  .spec-copy-btn{padding:.3rem .7rem;border-radius:5px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;font-size:.65rem;font-weight:600;font-family:inherit;transition:all .15s}
+  .spec-copy-btn:hover{background:var(--accent);color:var(--white)}
+  .spec-modal-body{padding:1rem;overflow-y:auto;flex:1}
+  .spec-content{font-family:'JetBrains Mono',monospace;font-size:.62rem;line-height:1.6;color:var(--text);white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;tab-size:2}
+
+  /* ── Responsive ── */
+  @media(max-width:768px){
+    .header{padding:.75rem 1rem}
+    .stats-bar{padding:.5rem 1rem}
+    .filter-bar{padding:.5rem 1rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="header-left">
+    <div>
+      <div class="logo">Vent <span>Command Centre</span></div>
+      <div class="subtitle">76 modules &middot; 8 phases &middot; Full facility coverage</div>
+    </div>
+  </div>
+  <div class="view-tabs" id="viewTabs">
+    <button class="view-tab active" data-view="gantt">Gantt</button>
+    <button class="view-tab" data-view="board">Board</button>
+    <button class="view-tab" data-view="registry">Registry</button>
+    <button class="view-tab" data-view="progress">Progress</button>
+    <button class="view-tab" data-view="rounds">Rounds</button>
+  </div>
+</header>
+
+<!-- ── Stats Bar ── -->
+<div class="stats-bar" id="statsBar"></div>
+
+<!-- ── Phase Legend ── -->
+<div class="phase-legend" id="phaseLegend"></div>
+
+<!-- ── Filter Bar ── -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <span class="filter-label">Status</span>
+    <button class="filter-btn active" data-filter="status" data-value="live" onclick="toggleFilter(this)">Live</button>
+    <button class="filter-btn active" data-filter="status" data-value="wip" onclick="toggleFilter(this)">WIP</button>
+    <button class="filter-btn active" data-filter="status" data-value="planned" onclick="toggleFilter(this)">Planned</button>
+  </div>
+  <div class="filter-group" style="margin-left:.75rem">
+    <span class="filter-label">Size</span>
+    <button class="filter-btn active" data-filter="complexity" data-value="S" onclick="toggleFilter(this)">S</button>
+    <button class="filter-btn active" data-filter="complexity" data-value="M" onclick="toggleFilter(this)">M</button>
+    <button class="filter-btn active" data-filter="complexity" data-value="L" onclick="toggleFilter(this)">L</button>
+    <button class="filter-btn active" data-filter="complexity" data-value="XL" onclick="toggleFilter(this)">XL</button>
+  </div>
+  <input class="search-box" type="text" placeholder="Search modules..." id="searchBox" oninput="applyFilters()">
+</div>
+
+<!-- ── Main Views ── -->
+<main class="main">
+  <div class="view active" id="view-gantt"></div>
+  <div class="view" id="view-board"></div>
+  <div class="view" id="view-registry"></div>
+  <div class="view" id="view-progress"></div>
+  <div class="view" id="view-rounds"></div>
+</main>
+
+<!-- ── Agent Spec Modal ── -->
+<div class="spec-overlay" id="specOverlay" onclick="if(event.target===this)closeSpec()">
+  <div class="spec-modal">
+    <div class="spec-modal-header">
+      <div class="spec-modal-title" id="specTitle">Agent Spec</div>
+      <div class="spec-modal-actions">
+        <button class="spec-copy-btn" onclick="copySpec()">Copy to Clipboard</button>
+        <button class="detail-close" onclick="closeSpec()">&times;</button>
+      </div>
+    </div>
+    <div class="spec-modal-body">
+      <pre class="spec-content" id="specContent"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ── Detail Panel ── -->
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// MODULE DATA — All 76 modules with full planning specs
+// ═══════════════════════════════════════════════════════════════════
+
+var PHASES = [
+  { id:1, label:'Quality Core',          color:'#6c5ce7', weeks:'1-7',   icon:'shield' },
+  { id:2, label:'Daily Operations',      color:'#00b894', weeks:'7-10',  icon:'clock' },
+  { id:3, label:'Quality Control Lab',   color:'#00cec9', weeks:'10-14', icon:'flask' },
+  { id:4, label:'Batch Execution / MES', color:'#e17055', weeks:'14-22', icon:'cog' },
+  { id:5, label:'Inoculation Suite',     color:'#fdcb6e', weeks:'22-28', icon:'dna' },
+  { id:6, label:'Process Operations',    color:'#74b9ff', weeks:'28-36', icon:'industry' },
+  { id:7, label:'Support Functions',     color:'#a29bfe', weeks:'36-43', icon:'wrench' },
+  { id:8, label:'Analytics & Leadership',color:'#ff7675', weeks:'43-46', icon:'chart' },
+];
+
+var MODULES = [
+  // ═══ PHASE 0: LIVE (already built) ═══
+  { id:'charlie',    title:'Charlie AI',           desc:'Ask SOPs in plain language. Get sourced, step-by-step answers. Works with gloves on via voice.',
+    path:'/query.html', status:'live', roles:['operator','qa','msat','engineering','admin'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:[], dbTables:['sop_chunks'], apiEndpoints:['POST /sop/discover','GET /sop/search','POST /sop/:docId/ask'],
+    frontendPages:['docs/operator/query.html'], aiFeatures:['RAG-powered SOP Q&A','Voice input','Sourced answers'] },
+
+  { id:'hub', title:'Hub', desc:'Central landing — role-filtered feature cards, batch status, shift info.',
+    path:'/hub.html', status:'live', roles:['all'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:[], dbTables:[], apiEndpoints:['GET /auth/me'],
+    frontendPages:['docs/hub/hub.html'], aiFeatures:[] },
+
+  { id:'voice', title:'Voice Assistant', desc:'Hands-free voice interface. Ask Charlie without touching a screen.',
+    path:'/submit.html', status:'live', roles:['operator','qa','admin'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:['charlie'], dbTables:[], apiEndpoints:['POST /voice/synthesize'],
+    frontendPages:['docs/operator/index.html'], aiFeatures:['ElevenLabs TTS','Voice-to-text'] },
+
+  { id:'raise-obs', title:'Raise Observation', desc:'Flag a concern in 30 seconds. Voice or text. Auto-classified by LangGraph, auto-routed to QA.',
+    path:'/query.html', status:'live', roles:['operator','qa','msat','engineering','admin'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:[], dbTables:['submissions'], apiEndpoints:['POST /submit','GET /patterns'],
+    frontendPages:['docs/operator/query.html'], aiFeatures:['LangGraph multi-agent classification','Auto-routing','Pattern detection','Auto-CAPA generation'] },
+
+  { id:'activity', title:'My Activity', desc:'Track your submissions, CAPAs, and action items through the workflow pipeline.',
+    path:'/submissions.html', status:'live', roles:['operator','qa','msat','engineering','admin'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:['raise-obs'], dbTables:['submissions','capas'], apiEndpoints:['GET /submissions'],
+    frontendPages:['docs/qa/submissions.html'], aiFeatures:[] },
+
+  { id:'qa-centre', title:'QA Centre', desc:'Submission review workbench. SOP cross-reference, investigation notes, approval workflow.',
+    path:'/qa.html', status:'live', roles:['qa','director','admin'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:['raise-obs'], dbTables:['submissions','qa_notes','sop_changes'], apiEndpoints:['GET /submissions','POST /sop/changes'],
+    frontendPages:['docs/qa/qa.html'], aiFeatures:['SOP cross-reference','AI analysis'] },
+
+  { id:'qa-workflow', title:'QA Workflow', desc:'Workflow management and status tracking across all quality events.',
+    path:'/workflow.html', status:'live', roles:['qa','director','admin'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:['qa-centre'], dbTables:['submissions'], apiEndpoints:[],
+    frontendPages:['docs/qa/workflow.html'], aiFeatures:[] },
+
+  { id:'gdp-check', title:'GDP Document Check', desc:'AI vision analysis of paper batch records. Detect handwriting errors, missing entries, calculation mistakes.',
+    path:'/query.html', status:'live', roles:['qc','qa','operator'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:[], dbTables:['gdp_documents','gdp_findings'], apiEndpoints:['POST /gdp/analyse','GET /gdp/documents'],
+    frontendPages:['docs/operator/query.html'], aiFeatures:['Claude Vision for document analysis','Blue ink detection','Error classification'] },
+
+  { id:'analytics', title:'Site Analytics', desc:'KPIs across all departments: RFT rate, deviation backlog, CAPA on-time, batch cycle time, OEE.',
+    path:'/dashboard.html', status:'live', roles:['director','admin'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:[], dbTables:[], apiEndpoints:['GET /analytics'],
+    frontendPages:['docs/management/dashboard.html'], aiFeatures:['KPI aggregation'] },
+
+  { id:'builder', title:'Doc Builder', desc:'AI-assisted SOP/document creation. 21 CFR Part 11 electronic sign-off. Version history.',
+    path:'/builder.html', status:'live', roles:['qa','msat','admin'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:[], dbTables:['builder_docs'], apiEndpoints:['POST /builder/docs','GET /builder/docs'],
+    frontendPages:['docs/admin/builder.html'], aiFeatures:['AI-assisted SOP generation','Version control'] },
+
+  { id:'feedback', title:'Feedback Engine', desc:'Voice feedback collection, auto-analysis, sentiment detection, implementation brief generation.',
+    path:'/feedback.html', status:'live', roles:['all'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:[], dbTables:['operator_feedback'], apiEndpoints:['POST /feedback','GET /feedback'],
+    frontendPages:['docs/operator/feedback.html'], aiFeatures:['Sentiment analysis','Category detection','Implementation brief generation'] },
+
+  { id:'login', title:'Login', desc:'Cinematic intro, name capture, auth flow, role assignment.',
+    path:'/login.html', status:'live', roles:['all'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:[], dbTables:['users'], apiEndpoints:['POST /auth/login','POST /auth/register','GET /auth/me'],
+    frontendPages:['docs/auth/login.html'], aiFeatures:[] },
+
+  { id:'login-demo', title:'Demo Mode', desc:'Full guided demo tour with voice narration. The NDRC pitch flow.',
+    path:'/login.html?demo=1', status:'live', roles:['all'],
+    phase:0, phaseLabel:'Live', complexity:'-', daysEstimate:0, startWeek:0,
+    dependencies:['login','hub'], dbTables:[], apiEndpoints:[],
+    frontendPages:['docs/auth/login.html'], aiFeatures:['Voice narration via ElevenLabs'] },
+
+  // ═══ PHASE 1: QUALITY CORE (Weeks 1-7) ═══
+  { id:'deviation-mgr', title:'Deviation Manager', desc:'Full lifecycle: initiate, classify (critical/major/minor), investigate (5-Why, Ishikawa), root cause, CAPA link, close.',
+    path:null, status:'planned', roles:['qa','operator','msat','engineering'],
+    phase:1, phaseLabel:'Quality Core', complexity:'L', daysEstimate:8, startWeek:1,
+    dependencies:['raise-obs','qa-centre'],
+    dbTables:['deviations'],
+    apiEndpoints:['POST /deviations','GET /deviations','GET /deviations/:devId','PUT /deviations/:devId','POST /deviations/:devId/escalate','POST /deviations/:devId/investigate','GET /deviations/stats'],
+    frontendPages:['docs/qa/deviations.html'],
+    aiFeatures:['Auto-classify severity','5-Why assistant','Ishikawa diagram population','Root cause suggestion','Investigation summary generation'] },
+
+  { id:'capa-tracker', title:'CAPA Tracker', desc:'Corrective/preventive actions. Assign owners, track deadlines, verify effectiveness 30-90 days post-implementation.',
+    path:null, status:'wip', roles:['qa','director','admin'],
+    phase:1, phaseLabel:'Quality Core', complexity:'M', daysEstimate:4, startWeek:3,
+    dependencies:['deviation-mgr'],
+    dbTables:['capas'],
+    apiEndpoints:['GET /capas','POST /capas','PATCH /capas/:capaId'],
+    frontendPages:['docs/qa/capas.html'],
+    aiFeatures:['Effectiveness prediction','Similar CAPA search','Auto-suggest preventive actions'] },
+
+  { id:'change-control', title:'Change Control', desc:'Cross-functional impact assessment, regulatory classification (Type IA/IB/II), implementation tracking, closure.',
+    path:null, status:'planned', roles:['qa','regulatory','validation','engineering','msat'],
+    phase:1, phaseLabel:'Quality Core', complexity:'L', daysEstimate:7, startWeek:4,
+    dependencies:['deviation-mgr','capa-tracker'],
+    dbTables:['change_controls'],
+    apiEndpoints:['POST /change-controls','GET /change-controls','GET /change-controls/:ccId','PUT /change-controls/:ccId','POST /change-controls/:ccId/approve'],
+    frontendPages:['docs/qa/change-control.html'],
+    aiFeatures:['Auto-assess cross-functional impact','Suggest regulatory classification','Generate implementation checklist','Identify affected SOPs'] },
+
+  { id:'doc-control', title:'Document Control', desc:'SOP lifecycle: draft, review, approve, distribute, train, retire. Version control, periodic review scheduling.',
+    path:null, status:'planned', roles:['qa','admin'],
+    phase:1, phaseLabel:'Quality Core', complexity:'L', daysEstimate:6, startWeek:5,
+    dependencies:['builder','change-control'],
+    dbTables:['controlled_documents','document_reviews'],
+    apiEndpoints:['POST /documents','GET /documents','PUT /documents/:docId','POST /documents/:docId/review','POST /documents/:docId/approve'],
+    frontendPages:['docs/qa/documents.html'],
+    aiFeatures:['Auto-detect documents needing review','Suggest updates from deviations/CAPAs','Periodic review reminders'] },
+
+  { id:'batch-disposition', title:'Batch Disposition', desc:'Batch record review queue, QA release checklist, QP certification. AI-powered review by exception.',
+    path:null, status:'planned', roles:['qa','director'],
+    phase:1, phaseLabel:'Quality Core', complexity:'M', daysEstimate:5, startWeek:6,
+    dependencies:['capa-tracker','qa-centre'],
+    dbTables:['batch_dispositions'],
+    apiEndpoints:['POST /dispositions','GET /dispositions','PUT /dispositions/:id','POST /dispositions/:id/release'],
+    frontendPages:['docs/qa/dispositions.html'],
+    aiFeatures:['AI pre-screen batch records','Flag anomalies','Generate review summary','QP release checklist'] },
+
+  { id:'supplier-quality', title:'Supplier Quality', desc:'Supplier qualification, quality agreements, audit scheduling, performance scorecards, approved supplier list.',
+    path:null, status:'planned', roles:['qa'],
+    phase:1, phaseLabel:'Quality Core', complexity:'M', daysEstimate:4, startWeek:6,
+    dependencies:['deviation-mgr'],
+    dbTables:['suppliers','supplier_audits','quality_agreements'],
+    apiEndpoints:['POST /suppliers','GET /suppliers','PUT /suppliers/:id','GET /suppliers/:id/scorecard'],
+    frontendPages:['docs/qa/suppliers.html'],
+    aiFeatures:['Performance trend analysis','Risk scoring','Audit finding tracking'] },
+
+  { id:'complaint-mgr', title:'Complaints & Recalls', desc:'Product complaint intake, investigation, batch linkage, trending, recall execution tracking.',
+    path:null, status:'planned', roles:['qa','director'],
+    phase:1, phaseLabel:'Quality Core', complexity:'L', daysEstimate:6, startWeek:7,
+    dependencies:['deviation-mgr','capa-tracker'],
+    dbTables:['complaints','recall_events'],
+    apiEndpoints:['POST /complaints','GET /complaints','PUT /complaints/:id','POST /recalls','GET /recalls'],
+    frontendPages:['docs/qa/complaints.html'],
+    aiFeatures:['Auto-classify complaint type','Batch linkage','Trend detection','Recall impact assessment'] },
+
+  // ═══ PHASE 2: DAILY OPERATIONS (Weeks 7-10) ═══
+  { id:'shift-handover', title:'Shift Handover', desc:'Structured handover: open batches, pending samples, equipment holds, voice notes from outgoing shift.',
+    path:null, status:'planned', roles:['operator','qa'],
+    phase:2, phaseLabel:'Daily Operations', complexity:'M', daysEstimate:5, startWeek:8,
+    dependencies:['hub'],
+    dbTables:['shift_handovers'],
+    apiEndpoints:['POST /handovers','GET /handovers','GET /handovers/current','POST /handovers/:id/acknowledge'],
+    frontendPages:['docs/operator/handover.html'],
+    aiFeatures:['Auto-summarise shift events','Voice note transcription','Flag unresolved items'] },
+
+  { id:'equip-logbook', title:'Equipment Logbook', desc:'GMP-compliant e-logbook per equipment ID. Usage, cleaning, maintenance, alarms. 21 CFR Part 11 audit trail.',
+    path:null, status:'planned', roles:['operator','engineering'],
+    phase:2, phaseLabel:'Daily Operations', complexity:'M', daysEstimate:5, startWeek:8,
+    dependencies:[],
+    dbTables:['equipment','equipment_log_entries'],
+    apiEndpoints:['POST /equipment','GET /equipment','GET /equipment/:id','POST /equipment/:id/log','GET /equipment/:id/logs'],
+    frontendPages:['docs/operator/equipment.html'],
+    aiFeatures:['Predictive maintenance alerts','Usage pattern analysis','Anomaly detection on alarms'] },
+
+  { id:'equip-status', title:'Equipment Status Board', desc:'Real-time status of all production equipment: available, in-use, cleaning, maintenance, hold.',
+    path:null, status:'planned', roles:['operator','engineering','qa'],
+    phase:2, phaseLabel:'Daily Operations', complexity:'M', daysEstimate:4, startWeek:9,
+    dependencies:['equip-logbook'],
+    dbTables:['equipment'],
+    apiEndpoints:['GET /equipment/status','PUT /equipment/:id/status'],
+    frontendPages:['docs/operator/equipment-status.html'],
+    aiFeatures:['Real-time status tracking','Capacity planning suggestions'] },
+
+  { id:'cleaning-records', title:'Cleaning Records', desc:'Manual and CIP cleaning records. Detergent lot, rinse conductivity, visual inspection, hold time tracking.',
+    path:null, status:'planned', roles:['operator'],
+    phase:2, phaseLabel:'Daily Operations', complexity:'S', daysEstimate:2, startWeek:10,
+    dependencies:['equip-logbook'],
+    dbTables:['cleaning_records'],
+    apiEndpoints:['POST /cleaning','GET /cleaning','GET /cleaning/:equipId'],
+    frontendPages:['docs/operator/cleaning.html'],
+    aiFeatures:['Hold time auto-alerts','Cleaning cycle compliance tracking'] },
+
+  // ═══ PHASE 3: QUALITY CONTROL LAB (Weeks 10-14) ═══
+  { id:'qc-lab', title:'QC Lab Dashboard', desc:'Sample queue, test status, analyst workload, instrument schedule. Priority flagging for batch-critical tests.',
+    path:null, status:'planned', roles:['qc','qa'],
+    phase:3, phaseLabel:'Quality Control Lab', complexity:'L', daysEstimate:7, startWeek:10,
+    dependencies:['equip-logbook'],
+    dbTables:['qc_samples','qc_tests','qc_results','qc_instruments'],
+    apiEndpoints:['POST /qc/samples','GET /qc/samples','POST /qc/results','GET /qc/results','GET /qc/instruments','GET /qc/workload'],
+    frontendPages:['docs/qc/lab.html'],
+    aiFeatures:['Predict turnaround times','Flag anomalous results','Workload optimisation','Auto-priority for batch-critical'] },
+
+  { id:'oos-invest', title:'OOS Investigation', desc:'Phase I (lab checks within 1 day) and Phase II (full-scale). Enforced timeline, cross-batch impact assessment.',
+    path:null, status:'planned', roles:['qc','qa'],
+    phase:3, phaseLabel:'Quality Control Lab', complexity:'L', daysEstimate:6, startWeek:12,
+    dependencies:['deviation-mgr','qc-lab'],
+    dbTables:['oos_investigations'],
+    apiEndpoints:['POST /oos','GET /oos','GET /oos/:id','PUT /oos/:id','POST /oos/:id/escalate'],
+    frontendPages:['docs/qc/oos.html'],
+    aiFeatures:['Suggest assignable causes','Historical OOS trending','Cross-batch impact analysis','Timeline enforcement alerts'] },
+
+  { id:'env-monitoring', title:'Environmental Monitoring', desc:'Viable/non-viable particle trending, EM schedule, excursion alerts, cleanroom status board.',
+    path:null, status:'planned', roles:['qc','qa','operator'],
+    phase:3, phaseLabel:'Quality Control Lab', complexity:'M', daysEstimate:5, startWeek:12,
+    dependencies:['qc-lab'],
+    dbTables:['em_locations','em_readings','em_schedules'],
+    apiEndpoints:['POST /em/readings','GET /em/readings','GET /em/schedule','GET /em/status','GET /em/trends'],
+    frontendPages:['docs/qc/em.html'],
+    aiFeatures:['Trend detection','Seasonal pattern analysis','Excursion prediction','Auto-deviation creation'] },
+
+  { id:'stability', title:'Stability Program', desc:'ICH stability study tracking (25/60, 30/65, 40/75). Pull scheduling, trend analysis, OOT alerts.',
+    path:null, status:'planned', roles:['qc','qa','regulatory'],
+    phase:3, phaseLabel:'Quality Control Lab', complexity:'M', daysEstimate:5, startWeek:13,
+    dependencies:['qc-lab'],
+    dbTables:['stability_studies','stability_pulls','stability_results'],
+    apiEndpoints:['POST /stability/studies','GET /stability/studies','POST /stability/results','GET /stability/trends'],
+    frontendPages:['docs/qc/stability.html'],
+    aiFeatures:['Trend extrapolation','Shelf-life modelling','OOT statistical analysis','Pull schedule optimisation'] },
+
+  // ═══ PHASE 4: BATCH EXECUTION / MES (Weeks 14-22) ═══
+  { id:'batch-exec', title:'Batch Execution', desc:'Step-by-step PBR on iPad/tablet. Enforced sequencing, e-signatures, barcode scanning, auto-calcs.',
+    path:null, status:'planned', roles:['operator'],
+    phase:4, phaseLabel:'Batch Execution / MES', complexity:'XL', daysEstimate:14, startWeek:14,
+    dependencies:['equip-logbook','deviation-mgr'],
+    dbTables:['batch_records','batch_steps','batch_step_entries','batch_materials'],
+    apiEndpoints:['POST /batches','GET /batches','GET /batches/:id','POST /batches/:id/steps/:stepId','POST /batches/:id/sign','GET /batches/:id/status'],
+    frontendPages:['docs/operator/batch.html'],
+    aiFeatures:['Real-time anomaly detection','Auto-populate expected ranges','Deviation auto-creation for OOL','Calculation verification'] },
+
+  { id:'batch-setup', title:'Line Clearance & Setup', desc:'Pre-batch checklist: room clearance, equipment ID verification, material staging, second-person checks.',
+    path:null, status:'planned', roles:['operator'],
+    phase:4, phaseLabel:'Batch Execution / MES', complexity:'M', daysEstimate:5, startWeek:17,
+    dependencies:['batch-exec'],
+    dbTables:['line_clearances'],
+    apiEndpoints:['POST /clearances','GET /clearances','PUT /clearances/:id'],
+    frontendPages:['docs/operator/clearance.html'],
+    aiFeatures:['Checklist completeness verification','Equipment ID validation'] },
+
+  { id:'batch-ipc', title:'In-Process Controls', desc:'Record CPPs in real-time: pH, DO, temp, VCD, viability, glucose, lactate, osmolality. Auto-flag OOL.',
+    path:null, status:'planned', roles:['operator','qc'],
+    phase:4, phaseLabel:'Batch Execution / MES', complexity:'L', daysEstimate:7, startWeek:18,
+    dependencies:['batch-exec','qc-lab'],
+    dbTables:['ipc_readings','ipc_limits'],
+    apiEndpoints:['POST /ipc/readings','GET /ipc/readings/:batchId','GET /ipc/limits','GET /ipc/trends'],
+    frontendPages:['docs/operator/ipc.html'],
+    aiFeatures:['Auto-flag OOL values','Trend analysis','Predictive alerts','Historical comparison'] },
+
+  { id:'batch-sampling', title:'Sampling & Chain of Custody', desc:'Sample collection, labelling, chain of custody to QC. Barcode-tracked, time-stamped.',
+    path:null, status:'planned', roles:['operator','qc'],
+    phase:4, phaseLabel:'Batch Execution / MES', complexity:'M', daysEstimate:5, startWeek:19,
+    dependencies:['batch-exec','qc-lab'],
+    dbTables:['samples','sample_custody'],
+    apiEndpoints:['POST /samples','GET /samples','POST /samples/:id/transfer','GET /samples/:id/chain'],
+    frontendPages:['docs/operator/sampling.html'],
+    aiFeatures:['Barcode validation','Chain of custody tracking','Sample scheduling'] },
+
+  { id:'batch-weight', title:'Weighing & Dispensing', desc:'Material verification by barcode, tare/gross/net auto-calc, yield calculations, tolerance checks.',
+    path:null, status:'planned', roles:['operator'],
+    phase:4, phaseLabel:'Batch Execution / MES', complexity:'M', daysEstimate:5, startWeek:20,
+    dependencies:['batch-exec'],
+    dbTables:['weighing_records'],
+    apiEndpoints:['POST /weighing','GET /weighing/:batchId','POST /weighing/verify'],
+    frontendPages:['docs/operator/weighing.html'],
+    aiFeatures:['Barcode material verification','Auto-calculations','Tolerance alerts','Yield prediction'] },
+
+  { id:'batch-cip', title:'CIP/SIP Records', desc:'Clean-in-place and sterilise-in-place execution records. Cycle params, conductivity, integrity tests.',
+    path:null, status:'planned', roles:['operator','engineering'],
+    phase:4, phaseLabel:'Batch Execution / MES', complexity:'M', daysEstimate:4, startWeek:21,
+    dependencies:['batch-exec','equip-logbook'],
+    dbTables:['cip_sip_records'],
+    apiEndpoints:['POST /cip-sip','GET /cip-sip','GET /cip-sip/:equipId'],
+    frontendPages:['docs/operator/cip-sip.html'],
+    aiFeatures:['Cycle parameter verification','Conductivity trending','Integrity test analysis'] },
+
+  { id:'batch-review', title:'Review by Exception', desc:'AI pre-screens completed batch records. Flags anomalies, missing entries, OOL values. QA reviews exceptions only.',
+    path:null, status:'planned', roles:['qa','operator'],
+    phase:4, phaseLabel:'Batch Execution / MES', complexity:'L', daysEstimate:8, startWeek:21,
+    dependencies:['batch-exec','deviation-mgr'],
+    dbTables:['batch_reviews','batch_exceptions'],
+    apiEndpoints:['POST /reviews/analyse','GET /reviews','GET /reviews/:batchId','PUT /reviews/:batchId/exceptions/:id'],
+    frontendPages:['docs/qa/batch-review.html'],
+    aiFeatures:['Deep batch record AI analysis','Cross-reference SOP requirements','Flag missing entries / OOL / calc errors','Generate review summary','Exception categorisation'] },
+
+  // ═══ PHASE 5: INOCULATION SUITE (Weeks 22-28) ═══
+  { id:'inoc-cell-bank', title:'Cell Bank Management', desc:'MCB/WCB inventory at -150\u00b0C to -196\u00b0C LN2. Vial accounting, location tracking, expiry alerts, chain of custody, certificate of analysis linkage.',
+    path:null, status:'planned', roles:['operator','qa','msat'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'L', daysEstimate:7, startWeek:22,
+    dependencies:['equip-logbook'],
+    dbTables:['cell_banks','cell_bank_vials','cell_bank_transactions'],
+    apiEndpoints:['POST /cell-banks','GET /cell-banks','GET /cell-banks/:id','POST /cell-banks/:id/withdraw','GET /cell-banks/:id/inventory'],
+    frontendPages:['docs/inoc/cell-banks.html'],
+    aiFeatures:['Predict inventory depletion','Suggest rebanking timelines','Expiry alerts'] },
+
+  { id:'inoc-thaw', title:'Cell Thaw & Revival', desc:'WCB thaw protocol execution: 37\u00b0C water bath timing, cryoprotectant removal, post-thaw viability (\u226570% threshold), seeding density calc.',
+    path:null, status:'planned', roles:['operator','msat'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'M', daysEstimate:4, startWeek:23,
+    dependencies:['inoc-cell-bank'],
+    dbTables:['thaw_records'],
+    apiEndpoints:['POST /inoc/thaw','GET /inoc/thaw','GET /inoc/thaw/:id'],
+    frontendPages:['docs/inoc/thaw.html'],
+    aiFeatures:['Timer management','Viability threshold alerts','Seeding density auto-calc'] },
+
+  { id:'inoc-passage', title:'Passage Tracker', desc:'T-flask to shake flask to spinner flask to WAVE bag expansion. Passage number tracking, split ratios, population doubling times, cumulative PDL.',
+    path:null, status:'planned', roles:['operator','msat'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'M', daysEstimate:4, startWeek:24,
+    dependencies:['inoc-thaw'],
+    dbTables:['passage_records'],
+    apiEndpoints:['POST /inoc/passages','GET /inoc/passages','GET /inoc/passages/:runId'],
+    frontendPages:['docs/inoc/passages.html'],
+    aiFeatures:['PDL tracking','Doubling time calculation','Passage limit warnings'] },
+
+  { id:'inoc-seed-train', title:'Seed Train Monitor', desc:'N-3 to N-2 to N-1 bioreactor expansion. Growth kinetics (VCD, viability), metabolite trending (glucose, lactate, glutamine, ammonia).',
+    path:null, status:'planned', roles:['operator','msat','engineering'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'L', daysEstimate:7, startWeek:24,
+    dependencies:['inoc-passage'],
+    dbTables:['seed_train_runs','seed_train_readings'],
+    apiEndpoints:['POST /inoc/seed-train','GET /inoc/seed-train','GET /inoc/seed-train/:id','POST /inoc/seed-train/:id/readings'],
+    frontendPages:['docs/inoc/seed-train.html'],
+    aiFeatures:['Growth curve prediction','Metabolite consumption modelling','Scale-up readiness scoring','Anomaly detection'] },
+
+  { id:'inoc-media-prep', title:'Inoc Media & Feeds', desc:'Media warming, supplement addition, sterility testing, hold time tracking, media lot traceability.',
+    path:null, status:'planned', roles:['operator'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'S', daysEstimate:3, startWeek:25,
+    dependencies:[],
+    dbTables:['media_prep_records'],
+    apiEndpoints:['POST /inoc/media','GET /inoc/media'],
+    frontendPages:['docs/inoc/media.html'],
+    aiFeatures:['Hold time alerts','Lot traceability'] },
+
+  { id:'inoc-qc-checks', title:'Inoculation QC', desc:'Cell counts (Cedex HiRes / Vi-CELL), viability trending, mycoplasma PCR, sterility, identity confirmation, adventitious agent panel.',
+    path:null, status:'planned', roles:['operator','qc','msat'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'M', daysEstimate:5, startWeek:26,
+    dependencies:['inoc-seed-train','qc-lab'],
+    dbTables:['inoc_qc_results'],
+    apiEndpoints:['POST /inoc/qc','GET /inoc/qc','GET /inoc/qc/:runId'],
+    frontendPages:['docs/inoc/qc.html'],
+    aiFeatures:['Viability trending','Automated pass/fail','Historical comparison'] },
+
+  { id:'inoc-scaleup', title:'Scale-up Decision Gate', desc:'Go/no-go criteria at each expansion stage. Min viability (\u226590%), target VCD, doubling time within range, passage limit check.',
+    path:null, status:'planned', roles:['operator','msat','qa'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'M', daysEstimate:5, startWeek:26,
+    dependencies:['inoc-seed-train','inoc-qc-checks'],
+    dbTables:['scaleup_decisions'],
+    apiEndpoints:['POST /inoc/scaleup','GET /inoc/scaleup','POST /inoc/scaleup/:id/decide'],
+    frontendPages:['docs/inoc/scaleup.html'],
+    aiFeatures:['Confidence scoring on go/no-go','Historical outcome analysis','Risk assessment'] },
+
+  { id:'inoc-contam', title:'Contamination Control', desc:'EM monitoring for inoc suite, bioburden trending, gowning compliance, decontamination protocols.',
+    path:null, status:'planned', roles:['operator','qa','qc'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'M', daysEstimate:4, startWeek:27,
+    dependencies:['env-monitoring'],
+    dbTables:['inoc_em_records'],
+    apiEndpoints:['POST /inoc/em','GET /inoc/em','GET /inoc/em/trends'],
+    frontendPages:['docs/inoc/contam.html'],
+    aiFeatures:['Bioburden trend detection','Excursion alerts','Gowning compliance tracking'] },
+
+  { id:'inoc-incubator', title:'Incubator Management', desc:'CO2 incubator logbooks: temp, CO2, humidity. Alarm history, calibration status, preventive maintenance, capacity planning.',
+    path:null, status:'planned', roles:['operator','engineering'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'S', daysEstimate:3, startWeek:27,
+    dependencies:['equip-logbook'],
+    dbTables:['incubator_logs'],
+    apiEndpoints:['POST /inoc/incubators','GET /inoc/incubators','POST /inoc/incubators/:id/log'],
+    frontendPages:['docs/inoc/incubators.html'],
+    aiFeatures:['Parameter trending','Alarm pattern analysis','Capacity planning'] },
+
+  { id:'inoc-handoff', title:'Production Inoculation', desc:'Final transfer to production bioreactor. Inoculum volume calc, aseptic transfer protocol, pre-inoculation bioreactor readiness checklist.',
+    path:null, status:'planned', roles:['operator','msat'],
+    phase:5, phaseLabel:'Inoculation Suite', complexity:'M', daysEstimate:4, startWeek:28,
+    dependencies:['inoc-scaleup','batch-exec'],
+    dbTables:['production_inoculations'],
+    apiEndpoints:['POST /inoc/production','GET /inoc/production','GET /inoc/production/:id'],
+    frontendPages:['docs/inoc/production.html'],
+    aiFeatures:['Inoculum volume calculation','Readiness checklist verification'] },
+
+  // ═══ PHASE 6: PROCESS OPERATIONS (Weeks 28-36) ═══
+  // Upstream
+  { id:'us-bioreactor', title:'Bioreactor Dashboard', desc:'Live bioreactor status: pH, DO, temp, agitation, feed volumes, gas overlay. Fed-batch and perfusion modes.',
+    path:null, status:'planned', roles:['operator','msat','engineering'],
+    phase:6, phaseLabel:'Process Operations', complexity:'XL', daysEstimate:10, startWeek:28,
+    dependencies:['batch-exec','inoc-handoff'],
+    dbTables:['bioreactors','bioreactor_readings','bioreactor_events'],
+    apiEndpoints:['POST /bioreactors','GET /bioreactors','GET /bioreactors/:id','POST /bioreactors/:id/readings','GET /bioreactors/:id/trends'],
+    frontendPages:['docs/process/bioreactors.html'],
+    aiFeatures:['Anomaly detection','Predictive excursion alerts','Optimal feed strategy','Process parameter modelling'] },
+
+  { id:'us-media-prep', title:'Media & Buffer Prep', desc:'Recipe execution for media, feeds, buffers. Component verification, pH adjustment, filter integrity, hold times.',
+    path:null, status:'planned', roles:['operator'],
+    phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:4, startWeek:30,
+    dependencies:['batch-exec'],
+    dbTables:['media_buffer_records'],
+    apiEndpoints:['POST /media-prep','GET /media-prep','GET /media-prep/:id'],
+    frontendPages:['docs/process/media-prep.html'],
+    aiFeatures:['Recipe compliance verification','Hold time alerts','Component verification'] },
+
+  { id:'us-perfusion', title:'Perfusion Monitor', desc:'ATF filter status, cell bleed tracking, perfusion rate, harvest collection. Daily operator checklist for 30-60 day runs.',
+    path:null, status:'planned', roles:['operator','msat'],
+    phase:6, phaseLabel:'Process Operations', complexity:'L', daysEstimate:6, startWeek:30,
+    dependencies:['us-bioreactor'],
+    dbTables:['perfusion_records','perfusion_readings'],
+    apiEndpoints:['POST /perfusion','GET /perfusion','GET /perfusion/:id','POST /perfusion/:id/readings'],
+    frontendPages:['docs/process/perfusion.html'],
+    aiFeatures:['Filter lifespan prediction','Cell bleed optimisation','Perfusion rate trending'] },
+
+  { id:'us-harvest', title:'Harvest & Clarification', desc:'Centrifugation, depth filtration, 0.2um filtration. Turbidity, yield, hold time tracking.',
+    path:null, status:'planned', roles:['operator'],
+    phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:5, startWeek:31,
+    dependencies:['us-bioreactor'],
+    dbTables:['harvest_records'],
+    apiEndpoints:['POST /harvest','GET /harvest','GET /harvest/:id'],
+    frontendPages:['docs/process/harvest.html'],
+    aiFeatures:['Yield prediction','Turbidity trending','Hold time alerts'] },
+
+  // Downstream
+  { id:'ds-chrom', title:'Chromatography', desc:'Protein A capture, CEX/AEX polish steps. Column packing, HETP/asymmetry, load/wash/elute execution.',
+    path:null, status:'planned', roles:['operator','msat'],
+    phase:6, phaseLabel:'Process Operations', complexity:'L', daysEstimate:7, startWeek:31,
+    dependencies:['us-harvest'],
+    dbTables:['chrom_runs','chrom_columns'],
+    apiEndpoints:['POST /chrom','GET /chrom','GET /chrom/:id','GET /chrom/columns'],
+    frontendPages:['docs/process/chrom.html'],
+    aiFeatures:['Chromatogram analysis','Column lifetime prediction','Step yield calculation','HETP/asymmetry monitoring'] },
+
+  { id:'ds-viral', title:'Viral Clearance', desc:'Low pH inactivation hold timer, viral filtration (Planova/Viresolve), filter integrity pre/post-use.',
+    path:null, status:'planned', roles:['operator','qa'],
+    phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:5, startWeek:33,
+    dependencies:['ds-chrom'],
+    dbTables:['viral_clearance_records'],
+    apiEndpoints:['POST /viral-clearance','GET /viral-clearance','GET /viral-clearance/:id'],
+    frontendPages:['docs/process/viral.html'],
+    aiFeatures:['pH hold timer management','Filter integrity tracking','Compliance verification'] },
+
+  { id:'ds-ufdf', title:'UF/DF Operations', desc:'Ultrafiltration/diafiltration: concentration, buffer exchange. TMP, flux, diavolume tracking.',
+    path:null, status:'planned', roles:['operator'],
+    phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:4, startWeek:33,
+    dependencies:['ds-viral'],
+    dbTables:['ufdf_records'],
+    apiEndpoints:['POST /ufdf','GET /ufdf','GET /ufdf/:id'],
+    frontendPages:['docs/process/ufdf.html'],
+    aiFeatures:['TMP/flux trending','Diavolume tracking','Membrane lifetime prediction'] },
+
+  { id:'ds-buffer-prep', title:'DS Buffer Prep', desc:'Downstream buffer and solution preparation. Recipe execution, pH/conductivity verification, hold times.',
+    path:null, status:'planned', roles:['operator'],
+    phase:6, phaseLabel:'Process Operations', complexity:'S', daysEstimate:3, startWeek:33,
+    dependencies:[],
+    dbTables:['ds_buffer_records'],
+    apiEndpoints:['POST /ds-buffers','GET /ds-buffers'],
+    frontendPages:['docs/process/ds-buffers.html'],
+    aiFeatures:['Recipe compliance','Hold time alerts'] },
+
+  { id:'ds-column-qual', title:'Column Qualification', desc:'Column packing records, HETP/asymmetry acceptance, lifetime tracking (cycles), repack scheduling.',
+    path:null, status:'planned', roles:['operator','validation','msat'],
+    phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:4, startWeek:34,
+    dependencies:['ds-chrom','equip-logbook'],
+    dbTables:['column_qualifications'],
+    apiEndpoints:['POST /columns/qualify','GET /columns','GET /columns/:id/history'],
+    frontendPages:['docs/process/columns.html'],
+    aiFeatures:['Lifetime prediction','Repack scheduling','Performance trending'] },
+
+  // Drug Product
+  { id:'dp-formulation', title:'Formulation & Pooling', desc:'Drug substance pooling, excipient addition, final concentration adjustment, sterile filtration.',
+    path:null, status:'planned', roles:['operator'],
+    phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:4, startWeek:34,
+    dependencies:['ds-ufdf'],
+    dbTables:['formulation_records'],
+    apiEndpoints:['POST /formulation','GET /formulation','GET /formulation/:id'],
+    frontendPages:['docs/process/formulation.html'],
+    aiFeatures:['Concentration calculations','Excipient verification','Sterile filtration tracking'] },
+
+  { id:'dp-filling', title:'Aseptic Fill', desc:'Sterile filling operations: vials, syringes, cartridges. Line speed, fill weight, intervention log.',
+    path:null, status:'planned', roles:['operator'],
+    phase:6, phaseLabel:'Process Operations', complexity:'L', daysEstimate:7, startWeek:34,
+    dependencies:['dp-formulation','env-monitoring'],
+    dbTables:['fill_records','fill_interventions'],
+    apiEndpoints:['POST /filling','GET /filling','GET /filling/:id','POST /filling/:id/intervention'],
+    frontendPages:['docs/process/filling.html'],
+    aiFeatures:['Fill weight statistical analysis','Intervention categorisation','Line speed optimisation'] },
+
+  { id:'dp-lyo', title:'Lyophilisation', desc:'Freeze-dry cycle execution and monitoring. Shelf temp, chamber pressure, product temp, cycle completion.',
+    path:null, status:'planned', roles:['operator'],
+    phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:5, startWeek:35,
+    dependencies:['dp-filling'],
+    dbTables:['lyo_records','lyo_readings'],
+    apiEndpoints:['POST /lyo','GET /lyo','GET /lyo/:id','POST /lyo/:id/readings'],
+    frontendPages:['docs/process/lyo.html'],
+    aiFeatures:['Cycle monitoring','End-point detection','Parameter trending'] },
+
+  { id:'dp-vi', title:'Visual Inspection', desc:'Manual and automated visual inspection. Accept/reject tracking, defect classification, AQL trending.',
+    path:null, status:'planned', roles:['operator','qc'],
+    phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:5, startWeek:36,
+    dependencies:['dp-filling'],
+    dbTables:['vi_records','vi_defects'],
+    apiEndpoints:['POST /vi','GET /vi','GET /vi/:batchId','GET /vi/trends'],
+    frontendPages:['docs/process/vi.html'],
+    aiFeatures:['Defect classification','AQL trending','Reject rate analysis'] },
+
+  { id:'dp-packaging', title:'Packaging & Labelling', desc:'Secondary packaging, label reconciliation, serialisation, shipping preparation.',
+    path:null, status:'planned', roles:['operator','supply_chain'],
+    phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:4, startWeek:36,
+    dependencies:['dp-vi'],
+    dbTables:['packaging_records','label_reconciliation'],
+    apiEndpoints:['POST /packaging','GET /packaging','POST /packaging/:id/reconcile'],
+    frontendPages:['docs/process/packaging.html'],
+    aiFeatures:['Label reconciliation verification','Serialisation tracking'] },
+
+  // ═══ PHASE 7: SUPPORT FUNCTIONS (Weeks 36-43) ═══
+  { id:'maintenance', title:'Maintenance Hub', desc:'Work order queue, preventive/predictive schedule, equipment history, spare parts inventory.',
+    path:null, status:'planned', roles:['engineering'],
+    phase:7, phaseLabel:'Support Functions', complexity:'M', daysEstimate:5, startWeek:36,
+    dependencies:['equip-logbook'],
+    dbTables:['work_orders','maintenance_schedules','spare_parts'],
+    apiEndpoints:['POST /maintenance/orders','GET /maintenance/orders','GET /maintenance/schedule','PUT /maintenance/orders/:id'],
+    frontendPages:['docs/engineering/maintenance.html'],
+    aiFeatures:['Predictive maintenance scheduling','Spare parts forecasting','Work order prioritisation'] },
+
+  { id:'calibration', title:'Calibration Tracker', desc:'Instrument calibration schedule, out-of-tolerance alerts, certificates, deviation linkage.',
+    path:null, status:'planned', roles:['engineering'],
+    phase:7, phaseLabel:'Support Functions', complexity:'M', daysEstimate:4, startWeek:37,
+    dependencies:['equip-logbook'],
+    dbTables:['calibrations','calibration_schedules'],
+    apiEndpoints:['POST /calibrations','GET /calibrations','GET /calibrations/schedule','GET /calibrations/:equipId'],
+    frontendPages:['docs/engineering/calibration.html'],
+    aiFeatures:['OOT alerts','Schedule optimisation','Deviation auto-linkage'] },
+
+  { id:'facilities', title:'Facilities & Utilities', desc:'HVAC, WFI, purified water, clean steam, compressed air. Status, alerts, trending, sampling schedule.',
+    path:null, status:'planned', roles:['engineering'],
+    phase:7, phaseLabel:'Support Functions', complexity:'L', daysEstimate:7, startWeek:37,
+    dependencies:[],
+    dbTables:['utility_readings','utility_alerts'],
+    apiEndpoints:['POST /facilities/readings','GET /facilities/status','GET /facilities/trends','GET /facilities/alerts'],
+    frontendPages:['docs/engineering/facilities.html'],
+    aiFeatures:['Utility trend analysis','Alert prediction','Sampling schedule optimisation'] },
+
+  { id:'production-plan', title:'Production Schedule', desc:'Batch campaign planning, suite allocation, material availability, resource scheduling.',
+    path:null, status:'planned', roles:['supply_chain','operator','director'],
+    phase:7, phaseLabel:'Support Functions', complexity:'L', daysEstimate:7, startWeek:38,
+    dependencies:['batch-exec'],
+    dbTables:['production_campaigns','suite_allocations'],
+    apiEndpoints:['POST /production/campaigns','GET /production/schedule','PUT /production/campaigns/:id'],
+    frontendPages:['docs/supply/schedule.html'],
+    aiFeatures:['Resource optimisation','Bottleneck prediction','Campaign scheduling suggestions'] },
+
+  { id:'warehouse', title:'Warehouse & Materials', desc:'Goods receipt, material status (quarantine/released/rejected), cold chain, dispensing records.',
+    path:null, status:'planned', roles:['supply_chain'],
+    phase:7, phaseLabel:'Support Functions', complexity:'M', daysEstimate:5, startWeek:39,
+    dependencies:[],
+    dbTables:['materials','material_transactions','goods_receipts'],
+    apiEndpoints:['POST /warehouse/receipt','GET /warehouse/materials','PUT /warehouse/materials/:id/status','GET /warehouse/inventory'],
+    frontendPages:['docs/supply/warehouse.html'],
+    aiFeatures:['Inventory forecasting','Cold chain monitoring','Expiry alerts'] },
+
+  { id:'ehs-dashboard', title:'EHS Dashboard', desc:'Safety metrics (TRIR), incident log, near-miss reporting, permit tracking, chemical safety.',
+    path:null, status:'planned', roles:['ehs','director','admin'],
+    phase:7, phaseLabel:'Support Functions', complexity:'M', daysEstimate:5, startWeek:40,
+    dependencies:[],
+    dbTables:['ehs_incidents','ehs_permits','ehs_metrics'],
+    apiEndpoints:['POST /ehs/incidents','GET /ehs/incidents','GET /ehs/metrics','GET /ehs/permits'],
+    frontendPages:['docs/ehs/dashboard.html'],
+    aiFeatures:['Safety trend analysis','Near-miss pattern detection','Risk scoring'] },
+
+  { id:'incident-report', title:'Incident Reporter', desc:'Safety incident capture. Voice or text, auto-classification, investigation workflow.',
+    path:null, status:'planned', roles:['ehs','operator','engineering'],
+    phase:7, phaseLabel:'Support Functions', complexity:'S', daysEstimate:3, startWeek:40,
+    dependencies:[],
+    dbTables:['ehs_incidents'],
+    apiEndpoints:['POST /ehs/report'],
+    frontendPages:['docs/ehs/report.html'],
+    aiFeatures:['Auto-classification','Voice input','Investigation routing'] },
+
+  { id:'reg-intelligence', title:'Regulatory Intelligence', desc:'Change impact classification (Type IA/IB/II), submission tracker, MA status, variation management.',
+    path:null, status:'planned', roles:['regulatory','qa'],
+    phase:7, phaseLabel:'Support Functions', complexity:'M', daysEstimate:5, startWeek:41,
+    dependencies:['change-control'],
+    dbTables:['regulatory_submissions','marketing_authorisations'],
+    apiEndpoints:['POST /regulatory/submissions','GET /regulatory/submissions','GET /regulatory/ma-status'],
+    frontendPages:['docs/regulatory/intelligence.html'],
+    aiFeatures:['Impact classification','Submission tracking','Variation management suggestions'] },
+
+  { id:'apqr', title:'Annual Product Review', desc:'Auto-aggregated APR/PQR: batch data, deviations, stability, CAPAs, complaints. AI draft narrative.',
+    path:null, status:'planned', roles:['regulatory','qa','director'],
+    phase:7, phaseLabel:'Support Functions', complexity:'L', daysEstimate:7, startWeek:41,
+    dependencies:['deviation-mgr','capa-tracker','stability','complaint-mgr','change-control'],
+    dbTables:['apqr_reports'],
+    apiEndpoints:['POST /apqr/generate','GET /apqr','GET /apqr/:id'],
+    frontendPages:['docs/regulatory/apqr.html'],
+    aiFeatures:['Full narrative generation','Cross-module data aggregation','Trend identification','Year-over-year comparison'] },
+
+  { id:'training-matrix', title:'Training Matrix', desc:'Role-based training assignments, SOP revision retraining cascades, compliance status, effectiveness tracking.',
+    path:null, status:'planned', roles:['training','qa','admin'],
+    phase:7, phaseLabel:'Support Functions', complexity:'M', daysEstimate:5, startWeek:42,
+    dependencies:['doc-control'],
+    dbTables:['training_assignments','training_completions'],
+    apiEndpoints:['POST /training/assign','GET /training/matrix','GET /training/compliance','PUT /training/:id/complete'],
+    frontendPages:['docs/training/matrix.html'],
+    aiFeatures:['Auto-generate requirements from SOP changes','Training gap identification','Compliance forecasting'] },
+
+  { id:'training-assess', title:'Competency Assessment', desc:'AI-generated assessments from SOPs. Scenario-based, not just read-and-understand. Measures real comprehension.',
+    path:null, status:'planned', roles:['training','qa'],
+    phase:7, phaseLabel:'Support Functions', complexity:'L', daysEstimate:7, startWeek:42,
+    dependencies:['training-matrix'],
+    dbTables:['assessments','assessment_results','question_pools'],
+    apiEndpoints:['POST /assessments/generate','GET /assessments','POST /assessments/:id/submit','GET /assessments/:id/results'],
+    frontendPages:['docs/training/assess.html'],
+    aiFeatures:['AI question generation from SOPs','Free-text answer evaluation','Adaptive difficulty','Scenario simulation','Comprehension scoring'] },
+
+  { id:'data-integrity', title:'Data Integrity', desc:'ALCOA+ compliance dashboard. Audit trail monitoring, anomaly detection, electronic record review.',
+    path:null, status:'planned', roles:['it','qa','admin'],
+    phase:7, phaseLabel:'Support Functions', complexity:'M', daysEstimate:5, startWeek:43,
+    dependencies:[],
+    dbTables:['di_reviews'],
+    apiEndpoints:['GET /data-integrity/dashboard','GET /data-integrity/anomalies','GET /data-integrity/audit-review'],
+    frontendPages:['docs/admin/data-integrity.html'],
+    aiFeatures:['ALCOA+ compliance scoring','Audit trail anomaly detection','Electronic record review','Data integrity trending'] },
+
+  // ═══ PHASE 8: ANALYTICS & LEADERSHIP (Weeks 43-46) ═══
+  { id:'cpv-dashboard', title:'CPV Dashboard', desc:'Continued process verification. CPP/CQA control charts, Nelson rules, process capability (Cpk), alert triggers.',
+    path:null, status:'planned', roles:['msat','qa','director'],
+    phase:8, phaseLabel:'Analytics & Leadership', complexity:'XL', daysEstimate:10, startWeek:43,
+    dependencies:['batch-exec','qc-lab'],
+    dbTables:['cpv_parameters','cpv_readings','cpv_alerts'],
+    apiEndpoints:['POST /cpv/parameters','GET /cpv/dashboard','GET /cpv/charts/:paramId','GET /cpv/capability','GET /cpv/alerts'],
+    frontendPages:['docs/msat/cpv.html'],
+    aiFeatures:['Control chart analysis (X-bar, R, CUSUM, EWMA)','Nelson rules detection','Cpk/Ppk calculation','Process drift prediction','Trend narrative generation'] },
+
+  { id:'tech-transfer', title:'Tech Transfer', desc:'New product introduction: protocol tracker, comparability studies, gap analysis, site readiness.',
+    path:null, status:'planned', roles:['msat','qa','validation'],
+    phase:8, phaseLabel:'Analytics & Leadership', complexity:'M', daysEstimate:5, startWeek:44,
+    dependencies:[],
+    dbTables:['tech_transfers','tt_protocols'],
+    apiEndpoints:['POST /tech-transfer','GET /tech-transfer','GET /tech-transfer/:id'],
+    frontendPages:['docs/msat/tech-transfer.html'],
+    aiFeatures:['Gap analysis','Comparability assessment','Site readiness scoring'] },
+
+  { id:'val-tracker', title:'Validation Tracker', desc:'IQ/OQ/PQ protocol status, equipment qualification, requalification schedule, CSV register.',
+    path:null, status:'planned', roles:['validation','qa','engineering'],
+    phase:8, phaseLabel:'Analytics & Leadership', complexity:'M', daysEstimate:5, startWeek:44,
+    dependencies:['equip-logbook'],
+    dbTables:['validation_protocols','validation_activities'],
+    apiEndpoints:['POST /validation','GET /validation','GET /validation/schedule','PUT /validation/:id'],
+    frontendPages:['docs/validation/tracker.html'],
+    aiFeatures:['Requalification scheduling','Protocol completeness checks','CSV compliance tracking'] },
+
+  { id:'audit-mgr', title:'Audit Manager', desc:'Internal audit schedule, finding tracker, inspection readiness score, CAPA follow-through.',
+    path:null, status:'planned', roles:['qa','director','admin'],
+    phase:8, phaseLabel:'Analytics & Leadership', complexity:'M', daysEstimate:5, startWeek:45,
+    dependencies:['deviation-mgr','capa-tracker'],
+    dbTables:['audits','audit_findings'],
+    apiEndpoints:['POST /audits','GET /audits','GET /audits/:id','POST /audits/:id/findings','GET /audits/readiness'],
+    frontendPages:['docs/qa/audits.html'],
+    aiFeatures:['Inspection readiness scoring','Finding trending','CAPA follow-through tracking','Audit scheduling optimisation'] },
+
+  { id:'opex', title:'Operational Excellence', desc:'Lean/Six Sigma project board, OEE tracking, Kaizen event log, value stream maps.',
+    path:null, status:'planned', roles:['director','admin'],
+    phase:8, phaseLabel:'Analytics & Leadership', complexity:'M', daysEstimate:4, startWeek:46,
+    dependencies:['analytics'],
+    dbTables:['opex_projects','kaizen_events'],
+    apiEndpoints:['POST /opex/projects','GET /opex/projects','GET /opex/oee','POST /opex/kaizen'],
+    frontendPages:['docs/management/opex.html'],
+    aiFeatures:['OEE calculation','Bottleneck identification','Kaizen opportunity detection','Value stream analysis'] },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE & PERSISTENCE
+// ═══════════════════════════════════════════════════════════════════
+var STORAGE_KEY = 'vent_project_v1';
+var activeFilters = { status:{ live:true, wip:true, planned:true }, complexity:{ S:true, M:true, L:true, XL:true }, phase:null };
+var searchQuery = '';
+var currentView = 'gantt';
+
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveProgress(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function getModuleProgress(id) { return (loadProgress()[id] || {}).progress || 0; }
+function setModuleProgress(id, pct) {
+  var data = loadProgress();
+  if (!data[id]) data[id] = {};
+  data[id].progress = pct;
+  if (pct === 100 && !data[id].completedAt) data[id].completedAt = new Date().toISOString();
+  if (pct > 0 && !data[id].startedAt) data[id].startedAt = new Date().toISOString();
+  if (pct < 100) data[id].completedAt = null;
+  saveProgress(data);
+}
+
+function getModuleById(id) { return MODULES.find(function(m) { return m.id === id; }); }
+function getPhaseById(id) { return PHASES.find(function(p) { return p.id === id; }); }
+function getPhaseColor(phase) { if (phase === 0) return '#00b894'; var p = getPhaseById(phase); return p ? p.color : '#555'; }
+
+function isModuleVisible(m) {
+  if (!activeFilters.status[m.status]) return false;
+  if (m.complexity !== '-' && !activeFilters.complexity[m.complexity]) return false;
+  if (activeFilters.phase !== null && m.phase !== activeFilters.phase) return false;
+  if (searchQuery) {
+    var q = searchQuery.toLowerCase();
+    return m.title.toLowerCase().indexOf(q) !== -1 || m.desc.toLowerCase().indexOf(q) !== -1 || m.id.toLowerCase().indexOf(q) !== -1;
+  }
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════════════════
+function renderStats() {
+  var live = MODULES.filter(function(m) { return m.status === 'live'; }).length;
+  var wip = MODULES.filter(function(m) { return m.status === 'wip'; }).length;
+  var planned = MODULES.filter(function(m) { return m.status === 'planned'; }).length;
+  var totalDays = MODULES.reduce(function(s, m) { return s + m.daysEstimate; }, 0);
+  var completedDays = MODULES.reduce(function(s, m) { return s + Math.round(m.daysEstimate * getModuleProgress(m.id) / 100); }, 0);
+  var overallPct = totalDays > 0 ? Math.round(completedDays / totalDays * 100) : 0;
+
+  document.getElementById('statsBar').innerHTML =
+    '<div class="stat"><strong style="color:var(--green)">' + live + '</strong> live</div>' +
+    '<div class="stat"><strong style="color:var(--gold)">' + wip + '</strong> wip</div>' +
+    '<div class="stat"><strong style="color:var(--blue)">' + planned + '</strong> planned</div>' +
+    '<div class="stat-divider"></div>' +
+    '<div class="stat"><strong style="color:var(--white)">' + MODULES.length + '</strong> total</div>' +
+    '<div class="stat"><strong style="color:var(--white)">' + totalDays + '</strong> est. days</div>' +
+    '<div class="stat-divider"></div>' +
+    '<div class="stat"><strong style="color:var(--accent)">' + overallPct + '%</strong> complete</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PHASE LEGEND
+// ═══════════════════════════════════════════════════════════════════
+function renderPhaseLegend() {
+  var html = '<span class="phase-pill' + (activeFilters.phase === null ? ' active' : '') + '" style="color:var(--text);background:var(--surface2)" onclick="filterPhase(null)">All</span>';
+  html += '<span class="phase-pill' + (activeFilters.phase === 0 ? ' active' : '') + '" style="color:var(--green);background:#00b89415" onclick="filterPhase(0)">Live (13)</span>';
+  PHASES.forEach(function(p) {
+    var count = MODULES.filter(function(m) { return m.phase === p.id; }).length;
+    html += '<span class="phase-pill' + (activeFilters.phase === p.id ? ' active' : '') + '" style="color:' + p.color + ';background:' + p.color + '15" onclick="filterPhase(' + p.id + ')">' + p.label + ' (' + count + ')</span>';
+  });
+  document.getElementById('phaseLegend').innerHTML = html;
+}
+
+function filterPhase(phase) {
+  activeFilters.phase = phase;
+  renderPhaseLegend();
+  renderCurrentView();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════════
+function toggleFilter(btn) {
+  btn.classList.toggle('active');
+  var type = btn.dataset.filter;
+  var val = btn.dataset.value;
+  activeFilters[type][val] = !activeFilters[type][val];
+  renderCurrentView();
+}
+
+function applyFilters() {
+  searchQuery = document.getElementById('searchBox').value;
+  renderCurrentView();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GANTT VIEW
+// ═══════════════════════════════════════════════════════════════════
+function renderGantt() {
+  var container = document.getElementById('view-gantt');
+  var totalWeeks = 46;
+
+  // Header
+  var html = '<div class="gantt-container"><div class="gantt">';
+  html += '<div class="gantt-header"><div class="gantt-header-label">Module</div>';
+  for (var w = 1; w <= totalWeeks; w++) {
+    var isMonth = w === 1 || w === 5 || w === 9 || w === 13 || w === 18 || w === 22 || w === 26 || w === 31 || w === 35 || w === 39 || w === 44;
+    html += '<div class="gantt-week' + (isMonth ? ' month-start' : '') + '">W' + w + '</div>';
+  }
+  html += '</div>';
+
+  // Group by phase
+  var phases = [{ id:0, label:'Live (Built)', color:'#00b894' }].concat(PHASES);
+  phases.forEach(function(phase) {
+    var mods = MODULES.filter(function(m) { return m.phase === phase.id && isModuleVisible(m); });
+    if (mods.length === 0) return;
+
+    // Phase header row
+    html += '<div class="gantt-phase-row">';
+    html += '<div class="gantt-phase-label"><span class="phase-dot" style="background:' + phase.color + '"></span>' + phase.label + ' <span style="color:var(--text3);font-weight:400;font-size:.6rem">(' + mods.length + ')</span></div>';
+    html += '<div class="gantt-phase-bg"></div></div>';
+
+    // Module rows
+    mods.forEach(function(m) {
+      var progress = getModuleProgress(m.id);
+      var statusIcon = m.status === 'live' ? '\u2705' : m.status === 'wip' ? '\ud83d\udfe1' : '\u26aa';
+      var complexityColor = m.complexity === 'S' ? 'var(--green)' : m.complexity === 'M' ? 'var(--gold)' : m.complexity === 'L' ? 'var(--orange)' : m.complexity === 'XL' ? 'var(--red)' : 'var(--text4)';
+
+      html += '<div class="gantt-row" onclick="openDetail(\'' + m.id + '\')">';
+      html += '<div class="gantt-module-label">';
+      html += '<span class="status-icon">' + statusIcon + '</span>';
+      if (m.complexity !== '-') html += '<span class="complexity-dot" style="background:' + complexityColor + '" title="' + m.complexity + '"></span>';
+      html += m.title + '</div>';
+      html += '<div class="gantt-timeline" style="position:relative">';
+
+      // Gridlines
+      for (var w = 1; w <= totalWeeks; w++) {
+        var isMonth = w === 5 || w === 9 || w === 13 || w === 18 || w === 22 || w === 26 || w === 31 || w === 35 || w === 39 || w === 44;
+        var left = ((w - 1) / totalWeeks * 100);
+        html += '<div class="gantt-gridline' + (isMonth ? ' month' : '') + '" style="left:' + left + '%"></div>';
+      }
+
+      // Bar
+      if (m.startWeek > 0) {
+        var durationWeeks = Math.max(1, Math.ceil(m.daysEstimate / 5));
+        var barLeft = ((m.startWeek - 1) / totalWeeks * 100);
+        var barWidth = (durationWeeks / totalWeeks * 100);
+        html += '<div class="gantt-bar status-' + m.status + '" style="left:' + barLeft + '%;width:' + barWidth + '%;background:' + phase.color + '" title="' + m.title + ' (W' + m.startWeek + '-W' + (m.startWeek + durationWeeks - 1) + ', ' + m.daysEstimate + 'd)">';
+        if (progress > 0) html += '<div class="gantt-progress" style="width:' + progress + '%"></div>';
+        html += '<span style="position:relative;z-index:2">' + (barWidth > 4 ? m.title : '') + '</span>';
+        html += '</div>';
+      } else if (m.status === 'live') {
+        // Live modules — show as completed bars at week 0
+        html += '<div class="gantt-bar status-live" style="left:0%;width:2%;background:var(--green);opacity:.8" title="' + m.title + ' (Live)">';
+        html += '<div class="gantt-progress" style="width:100%"></div>';
+        html += '</div>';
+      }
+
+      html += '</div></div>';
+    });
+  });
+
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BOARD VIEW
+// ═══════════════════════════════════════════════════════════════════
+function renderBoard() {
+  var container = document.getElementById('view-board');
+  var html = '<div class="board">';
+
+  var phases = [{ id:0, label:'Live (Built)', color:'#00b894' }].concat(PHASES);
+  phases.forEach(function(phase) {
+    var mods = MODULES.filter(function(m) { return m.phase === phase.id && isModuleVisible(m); });
+    if (mods.length === 0) return;
+
+    html += '<div class="board-column">';
+    html += '<div class="board-col-header"><div class="board-col-title"><span class="phase-dot" style="background:' + phase.color + '"></span>' + phase.label + '</div>';
+    html += '<span class="board-col-count">' + mods.length + '</span></div>';
+    html += '<div class="board-col-body">';
+
+    mods.forEach(function(m) {
+      var progress = getModuleProgress(m.id);
+      html += '<div class="board-card" onclick="openDetail(\'' + m.id + '\')">';
+      html += '<div class="board-card-top">';
+      html += '<span class="badge badge-' + m.status + '">' + m.status + '</span>';
+      if (m.complexity !== '-') html += '<span class="badge badge-' + m.complexity.toLowerCase() + '">' + m.complexity + '</span>';
+      html += '</div>';
+      html += '<div class="board-card-title">' + m.title + '</div>';
+      html += '<div class="board-card-desc">' + m.desc + '</div>';
+      if (progress > 0) {
+        html += '<div style="margin-top:.3rem"><div class="progress-bar-bg" style="height:4px"><div class="progress-bar-fill" style="width:' + progress + '%;background:' + phase.color + '"></div></div></div>';
+      }
+      html += '<div class="board-card-meta">';
+      if (m.daysEstimate > 0) html += '<span>' + m.daysEstimate + 'd</span>';
+      if (m.startWeek > 0) html += '<span>W' + m.startWeek + '</span>';
+      if (m.aiFeatures.length > 0) html += '<span>AI: ' + m.aiFeatures.length + '</span>';
+      if (m.apiEndpoints.length > 0) html += '<span>API: ' + m.apiEndpoints.length + '</span>';
+      html += '</div></div>';
+    });
+
+    html += '</div></div>';
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REGISTRY VIEW
+// ═══════════════════════════════════════════════════════════════════
+function renderRegistry() {
+  var container = document.getElementById('view-registry');
+  var visible = MODULES.filter(isModuleVisible);
+
+  var html = '<div class="registry"><table class="registry-table"><thead><tr>';
+  html += '<th>Status</th><th>Module</th><th>Phase</th><th>Size</th><th>Days</th><th>Week</th><th>Tables</th><th>APIs</th><th>AI</th><th>Deps</th><th>Progress</th>';
+  html += '</tr></thead><tbody>';
+
+  visible.forEach(function(m) {
+    var progress = getModuleProgress(m.id);
+    var phaseColor = getPhaseColor(m.phase);
+    html += '<tr onclick="openDetail(\'' + m.id + '\')">';
+    html += '<td><span class="badge badge-' + m.status + '">' + m.status + '</span></td>';
+    html += '<td style="color:var(--white);font-weight:600">' + m.title + '</td>';
+    html += '<td style="color:' + phaseColor + ';font-size:.6rem">' + m.phaseLabel + '</td>';
+    html += '<td>' + (m.complexity !== '-' ? '<span class="badge badge-' + m.complexity.toLowerCase() + '">' + m.complexity + '</span>' : '-') + '</td>';
+    html += '<td>' + (m.daysEstimate || '-') + '</td>';
+    html += '<td>' + (m.startWeek > 0 ? 'W' + m.startWeek : '-') + '</td>';
+    html += '<td style="font-size:.6rem">' + m.dbTables.length + '</td>';
+    html += '<td style="font-size:.6rem">' + m.apiEndpoints.length + '</td>';
+    html += '<td style="font-size:.6rem">' + m.aiFeatures.length + '</td>';
+    html += '<td style="font-size:.6rem">' + m.dependencies.length + '</td>';
+    html += '<td><div class="progress-bar-bg" style="height:4px;width:60px"><div class="progress-bar-fill" style="width:' + progress + '%;background:' + phaseColor + '"></div></div></td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PROGRESS VIEW
+// ═══════════════════════════════════════════════════════════════════
+function renderProgress() {
+  var container = document.getElementById('view-progress');
+
+  // Overall progress
+  var totalDays = MODULES.reduce(function(s, m) { return s + m.daysEstimate; }, 0);
+  var html = '<div class="progress-view">';
+  html += '<div class="progress-overall">';
+  html += '<div class="progress-overall-title">Overall Platform Progress</div>';
+  html += '<div class="progress-overall-bar">';
+
+  var allPhases = [{ id:0, label:'Live', color:'#00b894' }].concat(PHASES);
+  allPhases.forEach(function(phase) {
+    var phaseMods = MODULES.filter(function(m) { return m.phase === phase.id; });
+    var phaseDays = phaseMods.reduce(function(s, m) { return s + m.daysEstimate; }, 0);
+    var phaseComplete = phaseMods.reduce(function(s, m) { return s + Math.round(m.daysEstimate * getModuleProgress(m.id) / 100); }, 0);
+    var widthPct = totalDays > 0 ? (phaseDays / totalDays * 100) : 0;
+    var fillPct = phaseDays > 0 ? (phaseComplete / phaseDays * 100) : 0;
+    html += '<div class="progress-segment" style="width:' + widthPct + '%;background:' + phase.color + ';opacity:' + (fillPct > 0 ? '1' : '.25') + '" title="' + phase.label + ': ' + Math.round(fillPct) + '%"></div>';
+  });
+
+  html += '</div>';
+
+  var completedMods = MODULES.filter(function(m) { return getModuleProgress(m.id) === 100; }).length;
+  var inProgressMods = MODULES.filter(function(m) { var p = getModuleProgress(m.id); return p > 0 && p < 100; }).length;
+  html += '<div class="progress-overall-stats">';
+  html += '<div class="stat"><strong style="color:var(--green)">' + completedMods + '</strong> completed</div>';
+  html += '<div class="stat"><strong style="color:var(--gold)">' + inProgressMods + '</strong> in progress</div>';
+  html += '<div class="stat"><strong style="color:var(--blue)">' + (MODULES.length - completedMods - inProgressMods) + '</strong> remaining</div>';
+  html += '</div></div>';
+
+  // Per-phase progress cards
+  html += '<div class="progress-grid">';
+  allPhases.forEach(function(phase) {
+    var phaseMods = MODULES.filter(function(m) { return m.phase === phase.id; });
+    if (phaseMods.length === 0) return;
+    var totalPhaseDays = phaseMods.reduce(function(s, m) { return s + m.daysEstimate; }, 0);
+    var completePhaseDays = phaseMods.reduce(function(s, m) { return s + Math.round(m.daysEstimate * getModuleProgress(m.id) / 100); }, 0);
+    var phasePct = totalPhaseDays > 0 ? Math.round(completePhaseDays / totalPhaseDays * 100) : (phaseMods.every(function(m) { return m.status === 'live'; }) ? 100 : 0);
+    var doneCount = phaseMods.filter(function(m) { return getModuleProgress(m.id) === 100 || m.status === 'live'; }).length;
+
+    html += '<div class="progress-card">';
+    html += '<div class="progress-card-title"><span class="phase-dot" style="background:' + phase.color + '"></span>' + phase.label + '</div>';
+    html += '<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:' + phasePct + '%;background:' + phase.color + '"></div></div>';
+    html += '<div class="progress-stats">';
+    html += '<span><strong>' + phasePct + '%</strong></span>';
+    html += '<span><strong>' + doneCount + '/' + phaseMods.length + '</strong> modules</span>';
+    if (totalPhaseDays > 0) html += '<span><strong>' + totalPhaseDays + '</strong> est. days</span>';
+    html += '</div>';
+
+    // Module list within card
+    html += '<div style="margin-top:.5rem;display:flex;flex-direction:column;gap:.2rem">';
+    phaseMods.forEach(function(m) {
+      var mp = getModuleProgress(m.id);
+      var isLive = m.status === 'live';
+      html += '<div style="display:flex;align-items:center;gap:.35rem;font-size:.6rem;cursor:pointer;padding:.15rem 0" onclick="event.stopPropagation();openDetail(\'' + m.id + '\')">';
+      html += '<div class="progress-bar-bg" style="height:3px;width:40px;flex-shrink:0"><div class="progress-bar-fill" style="width:' + (isLive ? 100 : mp) + '%;background:' + phase.color + '"></div></div>';
+      html += '<span style="color:' + (isLive || mp === 100 ? 'var(--green)' : mp > 0 ? 'var(--gold)' : 'var(--text3)') + '">' + m.title + '</span>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODULE DETAIL PANEL
+// ═══════════════════════════════════════════════════════════════════
+function openDetail(moduleId) {
+  var m = getModuleById(moduleId);
+  if (!m) return;
+
+  var progress = getModuleProgress(m.id);
+  var phaseColor = getPhaseColor(m.phase);
+  var panel = document.getElementById('detailPanel');
+
+  var html = '<div class="detail-header">';
+  html += '<div class="detail-header-left">';
+  html += '<div class="detail-id">' + m.id + ' &middot; Phase ' + m.phase + ' &middot; ' + m.phaseLabel + '</div>';
+  html += '<div class="detail-title">' + m.title + '</div>';
+  html += '<div class="detail-desc">' + m.desc + '</div>';
+  html += '</div>';
+  html += '<button class="detail-close" onclick="closeDetail()">&times;</button>';
+  html += '</div>';
+
+  html += '<div class="detail-body">';
+
+  // Status & Meta
+  html += '<div class="detail-section">';
+  html += '<div class="detail-section-title">Overview</div>';
+  html += '<div class="detail-meta">';
+  html += '<div class="detail-meta-item"><div class="detail-meta-label">Status</div><div class="detail-meta-value"><span class="badge badge-' + m.status + '">' + m.status + '</span></div></div>';
+  html += '<div class="detail-meta-item"><div class="detail-meta-label">Complexity</div><div class="detail-meta-value">' + (m.complexity !== '-' ? '<span class="badge badge-' + m.complexity.toLowerCase() + '">' + m.complexity + '</span>' : 'N/A') + '</div></div>';
+  html += '<div class="detail-meta-item"><div class="detail-meta-label">Estimate</div><div class="detail-meta-value">' + (m.daysEstimate > 0 ? m.daysEstimate + ' days' : 'Built') + '</div></div>';
+  html += '<div class="detail-meta-item"><div class="detail-meta-label">Start Week</div><div class="detail-meta-value">' + (m.startWeek > 0 ? 'W' + m.startWeek : 'Complete') + '</div></div>';
+  html += '</div></div>';
+
+  // Progress
+  if (m.status !== 'live') {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Progress</div>';
+    html += '<div class="detail-progress">';
+    html += '<div class="detail-progress-header"><span style="font-size:.65rem;color:var(--text3)">Completion</span><span class="detail-progress-pct" id="progressPct">' + progress + '%</span></div>';
+    html += '<input type="range" min="0" max="100" step="5" value="' + progress + '" oninput="updateProgress(\'' + m.id + '\', this.value)">';
+    html += '</div>';
+    html += '<div class="progress-bar-bg" style="margin-top:.35rem"><div class="progress-bar-fill" id="progressBar" style="width:' + progress + '%;background:' + phaseColor + '"></div></div>';
+    html += '</div>';
+  }
+
+  // Roles
+  html += '<div class="detail-section">';
+  html += '<div class="detail-section-title">Roles</div>';
+  html += '<div class="detail-tags">';
+  m.roles.forEach(function(r) {
+    html += '<span class="detail-tag" style="background:var(--accent-dim);color:var(--accent)">' + r + '</span>';
+  });
+  html += '</div></div>';
+
+  // Dependencies
+  if (m.dependencies.length > 0) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Dependencies (' + m.dependencies.length + ')</div>';
+    html += '<div class="detail-deps">';
+    m.dependencies.forEach(function(depId) {
+      var dep = getModuleById(depId);
+      if (!dep) {
+        html += '<div class="detail-dep"><span class="dep-status" style="background:var(--text4)"></span>' + depId + ' (external)</div>';
+        return;
+      }
+      var depColor = dep.status === 'live' ? 'var(--green)' : dep.status === 'wip' ? 'var(--gold)' : 'var(--blue)';
+      html += '<div class="detail-dep" onclick="event.stopPropagation();openDetail(\'' + dep.id + '\')"><span class="dep-status" style="background:' + depColor + '"></span>' + dep.title + ' <span class="badge badge-' + dep.status + '" style="margin-left:auto">' + dep.status + '</span></div>';
+    });
+    html += '</div></div>';
+  }
+
+  // Dependents (what depends on this)
+  var dependents = MODULES.filter(function(other) { return other.dependencies.indexOf(m.id) !== -1; });
+  if (dependents.length > 0) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Unlocks (' + dependents.length + ')</div>';
+    html += '<div class="detail-deps">';
+    dependents.forEach(function(dep) {
+      var depColor = dep.status === 'live' ? 'var(--green)' : dep.status === 'wip' ? 'var(--gold)' : 'var(--blue)';
+      html += '<div class="detail-dep" onclick="event.stopPropagation();openDetail(\'' + dep.id + '\')"><span class="dep-status" style="background:' + depColor + '"></span>' + dep.title + ' <span style="color:var(--text4);font-size:.55rem;margin-left:auto">Phase ' + dep.phase + '</span></div>';
+    });
+    html += '</div></div>';
+  }
+
+  // Database Tables
+  if (m.dbTables.length > 0) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Database Tables (' + m.dbTables.length + ')</div>';
+    html += '<ul class="detail-list">';
+    m.dbTables.forEach(function(t) { html += '<li>' + t + '</li>'; });
+    html += '</ul></div>';
+  }
+
+  // API Endpoints
+  if (m.apiEndpoints.length > 0) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">API Endpoints (' + m.apiEndpoints.length + ')</div>';
+    html += '<ul class="detail-list">';
+    m.apiEndpoints.forEach(function(e) {
+      var parts = e.split(' ');
+      var method = parts[0];
+      var path = parts.slice(1).join(' ');
+      var methodColor = method === 'GET' ? 'var(--green)' : method === 'POST' ? 'var(--blue)' : method === 'PUT' || method === 'PATCH' ? 'var(--gold)' : 'var(--red)';
+      html += '<li><span style="color:' + methodColor + ';font-weight:700">' + method + '</span> ' + path + '</li>';
+    });
+    html += '</ul></div>';
+  }
+
+  // Frontend Pages
+  if (m.frontendPages.length > 0) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Frontend Pages</div>';
+    html += '<ul class="detail-list">';
+    m.frontendPages.forEach(function(p) { html += '<li>' + p + '</li>'; });
+    html += '</ul></div>';
+  }
+
+  // AI Features
+  if (m.aiFeatures.length > 0) {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">AI Features (' + m.aiFeatures.length + ')</div>';
+    html += '<div class="detail-tags">';
+    m.aiFeatures.forEach(function(f) {
+      html += '<span class="detail-tag" style="background:#6c5ce715;color:var(--accent)">' + f + '</span>';
+    });
+    html += '</div></div>';
+  }
+
+  // Agent Spec button (for non-live modules)
+  if (m.status !== 'live') {
+    html += '<div class="detail-section">';
+    html += '<div class="detail-section-title">Agent Deployment</div>';
+    html += '<div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin-bottom:.4rem">';
+    html += '<div class="round-module-branch"><code>feature/' + m.id + '</code></div>';
+    html += '</div>';
+    html += '<button class="spec-copy-btn" style="width:100%;padding:.5rem;font-size:.7rem" onclick="event.stopPropagation();openSpec(\'' + m.id + '\')">Generate Agent Spec</button>';
+    html += '</div>';
+  }
+
+  html += '</div>'; // detail-body
+  panel.innerHTML = html;
+  document.getElementById('detailOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function updateProgress(moduleId, value) {
+  var pct = parseInt(value, 10);
+  setModuleProgress(moduleId, pct);
+  var pctEl = document.getElementById('progressPct');
+  var barEl = document.getElementById('progressBar');
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (barEl) barEl.style.width = pct + '%';
+  renderStats();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ROUND CALCULATION — Topological sort by dependencies
+// ═══════════════════════════════════════════════════════════════════
+var ROUNDS = [];
+
+function calculateRounds() {
+  ROUNDS = [];
+  var assigned = {};
+  var AGENTS_PER_ROUND = 5;
+
+  // Live modules are "round 0" — already done
+  MODULES.forEach(function(m) {
+    if (m.status === 'live') assigned[m.id] = 0;
+  });
+
+  for (var r = 1; r <= 30; r++) {
+    // Find modules whose deps are ALL in previous rounds
+    var eligible = MODULES.filter(function(m) {
+      if (assigned[m.id] !== undefined) return false;
+      if (m.status === 'live') return false;
+      return m.dependencies.every(function(depId) {
+        return assigned[depId] !== undefined;
+      });
+    });
+
+    if (eligible.length === 0) break;
+
+    // Sort eligible: by phase (earlier first), then by number of dependents (more unlocks first)
+    eligible.sort(function(a, b) {
+      if (a.phase !== b.phase) return a.phase - b.phase;
+      var aDeps = MODULES.filter(function(m) { return m.dependencies.indexOf(a.id) !== -1; }).length;
+      var bDeps = MODULES.filter(function(m) { return m.dependencies.indexOf(b.id) !== -1; }).length;
+      return bDeps - aDeps;
+    });
+
+    var batch = eligible.slice(0, AGENTS_PER_ROUND);
+    batch.forEach(function(m) { assigned[m.id] = r; });
+
+    var totalDays = batch.reduce(function(s, m) { return s + m.daysEstimate; }, 0);
+    var maxDays = Math.max.apply(null, batch.map(function(m) { return m.daysEstimate; }));
+    ROUNDS.push({
+      number: r,
+      modules: batch,
+      totalDays: totalDays,
+      parallelDays: maxDays,
+      agentCount: batch.length
+    });
+  }
+
+  // Assign round number to each module for lookup
+  MODULES.forEach(function(m) {
+    m._round = assigned[m.id] || 0;
+  });
+
+  return ROUNDS;
+}
+
+function getModuleRound(id) {
+  var m = getModuleById(id);
+  return m ? (m._round || 0) : 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ROUNDS VIEW
+// ═══════════════════════════════════════════════════════════════════
+function renderRounds() {
+  var container = document.getElementById('view-rounds');
+  calculateRounds();
+
+  var totalParallelDays = ROUNDS.reduce(function(s, r) { return s + r.parallelDays; }, 0);
+  var totalSequentialDays = ROUNDS.reduce(function(s, r) { return s + r.totalDays; }, 0);
+
+  var html = '<div class="rounds-view">';
+
+  // Info card
+  html += '<div class="rounds-info">';
+  html += '<div class="rounds-info-title">Multi-Agent Build Strategy</div>';
+  html += '<div class="rounds-info-desc">';
+  html += 'Deploy up to <strong style="color:var(--accent)">5 agents in parallel</strong> per round, each on its own git branch. ';
+  html += 'You act as tech lead — write specs, review output, merge to main.<br><br>';
+  html += '<strong style="color:var(--white)">' + ROUNDS.length + ' rounds</strong> total &middot; ';
+  html += '<strong style="color:var(--green)">' + totalParallelDays + ' days</strong> parallel (wall clock) vs ';
+  html += '<strong style="color:var(--text3)">' + totalSequentialDays + ' days</strong> sequential &middot; ';
+  html += '<strong style="color:var(--gold)">' + Math.round((1 - totalParallelDays / totalSequentialDays) * 100) + '% faster</strong> with agents';
+  html += '</div></div>';
+
+  // Round cards
+  ROUNDS.forEach(function(round) {
+    var phaseColors = {};
+    round.modules.forEach(function(m) { phaseColors[m.phase] = getPhaseColor(m.phase); });
+    var colorList = Object.keys(phaseColors).map(function(k) { return phaseColors[k]; });
+
+    html += '<div class="round-card">';
+    html += '<div class="round-header">';
+    html += '<div class="round-title"><span class="round-num">R' + round.number + '</span> Round ' + round.number + '</div>';
+    html += '<div class="round-meta">';
+    html += '<span><strong style="color:var(--white)">' + round.agentCount + '</strong> agents</span>';
+    html += '<span><strong style="color:var(--green)">' + round.parallelDays + 'd</strong> wall clock</span>';
+    html += '<span>' + round.totalDays + 'd total effort</span>';
+    html += '</div></div>';
+
+    html += '<div class="round-body">';
+    round.modules.forEach(function(m, idx) {
+      var phaseColor = getPhaseColor(m.phase);
+      var progress = getModuleProgress(m.id);
+      html += '<div class="round-module" onclick="openDetail(\'' + m.id + '\')" style="border-top:2px solid ' + phaseColor + '">';
+      html += '<div class="round-module-top">';
+      html += '<span class="badge badge-' + m.complexity.toLowerCase() + '">' + m.complexity + '</span>';
+      html += '<span style="font-size:.55rem;color:' + phaseColor + '">' + m.phaseLabel + '</span>';
+      html += '</div>';
+      html += '<div class="round-module-title">' + m.title + '</div>';
+      html += '<div class="round-module-desc">' + m.desc + '</div>';
+      html += '<div class="round-module-branch"><span style="color:var(--text4)">Agent ' + (idx + 1) + ':</span> <code>feature/' + m.id + '</code></div>';
+      html += '<div class="round-module-stats">';
+      html += '<span>' + m.daysEstimate + 'd</span>';
+      html += '<span>API: ' + m.apiEndpoints.length + '</span>';
+      html += '<span>AI: ' + m.aiFeatures.length + '</span>';
+      html += '<span>Tables: ' + m.dbTables.length + '</span>';
+      html += '</div>';
+      if (progress > 0) {
+        html += '<div style="margin-top:.3rem"><div class="progress-bar-bg" style="height:3px"><div class="progress-bar-fill" style="width:' + progress + '%;background:' + phaseColor + '"></div></div></div>';
+      }
+      html += '<button class="spec-copy-btn" style="width:100%;margin-top:.4rem;padding:.3rem;font-size:.6rem" onclick="event.stopPropagation();openSpec(\'' + m.id + '\')">Copy Agent Spec</button>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  // Merge checklist
+  html += '<div class="rounds-info" style="margin-top:1rem">';
+  html += '<div class="rounds-info-title">Merge Checklist (per round)</div>';
+  html += '<div class="rounds-info-desc" style="font-family:\'JetBrains Mono\',monospace;font-size:.6rem">';
+  html += '1. Each agent delivers on its feature branch<br>';
+  html += '2. Review: no conflicts with main, auth/role checks correct<br>';
+  html += '3. Verify: new routes don\'t clash, shared code untouched<br>';
+  html += '4. Merge to main one branch at a time<br>';
+  html += '5. Add CREATE TABLE to server/routes/admin.js<br>';
+  html += '6. Wire new service + mount routes in server/index.js<br>';
+  html += '7. Test each module independently, then integration<br>';
+  html += '8. Update module status in project board';
+  html += '</div></div>';
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AGENT SPEC GENERATOR
+// ═══════════════════════════════════════════════════════════════════
+function generateAgentSpec(moduleId) {
+  var m = getModuleById(moduleId);
+  if (!m) return '';
+
+  var deps = m.dependencies.map(function(depId) {
+    var dep = getModuleById(depId);
+    return dep ? dep.title + ' (' + dep.status + ')' : depId;
+  });
+
+  var spec = '';
+  spec += '# Module: ' + m.title + '\n';
+  spec += '# Branch: feature/' + m.id + '\n';
+  spec += '# Phase: ' + m.phase + ' — ' + m.phaseLabel + '\n';
+  spec += '# Complexity: ' + m.complexity + ' (' + m.daysEstimate + ' days)\n';
+  spec += '\n';
+  spec += '## What to build\n';
+  spec += m.desc + '\n';
+  spec += '\n';
+  spec += '## Files to create\n';
+  m.frontendPages.forEach(function(p) { spec += '- ' + p + ' (frontend page)\n'; });
+  spec += '- server/services/' + m.id.replace(/-/g, '-') + '.service.js (service layer)\n';
+  spec += '- server/routes/' + m.id.replace(/-/g, '-') + '.js (API routes)\n';
+  spec += '\n';
+
+  if (m.dbTables.length > 0) {
+    spec += '## Database Tables\n';
+    spec += 'Add to server/routes/admin.js:\n';
+    m.dbTables.forEach(function(t) { spec += '- CREATE TABLE IF NOT EXISTS ' + t + ' (...)\n'; });
+    spec += '\n';
+  }
+
+  if (m.apiEndpoints.length > 0) {
+    spec += '## API Endpoints\n';
+    m.apiEndpoints.forEach(function(e) { spec += '- ' + e + '\n'; });
+    spec += '\n';
+  }
+
+  spec += '## Role Access\n';
+  spec += m.roles.join(', ') + '\n';
+  spec += '\n';
+
+  if (m.aiFeatures.length > 0) {
+    spec += '## AI Features\n';
+    m.aiFeatures.forEach(function(f) { spec += '- ' + f + '\n'; });
+    spec += '\n';
+  }
+
+  if (deps.length > 0) {
+    spec += '## Dependencies\n';
+    deps.forEach(function(d) { spec += '- ' + d + '\n'; });
+    spec += '\n';
+  }
+
+  spec += '## Reference Pages (copy patterns from)\n';
+  spec += '- docs/qa/qa.html (layout pattern — split panel with list + detail)\n';
+  spec += '- server/services/capa.service.js (service factory pattern)\n';
+  spec += '- server/routes/capa.js (route pattern with auth guards)\n';
+  spec += '- server/lib/ids.js (add ID generator, e.g. ' + m.id.replace(/-.*/, '') + 'Id())\n';
+  spec += '- server/lib/audit.js (use auditLog for all mutations)\n';
+  spec += '\n';
+  spec += '## Architecture Rules\n';
+  spec += '- DO NOT modify existing files except:\n';
+  spec += '  - server/routes/admin.js (add CREATE TABLE)\n';
+  spec += '  - server/index.js (wire service + mount routes)\n';
+  spec += '  - server/lib/ids.js (add ID generator)\n';
+  spec += '- Follow the service factory pattern: module.exports = function make___Service({ supabase, auditLog, anthropic }) { ... }\n';
+  spec += '- Use requireAuth and requireRole() middleware on all routes\n';
+  spec += '- Use auditLog() for all create/update/delete operations\n';
+  spec += '- Frontend: include shared/styles.css, shared/nav.js, shared/i18n.js\n';
+  spec += '- Frontend: use authFetch() for all API calls\n';
+  spec += '- Frontend: follow dark theme (--bg, --surface, --accent CSS vars)\n';
+  spec += '- Frontend: split-panel layout (list left, detail right)\n';
+  spec += '- No frameworks — vanilla HTML/CSS/JS only\n';
+  spec += '- 21 CFR Part 11 compliant: immutable audit trail, e-signatures where needed\n';
+
+  return spec;
+}
+
+function openSpec(moduleId) {
+  var spec = generateAgentSpec(moduleId);
+  var m = getModuleById(moduleId);
+  document.getElementById('specTitle').textContent = 'Agent Spec — ' + m.title;
+  document.getElementById('specContent').textContent = spec;
+  document.getElementById('specOverlay').classList.add('active');
+}
+
+function closeSpec() {
+  document.getElementById('specOverlay').classList.remove('active');
+}
+
+function copySpec() {
+  var text = document.getElementById('specContent').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.querySelector('.spec-copy-btn');
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.background = 'var(--green)';
+    btn.style.color = '#000';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(function() {
+      btn.textContent = orig;
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 1500);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// VIEW SWITCHING
+// ═══════════════════════════════════════════════════════════════════
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.view-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.view === view); });
+  document.querySelectorAll('.view').forEach(function(v) { v.classList.toggle('active', v.id === 'view-' + view); });
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  if (currentView === 'gantt') renderGantt();
+  else if (currentView === 'board') renderBoard();
+  else if (currentView === 'registry') renderRegistry();
+  else if (currentView === 'progress') renderProgress();
+  else if (currentView === 'rounds') renderRounds();
+  renderStats();
+}
+
+document.getElementById('viewTabs').addEventListener('click', function(e) {
+  var tab = e.target.closest('.view-tab');
+  if (tab) switchView(tab.dataset.view);
+});
+
+// Keyboard shortcut: Escape closes detail/spec
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { closeDetail(); closeSpec(); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT — Mark live modules as 100% complete
+// ═══════════════════════════════════════════════════════════════════
+(function init() {
+  MODULES.forEach(function(m) {
+    if (m.status === 'live') setModuleProgress(m.id, 100);
+  });
+  renderPhaseLegend();
+  renderCurrentView();
+})();
+</script>
+</body>
+</html>
