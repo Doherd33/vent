@@ -147,6 +147,7 @@ const PAGE_MAP = {
   'handover.html':    'operator/handover.html',
   'cleaning.html':    'operator/cleaning.html',
   'dev.html':         'dev.html',
+  'project.html':     'project.html',
 };
 Object.entries(PAGE_MAP).forEach(([urlSlug, filePath]) => {
   app.get(`/${urlSlug}`, (req, res) => {
