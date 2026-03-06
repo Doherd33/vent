@@ -32,9 +32,13 @@ const vapiRoutes     = require('./routes/vapi');
 const feedbackRoutes        = require('./routes/feedback');
 const deviationRoutes       = require('./routes/deviation-mgr');
 const equipLogbookRoutes    = require('./routes/equip-logbook');
+const equipStatusRoutes     = require('./routes/equip-status');
 const inocIncubatorRoutes   = require('./routes/inoc-incubator');
 const mediaPrepRoutes       = require('./routes/us-media-prep');
 const trainingMatrixRoutes  = require('./routes/training-matrix');
+const shiftHandoverRoutes   = require('./routes/shift-handover');
+const supplierQualityRoutes = require('./routes/supplier-quality');
+const cleaningRecordsRoutes = require('./routes/cleaning-records');
 
 // ── Middleware modules ─────────────────────────────────────────────────────────
 const requestLogger = require('./middleware/request-logger');
@@ -48,9 +52,13 @@ const makeChatService        = require('./services/chat.service');
 const makeVoiceService          = require('./services/voice.service');
 const makeDeviationService      = require('./services/deviation-mgr.service');
 const makeEquipLogbookService   = require('./services/equip-logbook.service');
+const { makeEquipStatusService } = require('./services/equip-status.service');
 const makeIncubatorService      = require('./services/inoc-incubator.service');
 const makeMediaPrepService      = require('./services/us-media-prep.service');
 const makeTrainingMatrixService = require('./services/training-matrix.service');
+const { makeShiftHandoverService } = require('./services/shift-handover.service');
+const { makeSupplierQualityService } = require('./services/supplier-quality.service');
+const { makeCleaningRecordsService } = require('./services/cleaning-records.service');
 const makeSubmissionPipeline    = require('./graphs/submission-pipeline');
 
 // ── App + shared clients ──────────────────────────────────────────────────────
@@ -130,9 +138,14 @@ const PAGE_MAP = {
   'login.html':       'auth/login.html',
   'deviations.html':  'qa/deviations.html',
   'equipment.html':   'operator/equipment.html',
+  'equipment-status.html': 'operator/equipment-status.html',
   'incubators.html':  'inoc/incubators.html',
   'media-prep.html':  'process/media-prep.html',
   'training.html':    'training/matrix.html',
+  'suppliers.html':   'qa/suppliers.html',
+  'capas.html':       'qa/capas.html',
+  'handover.html':    'operator/handover.html',
+  'cleaning.html':    'operator/cleaning.html',
   'dev.html':         'dev.html',
 };
 Object.entries(PAGE_MAP).forEach(([urlSlug, filePath]) => {
@@ -194,14 +207,18 @@ const chatService        = makeChatService({ supabase, anthropic });
 const voiceService          = makeVoiceService({ anthropic, rag, elevenLabsApiKey: config.elevenLabsApiKey });
 const deviationService      = makeDeviationService({ supabase, auditLog, anthropic });
 const equipLogbookService   = makeEquipLogbookService({ supabase, auditLog, anthropic });
+const equipStatusService    = makeEquipStatusService({ supabase, auditLog, anthropic });
 const incubatorService      = makeIncubatorService({ supabase, auditLog, anthropic });
 const mediaPrepService      = makeMediaPrepService({ supabase, auditLog, anthropic });
 const trainingMatrixService = makeTrainingMatrixService({ supabase, auditLog, anthropic });
+const supplierQualityService = makeSupplierQualityService({ supabase, auditLog, anthropic });
+const shiftHandoverService  = makeShiftHandoverService({ supabase, auditLog, anthropic });
+const cleaningRecordsService = makeCleaningRecordsService({ supabase, auditLog, anthropic });
 
 // ── Mount all route modules ───────────────────────────────────────────────────
 const deps = { supabase, anthropic, auditLog, rag, auth, gdpImage, getVoyageClient, buildContactsContext,
                submissionService, sopService, capaService, chatService, voiceService,
-               deviationService, equipLogbookService, incubatorService, mediaPrepService, trainingMatrixService };
+               deviationService, equipLogbookService, equipStatusService, incubatorService, mediaPrepService, trainingMatrixService, supplierQualityService, shiftHandoverService, cleaningRecordsService };
 authRoutes(app, deps);
 adminRoutes(app, deps);
 submitRoutes(app, deps);
@@ -214,10 +231,14 @@ voiceRoutes(app, deps);
 vapiRoutes(app, deps);
 feedbackRoutes(app, deps);
 deviationRoutes(app, deps);
+equipStatusRoutes(app, deps);
 equipLogbookRoutes(app, deps);
 inocIncubatorRoutes(app, deps);
 mediaPrepRoutes(app, deps);
 trainingMatrixRoutes(app, deps);
+supplierQualityRoutes(app, deps);
+shiftHandoverRoutes(app, deps);
+cleaningRecordsRoutes(app, deps);
 
 // ── Centralised error handler (must be last) ──────────────────────────────────
 app.use(errorHandler);

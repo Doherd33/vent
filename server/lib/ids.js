@@ -72,4 +72,29 @@ function trainingId() {
   return 'TRN-' + Math.floor(1000 + Math.random() * 8999);
 }
 
-module.exports = { submissionRef, capaId, equipId, equipLogId, signoffId, deviationId, inocId, inocLogId, inocAlarmId, inocCalId, inocMntId, mediaPrepId, trainingId };
+/** SUP-1000 … SUP-9999 */
+function supplierId() {
+  return 'SUP-' + Math.floor(1000 + Math.random() * 8999);
+}
+
+/** SAUD-1000 … SAUD-9999 */
+function supplierAuditId() {
+  return 'SAUD-' + Math.floor(1000 + Math.random() * 8999);
+}
+
+/** QAG-1000 … QAG-9999 */
+function qualityAgreementId() {
+  return 'QAG-' + Math.floor(1000 + Math.random() * 8999);
+}
+
+/** HO-1000 … HO-9999 */
+function handoverId() {
+  return 'HO-' + Math.floor(1000 + Math.random() * 8999);
+}
+
+/** CLN-1000 … CLN-9999 */
+function cleaningId() {
+  return 'CLN-' + Math.floor(1000 + Math.random() * 8999);
+}
+
+module.exports = { submissionRef, capaId, equipId, equipLogId, signoffId, deviationId, inocId, inocLogId, inocAlarmId, inocCalId, inocMntId, mediaPrepId, trainingId, supplierId, supplierAuditId, qualityAgreementId, handoverId, cleaningId };

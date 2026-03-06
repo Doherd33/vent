@@ -5,15 +5,79 @@
  *
  * Owns CAPA lifecycle and analytics:
  *   - Notification CRUD
- *   - CAPA tracking (create, update, list)
+ *   - CAPA tracking (create, update, list, get by ID)
+ *   - Effectiveness verification
+ *   - Dashboard stats
+ *   - AI: similar CAPAs, preventive action suggestions, effectiveness prediction
  *   - Director dashboard analytics aggregation
  *
  * Routes should call these functions and handle only HTTP concerns.
  */
 
 const ids = require('../lib/ids');
+const parseClaudeJson = require('../lib/parse-claude-json');
 
-function makeCapaService({ supabase, auditLog }) {
+// ── AI Prompt Templates ─────────────────────────────────────────────────────
+
+const SIMILAR_CAPAS_PROMPT = (title, description, existingCapas) =>
+`You are a pharmaceutical quality specialist reviewing CAPAs in a GMP biologics facility.
+
+Given this new CAPA:
+Title: ${title}
+Description: ${description}
+
+And these existing CAPAs:
+${existingCapas}
+
+Find the 3 most similar existing CAPAs. Consider root cause similarity, process area overlap, and corrective action similarity.
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "matches": [
+    { "capa_id": "CAPA-XXXX", "title": "...", "similarity": "high|medium|low", "reasoning": "..." }
+  ]
+}`;
+
+const PREVENTIVE_ACTIONS_PROMPT = (rootCause, description) =>
+`You are a pharmaceutical quality specialist in a GMP biologics facility.
+
+Given this root cause and CAPA description:
+Root Cause Category: ${rootCause}
+Description: ${description}
+
+Suggest 3-5 preventive actions that would prevent recurrence. Each action should be specific, measurable, and implementable within a GMP environment. Consider 21 CFR Part 211 and EU GMP Annex 15 requirements.
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "actions": [
+    { "action": "...", "category": "process|training|equipment|documentation|monitoring", "priority": "high|medium|low", "timeline": "immediate|short-term|long-term" }
+  ]
+}`;
+
+const EFFECTIVENESS_PREDICTION_PROMPT = (capa) =>
+`You are a pharmaceutical quality analyst evaluating CAPA effectiveness in a GMP biologics facility.
+
+CAPA Details:
+ID: ${capa.capa_id}
+Title: ${capa.title}
+Description: ${capa.description}
+Type: ${capa.capa_type || 'corrective'}
+Root Cause Category: ${capa.root_cause_category || 'not specified'}
+Owner: ${capa.owner}
+Evidence: ${capa.evidence || 'none provided'}
+Days Open: ${Math.ceil((new Date(capa.closed_at || Date.now()) - new Date(capa.created_at)) / (1000 * 60 * 60 * 24))}
+
+Based on the CAPA details, predict the likelihood that this CAPA will be effective in preventing recurrence.
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "prediction": "likely_effective|uncertain|likely_ineffective",
+  "confidence": 0.85,
+  "reasoning": "...",
+  "recommendations": ["...", "..."]
+}`;
+
+function makeCapaService({ supabase, auditLog, anthropic }) {
 
   // ── Notifications ───────────────────────────────────────────────────────
 
@@ -52,22 +116,46 @@ function makeCapaService({ supabase, auditLog }) {
 
   // ── CAPAs ───────────────────────────────────────────────────────────────
 
-  async function listCapas(submissionRef) {
-    const query = supabase.from('capas').select('*');
-    if (submissionRef) {
-      query.eq('submission_ref', submissionRef).order('created_at', { ascending: true });
-    } else {
-      query.order('created_at', { ascending: false });
+  async function getCapaById(capaId) {
+    const { data, error } = await supabase
+      .from('capas')
+      .select('*')
+      .eq('capa_id', capaId)
+      .single();
+    if (error) {
+      if (error.message.includes('does not exist'))
+        throw Object.assign(new Error('CAPA not found'), { statusCode: 404 });
+      throw error;
     }
+    if (!data) throw Object.assign(new Error('CAPA not found'), { statusCode: 404 });
+    return data;
+  }
+
+  async function listCapas({ submissionRef, status, owner, capaType, overdue } = {}) {
+    let query = supabase.from('capas').select('*');
+    if (submissionRef) query = query.eq('submission_ref', submissionRef);
+    if (status)        query = query.eq('status', status);
+    if (owner)         query = query.eq('owner', owner);
+    if (capaType)      query = query.eq('capa_type', capaType);
+    query = query.order('created_at', { ascending: false });
+
     const { data, error } = await query;
     if (error) {
       if (error.message.includes('does not exist')) return [];
       throw error;
     }
-    return data || [];
+    let results = data || [];
+
+    if (overdue === 'true' || overdue === true) {
+      const now = new Date();
+      results = results.filter(c => c.status !== 'closed' && c.due_date && new Date(c.due_date) < now);
+    }
+
+    return results;
   }
 
-  async function createCapa({ submissionRef, title, description, timing, timingLabel, owner, ownerRole, dueDate, req }) {
+  async function createCapa({ submissionRef, title, description, timing, timingLabel,
+                              owner, ownerRole, dueDate, capaType, rootCauseCategory, req }) {
     if (!submissionRef || !title) {
       throw Object.assign(new Error('submissionRef and title are required'), { statusCode: 400 });
     }
@@ -85,6 +173,9 @@ function makeCapaService({ supabase, auditLog }) {
       owner_role: ownerRole || '',
       due_date: dueDate || null,
       status: 'open',
+      capa_type: capaType || 'corrective',
+      root_cause_category: rootCauseCategory || null,
+      effectiveness_status: 'pending',
       evidence: null,
       closed_by: null,
       closed_at: null,
@@ -97,7 +188,7 @@ function makeCapaService({ supabase, auditLog }) {
       action: 'capa_created',
       entityType: 'capa',
       entityId: capaId,
-      after: { submissionRef, title, timing, owner, dueDate },
+      after: { submissionRef, title, timing, owner, dueDate, capaType, rootCauseCategory },
       reason: `CAPA created from submission ${submissionRef}`,
       req,
     });
@@ -145,6 +236,123 @@ function makeCapaService({ supabase, auditLog }) {
     });
 
     return { ok: true, capaId, updates };
+  }
+
+  // ── Effectiveness Verification ─────────────────────────────────────────
+
+  async function verifyEffectiveness({ capaId, status, notes, userId, userRole, req }) {
+    const current = await getCapaById(capaId);
+
+    if (current.status !== 'closed') {
+      throw Object.assign(new Error('CAPA must be closed before effectiveness verification'), { statusCode: 400 });
+    }
+
+    const validStatuses = ['verified_effective', 'verified_ineffective', 'not_applicable'];
+    if (!validStatuses.includes(status)) {
+      throw Object.assign(new Error('Invalid effectiveness status: ' + status), { statusCode: 400 });
+    }
+
+    const updates = {
+      effectiveness_status: status,
+      effectiveness_notes: notes || '',
+      effectiveness_check_date: new Date().toISOString().split('T')[0],
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('capas').update(updates).eq('capa_id', capaId);
+    if (error) throw error;
+
+    await auditLog({
+      userId: userId || 'unknown',
+      userRole: userRole || 'unknown',
+      action: 'capa_effectiveness_verified',
+      entityType: 'capa',
+      entityId: capaId,
+      before: { effectiveness_status: current.effectiveness_status },
+      after: updates,
+      reason: `Effectiveness verified as ${status}`,
+      req,
+    });
+
+    return { ok: true, capaId, effectivenessStatus: status };
+  }
+
+  // ── Dashboard Stats ────────────────────────────────────────────────────
+
+  async function getDashboardStats() {
+    const { data, error } = await supabase
+      .from('capas').select('*').order('created_at', { ascending: false });
+    if (error) {
+      if (error.message.includes('does not exist')) return { total: 0 };
+      throw error;
+    }
+    const all = data || [];
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const open = all.filter(c => c.status === 'open').length;
+    const inProgress = all.filter(c => c.status === 'in_progress').length;
+    const pendingVerification = all.filter(c => c.status === 'pending_verification').length;
+    const overdue = all.filter(c => c.status !== 'closed' && c.due_date && new Date(c.due_date) < now).length;
+    const closedThisMonth = all.filter(c => c.status === 'closed' && c.closed_at && new Date(c.closed_at) >= monthStart).length;
+
+    const verified = all.filter(c => c.effectiveness_status && c.effectiveness_status !== 'pending');
+    const effective = verified.filter(c => c.effectiveness_status === 'verified_effective').length;
+    const effectivenessRate = verified.length > 0 ? Math.round((effective / verified.length) * 100) : null;
+
+    let totalDays = 0, closedCount = 0;
+    all.forEach(c => {
+      if (c.status === 'closed' && c.closed_at) {
+        totalDays += (new Date(c.closed_at) - new Date(c.created_at)) / (1000 * 60 * 60 * 24);
+        closedCount++;
+      }
+    });
+    const avgDaysToClose = closedCount > 0 ? Math.round(totalDays / closedCount * 10) / 10 : null;
+
+    return {
+      total: all.length, open, inProgress, pendingVerification, overdue,
+      closedThisMonth, effectivenessRate, avgDaysToClose,
+      byType: {
+        corrective: all.filter(c => c.capa_type === 'corrective').length,
+        preventive: all.filter(c => c.capa_type === 'preventive').length,
+      },
+    };
+  }
+
+  // ── AI Features ────────────────────────────────────────────────────────
+
+  async function suggestSimilarCapas({ title, description }) {
+    const existing = await listCapas({});
+    const capaContext = existing.slice(0, 20).map(c =>
+      `${c.capa_id}: ${c.title} (${c.status}, ${c.capa_type || 'corrective'})`
+    ).join('\n');
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: SIMILAR_CAPAS_PROMPT(title, description, capaContext) }],
+    });
+    return parseClaudeJson(message.content[0].text);
+  }
+
+  async function suggestPreventiveActions({ rootCause, description }) {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: PREVENTIVE_ACTIONS_PROMPT(rootCause, description) }],
+    });
+    return parseClaudeJson(message.content[0].text);
+  }
+
+  async function predictEffectiveness(capaId) {
+    const capa = await getCapaById(capaId);
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 800,
+      messages: [{ role: 'user', content: EFFECTIVENESS_PREDICTION_PROMPT(capa) }],
+    });
+    return parseClaudeJson(message.content[0].text);
   }
 
   // ── Analytics ───────────────────────────────────────────────────────────
@@ -213,7 +421,9 @@ function makeCapaService({ supabase, auditLog }) {
 
   return {
     getNotifications, markNotificationRead, markAllNotificationsRead,
-    listCapas, createCapa, updateCapa,
+    listCapas, createCapa, updateCapa, getCapaById,
+    verifyEffectiveness, getDashboardStats,
+    suggestSimilarCapas, suggestPreventiveActions, predictEffectiveness,
     getAnalytics,
   };
 }

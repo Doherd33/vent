@@ -386,6 +386,26 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- ── Equipment Status History ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS equipment_status_history (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  equip_id        TEXT NOT NULL,
+  previous_status TEXT NOT NULL,
+  new_status      TEXT NOT NULL,
+  changed_by      TEXT NOT NULL,
+  reason          TEXT DEFAULT '',
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_equip_status_hist_equip ON equipment_status_history(equip_id);
+CREATE INDEX IF NOT EXISTS idx_equip_status_hist_date ON equipment_status_history(created_at);
+
+ALTER TABLE equipment_status_history ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY equip_status_hist_all ON equipment_status_history FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 -- ══════════════════════════════════════════════════════════════
 -- INCUBATOR LOGBOOK (CO2 Incubator Management)
 -- ══════════════════════════════════════════════════════════════
@@ -637,6 +657,164 @@ DO $$ BEGIN
   CREATE POLICY training_completions_all ON training_completions FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- ══════════════════════════════════════════════════════════════
+-- SUPPLIER QUALITY (Supplier Qualification Management)
+-- ══════════════════════════════════════════════════════════════
+
+-- ── Suppliers (Approved Supplier List) ────────────────────────
+CREATE TABLE IF NOT EXISTS suppliers (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  supplier_id       TEXT UNIQUE NOT NULL,
+  name              TEXT NOT NULL,
+  category          TEXT NOT NULL DEFAULT 'raw_material',
+  status            TEXT DEFAULT 'pending',
+  risk_level        TEXT DEFAULT 'medium',
+  contact_name      TEXT DEFAULT '',
+  contact_email     TEXT DEFAULT '',
+  contact_phone     TEXT DEFAULT '',
+  address           TEXT DEFAULT '',
+  qualification_date TIMESTAMPTZ,
+  next_audit_date   DATE,
+  quality_agreement_status TEXT DEFAULT 'none',
+  notes             TEXT DEFAULT '',
+  created_by        TEXT NOT NULL DEFAULT 'system',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_suppliers_status ON suppliers(status);
+CREATE INDEX IF NOT EXISTS idx_suppliers_risk ON suppliers(risk_level);
+
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY suppliers_all ON suppliers FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Supplier Audits ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS supplier_audits (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  audit_id        TEXT UNIQUE NOT NULL,
+  supplier_id     TEXT NOT NULL REFERENCES suppliers(supplier_id),
+  audit_type      TEXT NOT NULL DEFAULT 'routine',
+  audit_date      DATE NOT NULL,
+  auditor         TEXT NOT NULL,
+  status          TEXT DEFAULT 'scheduled',
+  findings        JSONB DEFAULT '[]',
+  score           INTEGER,
+  notes           TEXT DEFAULT '',
+  created_by      TEXT NOT NULL DEFAULT 'system',
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_supplier_audits_supplier ON supplier_audits(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_supplier_audits_status ON supplier_audits(status);
+
+ALTER TABLE supplier_audits ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY supplier_audits_all ON supplier_audits FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Quality Agreements ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS quality_agreements (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  agreement_id    TEXT UNIQUE NOT NULL,
+  supplier_id     TEXT NOT NULL REFERENCES suppliers(supplier_id),
+  version         TEXT DEFAULT '1.0',
+  status          TEXT DEFAULT 'draft',
+  effective_date  DATE,
+  expiry_date     DATE,
+  reviewed_by     TEXT,
+  approved_by     TEXT,
+  notes           TEXT DEFAULT '',
+  created_by      TEXT NOT NULL DEFAULT 'system',
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_qa_agreements_supplier ON quality_agreements(supplier_id);
+
+ALTER TABLE quality_agreements ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY quality_agreements_all ON quality_agreements FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- ── Shift Handovers (GMP Shift Handover System) ─────────────
+CREATE TABLE IF NOT EXISTS shift_handovers (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  handover_id     TEXT UNIQUE NOT NULL,
+  shift_type      TEXT NOT NULL DEFAULT 'day',
+  shift_date      DATE NOT NULL DEFAULT CURRENT_DATE,
+  outgoing_user   TEXT NOT NULL,
+  outgoing_role   TEXT DEFAULT '',
+  incoming_user   TEXT,
+  incoming_role   TEXT DEFAULT '',
+  status          TEXT DEFAULT 'draft',
+  open_batches    JSONB DEFAULT '[]',
+  pending_samples JSONB DEFAULT '[]',
+  equipment_holds JSONB DEFAULT '[]',
+  safety_items    JSONB DEFAULT '[]',
+  notes           TEXT DEFAULT '',
+  ai_summary      TEXT DEFAULT '',
+  acknowledged_at TIMESTAMPTZ,
+  acknowledged_by TEXT,
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_handovers_date ON shift_handovers(shift_date);
+CREATE INDEX IF NOT EXISTS idx_handovers_status ON shift_handovers(status);
+CREATE INDEX IF NOT EXISTS idx_handovers_outgoing ON shift_handovers(outgoing_user);
+
+ALTER TABLE shift_handovers ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY shift_handovers_all ON shift_handovers FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+COMMENT ON TABLE shift_handovers IS 'GMP shift handover records — 21 CFR Part 11 compliant structured handover system.';
+
+-- ── Cleaning Records (GMP Equipment Cleaning) ─────────────
+CREATE TABLE IF NOT EXISTS cleaning_records (
+  id                    UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  cleaning_id           TEXT UNIQUE NOT NULL,
+  equip_id              TEXT NOT NULL,
+  cleaning_type         TEXT NOT NULL DEFAULT 'manual',
+  cleaning_agent        TEXT DEFAULT '',
+  agent_lot_number      TEXT DEFAULT '',
+  agent_concentration   TEXT DEFAULT '',
+  rinse_conductivity    NUMERIC,
+  rinse_conductivity_limit NUMERIC DEFAULT 1.0,
+  visual_inspection     TEXT DEFAULT 'pass',
+  operator              TEXT NOT NULL,
+  verifier              TEXT,
+  verified_at           TIMESTAMPTZ,
+  status                TEXT DEFAULT 'in_progress',
+  started_at            TIMESTAMPTZ DEFAULT now(),
+  completed_at          TIMESTAMPTZ,
+  hold_time_expires     TIMESTAMPTZ,
+  hold_time_hours       INTEGER DEFAULT 72,
+  notes                 TEXT DEFAULT '',
+  created_by            TEXT NOT NULL DEFAULT 'system',
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  updated_at            TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_cleaning_equip ON cleaning_records(equip_id);
+CREATE INDEX IF NOT EXISTS idx_cleaning_status ON cleaning_records(status);
+CREATE INDEX IF NOT EXISTS idx_cleaning_hold ON cleaning_records(hold_time_expires);
+
+ALTER TABLE cleaning_records ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  CREATE POLICY cleaning_records_all ON cleaning_records FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+COMMENT ON TABLE cleaning_records IS 'GMP equipment cleaning records — hold time tracking, rinse conductivity, second-person verification.';
   `.trim();
     res.type('text/plain').send(sql);
   });
@@ -755,5 +933,62 @@ END $$;
       return res.status(500).json({ error: error.message });
     }
     res.json(data || []);
+  });
+
+  // POST /admin/prepare-round — create git worktrees + write AGENT_SPEC.md for a build round
+  app.post('/admin/prepare-round', requireAuth, async (req, res) => {
+    const { execSync } = require('child_process');
+    const fs = require('fs');
+    const path = require('path');
+    const projectRoot = process.cwd();
+    const worktreeBase = path.join(projectRoot, '.claude', 'worktrees');
+
+    const { modules } = req.body;
+    if (!modules || !Array.isArray(modules) || modules.length === 0) {
+      return res.status(400).json({ error: 'modules array required' });
+    }
+
+    // Ensure .claude/worktrees directory exists
+    fs.mkdirSync(worktreeBase, { recursive: true });
+
+    const results = [];
+    for (const mod of modules) {
+      const { id, spec } = mod;
+      if (!id) { results.push({ id, status: 'error', message: 'missing id' }); continue; }
+
+      const wtPath = path.join(worktreeBase, id);
+      const branchName = 'feature/' + id;
+      let status = 'created';
+
+      try {
+        if (fs.existsSync(wtPath)) {
+          status = 'exists';
+        } else {
+          // Try checkout existing branch, fall back to creating new branch from HEAD
+          try {
+            execSync(`git worktree add "${wtPath}" "${branchName}"`, { cwd: projectRoot, encoding: 'utf8', stdio: 'pipe' });
+          } catch (_e) {
+            execSync(`git worktree add -b "${branchName}" "${wtPath}" HEAD`, { cwd: projectRoot, encoding: 'utf8', stdio: 'pipe' });
+          }
+        }
+
+        // Write AGENT_SPEC.md if spec provided
+        if (spec) {
+          fs.writeFileSync(path.join(wtPath, 'AGENT_SPEC.md'), spec, 'utf8');
+        }
+
+        results.push({
+          id,
+          status,
+          path: '.claude/worktrees/' + id,
+          branch: branchName,
+          launchCommand: 'cd .claude/worktrees/' + id + ' && claude "Read AGENT_SPEC.md and build everything specified. Start by reading the reference files."'
+        });
+      } catch (err) {
+        results.push({ id, status: 'error', message: err.message });
+      }
+    }
+
+    res.json({ ok: true, results });
   });
 };

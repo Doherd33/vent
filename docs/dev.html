@@ -98,6 +98,7 @@
     <button class="role-btn active" data-role="admin">Admin</button>
   </div>
   <div class="quick-actions">
+    <button class="qa-btn" onclick="window.location='/project.html'" style="border-color:#6c5ce740;color:#6c5ce7">Project Centre</button>
     <button class="qa-btn" onclick="clearAndLogin()">Re-auth</button>
     <button class="qa-btn" onclick="openDemo()">Demo tour</button>
     <button class="qa-btn" onclick="resetBoard()">Reset layout</button>
@@ -132,7 +133,7 @@ var ALL_PAGES = [
   { id:'voice',           title:'Voice Assistant',         desc:'Hands-free voice interface. Ask Charlie without touching a screen.',                              path:'/submit.html',       status:'live',    roles:['operator','qa','admin'] },
   { id:'raise-obs',       title:'Raise Observation',       desc:'Flag a concern in 30 seconds. Voice or text. Auto-classified by LangGraph, auto-routed to QA.',  path:'/query.html',        status:'live',    roles:['operator','qa','msat','engineering','admin'] },
   { id:'activity',        title:'My Activity',             desc:'Track your submissions, CAPAs, and action items through the workflow pipeline.',                  path:'/submissions.html',  status:'live',    roles:['operator','qa','msat','engineering','admin'] },
-  { id:'shift-handover',  title:'Shift Handover',          desc:'Structured handover: open batches, pending samples, equipment holds, voice notes from outgoing shift.', path:null,            status:'planned', roles:['operator','qa'] },
+  { id:'shift-handover',  title:'Shift Handover',          desc:'Structured handover: open batches, pending samples, equipment holds, voice notes from outgoing shift.', path:'/handover.html', status:'live', roles:['operator','qa'] },
 
   // ═══════════════════════════════════════════════════════════════════
   // BATCH EXECUTION — The PBR/MBR replacement. This is the money.
@@ -157,14 +158,14 @@ var ALL_PAGES = [
   { id:'inoc-qc-checks',    title:'Inoculation QC',           desc:'Cell counts (Cedex HiRes / Vi-CELL), viability trending, mycoplasma PCR, sterility (14-day BacT/ALERT), identity confirmation (STR), adventitious agent panel.', path:null, status:'planned', roles:['operator','qc','msat'] },
   { id:'inoc-scaleup',      title:'Scale-up Decision Gate',   desc:'Go/no-go criteria at each expansion stage. Min viability (≥90%), target VCD, doubling time within range, passage limit check, metabolite ratios, contamination-free status.', path:null, status:'planned', roles:['operator','msat','qa'] },
   { id:'inoc-contam',       title:'Contamination Control',    desc:'EM monitoring for inoc suite (settle plates, active air, surface swabs), bioburden trending, gowning compliance, decontamination protocols, incident response workflow.', path:null, status:'planned', roles:['operator','qa','qc'] },
-  { id:'inoc-incubator',    title:'Incubator Management',     desc:'CO2 incubator logbooks: temp (36.5-37.5°C), CO2 (5±0.5%), humidity (≥85% RH). Alarm history, calibration status, preventive maintenance, capacity planning.', path:null, status:'planned', roles:['operator','engineering'] },
+  { id:'inoc-incubator',    title:'Incubator Management',     desc:'CO2 incubator logbooks: temp (36.5-37.5°C), CO2 (5±0.5%), humidity (≥85% RH). Alarm history, calibration status, preventive maintenance, capacity planning.', path:'/incubators.html', status:'live', roles:['operator','engineering'] },
   { id:'inoc-handoff',      title:'Production Inoculation',   desc:'Final transfer to production bioreactor. Inoculum volume calc, aseptic transfer protocol, pre-inoculation bioreactor readiness checklist, time-zero sampling.', path:null, status:'planned', roles:['operator','msat'] },
 
   // ═══════════════════════════════════════════════════════════════════
   // UPSTREAM — Bioreactor ops, perfusion, fed-batch (post-inoculation)
   // ═══════════════════════════════════════════════════════════════════
   { id:'us-bioreactor',   title:'Bioreactor Dashboard',    desc:'Live bioreactor status: pH, DO, temp, agitation, feed volumes, gas overlay. Fed-batch and perfusion modes.',     path:null,    status:'planned', roles:['operator','msat','engineering'] },
-  { id:'us-media-prep',   title:'Media & Buffer Prep',     desc:'Recipe execution for media, feeds, buffers. Component verification, pH adjustment, filter integrity, hold times.', path:null,  status:'planned', roles:['operator'] },
+  { id:'us-media-prep',   title:'Media & Buffer Prep',     desc:'Recipe execution for media, feeds, buffers. Component verification, pH adjustment, filter integrity, hold times.', path:'/media-prep.html',  status:'live', roles:['operator'] },
   { id:'us-perfusion',    title:'Perfusion Monitor',       desc:'ATF filter status, cell bleed tracking, perfusion rate, harvest collection. Daily operator checklist for 30-60 day runs.', path:null, status:'planned', roles:['operator','msat'] },
   { id:'us-harvest',      title:'Harvest & Clarification', desc:'Centrifugation, depth filtration, 0.2um filtration. Turbidity, yield, hold time tracking.',                     path:null,    status:'planned', roles:['operator'] },
 
@@ -189,21 +190,21 @@ var ALL_PAGES = [
   // ═══════════════════════════════════════════════════════════════════
   // EQUIPMENT & CLEANING — Cross-cutting operations
   // ═══════════════════════════════════════════════════════════════════
-  { id:'equip-logbook',   title:'Equipment Logbook',       desc:'GMP-compliant e-logbook per equipment ID. Usage, cleaning, maintenance, alarms. 21 CFR Part 11 audit trail.',     path:null,    status:'planned', roles:['operator','engineering'] },
-  { id:'equip-status',    title:'Equipment Status Board',  desc:'Real-time status of all production equipment: available, in-use, cleaning, maintenance, hold.',                   path:null,    status:'planned', roles:['operator','engineering','qa'] },
-  { id:'cleaning-records',title:'Cleaning Records',        desc:'Manual and CIP cleaning records. Detergent lot, rinse conductivity, visual inspection, hold time tracking.',      path:null,    status:'planned', roles:['operator'] },
+  { id:'equip-logbook',   title:'Equipment Logbook',       desc:'GMP-compliant e-logbook per equipment ID. Usage, cleaning, maintenance, alarms. 21 CFR Part 11 audit trail.',     path:'/equipment.html',    status:'live', roles:['operator','engineering'] },
+  { id:'equip-status',    title:'Equipment Status Board',  desc:'Real-time status of all production equipment: available, in-use, cleaning, maintenance, hold.',                   path:'/equipment-status.html', status:'live', roles:['operator','engineering','qa'] },
+  { id:'cleaning-records',title:'Cleaning Records',        desc:'Manual and CIP cleaning records. Detergent lot, rinse conductivity, visual inspection, hold time tracking.',      path:'/cleaning.html', status:'live', roles:['operator'] },
 
   // ═══════════════════════════════════════════════════════════════════
   // QUALITY ASSURANCE
   // ═══════════════════════════════════════════════════════════════════
   { id:'qa-centre',       title:'QA Centre',               desc:'Submission review workbench. SOP cross-reference, investigation notes, approval workflow.',                       path:'/qa.html',           status:'live',    roles:['qa','director','admin'] },
   { id:'qa-workflow',     title:'QA Workflow',              desc:'Workflow management and status tracking across all quality events.',                                              path:'/workflow.html',     status:'live',    roles:['qa','director','admin'] },
-  { id:'deviation-mgr',   title:'Deviation Manager',       desc:'Full lifecycle: initiate, classify (critical/major/minor), investigate (5-Why, Ishikawa), root cause, CAPA link, close.', path:null, status:'planned', roles:['qa','operator','msat','engineering'] },
-  { id:'capa-tracker',    title:'CAPA Tracker',            desc:'Corrective/preventive actions. Assign owners, track deadlines, verify effectiveness 30-90 days post-implementation.', path:null, status:'wip',     roles:['qa','director','admin'] },
+  { id:'deviation-mgr',   title:'Deviation Manager',       desc:'Full lifecycle: initiate, classify (critical/major/minor), investigate (5-Why, Ishikawa), root cause, CAPA link, close.', path:'/deviations.html', status:'live', roles:['qa','operator','msat','engineering'] },
+  { id:'capa-tracker',    title:'CAPA Tracker',            desc:'Corrective/preventive actions. Assign owners, track deadlines, verify effectiveness 30-90 days post-implementation.', path:'/capas.html', status:'live', roles:['qa','director','admin'] },
   { id:'change-control',  title:'Change Control',          desc:'Cross-functional impact assessment, regulatory classification (Type IA/IB/II), implementation tracking, closure.', path:null,  status:'planned', roles:['qa','regulatory','validation','engineering','msat'] },
   { id:'batch-disposition',title:'Batch Disposition',      desc:'Batch record review queue, QA release checklist, QP certification. AI-powered review by exception.',               path:null,  status:'planned', roles:['qa','director'] },
   { id:'doc-control',     title:'Document Control',        desc:'SOP lifecycle: draft, review, approve, distribute, train, retire. Version control, periodic review scheduling.',   path:null,  status:'planned', roles:['qa','admin'] },
-  { id:'supplier-quality', title:'Supplier Quality',       desc:'Supplier qualification, quality agreements, audit scheduling, performance scorecards, approved supplier list.',    path:null,  status:'planned', roles:['qa'] },
+  { id:'supplier-quality', title:'Supplier Quality',       desc:'Supplier qualification, quality agreements, audit scheduling, performance scorecards, approved supplier list.',    path:'/suppliers.html', status:'live', roles:['qa'] },
   { id:'complaint-mgr',   title:'Complaints & Recalls',   desc:'Product complaint intake, investigation, batch linkage, trending, recall execution tracking.',                    path:null,  status:'planned', roles:['qa','director'] },
 
   // ═══════════════════════════════════════════════════════════════════
@@ -238,7 +239,7 @@ var ALL_PAGES = [
   { id:'incident-report', title:'Incident Reporter',       desc:'Safety incident capture. Voice or text, auto-classification, investigation workflow.',                             path:null,  status:'planned', roles:['ehs','operator','engineering'] },
   { id:'reg-intelligence',title:'Regulatory Intelligence', desc:'Change impact classification (Type IA/IB/II), submission tracker, MA status, variation management.',               path:null,  status:'planned', roles:['regulatory','qa'] },
   { id:'apqr',            title:'Annual Product Review',   desc:'Auto-aggregated APR/PQR: batch data, deviations, stability, CAPAs, complaints. AI draft narrative.',              path:null,  status:'planned', roles:['regulatory','qa','director'] },
-  { id:'training-matrix', title:'Training Matrix',         desc:'Role-based training assignments, SOP revision retraining cascades, compliance status, effectiveness tracking.',    path:null,  status:'planned', roles:['training','qa','admin'] },
+  { id:'training-matrix', title:'Training Matrix',         desc:'Role-based training assignments, SOP revision retraining cascades, compliance status, effectiveness tracking.',    path:'/training.html',  status:'live', roles:['training','qa','admin'] },
   { id:'training-assess', title:'Competency Assessment',   desc:'AI-generated assessments from SOPs. Scenario-based, not just read-and-understand. Measures real comprehension.',   path:null,  status:'planned', roles:['training','qa'] },
   { id:'data-integrity',  title:'Data Integrity',          desc:'ALCOA+ compliance dashboard. Audit trail monitoring, anomaly detection, electronic record review.',                path:null,  status:'planned', roles:['it','qa','admin'] },
 

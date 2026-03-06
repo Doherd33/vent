@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Equipment Status Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px auto 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── SUMMARY DASHBOARD ── */
+.summary-bar {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  flex-wrap: wrap;
+  overflow-x: auto;
+}
+.summary-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 14px;
+  min-width: 70px;
+}
+.summary-stat .stat-value {
+  font-size: 20px;
+  font-weight: 500;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+}
+.summary-stat .stat-label {
+  font-size: 10px;
+  color: var(--mid);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-top: 2px;
+}
+.summary-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.summary-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.status-count-badge {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.status-count-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.alert-section {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.alert-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: var(--red2);
+  color: var(--red);
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+}
+.alert-badge:hover { filter: brightness(1.2); }
+.capacity-indicator {
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+}
+.capacity-indicator.low    { background: var(--green2); color: var(--green); }
+.capacity-indicator.medium { background: var(--gold2); color: var(--gold); }
+.capacity-indicator.high   { background: var(--red2); color: var(--red); }
+.capacity-indicator.critical { background: var(--red2); color: var(--red); }
+.filter-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0 8px 0 0;
+}
+.filter-row input {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  width: 180px;
+  transition: border-color .15s;
+}
+.filter-row input:focus { border-color: var(--accent); }
+.filter-row select {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+/* ── BOARD LAYOUT ── */
+.board-container {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+}
+.board-column {
+  min-width: 220px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.board-column:last-child { border-right: none; }
+.column-header {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--border);
+  flex-shrink: 0;
+  user-select: none;
+}
+.column-count {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.column-cards {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 6px 60px;
+}
+
+/* Column colours */
+.col-available .column-header   { color: var(--green);  border-bottom-color: var(--green); }
+.col-available .column-count    { background: var(--green2); color: var(--green); }
+.col-in-use .column-header      { color: var(--blue);   border-bottom-color: hsl(var(--hue),100%,40%); }
+.col-in-use .column-count       { background: var(--blue2); color: var(--blue); }
+.col-cleaning .column-header    { color: var(--gold);   border-bottom-color: var(--gold); }
+.col-cleaning .column-count     { background: var(--gold2); color: var(--gold); }
+.col-maintenance .column-header { color: #ff9f43;       border-bottom-color: #ff9f43; }
+.col-maintenance .column-count  { background: rgba(255,159,67,.15); color: #ff9f43; }
+.col-hold .column-header        { color: var(--red);    border-bottom-color: var(--red); }
+.col-hold .column-count         { background: var(--red2); color: var(--red); }
+.col-retired .column-header     { color: var(--dim);    border-bottom-color: var(--dim); }
+.col-retired .column-count      { background: rgba(90,90,90,.2); color: var(--dim); }
+
+/* ── EQUIPMENT CARD ── */
+.equip-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color .15s, transform .1s;
+}
+.equip-card:hover {
+  border-color: var(--borderhi);
+  transform: translateY(-1px);
+}
+.equip-card.dragging {
+  opacity: .5;
+  border-color: var(--accent);
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+.card-id {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--mid);
+}
+.card-type-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--accent2);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.card-name {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 4px;
+  font-weight: 400;
+}
+.card-location {
+  font-size: 11px;
+  color: var(--dim);
+  margin-bottom: 4px;
+}
+.card-duration {
+  font-size: 10px;
+  color: var(--mid);
+  font-family: 'JetBrains Mono', monospace;
+}
+.card-duration.overdue { color: var(--red); }
+
+/* ── EXPANDED DETAIL PANEL ── */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: none;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 900;
+}
+.detail-overlay.visible { display: flex; }
+.detail-panel {
+  background: var(--s1);
+  border-left: 1px solid var(--border);
+  width: 480px;
+  max-width: 95vw;
+  height: 100%;
+  overflow-y: auto;
+  padding: 0;
+  animation: slideIn .2s ease;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+.detail-panel-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.detail-panel-header h2 {
+  font-size: 16px;
+  color: #fff;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+.detail-panel-header .detail-id {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--mid);
+}
+.detail-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--mid);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+}
+.detail-close:hover { color: var(--text); border-color: var(--borderhi); }
+.detail-panel-meta {
+  padding: 12px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.detail-meta-chip {
+  font-size: 11px;
+  color: var(--mid);
+}
+.detail-meta-chip strong {
+  color: var(--text);
+  font-weight: 400;
+}
+.detail-panel-actions {
+  padding: 12px 24px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+}
+.detail-panel-body {
+  padding: 16px 24px;
+}
+.history-timeline {
+  padding: 0;
+  list-style: none;
+}
+.history-item {
+  position: relative;
+  padding: 8px 0 8px 24px;
+  border-left: 2px solid var(--border);
+  margin-left: 6px;
+  font-size: 12px;
+}
+.history-item::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.history-item .history-status {
+  font-weight: 500;
+  color: var(--text);
+}
+.history-item .history-meta {
+  color: var(--dim);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.history-item .history-reason {
+  color: var(--mid);
+  font-size: 11px;
+  margin-top: 2px;
+  font-style: italic;
+}
+
+/* ── STATUS CHANGE MODAL ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  width: 420px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.modal-box h2 {
+  font-size: 16px;
+  color: #fff;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.form-group {
+  margin-bottom: 12px;
+}
+.form-group label {
+  display: block;
+  font-size: 11px;
+  color: var(--mid);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--accent);
+}
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  transition: all .15s;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover { filter: brightness(1.15); }
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+}
+.btn-secondary:hover { background: var(--s3); }
+.btn-ai {
+  background: rgba(156,120,255,.15);
+  color: #9c78ff;
+  border-color: transparent;
+}
+.btn-ai:hover { filter: brightness(1.15); }
+
+/* ── AI CAPACITY PANEL ── */
+.ai-capacity-panel {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin: 16px 24px;
+}
+.ai-capacity-panel h3 {
+  font-size: 13px;
+  color: #9c78ff;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.ai-rec {
+  font-size: 12px;
+  color: var(--text);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ai-rec:last-child { border-bottom: none; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  user-select: none;
+}
+.status-bar .s-sep { opacity: .4; }
+.status-bar .s-right { margin-left: auto; display: flex; gap: 10px; }
+
+/* ── Hidden retired toggle ── */
+.toggle-label {
+  font-size: 11px;
+  color: var(--mid);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.toggle-label input { cursor: pointer; }
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .board-container { flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+  .board-column { min-width: unset; border-right: none; border-bottom: 1px solid var(--border); }
+  .column-cards { max-height: 300px; }
+  .summary-bar { flex-direction: column; gap: 8px; }
+  .detail-panel { width: 100%; }
+  .filter-row { flex-wrap: wrap; }
+}
+</style>
+<script src="shared/i18n.js"></script>
+<script src="shared/nav.js"></script>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="query.html"           class="nav-tab" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="submissions.html"     class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
+      <a href="builder.html"         class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="equipment.html"       class="nav-tab" data-nav-key="Equipment">Equipment</a>
+      <a href="equipment-status.html" class="nav-tab active" data-nav-key="Status Board">Status Board</a>
+      <a href="qa.html"              class="nav-tab" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="dashboard.html"       class="nav-tab" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
+      <a href="feedback.html"        class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- SUMMARY DASHBOARD -->
+<div class="summary-bar" id="summaryBar">
+  <div class="summary-stat">
+    <span class="stat-value" id="statTotal">--</span>
+    <span class="stat-label">Total</span>
+  </div>
+  <div class="summary-divider"></div>
+  <div class="summary-stat">
+    <span class="stat-value" id="statAvailability">--%</span>
+    <span class="stat-label">Available</span>
+  </div>
+  <div class="summary-divider"></div>
+  <div class="summary-badges" id="statusBadges"></div>
+  <div class="summary-divider"></div>
+  <div class="alert-section" id="alertSection"></div>
+  <div class="filter-row">
+    <input type="text" id="searchInput" placeholder="Search equipment..." autocomplete="off">
+    <select id="filterType" title="Filter by type">
+      <option value="">All Types</option>
+    </select>
+    <select id="filterLocation" title="Filter by location">
+      <option value="">All Locations</option>
+    </select>
+    <label class="toggle-label">
+      <input type="checkbox" id="showRetired"> Retired
+    </label>
+    <button class="btn btn-ai" id="btnAiAnalysis" title="AI capacity analysis" style="padding:4px 10px;font-size:11px;">AI Analysis</button>
+  </div>
+</div>
+
+<!-- KANBAN BOARD -->
+<div class="board-container" id="boardContainer">
+  <div class="board-column col-available" data-status="available">
+    <div class="column-header">Available <span class="column-count" id="countAvailable">0</span></div>
+    <div class="column-cards" id="cardsAvailable"></div>
+  </div>
+  <div class="board-column col-in-use" data-status="in-use">
+    <div class="column-header">In Use <span class="column-count" id="countInUse">0</span></div>
+    <div class="column-cards" id="cardsInUse"></div>
+  </div>
+  <div class="board-column col-cleaning" data-status="cleaning">
+    <div class="column-header">Cleaning <span class="column-count" id="countCleaning">0</span></div>
+    <div class="column-cards" id="cardsCleaning"></div>
+  </div>
+  <div class="board-column col-maintenance" data-status="maintenance">
+    <div class="column-header">Maintenance <span class="column-count" id="countMaintenance">0</span></div>
+    <div class="column-cards" id="cardsMaintenance"></div>
+  </div>
+  <div class="board-column col-hold" data-status="hold">
+    <div class="column-header">Hold <span class="column-count" id="countHold">0</span></div>
+    <div class="column-cards" id="cardsHold"></div>
+  </div>
+  <div class="board-column col-retired" data-status="retired" style="display:none;">
+    <div class="column-header">Retired <span class="column-count" id="countRetired">0</span></div>
+    <div class="column-cards" id="cardsRetired"></div>
+  </div>
+</div>
+
+<!-- STATUS CHANGE MODAL -->
+<div class="modal-overlay" id="statusModal">
+  <div class="modal-box">
+    <h2 id="modalTitle">Change Status</h2>
+    <div class="form-group">
+      <label>Equipment</label>
+      <input type="text" id="modalEquipName" readonly style="opacity:.7;">
+    </div>
+    <div class="form-group">
+      <label>New Status</label>
+      <select id="modalNewStatus">
+        <option value="available">Available</option>
+        <option value="in-use">In Use</option>
+        <option value="cleaning">Cleaning</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="hold">Hold</option>
+        <option value="retired">Retired</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Reason (required)</label>
+      <textarea id="modalReason" placeholder="Reason for status change..." rows="3"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Expected Duration (optional)</label>
+      <input type="text" id="modalDuration" placeholder="e.g. 2 hours, 30 min">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="btnConfirmStatus">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- EQUIPMENT DETAIL OVERLAY -->
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-panel">
+    <div class="detail-panel-header">
+      <h2 id="detailName">--</h2>
+      <span class="detail-id" id="detailId">--</span>
+      <button class="detail-close" onclick="closeDetail()">&times;</button>
+    </div>
+    <div class="detail-panel-meta" id="detailMeta"></div>
+    <div class="detail-panel-actions" id="detailActions"></div>
+    <div class="detail-panel-body" id="detailBody">
+      <h3 style="font-size:12px;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Status History</h3>
+      <ul class="history-timeline" id="historyTimeline"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- AI CAPACITY MODAL -->
+<div class="modal-overlay" id="aiModal">
+  <div class="modal-box" style="width:520px;">
+    <h2>AI Capacity Analysis</h2>
+    <div id="aiContent" style="min-height:100px;">
+      <p style="color:var(--mid);font-size:13px;">Running analysis...</p>
+    </div>
+    <div class="form-actions" style="margin-top:20px;">
+      <button class="btn btn-secondary" onclick="closeAiModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>Equipment Status Board</span>
+  <span class="s-sep">|</span>
+  <span id="sbStatus">Loading...</span>
+  <span class="s-right">
+    <span id="sbUser"></span>
+  </span>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var SERVER = window.VENT_SERVER || '';
+
+  // ── State ──
+  var allEquipment = [];
+  var selectedEquip = null;
+  var currentModalEquipId = null;
+
+  var STATUSES = ['available', 'in-use', 'cleaning', 'maintenance', 'hold', 'retired'];
+  var STATUS_LABELS = {
+    'available': 'Available', 'in-use': 'In Use', 'cleaning': 'Cleaning',
+    'maintenance': 'Maintenance', 'hold': 'Hold', 'retired': 'Retired'
+  };
+  var STATUS_COLORS = {
+    'available': { bg: 'var(--green2)', fg: 'var(--green)', dot: '#4ec9b0' },
+    'in-use':    { bg: 'var(--blue2)',  fg: 'var(--blue)',  dot: 'hsl(210,100%,40%)' },
+    'cleaning':  { bg: 'var(--gold2)',  fg: 'var(--gold)',  dot: '#ffc64d' },
+    'maintenance': { bg: 'rgba(255,159,67,.15)', fg: '#ff9f43', dot: '#ff9f43' },
+    'hold':      { bg: 'var(--red2)',   fg: 'var(--red)',   dot: '#f44747' },
+    'retired':   { bg: 'rgba(90,90,90,.2)', fg: 'var(--dim)', dot: '#5a5a5a' },
+  };
+
+  // Alert thresholds (ms)
+  var THRESHOLDS = { cleaning: 4*3600000, maintenance: 24*3600000, hold: 48*3600000 };
+
+  // ── Init ──
+  function init() {
+    var name = localStorage.getItem('vent_name') || '';
+    var role = localStorage.getItem('vent_role') || '';
+    document.getElementById('sbUser').textContent = name + (role ? ' (' + role + ')' : '');
+
+    document.getElementById('searchInput').addEventListener('input', renderBoard);
+    document.getElementById('filterType').addEventListener('change', renderBoard);
+    document.getElementById('filterLocation').addEventListener('change', renderBoard);
+    document.getElementById('showRetired').addEventListener('change', function () {
+      var retCol = document.querySelector('.board-column[data-status="retired"]');
+      retCol.style.display = this.checked ? '' : 'none';
+      renderBoard();
+    });
+    document.getElementById('btnAiAnalysis').addEventListener('click', runAiAnalysis);
+    document.getElementById('btnConfirmStatus').addEventListener('click', confirmStatusChange);
+
+    // Close modals on overlay click
+    document.getElementById('statusModal').addEventListener('click', function (e) {
+      if (e.target === this) closeModal();
+    });
+    document.getElementById('detailOverlay').addEventListener('click', function (e) {
+      if (e.target === this) closeDetail();
+    });
+    document.getElementById('aiModal').addEventListener('click', function (e) {
+      if (e.target === this) closeAiModal();
+    });
+
+    loadBoard();
+  }
+
+  // ── Load board data ──
+  async function loadBoard() {
+    try {
+      var res = await authFetch(SERVER + '/equipment/status');
+      if (!res.ok) throw new Error('Failed to load');
+      allEquipment = await res.json();
+
+      populateFilters();
+      renderBoard();
+      loadSummary();
+      document.getElementById('sbStatus').textContent = allEquipment.length + ' equipment loaded';
+    } catch (err) {
+      console.error('[STATUS-BOARD]', err);
+      document.getElementById('sbStatus').textContent = 'Error: ' + err.message;
+    }
+  }
+
+  // ── Load summary stats ──
+  async function loadSummary() {
+    try {
+      var res = await authFetch(SERVER + '/equipment/status/summary');
+      if (!res.ok) return;
+      var summary = await res.json();
+
+      document.getElementById('statTotal').textContent = summary.total;
+      document.getElementById('statAvailability').textContent = summary.availabilityRate + '%';
+
+      // Status badges
+      var badgesEl = document.getElementById('statusBadges');
+      badgesEl.innerHTML = '';
+      STATUSES.forEach(function (s) {
+        var count = (summary.counts && summary.counts[s]) || 0;
+        var colors = STATUS_COLORS[s];
+        var badge = document.createElement('span');
+        badge.className = 'status-count-badge';
+        badge.style.background = colors.bg;
+        badge.style.color = colors.fg;
+        badge.innerHTML = '<span class="dot" style="background:' + colors.dot + '"></span>' + STATUS_LABELS[s] + ': ' + count;
+        badgesEl.appendChild(badge);
+      });
+
+      // Alerts
+      var alertEl = document.getElementById('alertSection');
+      alertEl.innerHTML = '';
+      if (summary.alerts && summary.alerts.length > 0) {
+        summary.alerts.forEach(function (a) {
+          var el = document.createElement('span');
+          el.className = 'alert-badge';
+          el.textContent = a.name + ' (' + a.status + ' ' + a.hoursInStatus + 'h)';
+          el.title = a.message;
+          el.addEventListener('click', function () { openDetail(a.equipId); });
+          alertEl.appendChild(el);
+        });
+      }
+    } catch (err) {
+      console.error('[SUMMARY]', err);
+    }
+  }
+
+  // ── Populate filter dropdowns ──
+  function populateFilters() {
+    var types = new Set();
+    var locations = new Set();
+    allEquipment.forEach(function (eq) {
+      if (eq.type) types.add(eq.type);
+      if (eq.location) locations.add(eq.location);
+    });
+
+    var typeSelect = document.getElementById('filterType');
+    typeSelect.innerHTML = '<option value="">All Types</option>';
+    Array.from(types).sort().forEach(function (t) {
+      typeSelect.innerHTML += '<option value="' + t + '">' + t + '</option>';
+    });
+
+    var locSelect = document.getElementById('filterLocation');
+    locSelect.innerHTML = '<option value="">All Locations</option>';
+    Array.from(locations).sort().forEach(function (l) {
+      locSelect.innerHTML += '<option value="' + l + '">' + l + '</option>';
+    });
+  }
+
+  // ── Render board ──
+  function renderBoard() {
+    var search = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+    var typeFilter = document.getElementById('filterType').value;
+    var locFilter = document.getElementById('filterLocation').value;
+    var showRetired = document.getElementById('showRetired').checked;
+
+    // Filter equipment
+    var filtered = allEquipment.filter(function (eq) {
+      if (!showRetired && eq.status === 'retired') return false;
+      if (typeFilter && eq.type !== typeFilter) return false;
+      if (locFilter && eq.location !== locFilter) return false;
+      if (search) {
+        var haystack = ((eq.equip_id || '') + ' ' + (eq.name || '') + ' ' + (eq.type || '') + ' ' + (eq.location || '')).toLowerCase();
+        if (haystack.indexOf(search) === -1) return false;
+      }
+      return true;
+    });
+
+    // Group by status
+    var groups = {};
+    STATUSES.forEach(function (s) { groups[s] = []; });
+    filtered.forEach(function (eq) {
+      var s = eq.status || 'available';
+      if (!groups[s]) groups[s] = [];
+      groups[s].push(eq);
+    });
+
+    // Render columns
+    STATUSES.forEach(function (s) {
+      var cardsEl = document.getElementById('cards' + statusToDomId(s));
+      var countEl = document.getElementById('count' + statusToDomId(s));
+      if (!cardsEl || !countEl) return;
+
+      countEl.textContent = groups[s].length;
+      cardsEl.innerHTML = '';
+
+      groups[s].forEach(function (eq) {
+        var card = createCard(eq);
+        cardsEl.appendChild(card);
+      });
+    });
+  }
+
+  // ── Create equipment card ──
+  function createCard(eq) {
+    var card = document.createElement('div');
+    card.className = 'equip-card';
+    card.setAttribute('data-equip-id', eq.equip_id);
+    card.draggable = true;
+
+    // Duration in current status
+    var durationText = '';
+    var isOverdue = false;
+    if (eq.updated_at) {
+      var elapsed = Date.now() - new Date(eq.updated_at).getTime();
+      durationText = formatDuration(elapsed);
+      var threshold = THRESHOLDS[eq.status];
+      if (threshold && elapsed > threshold) isOverdue = true;
+    }
+
+    card.innerHTML =
+      '<div class="card-header">' +
+        '<span class="card-id">' + escHtml(eq.equip_id) + '</span>' +
+        '<span class="card-type-badge">' + escHtml(eq.type || 'general') + '</span>' +
+      '</div>' +
+      '<div class="card-name">' + escHtml(eq.name) + '</div>' +
+      (eq.location ? '<div class="card-location">' + escHtml(eq.location) + '</div>' : '') +
+      (durationText ? '<div class="card-duration' + (isOverdue ? ' overdue' : '') + '">' + durationText + '</div>' : '');
+
+    // Click to open detail
+    card.addEventListener('click', function () { openDetail(eq.equip_id); });
+
+    // Drag and drop
+    card.addEventListener('dragstart', function (e) {
+      e.dataTransfer.setData('text/plain', eq.equip_id);
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', function () {
+      card.classList.remove('dragging');
+    });
+
+    return card;
+  }
+
+  // ── Drag-and-drop on columns ──
+  document.querySelectorAll('.column-cards').forEach(function (col) {
+    col.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      col.style.background = 'var(--s2)';
+    });
+    col.addEventListener('dragleave', function () {
+      col.style.background = '';
+    });
+    col.addEventListener('drop', function (e) {
+      e.preventDefault();
+      col.style.background = '';
+      var equipId = e.dataTransfer.getData('text/plain');
+      var newStatus = col.closest('.board-column').getAttribute('data-status');
+      if (equipId && newStatus) {
+        openStatusModal(equipId, newStatus);
+      }
+    });
+  });
+
+  // ── Open status change modal ──
+  function openStatusModal(equipId, preselectedStatus) {
+    currentModalEquipId = equipId;
+    var eq = allEquipment.find(function (e) { return e.equip_id === equipId; });
+    document.getElementById('modalEquipName').value = eq ? (eq.name + ' (' + eq.equip_id + ')') : equipId;
+    document.getElementById('modalNewStatus').value = preselectedStatus || 'available';
+    document.getElementById('modalReason').value = '';
+    document.getElementById('modalDuration').value = '';
+    document.getElementById('modalTitle').textContent = 'Change Status — ' + (eq ? eq.name : equipId);
+    document.getElementById('statusModal').classList.add('visible');
+    document.getElementById('modalReason').focus();
+  }
+  window.openStatusModal = openStatusModal;
+
+  function closeModal() {
+    document.getElementById('statusModal').classList.remove('visible');
+    currentModalEquipId = null;
+  }
+  window.closeModal = closeModal;
+
+  // ── Confirm status change ──
+  async function confirmStatusChange() {
+    if (!currentModalEquipId) return;
+
+    var newStatus = document.getElementById('modalNewStatus').value;
+    var reason = document.getElementById('modalReason').value.trim();
+    var duration = document.getElementById('modalDuration').value.trim();
+
+    if (!reason) {
+      document.getElementById('modalReason').style.borderColor = 'var(--red)';
+      document.getElementById('modalReason').focus();
+      return;
+    }
+
+    var btn = document.getElementById('btnConfirmStatus');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+      var res = await authFetch(SERVER + '/equipment/' + currentModalEquipId + '/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, reason: reason, expectedDuration: duration || null }),
+      });
+      if (!res.ok) {
+        var err = await res.json().catch(function () { return { error: 'Unknown error' }; });
+        throw new Error(err.error || 'Failed');
+      }
+      closeModal();
+      await loadBoard();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Confirm';
+    }
+  }
+
+  // ── Open equipment detail panel ──
+  async function openDetail(equipId) {
+    var eq = allEquipment.find(function (e) { return e.equip_id === equipId; });
+    if (!eq) return;
+
+    selectedEquip = eq;
+    document.getElementById('detailName').textContent = eq.name;
+    document.getElementById('detailId').textContent = eq.equip_id;
+
+    // Meta chips
+    var meta = document.getElementById('detailMeta');
+    meta.innerHTML =
+      '<span class="detail-meta-chip">Type: <strong>' + escHtml(eq.type || 'general') + '</strong></span>' +
+      '<span class="detail-meta-chip">Location: <strong>' + escHtml(eq.location || '--') + '</strong></span>' +
+      '<span class="detail-meta-chip">Serial: <strong>' + escHtml(eq.serial_number || '--') + '</strong></span>' +
+      '<span class="detail-meta-chip">Model: <strong>' + escHtml(eq.model || '--') + '</strong></span>' +
+      '<span class="detail-meta-chip">Manufacturer: <strong>' + escHtml(eq.manufacturer || '--') + '</strong></span>' +
+      '<span class="detail-meta-chip">Status: <strong>' + escHtml(STATUS_LABELS[eq.status] || eq.status) + '</strong></span>';
+
+    // Action buttons
+    var actions = document.getElementById('detailActions');
+    actions.innerHTML = '';
+    STATUSES.forEach(function (s) {
+      if (s === eq.status) return;
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-secondary';
+      btn.style.fontSize = '11px';
+      btn.style.padding = '4px 10px';
+      var colors = STATUS_COLORS[s];
+      btn.style.color = colors.fg;
+      btn.style.borderColor = colors.fg;
+      btn.textContent = STATUS_LABELS[s];
+      btn.addEventListener('click', function () {
+        closeDetail();
+        openStatusModal(equipId, s);
+      });
+      actions.appendChild(btn);
+    });
+
+    // Link to Equipment Logbook
+    var logbookLink = document.createElement('a');
+    logbookLink.href = 'equipment.html';
+    logbookLink.className = 'btn btn-secondary';
+    logbookLink.style.fontSize = '11px';
+    logbookLink.style.padding = '4px 10px';
+    logbookLink.style.textDecoration = 'none';
+    logbookLink.textContent = 'Open Logbook';
+    actions.appendChild(logbookLink);
+
+    // Load status history
+    var timeline = document.getElementById('historyTimeline');
+    timeline.innerHTML = '<li style="padding:8px;color:var(--dim);font-size:12px;">Loading history...</li>';
+
+    document.getElementById('detailOverlay').classList.add('visible');
+
+    try {
+      var res = await authFetch(SERVER + '/equipment/' + equipId + '/status-history?limit=30');
+      if (res.ok) {
+        var history = await res.json();
+        renderHistory(history);
+      } else {
+        timeline.innerHTML = '<li style="padding:8px;color:var(--dim);font-size:12px;">Could not load history</li>';
+      }
+    } catch (err) {
+      timeline.innerHTML = '<li style="padding:8px;color:var(--dim);font-size:12px;">Error loading history</li>';
+    }
+  }
+  window.openDetail = openDetail;
+
+  function renderHistory(history) {
+    var timeline = document.getElementById('historyTimeline');
+    if (!history || history.length === 0) {
+      timeline.innerHTML = '<li style="padding:8px;color:var(--dim);font-size:12px;">No status history yet</li>';
+      return;
+    }
+    timeline.innerHTML = '';
+    history.forEach(function (h) {
+      var li = document.createElement('li');
+      li.className = 'history-item';
+      var date = h.created_at ? new Date(h.created_at).toLocaleString() : '';
+      li.innerHTML =
+        '<span class="history-status">' + escHtml(STATUS_LABELS[h.previous_status] || h.previous_status) +
+        ' &rarr; ' + escHtml(STATUS_LABELS[h.new_status] || h.new_status) + '</span>' +
+        '<div class="history-meta">' + escHtml(h.changed_by) + ' &middot; ' + date + '</div>' +
+        (h.reason ? '<div class="history-reason">' + escHtml(h.reason) + '</div>' : '');
+      timeline.appendChild(li);
+    });
+  }
+
+  function closeDetail() {
+    document.getElementById('detailOverlay').classList.remove('visible');
+    selectedEquip = null;
+  }
+  window.closeDetail = closeDetail;
+
+  // ── AI Capacity Analysis ──
+  async function runAiAnalysis() {
+    document.getElementById('aiContent').innerHTML = '<p style="color:var(--mid);font-size:13px;">Running AI capacity analysis...</p>';
+    document.getElementById('aiModal').classList.add('visible');
+
+    try {
+      var res = await authFetch(SERVER + '/equipment/status/ai-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error('Analysis failed');
+      var data = await res.json();
+
+      var riskClass = (data.riskLevel || 'low').toLowerCase();
+      var html =
+        '<div style="margin-bottom:16px;">' +
+          '<span class="capacity-indicator ' + riskClass + '" style="font-size:12px;padding:4px 12px;">Risk: ' + escHtml(data.riskLevel || '--') + '</span>' +
+          (data.riskScore !== undefined ? ' <span style="font-size:12px;color:var(--mid);margin-left:8px;">Score: ' + data.riskScore + '/100</span>' : '') +
+        '</div>' +
+        '<div style="font-size:13px;color:var(--text);margin-bottom:16px;line-height:1.5;">' + escHtml(data.capacitySummary || '') + '</div>';
+
+      if (data.recommendations && data.recommendations.length > 0) {
+        html += '<h4 style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Recommendations</h4>';
+        data.recommendations.forEach(function (r) {
+          html += '<div class="ai-rec">' + escHtml(r) + '</div>';
+        });
+      }
+
+      if (data.bottlenecks && data.bottlenecks.length > 0) {
+        html += '<h4 style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;">Bottlenecks</h4>';
+        data.bottlenecks.forEach(function (b) {
+          html += '<div class="ai-rec" style="color:var(--red);">' + escHtml(b) + '</div>';
+        });
+      }
+
+      if (data.forecast) {
+        html += '<h4 style="font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;">Forecast</h4>';
+        html += '<div style="font-size:12px;color:var(--text);">' + escHtml(data.forecast) + '</div>';
+      }
+
+      document.getElementById('aiContent').innerHTML = html;
+    } catch (err) {
+      document.getElementById('aiContent').innerHTML = '<p style="color:var(--red);font-size:13px;">Error: ' + escHtml(err.message) + '</p>';
+    }
+  }
+
+  function closeAiModal() {
+    document.getElementById('aiModal').classList.remove('visible');
+  }
+  window.closeAiModal = closeAiModal;
+
+  // ── Helpers ──
+  function statusToDomId(status) {
+    // available -> Available, in-use -> InUse, etc.
+    return status.split('-').map(function (w) {
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).join('');
+  }
+
+  function formatDuration(ms) {
+    if (ms < 0) ms = 0;
+    var totalMin = Math.floor(ms / 60000);
+    if (totalMin < 60) return totalMin + 'm';
+    var hours = Math.floor(totalMin / 60);
+    var mins = totalMin % 60;
+    if (hours < 24) return hours + 'h ' + mins + 'm';
+    var days = Math.floor(hours / 24);
+    hours = hours % 24;
+    return days + 'd ' + hours + 'h';
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ── Boot ──
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<script src="/shared/dev-progress.js"></script>
+</body>
+</html>

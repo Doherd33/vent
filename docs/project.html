@@ -297,11 +297,14 @@
     <div class="spec-modal-header">
       <div class="spec-modal-title" id="specTitle">Agent Spec</div>
       <div class="spec-modal-actions">
-        <button class="spec-copy-btn" onclick="copySpec()">Copy to Clipboard</button>
+        <button class="spec-copy-btn" onclick="copyLaunch()" id="btnCopyLaunch" style="background:var(--green);color:#000;border-color:var(--green)">Copy Launch Command</button>
+        <button class="spec-copy-btn" onclick="copyWorktreePath()" id="btnCopyPath">Copy Worktree Path</button>
+        <button class="spec-copy-btn" onclick="copySpec()">Copy Full Spec</button>
         <button class="detail-close" onclick="closeSpec()">&times;</button>
       </div>
     </div>
     <div class="spec-modal-body">
+      <div id="specLaunchBar" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.6rem .8rem;margin-bottom:.75rem;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--green);word-break:break-all"></div>
       <pre class="spec-content" id="specContent"></pre>
     </div>
   </div>
@@ -410,7 +413,7 @@ var MODULES = [
 
   // ═══ PHASE 1: QUALITY CORE (Weeks 1-7) ═══
   { id:'deviation-mgr', title:'Deviation Manager', desc:'Full lifecycle: initiate, classify (critical/major/minor), investigate (5-Why, Ishikawa), root cause, CAPA link, close.',
-    path:null, status:'planned', roles:['qa','operator','msat','engineering'],
+    path:'/deviations.html', status:'live', builtRound:1, roles:['qa','operator','msat','engineering'],
     phase:1, phaseLabel:'Quality Core', complexity:'L', daysEstimate:8, startWeek:1,
     dependencies:['raise-obs','qa-centre'],
     dbTables:['deviations'],
@@ -419,7 +422,7 @@ var MODULES = [
     aiFeatures:['Auto-classify severity','5-Why assistant','Ishikawa diagram population','Root cause suggestion','Investigation summary generation'] },
 
   { id:'capa-tracker', title:'CAPA Tracker', desc:'Corrective/preventive actions. Assign owners, track deadlines, verify effectiveness 30-90 days post-implementation.',
-    path:null, status:'wip', roles:['qa','director','admin'],
+    path:'/capas.html', status:'live', builtRound:2, roles:['qa','director','admin'],
     phase:1, phaseLabel:'Quality Core', complexity:'M', daysEstimate:4, startWeek:3,
     dependencies:['deviation-mgr'],
     dbTables:['capas'],
@@ -455,7 +458,7 @@ var MODULES = [
     aiFeatures:['AI pre-screen batch records','Flag anomalies','Generate review summary','QP release checklist'] },
 
   { id:'supplier-quality', title:'Supplier Quality', desc:'Supplier qualification, quality agreements, audit scheduling, performance scorecards, approved supplier list.',
-    path:null, status:'planned', roles:['qa'],
+    path:'/suppliers.html', status:'live', builtRound:2, roles:['qa'],
     phase:1, phaseLabel:'Quality Core', complexity:'M', daysEstimate:4, startWeek:6,
     dependencies:['deviation-mgr'],
     dbTables:['suppliers','supplier_audits','quality_agreements'],
@@ -474,7 +477,7 @@ var MODULES = [
 
   // ═══ PHASE 2: DAILY OPERATIONS (Weeks 7-10) ═══
   { id:'shift-handover', title:'Shift Handover', desc:'Structured handover: open batches, pending samples, equipment holds, voice notes from outgoing shift.',
-    path:null, status:'planned', roles:['operator','qa'],
+    path:'/handover.html', status:'live', builtRound:2, roles:['operator','qa'],
     phase:2, phaseLabel:'Daily Operations', complexity:'M', daysEstimate:5, startWeek:8,
     dependencies:['hub'],
     dbTables:['shift_handovers'],
@@ -483,7 +486,7 @@ var MODULES = [
     aiFeatures:['Auto-summarise shift events','Voice note transcription','Flag unresolved items'] },
 
   { id:'equip-logbook', title:'Equipment Logbook', desc:'GMP-compliant e-logbook per equipment ID. Usage, cleaning, maintenance, alarms. 21 CFR Part 11 audit trail.',
-    path:null, status:'planned', roles:['operator','engineering'],
+    path:'/equipment.html', status:'live', builtRound:1, roles:['operator','engineering'],
     phase:2, phaseLabel:'Daily Operations', complexity:'M', daysEstimate:5, startWeek:8,
     dependencies:[],
     dbTables:['equipment','equipment_log_entries'],
@@ -492,7 +495,7 @@ var MODULES = [
     aiFeatures:['Predictive maintenance alerts','Usage pattern analysis','Anomaly detection on alarms'] },
 
   { id:'equip-status', title:'Equipment Status Board', desc:'Real-time status of all production equipment: available, in-use, cleaning, maintenance, hold.',
-    path:null, status:'planned', roles:['operator','engineering','qa'],
+    path:'/equipment-status.html', status:'live', builtRound:2, roles:['operator','engineering','qa'],
     phase:2, phaseLabel:'Daily Operations', complexity:'M', daysEstimate:4, startWeek:9,
     dependencies:['equip-logbook'],
     dbTables:['equipment'],
@@ -501,7 +504,7 @@ var MODULES = [
     aiFeatures:['Real-time status tracking','Capacity planning suggestions'] },
 
   { id:'cleaning-records', title:'Cleaning Records', desc:'Manual and CIP cleaning records. Detergent lot, rinse conductivity, visual inspection, hold time tracking.',
-    path:null, status:'planned', roles:['operator'],
+    path:'/cleaning.html', status:'live', builtRound:2, roles:['operator'],
     phase:2, phaseLabel:'Daily Operations', complexity:'S', daysEstimate:2, startWeek:10,
     dependencies:['equip-logbook'],
     dbTables:['cleaning_records'],
@@ -684,7 +687,7 @@ var MODULES = [
     aiFeatures:['Bioburden trend detection','Excursion alerts','Gowning compliance tracking'] },
 
   { id:'inoc-incubator', title:'Incubator Management', desc:'CO2 incubator logbooks: temp, CO2, humidity. Alarm history, calibration status, preventive maintenance, capacity planning.',
-    path:null, status:'planned', roles:['operator','engineering'],
+    path:'/incubators.html', status:'live', builtRound:1, roles:['operator','engineering'],
     phase:5, phaseLabel:'Inoculation Suite', complexity:'S', daysEstimate:3, startWeek:27,
     dependencies:['equip-logbook'],
     dbTables:['incubator_logs'],
@@ -713,7 +716,7 @@ var MODULES = [
     aiFeatures:['Anomaly detection','Predictive excursion alerts','Optimal feed strategy','Process parameter modelling'] },
 
   { id:'us-media-prep', title:'Media & Buffer Prep', desc:'Recipe execution for media, feeds, buffers. Component verification, pH adjustment, filter integrity, hold times.',
-    path:null, status:'planned', roles:['operator'],
+    path:'/media-prep.html', status:'live', builtRound:1, roles:['operator'],
     phase:6, phaseLabel:'Process Operations', complexity:'M', daysEstimate:4, startWeek:30,
     dependencies:['batch-exec'],
     dbTables:['media_buffer_records'],
@@ -914,7 +917,7 @@ var MODULES = [
     aiFeatures:['Full narrative generation','Cross-module data aggregation','Trend identification','Year-over-year comparison'] },
 
   { id:'training-matrix', title:'Training Matrix', desc:'Role-based training assignments, SOP revision retraining cascades, compliance status, effectiveness tracking.',
-    path:null, status:'planned', roles:['training','qa','admin'],
+    path:'/training.html', status:'live', builtRound:1, roles:['training','qa','admin'],
     phase:7, phaseLabel:'Support Functions', complexity:'M', daysEstimate:5, startWeek:42,
     dependencies:['doc-control'],
     dbTables:['training_assignments','training_completions'],
@@ -1000,7 +1003,15 @@ function loadProgress() {
 }
 function saveProgress(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
-function getModuleProgress(id) { return (loadProgress()[id] || {}).progress || 0; }
+function getModuleProgress(id) {
+  var m = getModuleById(id);
+  if (m && m.status === 'live') return 100;
+  var saved = (loadProgress()[id] || {}).progress;
+  if (saved !== undefined && saved !== null) return saved;
+  // WIP modules with a path have working code — default 60%
+  if (m && m.status === 'wip' && m.path) return 60;
+  return 0;
+}
 function setModuleProgress(id, pct) {
   var data = loadProgress();
   if (!data[id]) data[id] = {};
@@ -1037,15 +1048,31 @@ function renderStats() {
   var completedDays = MODULES.reduce(function(s, m) { return s + Math.round(m.daysEstimate * getModuleProgress(m.id) / 100); }, 0);
   var overallPct = totalDays > 0 ? Math.round(completedDays / totalDays * 100) : 0;
 
+  // Built = live + wip modules that have pages
+  var built = live + wip;
+  var builtPct = Math.round((built / MODULES.length) * 100);
+
+  // WIP modules with paths (navigable)
+  var wipLinks = MODULES.filter(function(m) { return m.status === 'wip' && m.path; });
+  var wipHtml = wipLinks.map(function(m) {
+    return '<a href="' + m.path + '" style="padding:.15rem .4rem;border-radius:3px;background:#fdcb6e15;border:1px solid #fdcb6e30;color:#fdcb6e;text-decoration:none;font-size:.58rem;white-space:nowrap;transition:all .15s" onmouseover="this.style.background=\'#fdcb6e25\'" onmouseout="this.style.background=\'#fdcb6e15\'">' + m.title + '</a>';
+  }).join('');
+
   document.getElementById('statsBar').innerHTML =
     '<div class="stat"><strong style="color:var(--green)">' + live + '</strong> live</div>' +
     '<div class="stat"><strong style="color:var(--gold)">' + wip + '</strong> wip</div>' +
     '<div class="stat"><strong style="color:var(--blue)">' + planned + '</strong> planned</div>' +
     '<div class="stat-divider"></div>' +
-    '<div class="stat"><strong style="color:var(--white)">' + MODULES.length + '</strong> total</div>' +
-    '<div class="stat"><strong style="color:var(--white)">' + totalDays + '</strong> est. days</div>' +
+    '<div class="stat"><strong style="color:var(--white)">' + built + '/' + MODULES.length + '</strong> built</div>' +
+    '<div style="width:100px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;display:flex">' +
+      '<div style="width:' + Math.round((live/MODULES.length)*100) + '%;background:var(--green);height:100%"></div>' +
+      '<div style="width:' + Math.round((wip/MODULES.length)*100) + '%;background:var(--gold);height:100%"></div>' +
+    '</div>' +
+    '<div class="stat"><strong style="color:var(--accent)">' + builtPct + '%</strong></div>' +
     '<div class="stat-divider"></div>' +
-    '<div class="stat"><strong style="color:var(--accent)">' + overallPct + '%</strong> complete</div>';
+    '<div class="stat"><strong style="color:var(--white)">' + totalDays + '</strong> est. days</div>' +
+    '<div class="stat"><strong style="color:var(--accent)">' + overallPct + '%</strong> progress</div>' +
+    (wipHtml ? '<div class="stat-divider"></div><div style="display:flex;gap:.25rem;align-items:center;flex-wrap:wrap"><span style="font-size:.55rem;color:var(--text4);margin-right:.15rem">OPEN:</span>' + wipHtml + '</div>' : '');
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1053,7 +1080,8 @@ function renderStats() {
 // ═══════════════════════════════════════════════════════════════════
 function renderPhaseLegend() {
   var html = '<span class="phase-pill' + (activeFilters.phase === null ? ' active' : '') + '" style="color:var(--text);background:var(--surface2)" onclick="filterPhase(null)">All</span>';
-  html += '<span class="phase-pill' + (activeFilters.phase === 0 ? ' active' : '') + '" style="color:var(--green);background:#00b89415" onclick="filterPhase(0)">Live (13)</span>';
+  var liveCount = MODULES.filter(function(m) { return m.status === 'live'; }).length;
+  html += '<span class="phase-pill' + (activeFilters.phase === 0 ? ' active' : '') + '" style="color:var(--green);background:#00b89415" onclick="filterPhase(0)">Live (' + liveCount + ')</span>';
   PHASES.forEach(function(p) {
     var count = MODULES.filter(function(m) { return m.phase === p.id; }).length;
     html += '<span class="phase-pill' + (activeFilters.phase === p.id ? ' active' : '') + '" style="color:' + p.color + ';background:' + p.color + '15" onclick="filterPhase(' + p.id + ')">' + p.label + ' (' + count + ')</span>';
@@ -1120,7 +1148,13 @@ function renderGantt() {
       html += '<div class="gantt-module-label">';
       html += '<span class="status-icon">' + statusIcon + '</span>';
       if (m.complexity !== '-') html += '<span class="complexity-dot" style="background:' + complexityColor + '" title="' + m.complexity + '"></span>';
-      html += m.title + '</div>';
+      if (m.path) {
+        html += '<a href="' + m.path + '" onclick="event.stopPropagation()" style="color:var(--white);text-decoration:none;border-bottom:1px dotted var(--text3)">' + m.title + '</a>';
+      } else {
+        html += m.title;
+      }
+      if (m.status === 'wip' && m.path) html += ' <span style="font-size:.5rem;color:var(--gold);background:#fdcb6e15;padding:.1rem .25rem;border-radius:2px;margin-left:.25rem">BUILT</span>';
+      html += '</div>';
       html += '<div class="gantt-timeline" style="position:relative">';
 
       // Gridlines
@@ -1188,7 +1222,11 @@ function renderBoard() {
       if (m.startWeek > 0) html += '<span>W' + m.startWeek + '</span>';
       if (m.aiFeatures.length > 0) html += '<span>AI: ' + m.aiFeatures.length + '</span>';
       if (m.apiEndpoints.length > 0) html += '<span>API: ' + m.apiEndpoints.length + '</span>';
-      html += '</div></div>';
+      html += '</div>';
+      if (m.path) {
+        html += '<a href="' + m.path + '" onclick="event.stopPropagation()" style="display:block;margin-top:.4rem;padding:.25rem .5rem;border-radius:4px;background:' + (m.status === 'live' ? '#00b89415' : '#fdcb6e15') + ';border:1px solid ' + (m.status === 'live' ? '#00b89430' : '#fdcb6e30') + ';color:' + (m.status === 'live' ? 'var(--green)' : 'var(--gold)') + ';text-decoration:none;font-size:.6rem;font-weight:600;text-align:center;transition:all .15s" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'.85\'">Open ' + m.title + ' &rarr;</a>';
+      }
+      html += '</div>';
     });
 
     html += '</div></div>';
@@ -1206,7 +1244,7 @@ function renderRegistry() {
   var visible = MODULES.filter(isModuleVisible);
 
   var html = '<div class="registry"><table class="registry-table"><thead><tr>';
-  html += '<th>Status</th><th>Module</th><th>Phase</th><th>Size</th><th>Days</th><th>Week</th><th>Tables</th><th>APIs</th><th>AI</th><th>Deps</th><th>Progress</th>';
+  html += '<th>Status</th><th>Module</th><th>Page</th><th>Phase</th><th>Size</th><th>Days</th><th>Week</th><th>Tables</th><th>APIs</th><th>AI</th><th>Deps</th><th>Progress</th>';
   html += '</tr></thead><tbody>';
 
   visible.forEach(function(m) {
@@ -1215,6 +1253,13 @@ function renderRegistry() {
     html += '<tr onclick="openDetail(\'' + m.id + '\')">';
     html += '<td><span class="badge badge-' + m.status + '">' + m.status + '</span></td>';
     html += '<td style="color:var(--white);font-weight:600">' + m.title + '</td>';
+    html += '<td>';
+    if (m.path) {
+      html += '<a href="' + m.path + '" onclick="event.stopPropagation()" style="color:var(--accent);text-decoration:none;font-size:.6rem" title="' + m.path + '">Open &rarr;</a>';
+    } else {
+      html += '<span style="color:var(--text4);font-size:.55rem">—</span>';
+    }
+    html += '</td>';
     html += '<td style="color:' + phaseColor + ';font-size:.6rem">' + m.phaseLabel + '</td>';
     html += '<td>' + (m.complexity !== '-' ? '<span class="badge badge-' + m.complexity.toLowerCase() + '">' + m.complexity + '</span>' : '-') + '</td>';
     html += '<td>' + (m.daysEstimate || '-') + '</td>';
@@ -1223,7 +1268,7 @@ function renderRegistry() {
     html += '<td style="font-size:.6rem">' + m.apiEndpoints.length + '</td>';
     html += '<td style="font-size:.6rem">' + m.aiFeatures.length + '</td>';
     html += '<td style="font-size:.6rem">' + m.dependencies.length + '</td>';
-    html += '<td><div class="progress-bar-bg" style="height:4px;width:60px"><div class="progress-bar-fill" style="width:' + progress + '%;background:' + phaseColor + '"></div></div></td>';
+    html += '<td><div class="progress-bar-bg" style="height:4px;width:60px"><div class="progress-bar-fill" style="width:' + progress + '%;background:' + phaseColor + '"></div></div> <span style="font-size:.5rem;color:var(--text3)">' + progress + '%</span></td>';
     html += '</tr>';
   });
 
@@ -1288,9 +1333,16 @@ function renderProgress() {
     phaseMods.forEach(function(m) {
       var mp = getModuleProgress(m.id);
       var isLive = m.status === 'live';
+      var isBuilt = m.status === 'wip' && m.path;
       html += '<div style="display:flex;align-items:center;gap:.35rem;font-size:.6rem;cursor:pointer;padding:.15rem 0" onclick="event.stopPropagation();openDetail(\'' + m.id + '\')">';
       html += '<div class="progress-bar-bg" style="height:3px;width:40px;flex-shrink:0"><div class="progress-bar-fill" style="width:' + (isLive ? 100 : mp) + '%;background:' + phase.color + '"></div></div>';
-      html += '<span style="color:' + (isLive || mp === 100 ? 'var(--green)' : mp > 0 ? 'var(--gold)' : 'var(--text3)') + '">' + m.title + '</span>';
+      if (m.path) {
+        html += '<a href="' + m.path + '" onclick="event.stopPropagation()" style="color:' + (isLive || mp === 100 ? 'var(--green)' : mp > 0 ? 'var(--gold)' : 'var(--text3)') + ';text-decoration:none;border-bottom:1px dotted">' + m.title + '</a>';
+      } else {
+        html += '<span style="color:' + (isLive || mp === 100 ? 'var(--green)' : mp > 0 ? 'var(--gold)' : 'var(--text3)') + '">' + m.title + '</span>';
+      }
+      if (isBuilt) html += ' <span style="font-size:.45rem;color:var(--gold);background:#fdcb6e15;padding:.05rem .2rem;border-radius:2px">BUILT</span>';
+      html += ' <span style="font-size:.5rem;color:var(--text4)">' + mp + '%</span>';
       html += '</div>';
     });
     html += '</div></div>';
@@ -1318,6 +1370,11 @@ function openDetail(moduleId) {
   html += '</div>';
   html += '<button class="detail-close" onclick="closeDetail()">&times;</button>';
   html += '</div>';
+
+  // Open Page button for modules with a live path
+  if (m.path) {
+    html += '<a href="' + m.path + '" style="display:inline-flex;align-items:center;gap:.35rem;margin:.5rem 1rem 0;padding:.45rem .9rem;background:#6c5ce7;color:#fff;border-radius:6px;text-decoration:none;font-size:.75rem;font-weight:600;transition:all .15s" onmouseover="this.style.background=\'#7c6cf7\'" onmouseout="this.style.background=\'#6c5ce7\'">Open ' + m.title + ' &rarr;</a>';
+  }
 
   html += '<div class="detail-body">';
 
@@ -1468,13 +1525,34 @@ function calculateRounds() {
   var assigned = {};
   var AGENTS_PER_ROUND = 5;
 
-  // Live modules are "round 0" — already done
+  // Pre-Round 0: live modules WITHOUT a builtRound tag (the original 13)
   MODULES.forEach(function(m) {
-    if (m.status === 'live') assigned[m.id] = 0;
+    if (m.status === 'live' && !m.builtRound) assigned[m.id] = 0;
   });
 
-  for (var r = 1; r <= 30; r++) {
-    // Find modules whose deps are ALL in previous rounds
+  // Step 1: Insert completed rounds from builtRound data
+  var maxCompleted = 0;
+  MODULES.forEach(function(m) { if (m.builtRound && m.builtRound > maxCompleted) maxCompleted = m.builtRound; });
+
+  for (var cr = 1; cr <= maxCompleted; cr++) {
+    var completedBatch = MODULES.filter(function(m) { return m.builtRound === cr; });
+    if (completedBatch.length === 0) continue;
+    completedBatch.forEach(function(m) { assigned[m.id] = cr; });
+    var cTotalDays = completedBatch.reduce(function(s, m) { return s + m.daysEstimate; }, 0);
+    var cMaxDays = Math.max.apply(null, completedBatch.map(function(m) { return m.daysEstimate; }));
+    ROUNDS.push({
+      number: cr,
+      modules: completedBatch,
+      totalDays: cTotalDays,
+      parallelDays: cMaxDays,
+      agentCount: completedBatch.length,
+      completed: true
+    });
+  }
+
+  // Step 2: Compute future rounds from dependency graph
+  var nextRound = maxCompleted + 1;
+  for (var r = nextRound; r <= 30 + nextRound; r++) {
     var eligible = MODULES.filter(function(m) {
       if (assigned[m.id] !== undefined) return false;
       if (m.status === 'live') return false;
@@ -1485,7 +1563,6 @@ function calculateRounds() {
 
     if (eligible.length === 0) break;
 
-    // Sort eligible: by phase (earlier first), then by number of dependents (more unlocks first)
     eligible.sort(function(a, b) {
       if (a.phase !== b.phase) return a.phase - b.phase;
       var aDeps = MODULES.filter(function(m) { return m.dependencies.indexOf(a.id) !== -1; }).length;
@@ -1503,7 +1580,8 @@ function calculateRounds() {
       modules: batch,
       totalDays: totalDays,
       parallelDays: maxDays,
-      agentCount: batch.length
+      agentCount: batch.length,
+      completed: false
     });
   }
 
@@ -1551,12 +1629,25 @@ function renderRounds() {
     var colorList = Object.keys(phaseColors).map(function(k) { return phaseColors[k]; });
 
     html += '<div class="round-card">';
-    html += '<div class="round-header">';
-    html += '<div class="round-title"><span class="round-num">R' + round.number + '</span> Round ' + round.number + '</div>';
+    // Check if all modules in this round are built
+    var roundBuilt = round.modules.filter(function(m) { return m.status === 'live' || (m.status === 'wip' && m.path); }).length;
+    var roundDone = roundBuilt === round.modules.length;
+    var roundPct = round.modules.length > 0 ? Math.round(roundBuilt / round.modules.length * 100) : 0;
+
+    html += '<div class="round-header" style="' + (roundDone ? 'background:#00b89410;border-bottom:1px solid #00b89430' : '') + '">';
+    html += '<div class="round-title">';
+    html += '<span class="round-num" style="' + (roundDone ? 'background:var(--green)' : '') + '">R' + round.number + '</span> Round ' + round.number;
+    if (roundDone) html += ' <span style="font-size:.6rem;color:var(--green);background:#00b89415;padding:.15rem .4rem;border-radius:3px;margin-left:.4rem;font-weight:700">COMPLETE</span>';
+    else if (roundBuilt > 0) html += ' <span style="font-size:.6rem;color:var(--gold);background:#fdcb6e15;padding:.15rem .4rem;border-radius:3px;margin-left:.4rem;font-weight:700">' + roundBuilt + '/' + round.modules.length + ' BUILT</span>';
+    html += '</div>';
     html += '<div class="round-meta">';
     html += '<span><strong style="color:var(--white)">' + round.agentCount + '</strong> agents</span>';
     html += '<span><strong style="color:var(--green)">' + round.parallelDays + 'd</strong> wall clock</span>';
     html += '<span>' + round.totalDays + 'd total effort</span>';
+    if (roundPct > 0) html += '<span style="color:' + (roundDone ? 'var(--green)' : 'var(--gold)') + ';font-weight:700">' + roundPct + '%</span>';
+    if (!roundDone) {
+      html += '<button id="prepBtn' + round.number + '" class="spec-copy-btn" style="padding:.25rem .6rem;font-size:.6rem;background:var(--accent-dim);border-color:var(--accent);color:var(--accent)" onclick="event.stopPropagation();prepareRound(' + round.number + ')">Prepare Worktrees</button>';
+    }
     html += '</div></div>';
 
     html += '<div class="round-body">';
@@ -1571,6 +1662,7 @@ function renderRounds() {
       html += '<div class="round-module-title">' + m.title + '</div>';
       html += '<div class="round-module-desc">' + m.desc + '</div>';
       html += '<div class="round-module-branch"><span style="color:var(--text4)">Agent ' + (idx + 1) + ':</span> <code>feature/' + m.id + '</code></div>';
+      var isBuilt = m.status === 'live' || (m.status === 'wip' && m.path);
       html += '<div class="round-module-stats">';
       html += '<span>' + m.daysEstimate + 'd</span>';
       html += '<span>API: ' + m.apiEndpoints.length + '</span>';
@@ -1580,7 +1672,11 @@ function renderRounds() {
       if (progress > 0) {
         html += '<div style="margin-top:.3rem"><div class="progress-bar-bg" style="height:3px"><div class="progress-bar-fill" style="width:' + progress + '%;background:' + phaseColor + '"></div></div></div>';
       }
-      html += '<button class="spec-copy-btn" style="width:100%;margin-top:.4rem;padding:.3rem;font-size:.6rem" onclick="event.stopPropagation();openSpec(\'' + m.id + '\')">Copy Agent Spec</button>';
+      if (isBuilt && m.path) {
+        html += '<a href="' + m.path + '" onclick="event.stopPropagation()" style="display:block;width:100%;margin-top:.4rem;padding:.3rem;font-size:.6rem;text-align:center;border-radius:4px;background:#00b89415;border:1px solid #00b89430;color:var(--green);text-decoration:none;font-weight:600;transition:all .15s" onmouseover="this.style.background=\'#00b89425\'" onmouseout="this.style.background=\'#00b89415\'">Open ' + m.title + ' &rarr;</a>';
+      } else {
+        html += '<button class="spec-copy-btn" style="width:100%;margin-top:.4rem;padding:.3rem;font-size:.6rem" onclick="event.stopPropagation();openSpec(\'' + m.id + '\')">Copy Agent Spec</button>';
+      }
       html += '</div>';
     });
     html += '</div></div>';
@@ -1607,6 +1703,14 @@ function renderRounds() {
 // ═══════════════════════════════════════════════════════════════════
 // AGENT SPEC GENERATOR
 // ═══════════════════════════════════════════════════════════════════
+function getWorktreePath(moduleId) {
+  return '.claude/worktrees/' + moduleId;
+}
+
+function getLaunchCommand(moduleId) {
+  return 'cd ' + getWorktreePath(moduleId) + ' && claude "Read AGENT_SPEC.md and build everything specified. Start by reading the reference files."';
+}
+
 function generateAgentSpec(moduleId) {
   var m = getModuleById(moduleId);
   if (!m) return '';
@@ -1619,16 +1723,20 @@ function generateAgentSpec(moduleId) {
   var spec = '';
   spec += '# Module: ' + m.title + '\n';
   spec += '# Branch: feature/' + m.id + '\n';
+  spec += '# Worktree: ' + getWorktreePath(m.id) + '\n';
   spec += '# Phase: ' + m.phase + ' — ' + m.phaseLabel + '\n';
   spec += '# Complexity: ' + m.complexity + ' (' + m.daysEstimate + ' days)\n';
+  spec += '\n';
+  spec += '## Launch\n';
+  spec += '```\n' + getLaunchCommand(m.id) + '\n```\n';
   spec += '\n';
   spec += '## What to build\n';
   spec += m.desc + '\n';
   spec += '\n';
   spec += '## Files to create\n';
   m.frontendPages.forEach(function(p) { spec += '- ' + p + ' (frontend page)\n'; });
-  spec += '- server/services/' + m.id.replace(/-/g, '-') + '.service.js (service layer)\n';
-  spec += '- server/routes/' + m.id.replace(/-/g, '-') + '.js (API routes)\n';
+  spec += '- server/services/' + m.id + '.service.js (service layer)\n';
+  spec += '- server/routes/' + m.id + '.js (API routes)\n';
   spec += '\n';
 
   if (m.dbTables.length > 0) {
@@ -1661,21 +1769,21 @@ function generateAgentSpec(moduleId) {
   }
 
   spec += '## Reference Pages (copy patterns from)\n';
-  spec += '- docs/qa/qa.html (layout pattern — split panel with list + detail)\n';
-  spec += '- server/services/capa.service.js (service factory pattern)\n';
-  spec += '- server/routes/capa.js (route pattern with auth guards)\n';
+  spec += '- docs/qa/deviations.html (layout — split panel with list + detail)\n';
+  spec += '- server/services/deviation-mgr.service.js (service factory with AI)\n';
+  spec += '- server/routes/deviation-mgr.js (route pattern with auth guards)\n';
   spec += '- server/lib/ids.js (add ID generator, e.g. ' + m.id.replace(/-.*/, '') + 'Id())\n';
   spec += '- server/lib/audit.js (use auditLog for all mutations)\n';
   spec += '\n';
   spec += '## Architecture Rules\n';
   spec += '- DO NOT modify existing files except:\n';
   spec += '  - server/routes/admin.js (add CREATE TABLE)\n';
-  spec += '  - server/index.js (wire service + mount routes)\n';
+  spec += '  - server/index.js (wire service + mount routes + PAGE_MAP)\n';
   spec += '  - server/lib/ids.js (add ID generator)\n';
-  spec += '- Follow the service factory pattern: module.exports = function make___Service({ supabase, auditLog, anthropic }) { ... }\n';
+  spec += '- Follow the service factory pattern: module.exports = { make___Service }\n';
   spec += '- Use requireAuth and requireRole() middleware on all routes\n';
   spec += '- Use auditLog() for all create/update/delete operations\n';
-  spec += '- Frontend: include shared/styles.css, shared/nav.js, shared/i18n.js\n';
+  spec += '- Frontend: include shared/styles.css, shared/nav.js, shared/i18n.js, shared/dev-progress.js\n';
   spec += '- Frontend: use authFetch() for all API calls\n';
   spec += '- Frontend: follow dark theme (--bg, --surface, --accent CSS vars)\n';
   spec += '- Frontend: split-panel layout (list left, detail right)\n';
@@ -1685,33 +1793,139 @@ function generateAgentSpec(moduleId) {
   return spec;
 }
 
+var _currentSpecModuleId = null;
+
 function openSpec(moduleId) {
+  _currentSpecModuleId = moduleId;
   var spec = generateAgentSpec(moduleId);
   var m = getModuleById(moduleId);
+  var cmd = getLaunchCommand(moduleId);
   document.getElementById('specTitle').textContent = 'Agent Spec — ' + m.title;
+  document.getElementById('specLaunchBar').innerHTML =
+    '<span style="color:var(--text3)">$</span> ' + cmd;
   document.getElementById('specContent').textContent = spec;
   document.getElementById('specOverlay').classList.add('active');
 }
 
 function closeSpec() {
   document.getElementById('specOverlay').classList.remove('active');
+  _currentSpecModuleId = null;
+}
+
+function flashBtn(btn, msg) {
+  var orig = btn.textContent;
+  var origBg = btn.style.background;
+  var origColor = btn.style.color;
+  var origBorder = btn.style.borderColor;
+  btn.textContent = msg || 'Copied!';
+  btn.style.background = 'var(--green)';
+  btn.style.color = '#000';
+  btn.style.borderColor = 'var(--green)';
+  setTimeout(function() {
+    btn.textContent = orig;
+    btn.style.background = origBg;
+    btn.style.color = origColor;
+    btn.style.borderColor = origBorder;
+  }, 1500);
 }
 
 function copySpec() {
   var text = document.getElementById('specContent').textContent;
   navigator.clipboard.writeText(text).then(function() {
-    var btn = document.querySelector('.spec-copy-btn');
-    var orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    btn.style.background = 'var(--green)';
-    btn.style.color = '#000';
-    btn.style.borderColor = 'var(--green)';
+    flashBtn(document.querySelectorAll('.spec-modal-actions .spec-copy-btn')[2]);
+  });
+}
+
+function copyLaunch() {
+  if (!_currentSpecModuleId) return;
+  var cmd = getLaunchCommand(_currentSpecModuleId);
+  navigator.clipboard.writeText(cmd).then(function() {
+    flashBtn(document.getElementById('btnCopyLaunch'), 'Copied!');
+  });
+}
+
+function copyWorktreePath() {
+  if (!_currentSpecModuleId) return;
+  var p = getWorktreePath(_currentSpecModuleId);
+  navigator.clipboard.writeText(p).then(function() {
+    flashBtn(document.getElementById('btnCopyPath'), 'Copied!');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PREPARE ROUND — Create worktrees + AGENT_SPEC.md via server API
+// ═══════════════════════════════════════════════════════════════════
+function prepareRound(roundNumber) {
+  var round = ROUNDS.find(function(r) { return r.number === roundNumber; });
+  if (!round) return;
+
+  var btn = document.getElementById('prepBtn' + roundNumber);
+  if (!btn) return;
+  btn.textContent = 'Preparing...';
+  btn.style.opacity = '.6';
+  btn.disabled = true;
+
+  // Build payload: module id + generated spec for each
+  var payload = round.modules.map(function(m) {
+    return { id: m.id, spec: generateAgentSpec(m.id) };
+  });
+
+  authFetch('/admin/prepare-round', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ modules: payload })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      btn.textContent = 'Ready!';
+      btn.style.background = 'var(--green)';
+      btn.style.color = '#000';
+      btn.style.borderColor = 'var(--green)';
+      btn.style.opacity = '1';
+
+      // Show results summary
+      var created = data.results.filter(function(r) { return r.status === 'created'; }).length;
+      var exists = data.results.filter(function(r) { return r.status === 'exists'; }).length;
+      var errors = data.results.filter(function(r) { return r.status === 'error'; }).length;
+      var msg = created + ' created';
+      if (exists > 0) msg += ', ' + exists + ' existed';
+      if (errors > 0) msg += ', ' + errors + ' failed';
+      btn.title = msg;
+
+      setTimeout(function() {
+        btn.textContent = 'Worktrees Ready';
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      btn.textContent = 'Error';
+      btn.style.background = 'var(--red)';
+      btn.style.color = '#fff';
+      btn.style.borderColor = 'var(--red)';
+      btn.style.opacity = '1';
+      btn.title = data.error || 'Unknown error';
+      setTimeout(function() {
+        btn.textContent = 'Prepare Worktrees';
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+        btn.disabled = false;
+      }, 3000);
+    }
+  })
+  .catch(function(err) {
+    btn.textContent = 'Error';
+    btn.style.background = 'var(--red)';
+    btn.style.color = '#fff';
+    btn.style.opacity = '1';
+    btn.title = err.message;
     setTimeout(function() {
-      btn.textContent = orig;
+      btn.textContent = 'Prepare Worktrees';
       btn.style.background = '';
       btn.style.color = '';
       btn.style.borderColor = '';
-    }, 1500);
+      btn.disabled = false;
+    }, 3000);
   });
 }
 
@@ -1755,5 +1969,6 @@ document.addEventListener('keydown', function(e) {
   renderCurrentView();
 })();
 </script>
+<script src="/shared/dev-progress.js"></script>
 </body>
 </html>

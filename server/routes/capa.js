@@ -42,29 +42,58 @@ module.exports = function(app, { auth, capaService }) {
 
   // ── CAPA Tracking ──────────────────────────────────────────────────────
 
+  // List CAPAs (with optional query filters)
   app.get('/capas', requireAuth, async (req, res) => {
     try {
-      const data = await capaService.listCapas();
+      const { submissionRef, status, owner, type, overdue } = req.query;
+      const data = await capaService.listCapas({ submissionRef, status, owner, capaType: type, overdue });
       res.json(data);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.get('/capas/:submissionRef', requireAuth, async (req, res) => {
+  // Dashboard stats (static path — must be before :capaId)
+  app.get('/capas/stats', requireRole('qa', 'director', 'admin'), async (req, res) => {
     try {
-      const data = await capaService.listCapas(req.params.submissionRef);
+      const data = await capaService.getDashboardStats();
       res.json(data);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
   });
 
+  // AI: suggest similar CAPAs (static path — must be before :capaId)
+  app.post('/capas/suggest-similar', requireRole('qa', 'director', 'admin'), async (req, res) => {
+    const { title, description } = req.body;
+    try {
+      const result = await capaService.suggestSimilarCapas({ title, description });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Get single CAPA by ID
+  app.get('/capas/:capaId', requireAuth, async (req, res) => {
+    try {
+      const data = await capaService.getCapaById(req.params.capaId);
+      res.json(data);
+    } catch (err) {
+      const code = err.statusCode || 500;
+      if (code < 500) return res.status(code).json({ error: err.message });
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Create CAPA
   app.post('/capas', requireRole('qa', 'director', 'admin'), async (req, res) => {
-    const { submissionRef, title, description, timing, timingLabel, owner, ownerRole, dueDate } = req.body;
+    const { submissionRef, title, description, timing, timingLabel,
+            owner, ownerRole, dueDate, capaType, rootCauseCategory } = req.body;
     try {
       const result = await capaService.createCapa({
-        submissionRef, title, description, timing, timingLabel, owner, ownerRole, dueDate, req,
+        submissionRef, title, description, timing, timingLabel,
+        owner, ownerRole, dueDate, capaType, rootCauseCategory, req,
       });
       res.json(result);
     } catch (err) {
@@ -77,6 +106,7 @@ module.exports = function(app, { auth, capaService }) {
     }
   });
 
+  // Update CAPA
   app.patch('/capas/:capaId', requireRole('qa', 'director', 'admin'), async (req, res) => {
     const { status, owner, ownerRole, evidence, dueDate, userId, reason } = req.body;
     try {
@@ -87,6 +117,46 @@ module.exports = function(app, { auth, capaService }) {
     } catch (err) {
       const code = err.statusCode || 500;
       if (code < 500) return res.status(code).json({ error: err.message });
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Verify effectiveness
+  app.post('/capas/:capaId/verify-effectiveness', requireRole('qa', 'director', 'admin'), async (req, res) => {
+    const { status, notes } = req.body;
+    try {
+      const result = await capaService.verifyEffectiveness({
+        capaId: req.params.capaId,
+        status, notes,
+        userId: req.user.name || req.user.id,
+        userRole: req.user.role,
+        req,
+      });
+      res.json(result);
+    } catch (err) {
+      const code = err.statusCode || 500;
+      if (code < 500) return res.status(code).json({ error: err.message });
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // AI: suggest preventive actions
+  app.post('/capas/:capaId/suggest-preventive', requireRole('qa', 'director', 'admin'), async (req, res) => {
+    const { rootCause, description } = req.body;
+    try {
+      const result = await capaService.suggestPreventiveActions({ rootCause, description });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // AI: predict effectiveness
+  app.post('/capas/:capaId/predict-effectiveness', requireRole('qa', 'director', 'admin'), async (req, res) => {
+    try {
+      const result = await capaService.predictEffectiveness(req.params.capaId);
+      res.json(result);
+    } catch (err) {
       res.status(500).json({ error: err.message });
     }
   });
