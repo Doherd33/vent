@@ -39,6 +39,11 @@ const trainingMatrixRoutes  = require('./routes/training-matrix');
 const shiftHandoverRoutes   = require('./routes/shift-handover');
 const supplierQualityRoutes = require('./routes/supplier-quality');
 const cleaningRecordsRoutes = require('./routes/cleaning-records');
+const changeControlRoutes   = require('./routes/change-control');
+const complaintRoutes       = require('./routes/complaint-mgr');
+const batchDispositionRoutes = require('./routes/batch-disposition');
+const qcLabRoutes           = require('./routes/qc-lab');
+const cellBankRoutes        = require('./routes/cell-bank');
 
 // ── Middleware modules ─────────────────────────────────────────────────────────
 const requestLogger = require('./middleware/request-logger');
@@ -59,6 +64,11 @@ const makeTrainingMatrixService = require('./services/training-matrix.service');
 const { makeShiftHandoverService } = require('./services/shift-handover.service');
 const { makeSupplierQualityService } = require('./services/supplier-quality.service');
 const { makeCleaningRecordsService } = require('./services/cleaning-records.service');
+const { makeChangeControlService }  = require('./services/change-control.service');
+const { makeComplaintService }      = require('./services/complaint-mgr.service');
+const { makeBatchDispositionService } = require('./services/batch-disposition.service');
+const { makeQcLabService }          = require('./services/qc-lab.service');
+const { makeCellBankService }       = require('./services/cell-bank.service');
 const makeSubmissionPipeline    = require('./graphs/submission-pipeline');
 
 // ── App + shared clients ──────────────────────────────────────────────────────
@@ -146,6 +156,11 @@ const PAGE_MAP = {
   'capas.html':       'qa/capas.html',
   'handover.html':    'operator/handover.html',
   'cleaning.html':    'operator/cleaning.html',
+  'change-control.html': 'qa/change-control.html',
+  'complaints.html':  'qa/complaints.html',
+  'dispositions.html': 'qa/dispositions.html',
+  'qc-lab.html':      'qc/lab.html',
+  'cell-banks.html':  'inoc/cell-banks.html',
   'dev.html':         'dev.html',
   'project.html':     'project.html',
 };
@@ -215,11 +230,17 @@ const trainingMatrixService = makeTrainingMatrixService({ supabase, auditLog, an
 const supplierQualityService = makeSupplierQualityService({ supabase, auditLog, anthropic });
 const shiftHandoverService  = makeShiftHandoverService({ supabase, auditLog, anthropic });
 const cleaningRecordsService = makeCleaningRecordsService({ supabase, auditLog, anthropic });
+const changeControlService  = makeChangeControlService({ supabase, auditLog, anthropic });
+const complaintService      = makeComplaintService({ supabase, auditLog, anthropic });
+const batchDispositionService = makeBatchDispositionService({ supabase, auditLog, anthropic });
+const qcLabService           = makeQcLabService({ supabase, auditLog, anthropic });
+const cellBankService        = makeCellBankService({ supabase, auditLog, anthropic });
 
 // ── Mount all route modules ───────────────────────────────────────────────────
 const deps = { supabase, anthropic, auditLog, rag, auth, gdpImage, getVoyageClient, buildContactsContext,
                submissionService, sopService, capaService, chatService, voiceService,
-               deviationService, equipLogbookService, equipStatusService, incubatorService, mediaPrepService, trainingMatrixService, supplierQualityService, shiftHandoverService, cleaningRecordsService };
+               deviationService, equipLogbookService, equipStatusService, incubatorService, mediaPrepService, trainingMatrixService, supplierQualityService, shiftHandoverService, cleaningRecordsService,
+               changeControlService, complaintService, batchDispositionService, qcLabService, cellBankService };
 authRoutes(app, deps);
 adminRoutes(app, deps);
 submitRoutes(app, deps);
@@ -240,6 +261,11 @@ trainingMatrixRoutes(app, deps);
 supplierQualityRoutes(app, deps);
 shiftHandoverRoutes(app, deps);
 cleaningRecordsRoutes(app, deps);
+changeControlRoutes(app, deps);
+complaintRoutes(app, deps);
+batchDispositionRoutes(app, deps);
+qcLabRoutes(app, deps);
+cellBankRoutes(app, deps);
 
 // ── Centralised error handler (must be last) ──────────────────────────────────
 app.use(errorHandler);

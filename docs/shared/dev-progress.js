@@ -7,7 +7,7 @@
   'use strict';
 
   var modules = [
-    // Live (23) — original 13 + Round 1 (5) + Round 2 (5)
+    // Live (28) — original 13 + Round 1 (5) + Round 2 (5) + Round 3 (5)
     { id:'charlie',      title:'Charlie AI',       path:'/query.html',       status:'live' },
     { id:'hub',           title:'Hub',              path:'/hub.html',         status:'live' },
     { id:'voice',         title:'Voice',            path:'/submit.html',      status:'live' },
@@ -26,12 +26,18 @@
     { id:'inoc-incubator',title:'Incubators',       path:'/incubators.html',  status:'live' },
     { id:'us-media-prep', title:'Media Prep',       path:'/media-prep.html',  status:'live' },
     { id:'training-matrix',title:'Training',        path:'/training.html',    status:'live' },
-    // Live (23) — original 13 + Round 1 (5) + Round 2 (5)
+    // Round 2 (5)
     { id:'capa-tracker',  title:'CAPA',             path:'/capas.html',       status:'live' },
     { id:'supplier-quality',title:'Suppliers',      path:'/suppliers.html',   status:'live' },
     { id:'shift-handover',title:'Handover',         path:'/handover.html',    status:'live' },
     { id:'equip-status',  title:'Equip Status',     path:'/equipment-status.html', status:'live' },
     { id:'cleaning-records',title:'Cleaning',       path:'/cleaning.html',    status:'live' },
+    // Round 3 (5)
+    { id:'change-control',  title:'Change Control',      path:'/change-control.html',  status:'live' },
+    { id:'complaint-mgr',   title:'Complaints',          path:'/complaints.html',      status:'live' },
+    { id:'batch-disposition',title:'Disposition',         path:'/dispositions.html',    status:'live' },
+    { id:'qc-lab',           title:'QC Lab',              path:'/qc-lab.html',          status:'live' },
+    { id:'inoc-cell-bank',   title:'Cell Banks',          path:'/cell-banks.html',      status:'live' },
   ];
 
   var totalModules = 76;

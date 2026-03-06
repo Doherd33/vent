@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · QC Lab Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 280px 4px 1fr;
+  grid-template-rows: 1fr 4px 140px;
+  overflow: hidden;
+}
+
+/* ── RESIZE HANDLES ── */
+.resizer { background: #3c3c3c; z-index: 10; transition: background 0.15s; position: relative; }
+.resizer:hover, .resizer.dragging { background: #007acc; }
+.resizer-v { cursor: col-resize; grid-row: 1; }
+.resizer-h { cursor: row-resize; grid-column: 1 / 4; grid-row: 2; }
+.resizer::after { content: ''; position: absolute; inset: 0; }
+.resizer-v::after  { left: -4px; right: -4px; }
+.resizer-h::after  { top: -4px; bottom: -4px; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  grid-column: 1; grid-row: 1 / 2;
+  background: #252526; border-right: 1px solid #3c3c3c;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-header {
+  padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: #8e8e8e; border-bottom: 1px solid #3c3c3c;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-badge {
+  background: #007acc; color: #fff; font-size: 10px; padding: 1px 6px;
+  border-radius: 8px; font-weight: 600;
+}
+.filter-bar {
+  display: flex; gap: 2px; padding: 6px 8px; border-bottom: 1px solid #2d2d30; flex-wrap: wrap;
+}
+.filter-btn {
+  background: none; border: 1px solid #3c3c3c; color: #8e8e8e; font-size: 10px;
+  padding: 2px 8px; border-radius: 2px; cursor: pointer; transition: all .15s;
+}
+.filter-btn:hover { color: #ccc; border-color: #5a5a5a; }
+.filter-btn.active { background: #007acc; color: #fff; border-color: #007acc; }
+.search-bar {
+  padding: 4px 8px; border-bottom: 1px solid #2d2d30;
+}
+.search-bar input {
+  width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 11px; padding: 4px 8px; outline: none;
+}
+.search-bar input:focus { border-color: #007acc; }
+.sample-list { flex: 1; overflow-y: auto; }
+
+/* ── SAMPLE CARD ── */
+.sample-card {
+  padding: 8px 10px; border-radius: 2px; margin-bottom: 1px;
+  cursor: pointer; transition: background 0.1s; border-left: 2px solid transparent;
+}
+.sample-card:hover { background: #2a2d2e; }
+.sample-card.active { background: #094771; border-left-color: #007acc; }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.card-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #9cdcfe; }
+.card-title { font-size: 11px; color: #d4d4d4; line-height: 1.4; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { font-size: 10px; color: #5a5a5a; display: flex; align-items: center; gap: 6px; }
+
+/* ── PRIORITY BADGES ── */
+.priority-badge { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; text-transform: uppercase; letter-spacing: .03em; }
+.pri-critical { background: rgba(244,71,71,0.2); color: #f44747; border: 1px solid rgba(244,71,71,0.35); }
+.pri-urgent   { background: rgba(255,198,77,0.15); color: #ffc64d; border: 1px solid rgba(255,198,77,0.3); }
+.pri-normal   { background: rgba(78,201,176,0.15); color: #4ec9b0; border: 1px solid rgba(78,201,176,0.3); }
+
+/* ── STATUS BADGES ── */
+.status-badge { font-size: 9px; padding: 1px 6px; border-radius: 2px; text-transform: capitalize; }
+.st-received       { background: rgba(0,122,204,0.18); color: #4fc1ff; }
+.st-in_testing     { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.st-pending_review { background: rgba(206,145,255,0.15); color: #ce91ff; }
+.st-completed      { background: rgba(78,201,176,0.15); color: #4ec9b0; }
+.st-cancelled      { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+
+/* ── BATCH CRITICAL ── */
+.batch-critical-star { color: #f44747; font-size: 11px; margin-left: 4px; }
+
+/* ── TAT INDICATOR ── */
+.tat-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.tat-ok { background: #4ec9b0; }
+.tat-risk { background: #ffc64d; }
+.tat-overdue { background: #f44747; }
+
+/* ── CENTER PANEL ── */
+.center-panel {
+  grid-column: 3; grid-row: 1 / 2;
+  background: var(--bg, #1e1e1e); display: flex; flex-direction: column; overflow: hidden;
+}
+.editor-tabs {
+  display: flex; gap: 0; background: #252526; border-bottom: 1px solid #3c3c3c;
+  min-height: 34px; align-items: flex-end; overflow-x: auto;
+}
+.editor-tab {
+  padding: 6px 14px; font-size: 11px; color: #8e8e8e; cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s;
+}
+.editor-tab:hover { color: #ccc; }
+.editor-tab.active { color: #fff; border-bottom-color: #007acc; }
+.center-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-state .ei { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.empty-state p { color: #5a5a5a; font-size: 12px; }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: flex; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #2d2d30;
+  background: #252526; flex-wrap: wrap;
+}
+.stat-card {
+  background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 4px;
+  padding: 8px 14px; min-width: 100px; text-align: center;
+}
+.stat-value { font-size: 20px; font-weight: 700; color: #e0e0e0; font-family: 'JetBrains Mono', monospace; }
+.stat-label { font-size: 9px; color: #8e8e8e; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+.stat-warn .stat-value { color: #f44747; }
+
+/* ── DETAIL SECTIONS ── */
+.detail-section { margin-bottom: 20px; }
+.section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #8e8e8e; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #2d2d30;
+  display: flex; align-items: center; gap: 8px;
+}
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.detail-item label { font-size: 10px; color: #5a5a5a; display: block; margin-bottom: 2px; }
+.detail-item span { font-size: 12px; color: #d4d4d4; }
+
+/* ── TEST TABLE ── */
+.test-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.test-table th {
+  text-align: left; padding: 6px 8px; color: #8e8e8e; font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .03em; border-bottom: 1px solid #3c3c3c;
+}
+.test-table td { padding: 6px 8px; color: #cccccc; border-bottom: 1px solid #2d2d30; }
+.test-table tr:hover { background: rgba(0,122,204,0.08); }
+.oos-row { background: rgba(244,71,71,0.08) !important; }
+.oos-badge { background: rgba(244,71,71,0.2); color: #f44747; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; }
+.oot-badge { background: rgba(255,198,77,0.15); color: #ffc64d; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; }
+.pass-badge { background: rgba(78,201,176,0.15); color: #4ec9b0; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; }
+.fail-badge { background: rgba(244,71,71,0.2); color: #f44747; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; }
+.qual-warn { background: rgba(255,198,77,0.15); color: #ffc64d; font-size: 9px; padding: 1px 6px; border-radius: 2px; cursor: help; }
+
+/* ── REVIEW STATUS ── */
+.rv-pending_review { color: #ffc64d; }
+.rv-reviewed { color: #4fc1ff; }
+.rv-approved { color: #4ec9b0; }
+.rv-rejected { color: #f44747; }
+
+/* ── OOS INVESTIGATION PANEL ── */
+.oos-panel {
+  background: rgba(244,71,71,0.05); border: 1px solid rgba(244,71,71,0.2);
+  border-radius: 4px; padding: 12px; margin-top: 8px;
+}
+.oos-panel h4 { font-size: 12px; color: #f44747; margin: 0 0 8px 0; }
+.oos-phase { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #ffc64d; }
+.oos-due { font-size: 10px; color: #8e8e8e; }
+.oos-due.overdue { color: #f44747; font-weight: 700; }
+
+/* ── WORKLOAD TABLE ── */
+.workload-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.workload-table th { text-align: left; padding: 6px 8px; color: #8e8e8e; font-size: 10px; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid #3c3c3c; }
+.workload-table td { padding: 6px 8px; color: #cccccc; border-bottom: 1px solid #2d2d30; }
+.capacity-bar { height: 8px; background: #3c3c3c; border-radius: 4px; overflow: hidden; min-width: 60px; }
+.capacity-fill { height: 100%; border-radius: 4px; transition: width .3s; }
+.cap-low { background: #4ec9b0; }
+.cap-med { background: #ffc64d; }
+.cap-high { background: #f44747; }
+
+/* ── QUAL MATRIX ── */
+.qual-matrix { width: 100%; border-collapse: collapse; font-size: 11px; overflow-x: auto; display: block; }
+.qual-matrix th { text-align: left; padding: 4px 6px; color: #8e8e8e; font-size: 9px; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid #3c3c3c; white-space: nowrap; }
+.qual-matrix td { padding: 4px 6px; text-align: center; border-bottom: 1px solid #2d2d30; }
+.q-yes { color: #4ec9b0; }
+.q-exp { color: #f44747; }
+.q-no  { color: #3c3c3c; }
+
+/* ── WORKFLOW BUTTONS ── */
+.wf-btn {
+  padding: 5px 14px; font-size: 11px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.wf-btn:hover { border-color: #5a5a5a; color: #fff; }
+.wf-primary { background: #007acc; border-color: #007acc; color: #fff; }
+.wf-primary:hover { background: #0098ff; }
+.wf-danger { background: rgba(244,71,71,0.15); border-color: rgba(244,71,71,0.4); color: #f44747; }
+.wf-danger:hover { background: rgba(244,71,71,0.25); }
+.wf-ai { background: rgba(206,145,255,0.1); border-color: rgba(206,145,255,0.3); color: #ce91ff; }
+.wf-ai:hover { background: rgba(206,145,255,0.2); }
+.action-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+/* ── BOTTOM PANEL ── */
+.bottom-panel { grid-column: 1 / 4; grid-row: 3; background: #252526; border-top: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; }
+.bottom-tabs { display: flex; gap: 0; border-bottom: 1px solid #2d2d30; }
+.bottom-tab { padding: 4px 12px; font-size: 10px; color: #8e8e8e; cursor: pointer; border-bottom: 2px solid transparent; }
+.bottom-tab.active { color: #ccc; border-bottom-color: #007acc; }
+.bottom-content { flex: 1; overflow-y: auto; padding: 6px 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.log-line { padding: 1px 0; color: #8e8e8e; }
+.log-time { color: #5a5a5a; margin-right: 8px; }
+.log-info { color: #4ec9b0; }
+.log-warn { color: #ffc64d; }
+.log-error { color: #f44747; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: #007acc; display: flex; align-items: center; padding: 0 10px;
+  font-size: 11px; color: #fff; gap: 6px;
+}
+.status-bar .s-sep { color: rgba(255,255,255,0.4); }
+.status-bar .s-right { margin-left: auto; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal { background: #252526; border: 1px solid #3c3c3c; border-radius: 4px; width: 600px; max-width: 90vw; max-height: 85vh; overflow-y: auto; }
+.modal-header { padding: 16px 20px; border-bottom: 1px solid #3c3c3c; }
+.modal-header h3 { font-size: 14px; color: #e0e0e0; margin: 0 0 4px 0; }
+.modal-header p { font-size: 11px; color: #8e8e8e; margin: 0; }
+.modal-body { padding: 16px 20px; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid #3c3c3c; display: flex; justify-content: flex-end; gap: 8px; }
+.form-row { margin-bottom: 12px; }
+.form-row label { display: block; font-size: 10px; color: #8e8e8e; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+.form-row input, .form-row select, .form-row textarea {
+  width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 12px; padding: 6px 10px; outline: none; font-family: inherit;
+}
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: #007acc; }
+.form-row textarea { min-height: 60px; resize: vertical; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.form-check { display: flex; align-items: center; gap: 6px; }
+.form-check input[type="checkbox"] { width: auto; }
+.hidden { display: none !important; }
+.method-status-badge { font-size: 9px; padding: 1px 6px; border-radius: 2px; margin-left: 6px; }
+.ms-validated { background: rgba(78,201,176,0.15); color: #4ec9b0; }
+.ms-due_for_revalidation { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.ms-expired { background: rgba(244,71,71,0.2); color: #f44747; }
+.ms-draft { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+</style>
+</head>
+<body>
+<!-- NAV injected by nav.js -->
+
+<div class="workbench">
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="panel-header">
+      <span>QC Samples</span>
+      <span class="panel-badge" id="sampleCount">0</span>
+    </div>
+    <div class="filter-bar" id="viewToggle">
+      <button class="filter-btn active" data-view="samples">Samples</button>
+      <button class="filter-btn" data-view="tests">Tests</button>
+    </div>
+    <div class="filter-bar" id="statusFilter">
+      <button class="filter-btn active" data-status="">All</button>
+      <button class="filter-btn" data-status="received">Received</button>
+      <button class="filter-btn" data-status="in_testing">Testing</button>
+      <button class="filter-btn" data-status="pending_review">Review</button>
+      <button class="filter-btn" data-status="completed">Done</button>
+    </div>
+    <div class="filter-bar" id="priorityFilter">
+      <button class="filter-btn active" data-priority="">All</button>
+      <button class="filter-btn" data-priority="critical">Critical</button>
+      <button class="filter-btn" data-priority="urgent">Urgent</button>
+      <button class="filter-btn" data-priority="normal">Normal</button>
+      <button class="filter-btn" data-priority="batch_critical">Batch-Crit</button>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search sample ID, batch, product...">
+    </div>
+    <div class="sample-list" id="sampleList"></div>
+    <div style="padding: 6px 8px; border-top: 1px solid #3c3c3c;">
+      <button class="wf-btn wf-primary" style="width: 100%;" onclick="openRegisterModal()">+ Register Sample</button>
+    </div>
+  </div>
+
+  <!-- RESIZER -->
+  <div class="resizer resizer-v" id="resizerV"></div>
+
+  <!-- CENTER PANEL -->
+  <div class="center-panel">
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="editor-tabs" id="mainTabs">
+      <div class="editor-tab active" data-tab="detail">Sample Detail</div>
+      <div class="editor-tab" data-tab="instruments">Instruments</div>
+      <div class="editor-tab" data-tab="workload">Workload</div>
+      <div class="editor-tab" data-tab="qualifications">Qualifications</div>
+      <div class="editor-tab" data-tab="methods">Test Methods</div>
+      <div class="editor-tab" data-tab="templates">Templates</div>
+    </div>
+    <div class="center-content" id="centerContent">
+      <div class="empty-state">
+        <div class="ei">&#x1F52C;</div>
+        <p>Select a sample from the left panel or use the tabs above.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZER H -->
+  <div class="resizer resizer-h" id="resizerH"></div>
+
+  <!-- BOTTOM PANEL -->
+  <div class="bottom-panel">
+    <div class="bottom-tabs">
+      <div class="bottom-tab active" data-btab="audit">Audit Trail</div>
+      <div class="bottom-tab" data-btab="ai">AI Insights</div>
+    </div>
+    <div class="bottom-content" id="bottomContent">
+      <div class="log-line"><span class="log-time">--:--</span> <span class="log-info">QC Lab Dashboard ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span id="sbModule">QC Lab</span>
+  <span class="s-sep">|</span>
+  <span id="sbStatus">Ready</span>
+  <span class="s-right" id="sbUser"></span>
+</div>
+
+<script src="/shared/nav.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/dev-progress.js"></script>
+<script>
+'use strict';
+
+// ── State ────────────────────────────────────────────────────────────────
+let STATE = {
+  samples: [], tests: [], selectedSample: null, currentView: 'samples',
+  statusFilter: '', priorityFilter: '', searchQuery: '',
+  activeTab: 'detail', activeBtab: 'audit',
+  instruments: [], methods: [], qualifications: [], templates: [],
+};
+
+// ── Init ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (window.__user) document.getElementById('sbUser').textContent = window.__user.name + ' (' + window.__user.role + ')';
+  initFilters();
+  initTabs();
+  initResizers();
+  await loadStats();
+  await loadSamples();
+});
+
+// ── Data Loading ─────────────────────────────────────────────────────────
+async function loadSamples() {
+  try {
+    const params = new URLSearchParams();
+    if (STATE.statusFilter) params.set('status', STATE.statusFilter);
+    if (STATE.priorityFilter === 'batch_critical') params.set('batchCritical', 'true');
+    else if (STATE.priorityFilter) params.set('priority', STATE.priorityFilter);
+    STATE.samples = await authFetch('/qc/samples?' + params).then(r => r.json());
+    renderSampleList();
+  } catch (e) { logBottom('error', 'Failed to load samples: ' + e.message); }
+}
+
+async function loadTests() {
+  try {
+    STATE.tests = await authFetch('/qc/tests').then(r => r.json());
+    renderTestList();
+  } catch (e) { logBottom('error', 'Failed to load tests: ' + e.message); }
+}
+
+async function loadStats() {
+  try {
+    const stats = await authFetch('/qc/stats').then(r => r.json());
+    renderStats(stats);
+  } catch (e) { logBottom('warn', 'Stats unavailable'); renderStats({}); }
+}
+
+async function loadSampleDetail(sampleId) {
+  try {
+    STATE.selectedSample = await authFetch('/qc/samples/' + sampleId).then(r => r.json());
+    STATE.activeTab = 'detail';
+    setActiveTab('detail');
+    renderDetail();
+  } catch (e) { logBottom('error', 'Failed to load sample: ' + e.message); }
+}
+
+// ── Render: Stats Bar ────────────────────────────────────────────────────
+function renderStats(s) {
+  const bar = document.getElementById('statsBar');
+  const sc = (v, l, w) => `<div class="stat-card${w ? ' stat-warn' : ''}"><div class="stat-value">${v ?? '-'}</div><div class="stat-label">${l}</div></div>`;
+  bar.innerHTML = sc(s.samplesInQueue, 'In Queue') + sc(s.testsInProgress, 'Testing') + sc(s.overdueTests, 'Overdue', s.overdueTests > 0) +
+    sc(s.oosThisMonth, 'OOS (30d)', s.oosThisMonth > 0) + sc(s.openOosInvestigations, 'Open OOS Inv.', s.openOosInvestigations > 0) +
+    sc(s.avgTatHours ? s.avgTatHours + 'h' : '-', 'Avg TAT') + sc(s.instrumentsDueCal, 'Inst. Due Cal', s.instrumentsDueCal > 0) +
+    sc(s.methodsDueReval, 'Methods Due', s.methodsDueReval > 0) + sc(s.qualsDueReqal, 'Quals Due', s.qualsDueReqal > 0);
+}
+
+// ── Render: Sample List ──────────────────────────────────────────────────
+function renderSampleList() {
+  const el = document.getElementById('sampleList');
+  let items = STATE.samples;
+  if (STATE.searchQuery) {
+    const q = STATE.searchQuery.toLowerCase();
+    items = items.filter(s => s.sample_id.toLowerCase().includes(q) || (s.batch_number || '').toLowerCase().includes(q) || (s.product_name || '').toLowerCase().includes(q));
+  }
+  document.getElementById('sampleCount').textContent = items.length;
+  if (!items.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#5a5a5a;font-size:11px;">No samples found</div>'; return; }
+  el.innerHTML = items.map(s => {
+    const active = STATE.selectedSample && STATE.selectedSample.sample_id === s.sample_id ? ' active' : '';
+    const priClass = 'pri-' + (s.priority || 'normal');
+    const stClass = 'st-' + (s.status || 'received');
+    const star = s.batch_critical ? '<span class="batch-critical-star" title="Batch Critical">&#9733;</span>' : '';
+    return `<div class="sample-card${active}" onclick="loadSampleDetail('${s.sample_id}')">
+      <div class="card-top"><span class="card-id">${s.sample_id}${star}</span><span class="priority-badge ${priClass}">${s.priority || 'normal'}</span></div>
+      <div class="card-title">${esc(s.product_name || s.batch_number || 'Untitled')}</div>
+      <div class="card-meta"><span class="status-badge ${stClass}">${(s.status || '').replace(/_/g, ' ')}</span><span>${s.sample_type || ''}</span><span>${fmtDate(s.received_date)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render: Test List ────────────────────────────────────────────────────
+function renderTestList() {
+  const el = document.getElementById('sampleList');
+  const items = STATE.tests;
+  document.getElementById('sampleCount').textContent = items.length;
+  if (!items.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#5a5a5a;font-size:11px;">No tests found</div>'; return; }
+  el.innerHTML = items.map(t => {
+    const stClass = 'st-' + (t.status || 'pending');
+    return `<div class="sample-card" onclick="loadSampleDetail('${t.sample_id}')">
+      <div class="card-top"><span class="card-id">${t.test_id}</span><span class="status-badge ${stClass}">${(t.status || '').replace(/_/g, ' ')}</span></div>
+      <div class="card-title">${esc(t.test_name)}</div>
+      <div class="card-meta"><span>${t.sample_id}</span><span>${t.assigned_analyst || 'Unassigned'}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render: Sample Detail ────────────────────────────────────────────────
+function renderDetail() {
+  const cc = document.getElementById('centerContent');
+  const s = STATE.selectedSample;
+  if (!s) { cc.innerHTML = '<div class="empty-state"><div class="ei">&#x1F52C;</div><p>Select a sample from the left panel.</p></div>'; return; }
+
+  const priClass = 'pri-' + (s.priority || 'normal');
+  const stClass = 'st-' + (s.status || 'received');
+  const star = s.batch_critical ? ' <span class="batch-critical-star" title="Batch Critical">&#9733;</span>' : '';
+
+  let html = `<div class="detail-section">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#9cdcfe;">${s.sample_id}</span>${star}
+      <span class="priority-badge ${priClass}">${s.priority}</span>
+      <span class="status-badge ${stClass}">${(s.status || '').replace(/_/g, ' ')}</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item"><label>Batch Number</label><span>${esc(s.batch_number)}</span></div>
+      <div class="detail-item"><label>Product Name</label><span>${esc(s.product_name)}</span></div>
+      <div class="detail-item"><label>Sample Type</label><span>${s.sample_type}</span></div>
+      <div class="detail-item"><label>Sample Point</label><span>${esc(s.sample_point || '-')}</span></div>
+      <div class="detail-item"><label>Received By</label><span>${esc(s.received_by)}</span></div>
+      <div class="detail-item"><label>Received Date</label><span>${fmtDate(s.received_date)}</span></div>
+      <div class="detail-item"><label>Storage</label><span>${s.storage_condition} / ${esc(s.storage_location || '-')}</span></div>
+      <div class="detail-item"><label>Quantity</label><span>${s.quantity || '-'} ${s.units || ''}</span></div>
+    </div>`;
+  if (s.description) html += `<div style="margin-top:10px;font-size:12px;color:#b0b0b0;line-height:1.6;white-space:pre-wrap;">${esc(s.description)}</div>`;
+  html += `<div class="action-bar">`;
+  if (s.status !== 'completed' && s.status !== 'cancelled') {
+    html += `<button class="wf-btn wf-primary" onclick="openAssignTestModal('${s.sample_id}')">+ Assign Test</button>`;
+    html += `<button class="wf-btn" onclick="completeSample('${s.sample_id}')">Mark Completed</button>`;
+  }
+  html += `<button class="wf-btn wf-ai" onclick="aiTurnaround('${s.sample_id}')">AI: Predict TAT</button>`;
+  html += `<button class="wf-btn" onclick="viewCoa('${s.sample_id}')">View COA</button>`;
+  html += `</div></div>`;
+
+  // Tests table
+  html += `<div class="detail-section"><div class="section-label">Tests (${(s.tests || []).length})</div>`;
+  if (s.tests && s.tests.length) {
+    html += `<table class="test-table"><thead><tr><th>ID</th><th>Test Name</th><th>Method</th><th>Analyst</th><th>Instrument</th><th>Status</th><th>Result</th><th>Pass/Fail</th><th>Actions</th></tr></thead><tbody>`;
+    s.tests.forEach(t => {
+      const result = (s.results || []).find(r => r.test_id === t.test_id);
+      const isOos = result && result.oos_flag;
+      const rowClass = isOos ? ' class="oos-row"' : '';
+      html += `<tr${rowClass}><td style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9cdcfe;">${t.test_id}</td>`;
+      html += `<td>${esc(t.test_name)}</td><td>${esc(t.test_method || '-')}</td>`;
+      html += `<td>${esc(t.assigned_analyst || '-')}</td><td>${esc(t.instrument_id || '-')}</td>`;
+      html += `<td><span class="status-badge st-${t.status}">${(t.status || '').replace(/_/g, ' ')}</span></td>`;
+      if (result) {
+        html += `<td>${result.result_value !== null ? result.result_value : ''} ${result.result_text || ''} ${result.result_unit || ''}</td>`;
+        html += `<td>`;
+        if (result.pass_fail === 'pass') html += `<span class="pass-badge">PASS</span>`;
+        else if (result.pass_fail === 'fail') html += `<span class="fail-badge">FAIL</span>`;
+        if (result.oos_flag) html += ` <span class="oos-badge">OOS</span>`;
+        if (result.oot_flag) html += ` <span class="oot-badge">OOT</span>`;
+        html += `</td>`;
+        html += `<td style="display:flex;gap:4px;flex-wrap:wrap;">`;
+        if (result.review_status === 'pending_review') html += `<button class="wf-btn" style="font-size:9px;padding:2px 6px;" onclick="reviewResult('${result.result_id}')">Review</button>`;
+        if (result.review_status === 'reviewed') html += `<button class="wf-btn" style="font-size:9px;padding:2px 6px;" onclick="approveResult('${result.result_id}')">Approve</button>`;
+        if (result.oos_flag && !result.oos_investigation_status) html += `<button class="wf-btn wf-danger" style="font-size:9px;padding:2px 6px;" onclick="initiateOos('${result.result_id}')">Init OOS</button>`;
+        html += `<span class="rv-${result.review_status}" style="font-size:9px;">${(result.review_status || '').replace(/_/g, ' ')}</span>`;
+        html += `</td>`;
+      } else {
+        html += `<td>-</td><td>-</td>`;
+        html += `<td>`;
+        if (t.status === 'pending' || t.status === 'assigned') html += `<button class="wf-btn" style="font-size:9px;padding:2px 6px;" onclick="startTest('${t.test_id}')">Start</button>`;
+        if (t.status === 'in_progress') html += `<button class="wf-btn" style="font-size:9px;padding:2px 6px;" onclick="openRecordResultModal('${t.test_id}','${t.sample_id}')">Record</button>`;
+        html += `</td>`;
+      }
+      html += `</tr>`;
+
+      // OOS investigation panel inline
+      if (result && result.oos_flag && result.oos_investigation_status) {
+        html += `<tr><td colspan="9"><div class="oos-panel">`;
+        html += `<h4>OOS Investigation</h4>`;
+        html += `<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">`;
+        html += `<span class="oos-phase">${(result.oos_investigation_phase || '').replace(/_/g, ' ')}</span>`;
+        html += `<span>Status: ${result.oos_investigation_status}</span>`;
+        const dueD = result.oos_investigation_due_date ? new Date(result.oos_investigation_due_date) : null;
+        const overdue = dueD && dueD < new Date();
+        html += `<span class="oos-due${overdue ? ' overdue' : ''}">Due: ${dueD ? fmtDate(result.oos_investigation_due_date) : '-'}${overdue ? ' OVERDUE' : ''}</span>`;
+        html += `<span>Assignee: ${esc(result.oos_assignee || '-')}</span>`;
+        if (result.oos_root_cause_category) html += `<span>Root Cause: ${result.oos_root_cause_category}</span>`;
+        html += `</div>`;
+        html += `<div class="action-bar" style="margin-top:8px;">`;
+        if (result.oos_investigation_phase === 'phase_1') html += `<button class="wf-btn wf-danger" onclick="escalateOos('${result.result_id}')">Escalate to Phase II</button>`;
+        if (result.oos_investigation_status !== 'closed') {
+          html += `<button class="wf-btn" onclick="closeOos('${result.result_id}')">Close Investigation</button>`;
+          html += `<button class="wf-btn wf-ai" onclick="aiOosRootcause('${result.result_id}')">AI: Suggest Root Cause</button>`;
+        }
+        html += `</div></div></td></tr>`;
+      }
+    });
+    html += `</tbody></table>`;
+  } else {
+    html += `<p style="color:#5a5a5a;font-size:11px;">No tests assigned yet.</p>`;
+  }
+  html += `</div>`;
+
+  // AI turnaround estimate
+  if (s.ai_turnaround_est) {
+    html += `<div class="detail-section"><div class="section-label">AI Turnaround Estimate</div>
+      <div style="font-size:12px;color:#ce91ff;">${esc(s.ai_turnaround_est)}</div></div>`;
+  }
+
+  cc.innerHTML = html;
+}
+
+// ── Render: Instruments ──────────────────────────────────────────────────
+async function renderInstruments() {
+  const cc = document.getElementById('centerContent');
+  cc.innerHTML = '<div style="padding:20px;color:#5a5a5a;">Loading instruments...</div>';
+  try {
+    STATE.instruments = await authFetch('/qc/instruments').then(r => r.json());
+  } catch (e) { STATE.instruments = []; }
+  const items = STATE.instruments;
+  let html = `<div class="detail-section"><div class="section-label">Instruments (${items.length}) <button class="wf-btn" style="font-size:9px;padding:2px 8px;margin-left:auto;" onclick="openInstrumentModal()">+ Add</button></div>`;
+  if (items.length) {
+    html += `<table class="test-table"><thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Model</th><th>Status</th><th>Next Cal</th><th>Next Qual</th></tr></thead><tbody>`;
+    items.forEach(i => {
+      const calOverdue = i.next_calibration && new Date(i.next_calibration) < new Date();
+      const qualOverdue = i.next_qualification && new Date(i.next_qualification) < new Date();
+      html += `<tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9cdcfe;">${i.instrument_id}</td>`;
+      html += `<td>${esc(i.name)}</td><td>${i.instrument_type}</td><td>${esc(i.model || '-')}</td>`;
+      html += `<td>${i.status}</td>`;
+      html += `<td style="${calOverdue ? 'color:#f44747;font-weight:700;' : ''}">${fmtDate(i.next_calibration) || '-'}</td>`;
+      html += `<td style="${qualOverdue ? 'color:#f44747;font-weight:700;' : ''}">${fmtDate(i.next_qualification) || '-'}</td>`;
+      html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+  } else html += `<p style="color:#5a5a5a;font-size:11px;">No instruments registered.</p>`;
+  html += `</div>`;
+  cc.innerHTML = html;
+}
+
+// ── Render: Workload ─────────────────────────────────────────────────────
+async function renderWorkload() {
+  const cc = document.getElementById('centerContent');
+  cc.innerHTML = '<div style="padding:20px;color:#5a5a5a;">Loading workload...</div>';
+  try {
+    const data = await authFetch('/qc/workload').then(r => r.json());
+    const analysts = data.analysts || {};
+    let html = `<div class="detail-section"><div class="section-label">Analyst Workload <button class="wf-btn wf-ai" style="font-size:9px;padding:2px 8px;margin-left:auto;" onclick="aiWorkloadOpt()">AI: Optimise</button></div>`;
+    const entries = Object.entries(analysts);
+    if (entries.length) {
+      html += `<table class="workload-table"><thead><tr><th>Analyst</th><th>Tests</th><th>Est Hours</th><th>Overdue</th><th>Qual Coverage</th><th>Utilisation</th></tr></thead><tbody>`;
+      entries.forEach(([name, a]) => {
+        const pct = Math.min(100, Math.round(a.assignedTests / 10 * 100));
+        const capClass = pct > 80 ? 'cap-high' : pct > 50 ? 'cap-med' : 'cap-low';
+        html += `<tr><td>${esc(name)}</td><td>${a.assignedTests}</td><td>${a.estimatedHours}</td>`;
+        html += `<td style="${a.overdueTests > 0 ? 'color:#f44747;font-weight:700;' : ''}">${a.overdueTests}</td>`;
+        html += `<td>${a.qualificationCoverage}%</td>`;
+        html += `<td><div class="capacity-bar"><div class="capacity-fill ${capClass}" style="width:${pct}%"></div></div></td></tr>`;
+      });
+      html += `</tbody></table>`;
+    } else html += `<p style="color:#5a5a5a;font-size:11px;">No analyst workload data.</p>`;
+    html += `</div>`;
+    cc.innerHTML = html;
+  } catch (e) { cc.innerHTML = '<div style="padding:20px;color:#f44747;">Failed to load workload.</div>'; }
+}
+
+// ── Render: Qualifications ───────────────────────────────────────────────
+async function renderQualifications() {
+  const cc = document.getElementById('centerContent');
+  cc.innerHTML = '<div style="padding:20px;color:#5a5a5a;">Loading qualifications...</div>';
+  try {
+    STATE.qualifications = await authFetch('/qc/qualifications').then(r => r.json());
+    STATE.methods = await authFetch('/qc/methods').then(r => r.json());
+  } catch (e) { STATE.qualifications = []; STATE.methods = []; }
+
+  // Build matrix: rows = analysts, cols = methods
+  const analysts = {};
+  STATE.qualifications.forEach(q => {
+    if (!analysts[q.analyst_id]) analysts[q.analyst_id] = { name: q.analyst_name || q.analyst_id, quals: {} };
+    analysts[q.analyst_id].quals[q.test_method] = q;
+  });
+  const methodNames = [...new Set(STATE.qualifications.map(q => q.test_method))].sort();
+
+  let html = `<div class="detail-section"><div class="section-label">Analyst Qualification Matrix <button class="wf-btn" style="font-size:9px;padding:2px 8px;margin-left:auto;" onclick="openQualModal()">+ Add Qualification</button></div>`;
+  if (Object.keys(analysts).length && methodNames.length) {
+    html += `<table class="qual-matrix"><thead><tr><th>Analyst</th>`;
+    methodNames.forEach(m => { html += `<th>${esc(m)}</th>`; });
+    html += `</tr></thead><tbody>`;
+    Object.values(analysts).forEach(a => {
+      html += `<tr><td style="color:#d4d4d4;text-align:left;">${esc(a.name)}</td>`;
+      methodNames.forEach(m => {
+        const q = a.quals[m];
+        if (!q) html += `<td><span class="q-no">-</span></td>`;
+        else if (q.qualification_status === 'qualified') {
+          const requalDue = q.requalification_due && new Date(q.requalification_due) < new Date(Date.now() + 30*86400000);
+          html += `<td><span class="q-yes" title="Qualified${requalDue ? ' (requalification due soon)' : ''}">${requalDue ? '&#x26A0;' : '&#x2713;'}</span></td>`;
+        } else html += `<td><span class="q-exp" title="Expired">&#x2717;</span></td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+  } else html += `<p style="color:#5a5a5a;font-size:11px;">No qualification data. Add qualifications to build the matrix.</p>`;
+  html += `</div>`;
+  cc.innerHTML = html;
+}
+
+// ── Render: Methods ──────────────────────────────────────────────────────
+async function renderMethods() {
+  const cc = document.getElementById('centerContent');
+  cc.innerHTML = '<div style="padding:20px;color:#5a5a5a;">Loading methods...</div>';
+  try {
+    STATE.methods = await authFetch('/qc/methods').then(r => r.json());
+  } catch (e) { STATE.methods = []; }
+  let html = `<div class="detail-section"><div class="section-label">Test Methods Registry (${STATE.methods.length}) <button class="wf-btn" style="font-size:9px;padding:2px 8px;margin-left:auto;" onclick="openMethodModal()">+ Add Method</button></div>`;
+  if (STATE.methods.length) {
+    html += `<table class="test-table"><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Version</th><th>Status</th><th>Next Reval</th><th>SOP</th></tr></thead><tbody>`;
+    STATE.methods.forEach(m => {
+      const revalOverdue = m.next_revalidation && new Date(m.next_revalidation) < new Date();
+      html += `<tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9cdcfe;">${m.method_id}</td>`;
+      html += `<td>${esc(m.method_name)}</td><td>${m.method_category}</td><td>${m.version}</td>`;
+      html += `<td><span class="method-status-badge ms-${m.validation_status}">${m.validation_status}</span></td>`;
+      html += `<td style="${revalOverdue ? 'color:#f44747;font-weight:700;' : ''}">${fmtDate(m.next_revalidation) || '-'}</td>`;
+      html += `<td>${esc(m.sop_reference || '-')}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  } else html += `<p style="color:#5a5a5a;font-size:11px;">No test methods registered.</p>`;
+  html += `</div>`;
+  cc.innerHTML = html;
+}
+
+// ── Render: Templates ────────────────────────────────────────────────────
+async function renderTemplates() {
+  const cc = document.getElementById('centerContent');
+  cc.innerHTML = '<div style="padding:20px;color:#5a5a5a;">Loading templates...</div>';
+  try {
+    STATE.templates = await authFetch('/qc/templates').then(r => r.json());
+  } catch (e) { STATE.templates = []; }
+  let html = `<div class="detail-section"><div class="section-label">Test Templates (${STATE.templates.length}) <button class="wf-btn" style="font-size:9px;padding:2px 8px;margin-left:auto;" onclick="openTemplateModal()">+ Add Template</button></div>`;
+  if (STATE.templates.length) {
+    html += `<table class="test-table"><thead><tr><th>ID</th><th>Name</th><th>Sample Type</th><th>Product</th><th>Tests</th></tr></thead><tbody>`;
+    STATE.templates.forEach(t => {
+      html += `<tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9cdcfe;">${t.template_id}</td>`;
+      html += `<td>${esc(t.template_name)}</td><td>${t.sample_type}</td><td>${esc(t.product_name || '-')}</td>`;
+      html += `<td>${(t.tests || []).length}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  } else html += `<p style="color:#5a5a5a;font-size:11px;">No test templates created.</p>`;
+  html += `</div>`;
+  cc.innerHTML = html;
+}
+
+// ── Filters & Tabs ───────────────────────────────────────────────────────
+function initFilters() {
+  document.querySelectorAll('#viewToggle .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#viewToggle .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      STATE.currentView = btn.dataset.view;
+      if (STATE.currentView === 'tests') loadTests();
+      else renderSampleList();
+    });
+  });
+  document.querySelectorAll('#statusFilter .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#statusFilter .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      STATE.statusFilter = btn.dataset.status;
+      loadSamples();
+    });
+  });
+  document.querySelectorAll('#priorityFilter .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#priorityFilter .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      STATE.priorityFilter = btn.dataset.priority;
+      loadSamples();
+    });
+  });
+  document.getElementById('searchInput').addEventListener('input', e => {
+    STATE.searchQuery = e.target.value;
+    renderSampleList();
+  });
+}
+
+function initTabs() {
+  document.querySelectorAll('#mainTabs .editor-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      setActiveTab(tab.dataset.tab);
+      STATE.activeTab = tab.dataset.tab;
+      switch (tab.dataset.tab) {
+        case 'detail': renderDetail(); break;
+        case 'instruments': renderInstruments(); break;
+        case 'workload': renderWorkload(); break;
+        case 'qualifications': renderQualifications(); break;
+        case 'methods': renderMethods(); break;
+        case 'templates': renderTemplates(); break;
+      }
+    });
+  });
+  document.querySelectorAll('.bottom-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      STATE.activeBtab = tab.dataset.btab;
+    });
+  });
+}
+
+function setActiveTab(tabName) {
+  document.querySelectorAll('#mainTabs .editor-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+}
+
+// ── Resizers ─────────────────────────────────────────────────────────────
+function initResizers() {
+  const wb = document.querySelector('.workbench');
+  const rv = document.getElementById('resizerV');
+  const rh = document.getElementById('resizerH');
+
+  let startX, startY, startCols, startRows;
+  rv.addEventListener('mousedown', e => {
+    startX = e.clientX; startCols = wb.style.gridTemplateColumns || '280px 4px 1fr';
+    const onMove = ev => { const dx = ev.clientX - startX; const w = Math.max(180, parseInt(startCols) + dx); wb.style.gridTemplateColumns = w + 'px 4px 1fr'; rv.classList.add('dragging'); };
+    const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); rv.classList.remove('dragging'); };
+    document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+  });
+  rh.addEventListener('mousedown', e => {
+    startY = e.clientY; startRows = wb.style.gridTemplateRows || '1fr 4px 140px';
+    const parts = startRows.split(' '); const bottomH = parseInt(parts[2]) || 140;
+    const onMove = ev => { const dy = startY - ev.clientY; const h = Math.max(60, bottomH + dy); wb.style.gridTemplateRows = `1fr 4px ${h}px`; rh.classList.add('dragging'); };
+    const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); rh.classList.remove('dragging'); };
+    document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────
+async function startTest(testId) {
+  try {
+    await authFetch('/qc/tests/' + testId + '/start', { method: 'POST' });
+    logBottom('info', 'Test ' + testId + ' started');
+    if (STATE.selectedSample) await loadSampleDetail(STATE.selectedSample.sample_id);
+  } catch (e) { logBottom('error', 'Failed to start test: ' + e.message); }
+}
+
+async function reviewResult(resultId) {
+  try {
+    await authFetch('/qc/results/' + resultId + '/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewStatus: 'reviewed' }) });
+    logBottom('info', 'Result ' + resultId + ' reviewed');
+    if (STATE.selectedSample) await loadSampleDetail(STATE.selectedSample.sample_id);
+  } catch (e) { logBottom('error', 'Failed to review result: ' + e.message); }
+}
+
+async function approveResult(resultId) {
+  try {
+    await authFetch('/qc/results/' + resultId + '/approve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+    logBottom('info', 'Result ' + resultId + ' approved');
+    if (STATE.selectedSample) await loadSampleDetail(STATE.selectedSample.sample_id);
+  } catch (e) { logBottom('error', 'Failed to approve result: ' + e.message); }
+}
+
+async function completeSample(sampleId) {
+  try {
+    await authFetch('/qc/samples/' + sampleId + '/complete', { method: 'POST' });
+    logBottom('info', 'Sample ' + sampleId + ' completed');
+    await loadSamples(); await loadSampleDetail(sampleId); await loadStats();
+  } catch (e) { logBottom('error', 'Failed to complete sample: ' + e.message); }
+}
+
+async function initiateOos(resultId) {
+  try {
+    const r = await authFetch('/qc/results/' + resultId + '/oos/initiate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }).then(r => r.json());
+    logBottom('warn', 'OOS Phase I initiated for ' + resultId + ', due: ' + fmtDate(r.dueDate));
+    if (STATE.selectedSample) await loadSampleDetail(STATE.selectedSample.sample_id);
+  } catch (e) { logBottom('error', 'Failed to initiate OOS: ' + e.message); }
+}
+
+async function escalateOos(resultId) {
+  try {
+    const r = await authFetch('/qc/results/' + resultId + '/oos/escalate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }).then(r => r.json());
+    logBottom('warn', 'OOS escalated to Phase II for ' + resultId);
+    if (STATE.selectedSample) await loadSampleDetail(STATE.selectedSample.sample_id);
+  } catch (e) { logBottom('error', 'Failed to escalate OOS: ' + e.message); }
+}
+
+async function closeOos(resultId) {
+  const conclusion = prompt('OOS Conclusion (confirmed_oos / invalidated / within_spec):');
+  if (!conclusion) return;
+  try {
+    await authFetch('/qc/results/' + resultId + '/oos/close', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conclusion }) });
+    logBottom('info', 'OOS investigation closed for ' + resultId);
+    if (STATE.selectedSample) await loadSampleDetail(STATE.selectedSample.sample_id);
+  } catch (e) { logBottom('error', 'Failed to close OOS: ' + e.message); }
+}
+
+async function viewCoa(sampleId) {
+  try {
+    const coa = await authFetch('/qc/samples/' + sampleId + '/coa').then(r => r.json());
+    const cc = document.getElementById('centerContent');
+    let html = `<div class="detail-section"><div class="section-label">Certificate of Analysis</div>`;
+    html += `<div class="detail-grid"><div class="detail-item"><label>Sample ID</label><span>${coa.sampleId}</span></div>`;
+    html += `<div class="detail-item"><label>Batch</label><span>${esc(coa.batchNumber)}</span></div>`;
+    html += `<div class="detail-item"><label>Product</label><span>${esc(coa.productName)}</span></div>`;
+    html += `<div class="detail-item"><label>Generated</label><span>${fmtDate(coa.generatedAt)}</span></div></div>`;
+    html += `<table class="test-table" style="margin-top:12px;"><thead><tr><th>Test</th><th>Method</th><th>Spec</th><th>Result</th><th>Pass/Fail</th><th>Approved By</th></tr></thead><tbody>`;
+    (coa.tests || []).forEach(t => {
+      const specStr = t.specText || ((t.specMin !== null ? t.specMin : '') + '-' + (t.specMax !== null ? t.specMax : '') + ' ' + (t.specUnit || ''));
+      const r = t.result;
+      html += `<tr><td>${esc(t.testName)}</td><td>${esc(t.testMethod || '-')}</td><td>${esc(specStr)}</td>`;
+      if (r) {
+        html += `<td>${r.value !== null ? r.value : ''} ${r.text || ''} ${r.unit || ''}</td>`;
+        html += `<td>${r.passFail === 'pass' ? '<span class="pass-badge">PASS</span>' : '<span class="fail-badge">FAIL</span>'}</td>`;
+        html += `<td>${esc(r.approvedBy || '-')}</td>`;
+      } else html += `<td>-</td><td>-</td><td>-</td>`;
+      html += `</tr>`;
+    });
+    html += `</tbody></table></div>`;
+    cc.innerHTML = html;
+  } catch (e) { logBottom('error', 'Failed to generate COA: ' + e.message); }
+}
+
+// ── AI Actions ───────────────────────────────────────────────────────────
+async function aiTurnaround(sampleId) {
+  logBottom('info', 'AI: Predicting turnaround for ' + sampleId + '...');
+  try {
+    const r = await authFetch('/qc/ai/turnaround', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sampleId }) }).then(r => r.json());
+    if (r.ok && r.prediction) {
+      logBottom('info', 'AI TAT: ~' + r.prediction.estimated_hours + 'h (' + r.prediction.confidence + ' confidence)');
+      if (STATE.selectedSample && STATE.selectedSample.sample_id === sampleId) await loadSampleDetail(sampleId);
+    } else logBottom('warn', 'AI TAT prediction failed');
+  } catch (e) { logBottom('error', 'AI TAT error: ' + e.message); }
+}
+
+async function aiOosRootcause(resultId) {
+  logBottom('info', 'AI: Suggesting OOS root causes...');
+  try {
+    const r = await authFetch('/qc/ai/oos-rootcause', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resultId }) }).then(r => r.json());
+    if (r.ok && r.result) {
+      const causes = r.result.suggested_causes || [];
+      causes.forEach(c => logBottom('warn', `OOS Root Cause (${c.likelihood}): ${c.category} — ${c.description}`));
+      logBottom('info', 'AI Summary: ' + (r.result.summary || ''));
+    }
+  } catch (e) { logBottom('error', 'AI OOS rootcause error: ' + e.message); }
+}
+
+async function aiWorkloadOpt() {
+  logBottom('info', 'AI: Optimising workload distribution...');
+  try {
+    const r = await authFetch('/qc/ai/workload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }).then(r => r.json());
+    if (r.ok && r.result) {
+      (r.result.recommendations || []).forEach(rec => logBottom('info', `Workload: ${rec.action} — ${rec.reason}`));
+      logBottom('info', 'AI Summary: ' + (r.result.summary || ''));
+    }
+  } catch (e) { logBottom('error', 'AI workload error: ' + e.message); }
+}
+
+// ── Modals ───────────────────────────────────────────────────────────────
+function showModal(html) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal">${html}</div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function closeModal() {
+  const m = document.querySelector('.modal-overlay');
+  if (m) m.remove();
+}
+
+// ── Register Sample Modal ────────────────────────────────────────────────
+function openRegisterModal() {
+  const html = `<div class="modal-header"><h3>Register QC Sample</h3><p>Log a new sample for testing</p></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-row"><label>Batch Number *</label><input id="mBatchNumber" placeholder="BATCH-001"></div>
+        <div class="form-row"><label>Product Name</label><input id="mProductName" placeholder="Product name"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Sample Type</label><select id="mSampleType">
+          <option value="in_process">In-Process</option><option value="release">Release</option><option value="stability">Stability</option>
+          <option value="raw_material">Raw Material</option><option value="reference_standard">Reference Standard</option><option value="environmental">Environmental</option>
+        </select></div>
+        <div class="form-row"><label>Priority</label><select id="mPriority">
+          <option value="normal">Normal</option><option value="urgent">Urgent</option><option value="critical">Critical</option>
+        </select></div>
+      </div>
+      <div class="form-row"><label>Sample Point</label><input id="mSamplePoint" placeholder="e.g. Bioreactor 1, Post-harvest"></div>
+      <div class="form-row"><label>Description</label><textarea id="mDescription" placeholder="Sample description..."></textarea></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Storage Condition</label><select id="mStorage">
+          <option value="room_temp">Room Temperature</option><option value="2_8c">2-8C</option><option value="minus_20c">-20C</option><option value="minus_80c">-80C</option>
+        </select></div>
+        <div class="form-row"><label>Storage Location</label><input id="mStorageLoc" placeholder="Location"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Quantity</label><input id="mQuantity" placeholder="e.g. 50"></div>
+        <div class="form-row"><label>Units</label><input id="mUnits" placeholder="e.g. mL, g"></div>
+      </div>
+      <div class="form-row"><label>Expiry Date</label><input type="date" id="mExpiry"></div>
+      <div class="form-row form-check"><input type="checkbox" id="mBatchCritical"><label style="text-transform:none;font-size:12px;color:#d4d4d4;">Batch Critical</label></div>
+      <div class="form-row form-check"><input type="checkbox" id="mReserve"><label style="text-transform:none;font-size:12px;color:#d4d4d4;">Reserve Sample</label></div>
+      <div id="stabilityFields" class="hidden">
+        <div class="form-grid">
+          <div class="form-row"><label>Stability Protocol ID</label><input id="mStabProtocol"></div>
+          <div class="form-row"><label>Stability Condition</label><input id="mStabCondition" placeholder="e.g. 25C/60%RH"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row"><label>Time Point</label><input id="mStabTimePoint" placeholder="e.g. 3 months"></div>
+          <div class="form-row"><label>Pull Date</label><input type="date" id="mPullDate"></div>
+        </div>
+      </div>
+      <div class="form-row"><label>Apply Test Template</label><select id="mTemplate"><option value="">-- None --</option></select></div>
+      <div class="form-row"><label>Notes</label><textarea id="mNotes" placeholder="Additional notes..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn wf-ai" onclick="aiAutoPrioritise()">AI: Auto-Prioritise</button>
+      <button class="wf-btn" onclick="closeModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="submitSample()">Register</button>
+    </div>`;
+  showModal(html);
+  // Show/hide stability fields
+  document.getElementById('mSampleType').addEventListener('change', e => {
+    document.getElementById('stabilityFields').classList.toggle('hidden', e.target.value !== 'stability');
+  });
+  // Load templates for auto-populate
+  loadTemplateDropdown();
+}
+
+async function loadTemplateDropdown() {
+  try {
+    const templates = await authFetch('/qc/templates').then(r => r.json());
+    const sel = document.getElementById('mTemplate');
+    templates.forEach(t => { const opt = document.createElement('option'); opt.value = t.template_id; opt.textContent = t.template_name + ' (' + t.sample_type + ')'; sel.appendChild(opt); });
+  } catch (e) { /* ignore */ }
+}
+
+async function submitSample() {
+  const body = {
+    batchNumber: document.getElementById('mBatchNumber').value,
+    productName: document.getElementById('mProductName').value,
+    sampleType: document.getElementById('mSampleType').value,
+    priority: document.getElementById('mPriority').value,
+    samplePoint: document.getElementById('mSamplePoint').value,
+    description: document.getElementById('mDescription').value,
+    storageCondition: document.getElementById('mStorage').value,
+    storageLocation: document.getElementById('mStorageLoc').value,
+    quantity: document.getElementById('mQuantity').value,
+    units: document.getElementById('mUnits').value,
+    expiryDate: document.getElementById('mExpiry').value || null,
+    batchCritical: document.getElementById('mBatchCritical').checked,
+    isReserveSample: document.getElementById('mReserve').checked,
+    notes: document.getElementById('mNotes').value,
+  };
+  if (body.sampleType === 'stability') {
+    body.stabilityProtocolId = document.getElementById('mStabProtocol').value;
+    body.stabilityCondition = document.getElementById('mStabCondition').value;
+    body.stabilityTimePoint = document.getElementById('mStabTimePoint').value;
+    body.pullDate = document.getElementById('mPullDate').value || null;
+  }
+  try {
+    const r = await authFetch('/qc/samples', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    if (r.ok) {
+      logBottom('info', 'Sample registered: ' + r.sampleId);
+      closeModal();
+      await loadSamples(); await loadStats();
+    } else logBottom('error', 'Failed: ' + (r.error || 'unknown error'));
+  } catch (e) { logBottom('error', 'Submit error: ' + e.message); }
+}
+
+async function aiAutoPrioritise() {
+  logBottom('info', 'AI: Running auto-priority scoring...');
+  try {
+    const r = await authFetch('/qc/ai/priority', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }).then(r => r.json());
+    if (r.ok) logBottom('info', 'AI priority scoring complete');
+  } catch (e) { logBottom('error', 'AI priority error: ' + e.message); }
+}
+
+// ── Assign Test Modal ────────────────────────────────────────────────────
+function openAssignTestModal(sampleId) {
+  const html = `<div class="modal-header"><h3>Assign Test</h3><p>Assign a test to sample ${sampleId}</p></div>
+    <div class="modal-body">
+      <input type="hidden" id="tSampleId" value="${sampleId}">
+      <div class="form-grid">
+        <div class="form-row"><label>Test Name *</label><input id="tTestName" placeholder="e.g. pH, Endotoxin"></div>
+        <div class="form-row"><label>Test Category</label><select id="tCategory">
+          <option value="chemical">Chemical</option><option value="biological">Biological</option>
+          <option value="microbiological">Microbiological</option><option value="physical">Physical</option>
+        </select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Test Method</label><select id="tMethod"><option value="">-- Select --</option></select></div>
+        <div class="form-row"><label>Assigned Analyst</label><input id="tAnalyst" placeholder="Analyst name or ID"></div>
+      </div>
+      <div class="form-row"><label>Instrument</label><select id="tInstrument"><option value="">-- None --</option></select></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Spec Min</label><input type="number" id="tSpecMin" step="any"></div>
+        <div class="form-row"><label>Spec Max</label><input type="number" id="tSpecMax" step="any"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Spec Unit</label><input id="tSpecUnit" placeholder="e.g. mg/mL, EU/mL"></div>
+        <div class="form-row"><label>Spec Text</label><input id="tSpecText" placeholder="e.g. Conforms to reference"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Target TAT (hours)</label><input type="number" id="tTat" value="48"></div>
+        <div class="form-row"><label>Due Date</label><input type="datetime-local" id="tDue"></div>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="tNotes"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="submitTest()">Assign Test</button>
+    </div>`;
+  showModal(html);
+  loadMethodDropdown();
+  loadInstrumentDropdown();
+}
+
+async function loadMethodDropdown() {
+  try {
+    const methods = await authFetch('/qc/methods').then(r => r.json());
+    const sel = document.getElementById('tMethod');
+    methods.forEach(m => { const opt = document.createElement('option'); opt.value = m.method_id; opt.textContent = m.method_name + ' (v' + m.version + ')'; opt.dataset.status = m.validation_status; sel.appendChild(opt); });
+  } catch (e) { /* ignore */ }
+}
+
+async function loadInstrumentDropdown() {
+  try {
+    const instruments = await authFetch('/qc/instruments').then(r => r.json());
+    const sel = document.getElementById('tInstrument');
+    instruments.forEach(i => { const opt = document.createElement('option'); opt.value = i.instrument_id; opt.textContent = i.name + ' (' + i.instrument_id + ')'; sel.appendChild(opt); });
+  } catch (e) { /* ignore */ }
+}
+
+async function submitTest() {
+  const methodSel = document.getElementById('tMethod');
+  const body = {
+    sampleId: document.getElementById('tSampleId').value,
+    testName: document.getElementById('tTestName').value,
+    testMethodId: methodSel.value,
+    testMethod: methodSel.options[methodSel.selectedIndex]?.textContent || '',
+    testCategory: document.getElementById('tCategory').value,
+    assignedAnalyst: document.getElementById('tAnalyst').value,
+    instrumentId: document.getElementById('tInstrument').value,
+    specificationMin: document.getElementById('tSpecMin').value ? Number(document.getElementById('tSpecMin').value) : null,
+    specificationMax: document.getElementById('tSpecMax').value ? Number(document.getElementById('tSpecMax').value) : null,
+    specificationUnit: document.getElementById('tSpecUnit').value,
+    specificationText: document.getElementById('tSpecText').value,
+    targetTatHours: Number(document.getElementById('tTat').value) || 48,
+    dueDate: document.getElementById('tDue').value || null,
+    notes: document.getElementById('tNotes').value,
+  };
+  try {
+    const r = await authFetch('/qc/tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    if (r.ok) {
+      let msg = 'Test assigned: ' + r.testId;
+      if (r.qualificationWarning) msg += ' [WARNING: Analyst not qualified for this method]';
+      if (r.methodValidationWarning) msg += ' [WARNING: Method validation expired]';
+      logBottom(r.qualificationWarning || r.methodValidationWarning ? 'warn' : 'info', msg);
+      closeModal();
+      await loadSampleDetail(body.sampleId);
+    } else logBottom('error', 'Failed: ' + (r.error || 'unknown'));
+  } catch (e) { logBottom('error', 'Submit test error: ' + e.message); }
+}
+
+// ── Record Result Modal ──────────────────────────────────────────────────
+function openRecordResultModal(testId, sampleId) {
+  const html = `<div class="modal-header"><h3>Record Result</h3><p>Record test result for ${testId}</p></div>
+    <div class="modal-body">
+      <input type="hidden" id="rTestId" value="${testId}">
+      <input type="hidden" id="rSampleId" value="${sampleId}">
+      <div class="form-grid">
+        <div class="form-row"><label>Result Value (numeric)</label><input type="number" id="rValue" step="any"></div>
+        <div class="form-row"><label>Result Unit</label><input id="rUnit" placeholder="e.g. mg/mL"></div>
+      </div>
+      <div class="form-row"><label>Result Text (qualitative)</label><input id="rText" placeholder="e.g. Conforms, Positive"></div>
+      <div class="form-row"><label>Calculation Notes</label><textarea id="rCalcNotes"></textarea></div>
+      <div class="form-row"><label>Notes</label><textarea id="rNotes"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="submitResult()">Record Result</button>
+    </div>`;
+  showModal(html);
+}
+
+async function submitResult() {
+  const body = {
+    testId: document.getElementById('rTestId').value,
+    sampleId: document.getElementById('rSampleId').value,
+    resultValue: document.getElementById('rValue').value ? Number(document.getElementById('rValue').value) : null,
+    resultUnit: document.getElementById('rUnit').value,
+    resultText: document.getElementById('rText').value,
+    calculationNotes: document.getElementById('rCalcNotes').value,
+    notes: document.getElementById('rNotes').value,
+  };
+  try {
+    const r = await authFetch('/qc/results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    if (r.ok) {
+      let msg = 'Result recorded: ' + r.resultId + ' — ' + r.passFail;
+      if (r.oosFlag) msg += ' [OOS FLAGGED]';
+      logBottom(r.oosFlag ? 'error' : 'info', msg);
+      closeModal();
+      // Also mark the test as completed
+      await authFetch('/qc/tests/' + body.testId + '/complete', { method: 'POST' });
+      await loadSampleDetail(body.sampleId);
+    } else logBottom('error', 'Failed: ' + (r.error || 'unknown'));
+  } catch (e) { logBottom('error', 'Submit result error: ' + e.message); }
+}
+
+// ── Instrument Modal ─────────────────────────────────────────────────────
+function openInstrumentModal() {
+  const html = `<div class="modal-header"><h3>Register Instrument</h3></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-row"><label>Name *</label><input id="iName" placeholder="e.g. HPLC-01"></div>
+        <div class="form-row"><label>Type</label><select id="iType">
+          <option value="analytical">Analytical</option><option value="chromatography">Chromatography</option>
+          <option value="spectroscopy">Spectroscopy</option><option value="weighing">Weighing</option><option value="other">Other</option>
+        </select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Model</label><input id="iModel"></div>
+        <div class="form-row"><label>Serial Number</label><input id="iSerial"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Location</label><input id="iLocation"></div>
+        <div class="form-row"><label>Responsible Person</label><input id="iPerson"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Next Calibration</label><input type="date" id="iNextCal"></div>
+        <div class="form-row"><label>Next Qualification</label><input type="date" id="iNextQual"></div>
+      </div>
+      <div class="form-row"><label>SOP Reference</label><input id="iSop"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="submitInstrument()">Register</button>
+    </div>`;
+  showModal(html);
+}
+
+async function submitInstrument() {
+  const body = {
+    name: document.getElementById('iName').value,
+    instrumentType: document.getElementById('iType').value,
+    model: document.getElementById('iModel').value,
+    serialNumber: document.getElementById('iSerial').value,
+    location: document.getElementById('iLocation').value,
+    responsiblePerson: document.getElementById('iPerson').value,
+    nextCalibration: document.getElementById('iNextCal').value || null,
+    nextQualification: document.getElementById('iNextQual').value || null,
+    sopReference: document.getElementById('iSop').value,
+  };
+  try {
+    const r = await authFetch('/qc/instruments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    if (r.ok) { logBottom('info', 'Instrument registered: ' + r.instrumentId); closeModal(); renderInstruments(); }
+    else logBottom('error', 'Failed: ' + (r.error || 'unknown'));
+  } catch (e) { logBottom('error', 'Submit instrument error: ' + e.message); }
+}
+
+// ── Qualification Modal ──────────────────────────────────────────────────
+function openQualModal() {
+  const html = `<div class="modal-header"><h3>Add Analyst Qualification</h3></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-row"><label>Analyst ID *</label><input id="qAnalystId" placeholder="e.g. user ID or name"></div>
+        <div class="form-row"><label>Analyst Name</label><input id="qAnalystName"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Test Method *</label><input id="qTestMethod" placeholder="e.g. pH Measurement"></div>
+        <div class="form-row"><label>Qualified Date</label><input type="date" id="qDate"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Requalification Due</label><input type="date" id="qRequalDue"></div>
+        <div class="form-row"><label>Trainer</label><input id="qTrainer"></div>
+      </div>
+      <div class="form-row"><label>Training Record Ref</label><input id="qTrainingRef"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="submitQual()">Add Qualification</button>
+    </div>`;
+  showModal(html);
+}
+
+async function submitQual() {
+  const body = {
+    analystId: document.getElementById('qAnalystId').value,
+    analystName: document.getElementById('qAnalystName').value,
+    testMethod: document.getElementById('qTestMethod').value,
+    qualifiedDate: document.getElementById('qDate').value || null,
+    requalificationDue: document.getElementById('qRequalDue').value || null,
+    trainer: document.getElementById('qTrainer').value,
+    trainingRecordRef: document.getElementById('qTrainingRef').value,
+  };
+  try {
+    const r = await authFetch('/qc/qualifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    if (r.ok) { logBottom('info', 'Qualification added: ' + r.qualificationId); closeModal(); renderQualifications(); }
+    else logBottom('error', 'Failed: ' + (r.error || 'unknown'));
+  } catch (e) { logBottom('error', 'Submit qual error: ' + e.message); }
+}
+
+// ── Method Modal ─────────────────────────────────────────────────────────
+function openMethodModal() {
+  const html = `<div class="modal-header"><h3>Register Test Method</h3></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-row"><label>Method Name *</label><input id="mmName" placeholder="e.g. USP <791> pH"></div>
+        <div class="form-row"><label>Category</label><select id="mmCategory">
+          <option value="chemical">Chemical</option><option value="biological">Biological</option>
+          <option value="microbiological">Microbiological</option><option value="physical">Physical</option>
+        </select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Version</label><input id="mmVersion" value="1.0"></div>
+        <div class="form-row"><label>Validation Status</label><select id="mmStatus">
+          <option value="validated">Validated</option><option value="due_for_revalidation">Due for Revalidation</option>
+          <option value="expired">Expired</option><option value="draft">Draft</option>
+        </select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Validated Date</label><input type="date" id="mmValDate"></div>
+        <div class="form-row"><label>Next Revalidation</label><input type="date" id="mmNextReval"></div>
+      </div>
+      <div class="form-row"><label>SOP Reference</label><input id="mmSop"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="submitMethod()">Register Method</button>
+    </div>`;
+  showModal(html);
+}
+
+async function submitMethod() {
+  const body = {
+    methodName: document.getElementById('mmName').value,
+    methodCategory: document.getElementById('mmCategory').value,
+    version: document.getElementById('mmVersion').value,
+    validationStatus: document.getElementById('mmStatus').value,
+    validatedDate: document.getElementById('mmValDate').value || null,
+    nextRevalidation: document.getElementById('mmNextReval').value || null,
+    sopReference: document.getElementById('mmSop').value,
+  };
+  try {
+    const r = await authFetch('/qc/methods', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    if (r.ok) { logBottom('info', 'Method registered: ' + r.methodId); closeModal(); renderMethods(); }
+    else logBottom('error', 'Failed: ' + (r.error || 'unknown'));
+  } catch (e) { logBottom('error', 'Submit method error: ' + e.message); }
+}
+
+// ── Template Modal ───────────────────────────────────────────────────────
+function openTemplateModal() {
+  const html = `<div class="modal-header"><h3>Create Test Template</h3></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-row"><label>Template Name *</label><input id="ttName" placeholder="e.g. Release Panel - mAb"></div>
+        <div class="form-row"><label>Sample Type *</label><select id="ttType">
+          <option value="in_process">In-Process</option><option value="release">Release</option><option value="stability">Stability</option>
+          <option value="raw_material">Raw Material</option><option value="reference_standard">Reference Standard</option><option value="environmental">Environmental</option>
+        </select></div>
+      </div>
+      <div class="form-row"><label>Product Name</label><input id="ttProduct" placeholder="Optional"></div>
+      <div class="form-row"><label>Tests (JSON array)</label><textarea id="ttTests" placeholder='[{"name":"pH","method":"USP <791>","category":"chemical"}]'></textarea></div>
+      <div class="form-row"><label>Notes</label><textarea id="ttNotes"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="submitTemplate()">Create Template</button>
+    </div>`;
+  showModal(html);
+}
+
+async function submitTemplate() {
+  let tests = [];
+  try { tests = JSON.parse(document.getElementById('ttTests').value || '[]'); } catch (e) { logBottom('error', 'Invalid JSON for tests'); return; }
+  const body = {
+    templateName: document.getElementById('ttName').value,
+    sampleType: document.getElementById('ttType').value,
+    productName: document.getElementById('ttProduct').value,
+    tests,
+    notes: document.getElementById('ttNotes').value,
+  };
+  try {
+    const r = await authFetch('/qc/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+    if (r.ok) { logBottom('info', 'Template created: ' + r.templateId); closeModal(); renderTemplates(); }
+    else logBottom('error', 'Failed: ' + (r.error || 'unknown'));
+  } catch (e) { logBottom('error', 'Submit template error: ' + e.message); }
+}
+
+// ── Utilities ────────────────────────────────────────────────────────────
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function fmtDate(d) { if (!d) return ''; try { return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return d; } }
+
+function logBottom(level, msg) {
+  const bc = document.getElementById('bottomContent');
+  const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const cls = level === 'error' ? 'log-error' : level === 'warn' ? 'log-warn' : 'log-info';
+  bc.innerHTML += `<div class="log-line"><span class="log-time">${t}</span> <span class="${cls}">${esc(msg)}</span></div>`;
+  bc.scrollTop = bc.scrollHeight;
+}
+</script>
+</body>
+</html>

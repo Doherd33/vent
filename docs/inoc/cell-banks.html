@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Cell Bank Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 300px 4px 1fr;
+  grid-template-rows: 1fr 4px 160px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── RESIZE HANDLES ── */
+.resizer { background: #3c3c3c; z-index: 10; transition: background 0.15s; position: relative; }
+.resizer:hover, .resizer.dragging { background: #007acc; }
+.resizer-v { cursor: col-resize; grid-row: 1; }
+.resizer-h { cursor: row-resize; grid-column: 1 / 4; grid-row: 2; }
+.resizer::after { content: ''; position: absolute; inset: 0; }
+.resizer-v::after { width: 12px; left: -4px; }
+.resizer-h::after { height: 12px; top: -4px; }
+
+/* ── LEFT PANEL ── */
+.left-panel { display: flex; flex-direction: column; overflow: hidden; background: var(--s1); border-right: 1px solid var(--border); }
+.panel-header { padding: 8px 12px; background: var(--s2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--text); user-select: none; }
+.panel-badge { background: var(--accent); color: #fff; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+.panel-actions { margin-left: auto; display: flex; gap: 4px; }
+.panel-btn { background: none; border: 1px solid var(--border); color: var(--mid); padding: 2px 8px; border-radius: 3px; font-size: 10px; cursor: pointer; }
+.panel-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.search-bar { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.search-bar input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 3px; font-size: 11px; outline: none; }
+.search-bar input:focus { border-color: var(--accent); }
+
+.filter-bar { display: flex; gap: 4px; padding: 6px 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.filter-btn { padding: 3px 10px; border: 1px solid var(--border); background: transparent; color: var(--mid); border-radius: 3px; font-size: 10px; cursor: pointer; transition: all 0.15s; }
+.filter-btn:hover { border-color: var(--accent); color: var(--text); }
+.filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.bank-list { flex: 1; overflow-y: auto; }
+.bank-card { padding: 10px 12px; cursor: pointer; border-left: 2px solid transparent; border-bottom: 1px solid var(--border); transition: all 0.12s; }
+.bank-card:hover { background: rgba(255,255,255,0.03); }
+.bank-card.active { background: #094771; border-left-color: var(--accent); }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.card-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); }
+.card-title { font-size: 12px; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { font-size: 10px; color: var(--dim); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ── BADGES ── */
+.badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.badge-mcb { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; }
+.badge-wcb { background: #3b82f622; color: #60a5fa; border: 1px solid #3b82f644; }
+.badge-epc { background: #f59e0b22; color: #fbbf24; border: 1px solid #f59e0b44; }
+.badge-active { background: #10b98122; color: #34d399; border: 1px solid #10b98144; }
+.badge-qualified { background: #14b8a622; color: #2dd4bf; border: 1px solid #14b8a644; }
+.badge-quarantine { background: #f59e0b22; color: #fbbf24; border: 1px solid #f59e0b44; }
+.badge-retired { background: #6b728022; color: #9ca3af; border: 1px solid #6b728044; }
+.badge-expired { background: #ef444422; color: #f87171; border: 1px solid #ef444444; }
+.badge-pending { background: #6b728022; color: #9ca3af; border: 1px solid #6b728044; }
+.badge-pass { background: #10b98122; color: #34d399; border: 1px solid #10b98144; }
+.badge-fail { background: #ef444422; color: #f87171; border: 1px solid #ef444444; }
+.badge-in_progress { background: #3b82f622; color: #60a5fa; border: 1px solid #3b82f644; }
+.badge-ready_for_review { background: #14b8a622; color: #2dd4bf; border: 1px solid #14b8a644; }
+
+.warning-icon { color: var(--red); font-size: 10px; }
+.gold-icon { color: var(--gold); font-size: 10px; }
+.vial-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--green); font-weight: 500; }
+
+/* ── CENTER PANEL ── */
+.center-panel { display: flex; flex-direction: column; overflow: hidden; }
+.editor-tabs { display: flex; background: var(--s2); border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; }
+.editor-tab { padding: 6px 16px; font-size: 11px; color: var(--mid); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; user-select: none; transition: all 0.15s; }
+.editor-tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.editor-tab.active { color: var(--text); border-bottom-color: var(--accent); background: var(--bg); }
+.center-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+
+/* ── BOTTOM PANEL ── */
+.bottom-panel { display: flex; flex-direction: column; border-top: 1px solid var(--border); grid-column: 1 / 4; }
+.bottom-tabs { display: flex; background: var(--s2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.bottom-tab { padding: 4px 14px; font-size: 11px; color: var(--mid); cursor: pointer; border-bottom: 2px solid transparent; user-select: none; }
+.bottom-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.bottom-content { flex: 1; overflow-y: auto; padding: 6px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.log-line { display: flex; gap: 8px; padding: 1px 0; }
+.log-time { color: var(--dim); min-width: 70px; }
+.log-info { color: var(--green); }
+.log-warn { color: var(--gold); }
+.log-error { color: var(--red); }
+
+/* ── STATUS BAR ── */
+.status-bar { background: #007acc; display: flex; align-items: center; padding: 0 10px; gap: 14px; font-size: 11px; color: rgba(255,255,255,0.85); user-select: none; }
+.status-bar .s-right { margin-left: auto; display: flex; gap: 12px; }
+
+/* ── STATS ROW ── */
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+.stat-box { background: var(--s1); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; text-align: center; }
+.stat-value { font-size: 22px; font-weight: 300; font-family: 'JetBrains Mono', monospace; color: var(--text); }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--dim); margin-top: 2px; }
+
+/* ── DETAIL SECTIONS ── */
+.detail-header { margin-bottom: 16px; }
+.detail-header h2 { font-size: 16px; font-weight: 500; color: var(--text); margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+.detail-header .meta { font-size: 11px; color: var(--dim); display: flex; gap: 12px; flex-wrap: wrap; }
+
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.info-item { padding: 8px 10px; background: var(--s1); border: 1px solid var(--border); border-radius: 4px; }
+.info-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); margin-bottom: 2px; }
+.info-value { font-size: 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+
+.section-title { font-size: 12px; font-weight: 500; color: var(--text); margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+
+/* ── INVENTORY BAR ── */
+.inventory-bar { display: flex; height: 20px; border-radius: 3px; overflow: hidden; margin: 8px 0; background: var(--s2); }
+.inv-seg { transition: width 0.3s; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: #fff; min-width: 0; }
+.inv-available { background: var(--green); }
+.inv-reserved { background: var(--accent); }
+.inv-withdrawn { background: #6366f1; }
+.inv-quarantine { background: var(--gold); }
+.inv-destroyed { background: var(--red); }
+
+/* ── PASSAGE BAR ── */
+.passage-bar { height: 8px; background: var(--s2); border-radius: 4px; overflow: hidden; margin: 4px 0; }
+.passage-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+
+/* ── TEST TABLE ── */
+.test-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
+.test-table th { text-align: left; padding: 6px 8px; background: var(--s2); color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+.test-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+.test-table tr:hover { background: rgba(255,255,255,0.02); }
+
+/* ── TRANSACTION TIMELINE ── */
+.txn-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+.txn-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+.txn-withdraw { background: #ef444433; color: #f87171; }
+.txn-deposit { background: #10b98133; color: #34d399; }
+.txn-info { flex: 1; }
+.txn-date { color: var(--dim); font-size: 10px; }
+
+/* ── VIAL GRID (storage map) ── */
+.vial-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin: 8px 0; }
+.vial-cell { aspect-ratio: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+.vial-cell:hover { transform: scale(1.15); z-index: 2; }
+.vial-available { background: #10b98133; color: #34d399; border-color: #10b98155; }
+.vial-reserved { background: #3b82f633; color: #60a5fa; border-color: #3b82f655; }
+.vial-quarantine { background: #f59e0b33; color: #fbbf24; border-color: #f59e0b55; }
+.vial-withdrawn { background: #6366f133; color: #818cf8; border-color: #6366f155; }
+.vial-used { background: #6b728033; color: #9ca3af; border-color: #6b728055; }
+.vial-destroyed { background: #ef444433; color: #f87171; border-color: #ef444455; }
+.vial-empty { background: var(--s2); color: var(--dim); }
+
+/* ── LINEAGE TREE ── */
+.lineage-tree { padding: 12px; }
+.lineage-node { background: var(--s1); border: 1px solid var(--border); border-radius: 4px; padding: 10px 14px; margin: 4px 0; cursor: pointer; transition: border-color 0.15s; }
+.lineage-node:hover { border-color: var(--accent); }
+.lineage-node.current { border-color: var(--accent); border-width: 2px; }
+.lineage-connector { width: 2px; height: 20px; background: var(--border); margin-left: 20px; }
+.lineage-children { margin-left: 40px; }
+
+/* ── AI PANEL ── */
+.ai-panel { background: var(--s1); border: 1px solid var(--border); border-radius: 4px; padding: 12px; margin-bottom: 12px; border-left: 3px solid var(--accent); }
+.ai-panel h4 { font-size: 12px; margin: 0 0 8px; color: var(--accent); }
+.ai-panel p { font-size: 11px; color: var(--text); margin: 4px 0; line-height: 1.5; }
+.ai-btn { background: var(--accent); color: #fff; border: none; padding: 4px 12px; border-radius: 3px; font-size: 10px; cursor: pointer; margin-top: 8px; }
+.ai-btn:hover { opacity: 0.9; }
+.ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── MODAL ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--s1); border: 1px solid var(--border); border-radius: 6px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; padding: 20px; }
+.modal h3 { margin: 0 0 16px; font-size: 14px; color: var(--text); }
+.modal label { display: block; font-size: 11px; color: var(--dim); margin-bottom: 4px; margin-top: 10px; }
+.modal input, .modal select, .modal textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 3px; font-size: 12px; outline: none; box-sizing: border-box; }
+.modal input:focus, .modal select:focus, .modal textarea:focus { border-color: var(--accent); }
+.modal textarea { resize: vertical; min-height: 60px; }
+.modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.btn-primary { background: var(--accent); color: #fff; border: none; padding: 6px 16px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary { background: transparent; color: var(--mid); border: 1px solid var(--border); padding: 6px 16px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+.btn-secondary:hover { border-color: var(--text); color: var(--text); }
+.warn-text { color: var(--gold); font-size: 10px; margin-top: 4px; }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--dim); }
+.empty-state h3 { color: var(--mid); font-size: 14px; margin-bottom: 8px; }
+.empty-state p { font-size: 12px; }
+
+/* ── VIABILITY CHART ── */
+.viability-chart { width: 100%; height: 120px; background: var(--s1); border: 1px solid var(--border); border-radius: 4px; position: relative; margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<!-- NAV (injected by nav.js) -->
+
+<div class="workbench">
+
+  <!-- LEFT PANEL: Bank List -->
+  <div class="left-panel">
+    <div class="panel-header">
+      Cell Banks <span class="panel-badge" id="bankCount">0</span>
+      <div class="panel-actions">
+        <button class="panel-btn" onclick="openCreateModal()">+ New</button>
+      </div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search bank ID, name, cell line..." oninput="filterBanks()">
+    </div>
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
+      <button class="filter-btn" data-filter="mcb" onclick="setFilter('mcb', this)">MCB</button>
+      <button class="filter-btn" data-filter="wcb" onclick="setFilter('wcb', this)">WCB</button>
+      <button class="filter-btn" data-filter="active" onclick="setFilter('active', this)">Active</button>
+      <button class="filter-btn" data-filter="qualified" onclick="setFilter('qualified', this)">Qualified</button>
+      <button class="filter-btn" data-filter="retired" onclick="setFilter('retired', this)">Retired</button>
+    </div>
+    <div class="bank-list" id="bankList"></div>
+  </div>
+
+  <!-- RESIZER -->
+  <div class="resizer resizer-v" id="resizerV"></div>
+
+  <!-- CENTER PANEL -->
+  <div class="center-panel">
+    <div class="editor-tabs" id="editorTabs">
+      <div class="editor-tab active" data-tab="dashboard" onclick="switchTab('dashboard', this)">Dashboard</div>
+      <div class="editor-tab" data-tab="detail" onclick="switchTab('detail', this)">Detail</div>
+      <div class="editor-tab" data-tab="vials" onclick="switchTab('vials', this)">Vials</div>
+      <div class="editor-tab" data-tab="testing" onclick="switchTab('testing', this)">Testing</div>
+      <div class="editor-tab" data-tab="transactions" onclick="switchTab('transactions', this)">Transactions</div>
+      <div class="editor-tab" data-tab="lineage" onclick="switchTab('lineage', this)">Lineage</div>
+      <div class="editor-tab" data-tab="ai" onclick="switchTab('ai', this)">AI Insights</div>
+    </div>
+    <div class="center-content" id="centerContent">
+      <div id="dashboardView"></div>
+      <div id="detailView" style="display:none"></div>
+      <div id="vialsView" style="display:none"></div>
+      <div id="testingView" style="display:none"></div>
+      <div id="transactionsView" style="display:none"></div>
+      <div id="lineageView" style="display:none"></div>
+      <div id="aiView" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM RESIZER -->
+  <div class="resizer resizer-h" id="resizerH"></div>
+
+  <!-- BOTTOM PANEL -->
+  <div class="bottom-panel">
+    <div class="bottom-tabs">
+      <div class="bottom-tab active">Activity Log</div>
+    </div>
+    <div class="bottom-content" id="activityLog">
+      <div class="log-line"><span class="log-time">--:--</span><span class="log-info">Cell Bank Management ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>Cell Bank Management</span>
+  <span class="s-right">
+    <span id="statusUser">--</span>
+    <span id="statusTime"></span>
+  </span>
+</div>
+
+<!-- CREATE BANK MODAL -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <h3>Create Cell Bank</h3>
+    <div class="modal-row">
+      <div><label>Name *</label><input id="cbName" placeholder="CHO-K1 WCB-001"></div>
+      <div><label>Bank Type *</label>
+        <select id="cbType" onchange="onBankTypeChange()">
+          <option value="mcb">MCB (Master Cell Bank)</option>
+          <option value="wcb" selected>WCB (Working Cell Bank)</option>
+          <option value="epc">EPC (End of Production Cells)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div><label>Cell Line *</label><input id="cbCellLine" placeholder="CHO-K1"></div>
+      <div><label>Clone ID</label><input id="cbCloneId" placeholder="Clone 5E2"></div>
+    </div>
+    <div class="modal-row">
+      <div><label>Product</label><input id="cbProduct" placeholder="mAb-X"></div>
+      <div id="parentBankRow"><label>Parent Bank ID (for WCB)</label>
+        <select id="cbParentBank"><option value="">-- Select MCB --</option></select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div><label>Passage Number</label><input type="number" id="cbPassage" value="0"></div>
+      <div><label>Max Passage Limit</label><input type="number" id="cbMaxPassage" value="60"></div>
+    </div>
+    <div class="modal-row">
+      <div><label>Date Banked</label><input type="date" id="cbDateBanked"></div>
+      <div><label>Expiry Date</label><input type="date" id="cbExpiry"></div>
+    </div>
+    <div class="modal-row">
+      <div><label>Storage Temperature</label>
+        <select id="cbTemp">
+          <option value="-196C_LN2">-196C (Liquid Nitrogen)</option>
+          <option value="-150C">-150C</option>
+        </select>
+      </div>
+      <div><label>Freezer ID</label><input id="cbFreezer" placeholder="LN2-01"></div>
+    </div>
+    <div class="modal-row">
+      <div><label>Storage Location</label><input id="cbLocation" placeholder="Building A, Room 101"></div>
+      <div><label>Backup Storage Location</label><input id="cbBackup" placeholder="Building B, Room 202">
+        <div class="warn-text" id="splitStorageWarn" style="display:none">ICH Q5D requires split storage across 2+ locations</div>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div><label>Total Vials</label><input type="number" id="cbTotalVials" value="0"></div>
+      <div><label>Volume per Vial (mL)</label><input type="number" id="cbVolume" value="1.0" step="0.1"></div>
+    </div>
+    <div class="modal-row">
+      <div><label>Viability at Banking (%)</label><input type="number" id="cbViability" step="0.1"></div>
+      <div><label>VCD at Banking</label><input type="number" id="cbVcd" step="0.1"></div>
+    </div>
+    <div class="modal-row">
+      <div><label>Cell Count per Vial</label><input type="number" id="cbCellCount"></div>
+      <div><label>CoA Reference</label><input id="cbCoa" placeholder="COA-2026-001"></div>
+    </div>
+    <label>Banking SOP Reference</label><input id="cbSop" placeholder="SOP-CB-001">
+    <label>Freezing Protocol</label><input id="cbFreezeProto" placeholder="FP-001 Controlled Rate Freeze">
+    <label>Notes</label><textarea id="cbNotes"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('createModal')">Cancel</button>
+      <button class="btn-primary" onclick="createBank()">Create Bank</button>
+    </div>
+  </div>
+</div>
+
+<!-- WITHDRAW MODAL -->
+<div class="modal-overlay" id="withdrawModal">
+  <div class="modal">
+    <h3>Withdraw Vials</h3>
+    <div id="withdrawQualWarn" class="warn-text" style="display:none; margin-bottom:10px; padding:8px; background:#ef444422; border-radius:4px;"></div>
+    <div class="modal-row">
+      <div><label>Number of Vials *</label><input type="number" id="wdQuantity" value="1" min="1"></div>
+      <div><label>Purpose *</label>
+        <select id="wdPurpose">
+          <option value="production">Production</option>
+          <option value="testing">Testing</option>
+          <option value="reference">Reference</option>
+          <option value="transfer">Transfer</option>
+          <option value="destruction">Destruction</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div><label>Batch Number</label><input id="wdBatch" placeholder="BATCH-2026-001"></div>
+      <div><label>Witness</label><input id="wdWitness" placeholder="Second person verification"></div>
+    </div>
+    <div id="passageLimitInfo" style="font-size:11px; color:var(--dim); margin:8px 0;"></div>
+    <label>Notes</label><textarea id="wdNotes"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('withdrawModal')">Cancel</button>
+      <button class="btn-primary" onclick="submitWithdraw()">Request Withdrawal</button>
+    </div>
+  </div>
+</div>
+
+<!-- POST-THAW MODAL -->
+<div class="modal-overlay" id="postThawModal">
+  <div class="modal">
+    <h3>Record Post-Thaw Data</h3>
+    <input type="hidden" id="ptTxnId">
+    <div class="modal-row">
+      <div><label>Post-Thaw Viability (%) *</label><input type="number" id="ptViability" step="0.1"></div>
+      <div><label>Post-Thaw VCD</label><input type="number" id="ptVcd" step="0.1"></div>
+    </div>
+    <div class="modal-row">
+      <div><label>Time Out of Storage (min)</label><input type="number" id="ptTimeOut"></div>
+      <div><label>Witness</label><input id="ptWitness"></div>
+    </div>
+    <div id="ptViabilityWarn" class="warn-text" style="display:none"></div>
+    <label>E-Signature (Your Name)</label><input id="ptSigner" placeholder="Full name">
+    <label>Signature Meaning</label><input id="ptMeaning" value="I confirm the accuracy of this post-thaw data">
+    <label>Notes</label><textarea id="ptNotes"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('postThawModal')">Cancel</button>
+      <button class="btn-primary" onclick="submitPostThaw()">Complete Transaction</button>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/nav.js"></script>
+<script src="../shared/i18n.js"></script>
+<script src="../shared/dev-progress.js"></script>
+<script>
+'use strict';
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+let banks = [];
+let selectedBank = null;
+let currentFilter = 'all';
+let searchQuery = '';
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadBanks();
+  loadStats();
+  updateClock();
+  setInterval(updateClock, 60000);
+  setupResizers();
+  if (window.__user) document.getElementById('statusUser').textContent = window.__user.name || '';
+});
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('statusTime').textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function log(msg, level = 'info') {
+  const el = document.getElementById('activityLog');
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  el.innerHTML = `<div class="log-line"><span class="log-time">${esc(time)}</span><span class="log-${esc(level)}">${esc(msg)}</span></div>` + el.innerHTML;
+}
+
+// ── API ──────────────────────────────────────────────────────────────────────
+async function loadBanks() {
+  try {
+    banks = await authFetch('/cell-banks').then(r => r.json());
+    renderBankList();
+    document.getElementById('bankCount').textContent = banks.length;
+    log(`Loaded ${banks.length} cell banks`);
+  } catch (e) {
+    log('Failed to load banks: ' + e.message, 'error');
+  }
+}
+
+async function loadStats() {
+  try {
+    const stats = await authFetch('/cell-banks/stats').then(r => r.json());
+    renderDashboard(stats);
+  } catch (e) {
+    log('Failed to load stats: ' + e.message, 'error');
+  }
+}
+
+async function loadBankDetail(bankId) {
+  try {
+    const detail = await authFetch(`/cell-banks/${bankId}`).then(r => r.json());
+    selectedBank = detail;
+    renderDetail(detail);
+    renderVials(detail);
+    renderTesting(detail);
+    renderTransactions(detail);
+    loadLineage(bankId);
+    renderAI(detail);
+    switchTab('detail', document.querySelector('[data-tab="detail"]'));
+    log(`Loaded detail for ${bankId}`);
+  } catch (e) {
+    log('Failed to load bank detail: ' + e.message, 'error');
+  }
+}
+
+async function loadLineage(bankId) {
+  try {
+    const lineage = await authFetch(`/cell-banks/${bankId}/lineage`).then(r => r.json());
+    renderLineage(lineage);
+  } catch (_e) { /* ignore */ }
+}
+
+// ── Filters ──────────────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderBankList();
+}
+
+function filterBanks() {
+  searchQuery = document.getElementById('searchInput').value.toLowerCase();
+  renderBankList();
+}
+
+// ── Render Bank List ─────────────────────────────────────────────────────────
+function renderBankList() {
+  const el = document.getElementById('bankList');
+  let filtered = banks;
+  if (currentFilter !== 'all') {
+    if (['mcb', 'wcb', 'epc'].includes(currentFilter)) {
+      filtered = filtered.filter(b => b.bank_type === currentFilter);
+    } else if (currentFilter === 'qualified') {
+      filtered = filtered.filter(b => b.qualification_status === 'qualified');
+    } else {
+      filtered = filtered.filter(b => b.status === currentFilter);
+    }
+  }
+  if (searchQuery) {
+    filtered = filtered.filter(b =>
+      (b.bank_id + ' ' + b.name + ' ' + b.cell_line + ' ' + b.clone_id).toLowerCase().includes(searchQuery)
+    );
+  }
+
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="empty-state"><h3>No cell banks</h3><p>Create a new cell bank to get started.</p></div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(b => {
+    const isActive = selectedBank && selectedBank.bank_id === b.bank_id;
+    const now = new Date();
+    const daysToExpiry = b.expiry_date ? Math.ceil((new Date(b.expiry_date) - now) / 86400000) : null;
+    const expiryWarn = daysToExpiry !== null && daysToExpiry <= 90 ? '<span class="warning-icon">EXP</span>' :
+                       daysToExpiry !== null && daysToExpiry <= 180 ? '<span class="gold-icon">EXP</span>' : '';
+    const lowInv = b.available_vials < 10 && b.status === 'active' ? '<span class="warning-icon">LOW</span>' : '';
+    const noSplit = !b.backup_storage_location ? '<span class="warning-icon">NO SPLIT</span>' : '';
+
+    return `<div class="bank-card ${isActive ? 'active' : ''}" onclick="loadBankDetail('${esc(b.bank_id)}')">
+      <div class="card-top">
+        <span class="card-id">${esc(b.bank_id)}</span>
+        <span class="badge badge-${esc(b.bank_type)}">${esc(b.bank_type).toUpperCase()}</span>
+      </div>
+      <div class="card-title">${esc(b.name)}</div>
+      <div class="card-meta">
+        <span class="badge badge-${esc(b.status)}">${esc(b.status)}</span>
+        <span class="badge badge-${esc(b.qualification_status)}">${b.qualification_status === 'qualified' ? 'QUAL' : esc(b.qualification_status)}</span>
+        <span class="vial-count">${b.available_vials}/${b.total_vials} vials</span>
+        ${expiryWarn}${lowInv}${noSplit}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render Dashboard ─────────────────────────────────────────────────────────
+function renderDashboard(stats) {
+  document.getElementById('dashboardView').innerHTML = `
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-value">${stats.totalBanks || 0}</div><div class="stat-label">Total Banks</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.totalAvailableVials || 0}</div><div class="stat-label">Available Vials</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.withdrawalsThisMonth || 0}</div><div class="stat-label">Withdrawals (Month)</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.expiringIn6Months || 0}</div><div class="stat-label">Expiring <6m</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-value">${stats.byType?.mcb || 0} / ${stats.byType?.wcb || 0}</div><div class="stat-label">MCB / WCB</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.lowInventory || 0}</div><div class="stat-label">Low Inventory</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.pendingQualification || 0}</div><div class="stat-label">Pending Qualification</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.splitStorageCompliance || 100}%</div><div class="stat-label">Split Storage Compliance</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-value">${stats.incompleteTesting || 0}</div><div class="stat-label">Incomplete Testing</div></div>
+      <div class="stat-box"><div class="stat-value">${stats.noSplitStorage || 0}</div><div class="stat-label">No Split Storage</div></div>
+      <div class="stat-box" style="grid-column: span 2"><div class="stat-label" style="margin-bottom:8px">Bank Status Distribution</div>
+        ${Object.entries(stats.byStatus || {}).map(([k,v]) => `<span class="badge badge-${k}" style="margin:2px">${k}: ${v}</span>`).join(' ')}
+      </div>
+    </div>`;
+}
+
+// ── Render Detail ────────────────────────────────────────────────────────────
+function renderDetail(b) {
+  const passagePct = b.max_passage_limit > 0 ? Math.min(100, (b.passage_number / b.max_passage_limit) * 100) : 0;
+  const passageColor = passagePct > 80 ? 'var(--red)' : passagePct > 60 ? 'var(--gold)' : 'var(--green)';
+  const total = b.total_vials || 1;
+  const invSegs = [
+    { cls: 'inv-available', pct: (b.available_vials / total) * 100, label: `Avail: ${b.available_vials}` },
+    { cls: 'inv-reserved', pct: (b.reserved_vials / total) * 100, label: `Rsv: ${b.reserved_vials}` },
+    { cls: 'inv-withdrawn', pct: (b.withdrawn_vials / total) * 100, label: `Wdr: ${b.withdrawn_vials}` },
+    { cls: 'inv-quarantine', pct: (b.quarantine_vials / total) * 100, label: `Qtn: ${b.quarantine_vials}` },
+    { cls: 'inv-destroyed', pct: (b.destroyed_vials / total) * 100, label: `Des: ${b.destroyed_vials}` },
+  ].filter(s => s.pct > 0);
+
+  document.getElementById('detailView').innerHTML = `
+    <div class="detail-header">
+      <h2>${esc(b.bank_id)} <span class="badge badge-${esc(b.bank_type)}">${esc(b.bank_type).toUpperCase()}</span>
+        <span class="badge badge-${esc(b.status)}">${esc(b.status)}</span>
+        <span class="badge badge-${esc(b.qualification_status)}">${esc(b.qualification_status)}</span></h2>
+      <div style="font-size:14px; color:var(--text); margin-bottom:4px;">${esc(b.name)}</div>
+      <div class="meta">
+        <span>Cell Line: ${esc(b.cell_line) || '--'}</span>
+        <span>Product: ${esc(b.product) || '--'}</span>
+        <span>Clone: ${esc(b.clone_id) || '--'}</span>
+        ${b.parent_bank_id ? `<span>Parent: <a href="#" onclick="loadBankDetail('${esc(b.parent_bank_id)}'); return false;" style="color:var(--accent)">${esc(b.parent_bank_id)}</a></span>` : ''}
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item"><div class="info-label">Passage Number</div><div class="info-value">${b.passage_number} / ${b.max_passage_limit}</div>
+        <div class="passage-bar"><div class="passage-fill" style="width:${passagePct}%; background:${passageColor}"></div></div>
+      </div>
+      <div class="info-item"><div class="info-label">Date Banked</div><div class="info-value">${b.date_banked || '--'}</div></div>
+      <div class="info-item"><div class="info-label">Expiry Date</div><div class="info-value">${b.expiry_date || '--'}</div></div>
+      <div class="info-item"><div class="info-label">Storage Temp</div><div class="info-value">${esc(b.storage_temp) || '--'}</div></div>
+      <div class="info-item"><div class="info-label">Storage Location</div><div class="info-value">${esc(b.storage_location) || '--'}</div></div>
+      <div class="info-item"><div class="info-label">Backup Location</div><div class="info-value">${b.backup_storage_location ? esc(b.backup_storage_location) : '<span class="warning-icon">NOT SET</span>'}</div></div>
+      <div class="info-item"><div class="info-label">Viability at Banking</div><div class="info-value">${b.viability_at_bank != null ? b.viability_at_bank + '%' : '--'}</div></div>
+      <div class="info-item"><div class="info-label">VCD at Banking</div><div class="info-value">${b.vcd_at_bank || '--'}</div></div>
+    </div>
+
+    <div class="section-title">Vial Inventory (${b.total_vials} total)</div>
+    <div class="inventory-bar">
+      ${invSegs.map(s => `<div class="${s.cls} inv-seg" style="width:${s.pct}%" title="${s.label}">${s.pct > 8 ? s.label : ''}</div>`).join('')}
+    </div>
+    <div style="display:flex; gap:12px; font-size:10px; color:var(--dim); margin-bottom:16px;">
+      <span style="color:var(--green)">Available: ${b.available_vials}</span>
+      <span style="color:var(--accent)">Reserved: ${b.reserved_vials}</span>
+      <span style="color:#818cf8">Withdrawn: ${b.withdrawn_vials}</span>
+      <span style="color:var(--gold)">Quarantine: ${b.quarantine_vials}</span>
+      <span style="color:var(--red)">Destroyed: ${b.destroyed_vials}</span>
+    </div>
+
+    ${b.qualification_status !== 'qualified' ? `
+    <div class="section-title">Qualification</div>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:16px;">
+      <span class="badge badge-${b.qualification_status}">${b.qualification_status}</span>
+      ${b.qualification_status === 'ready_for_review' ? `<button class="btn-primary" onclick="qualifyBank('${b.bank_id}')">Qualify Bank (QA)</button>` : '<span style="font-size:11px; color:var(--dim)">All required tests must pass before qualification</span>'}
+    </div>` : `
+    <div class="section-title">Qualification</div>
+    <div style="font-size:11px; color:var(--green); margin-bottom:16px;">Qualified by ${b.qualification_approved_by || '--'} on ${b.qualification_approved_date ? new Date(b.qualification_approved_date).toLocaleDateString() : '--'}</div>`}
+
+    <div class="section-title">Protocol References</div>
+    <div class="info-grid">
+      <div class="info-item"><div class="info-label">Banking SOP</div><div class="info-value">${esc(b.banking_sop_reference) || '--'}</div></div>
+      <div class="info-item"><div class="info-label">Freezing Protocol</div><div class="info-value">${esc(b.freezing_protocol) || '--'}</div></div>
+      <div class="info-item"><div class="info-label">Stability Protocol</div><div class="info-value">${esc(b.stability_protocol) || '--'}</div></div>
+      <div class="info-item"><div class="info-label">CoA Reference</div><div class="info-value">${esc(b.coa_reference) || '--'}</div></div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:16px;">
+      <button class="btn-primary" onclick="openWithdrawModal('${b.bank_id}')">Withdraw Vials</button>
+      ${b.status !== 'retired' ? `<button class="btn-secondary" onclick="retireBank('${b.bank_id}')">Retire Bank</button>` : ''}
+    </div>`;
+}
+
+// ── Render Vials ─────────────────────────────────────────────────────────────
+function renderVials(b) {
+  const vials = b.vials || [];
+  document.getElementById('vialsView').innerHTML = `
+    <div class="section-title">Storage Map (${vials.length} vials)</div>
+    <div class="vial-grid">
+      ${vials.map(v => `<div class="vial-cell vial-${v.status}" title="Vial #${v.vial_number} (${v.vial_id})\nStatus: ${v.status}\nLocation: ${v.freezer_id || ''} ${v.rack || ''}/${v.box || ''}/${v.position || ''}\nFreeze: ${v.freeze_date || '--'}" onclick="showVialActions('${b.bank_id}','${v.vial_id}','${v.status}')">${v.vial_number}</div>`).join('')}
+    </div>
+    <div style="display:flex; gap:12px; font-size:10px; color:var(--dim); margin:8px 0 16px;">
+      <span><span class="vial-cell vial-available" style="display:inline-block;width:12px;height:12px;font-size:0;"></span> Available</span>
+      <span><span class="vial-cell vial-reserved" style="display:inline-block;width:12px;height:12px;font-size:0;"></span> Reserved</span>
+      <span><span class="vial-cell vial-quarantine" style="display:inline-block;width:12px;height:12px;font-size:0;"></span> Quarantine</span>
+      <span><span class="vial-cell vial-withdrawn" style="display:inline-block;width:12px;height:12px;font-size:0;"></span> Withdrawn</span>
+      <span><span class="vial-cell vial-used" style="display:inline-block;width:12px;height:12px;font-size:0;"></span> Used</span>
+      <span><span class="vial-cell vial-destroyed" style="display:inline-block;width:12px;height:12px;font-size:0;"></span> Destroyed</span>
+    </div>
+
+    <div class="section-title">Vial List</div>
+    <table class="test-table">
+      <thead><tr><th>#</th><th>Vial ID</th><th>Status</th><th>Location</th><th>Freeze Date</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${vials.slice(0, 100).map(v => `<tr>
+          <td>${v.vial_number}</td>
+          <td style="font-family:'JetBrains Mono',monospace; font-size:10px;">${v.vial_id}</td>
+          <td><span class="badge badge-${v.status === 'available' ? 'active' : v.status}">${v.status}</span></td>
+          <td style="font-size:10px;">${[v.freezer_id, v.rack, v.box, v.position].filter(Boolean).join(' / ') || '--'}</td>
+          <td>${v.freeze_date || '--'}</td>
+          <td style="font-size:10px;">
+            ${v.status === 'available' ? `<a href="#" onclick="reserveVial('${b.bank_id}','${v.vial_id}'); return false;">Reserve</a> | <a href="#" onclick="quarantineVial('${b.bank_id}','${v.vial_id}'); return false;">Quarantine</a>` : ''}
+            ${['reserved','quarantine'].includes(v.status) ? `<a href="#" onclick="releaseVial('${b.bank_id}','${v.vial_id}'); return false;">Release</a>` : ''}
+            ${!['destroyed','used'].includes(v.status) ? ` | <a href="#" onclick="destroyVial('${b.bank_id}','${v.vial_id}'); return false;" style="color:var(--red)">Destroy</a>` : ''}
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${vials.length > 100 ? `<div style="font-size:11px; color:var(--dim)">Showing first 100 of ${vials.length} vials</div>` : ''}`;
+}
+
+// ── Render Testing ───────────────────────────────────────────────────────────
+function renderTesting(b) {
+  const tests = b.tests || [];
+  const allPass = tests.length > 0 && tests.every(t => t.result === 'pass');
+  document.getElementById('testingView').innerHTML = `
+    <div class="section-title">Testing Panel ${allPass ? '<span class="badge badge-pass" style="margin-left:8px;">All Tests Passed</span>' : ''}</div>
+    <table class="test-table">
+      <thead><tr><th>Test Type</th><th>Status</th><th>Result</th><th>Method</th><th>Date</th><th>Reviewer</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${tests.map(t => `<tr>
+          <td>${t.test_type.replace(/_/g, ' ')}</td>
+          <td><span class="badge badge-${t.status}">${t.status}</span></td>
+          <td><span class="badge badge-${t.result}">${t.result}</span></td>
+          <td style="font-size:10px;">${t.test_method || '--'}</td>
+          <td>${t.test_date || '--'}</td>
+          <td style="font-size:10px;">${t.reviewed_by || '--'}</td>
+          <td><a href="#" onclick="editTest('${b.bank_id}','${t.test_id}'); return false;" style="font-size:10px;">Update</a></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Render Transactions ──────────────────────────────────────────────────────
+function renderTransactions(b) {
+  const txns = b.transactions || [];
+  document.getElementById('transactionsView').innerHTML = `
+    <div class="section-title">Transaction History (${txns.length})</div>
+    ${txns.length === 0 ? '<div style="color:var(--dim); font-size:12px;">No transactions recorded.</div>' : ''}
+    ${txns.map(t => `<div class="txn-item">
+      <div class="txn-icon txn-${t.transaction_type === 'withdraw' ? 'withdraw' : 'deposit'}">${t.transaction_type === 'withdraw' ? '-' : '+'}</div>
+      <div class="txn-info">
+        <div style="color:var(--text); font-size:12px;">${t.transaction_id} &mdash; ${t.transaction_type.toUpperCase()} x${t.quantity}</div>
+        <div style="font-size:10px; color:var(--dim);">${t.purpose || ''} ${t.batch_number ? '| Batch: ' + t.batch_number : ''}</div>
+        <div class="txn-date">${t.performed_date ? new Date(t.performed_date).toLocaleString() : new Date(t.created_at).toLocaleString()}</div>
+        <div style="margin-top:4px;">
+          <span class="badge badge-${t.status === 'completed' ? 'pass' : t.status === 'approved' ? 'active' : 'pending'}">${t.status}</span>
+          ${t.post_thaw_viability != null ? `<span style="font-size:10px; color:${t.post_thaw_viability < 70 ? 'var(--red)' : 'var(--green)'}; margin-left:8px;">Viability: ${t.post_thaw_viability}%</span>` : ''}
+          ${t.status === 'requested' ? `<a href="#" onclick="approveTransaction('${t.transaction_id}'); return false;" style="font-size:10px; margin-left:8px;">Approve</a>` : ''}
+          ${['requested','approved'].includes(t.status) ? `<a href="#" onclick="openPostThawModal('${t.transaction_id}'); return false;" style="font-size:10px; margin-left:8px;">Complete</a>` : ''}
+        </div>
+      </div>
+    </div>`).join('')}`;
+}
+
+// ── Render Lineage ───────────────────────────────────────────────────────────
+function renderLineage(lineage) {
+  const renderNode = (b, isCurrent) => `
+    <div class="lineage-node ${isCurrent ? 'current' : ''}" onclick="loadBankDetail('${b.bank_id}')">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="card-id">${b.bank_id}</span>
+        <span class="badge badge-${b.bank_type}">${b.bank_type.toUpperCase()}</span>
+      </div>
+      <div style="font-size:12px; color:var(--text); margin:4px 0;">${b.name}</div>
+      <div style="font-size:10px; color:var(--dim);">
+        <span class="badge badge-${b.status}">${b.status}</span>
+        <span class="badge badge-${b.qualification_status}">${b.qualification_status}</span>
+        <span class="vial-count" style="margin-left:8px;">${b.available_vials}/${b.total_vials} vials</span>
+      </div>
+    </div>`;
+
+  let html = '<div class="lineage-tree">';
+  if (lineage.parent) {
+    html += renderNode(lineage.parent, false);
+    html += '<div class="lineage-connector"></div>';
+  }
+  html += renderNode(lineage.current, true);
+  if (lineage.siblings.length > 0) {
+    html += '<div style="font-size:10px; color:var(--dim); margin:8px 0 4px 40px;">Siblings:</div>';
+    html += '<div class="lineage-children">';
+    lineage.siblings.forEach(s => { html += renderNode(s, false); });
+    html += '</div>';
+  }
+  if (lineage.children.length > 0) {
+    html += '<div class="lineage-connector"></div>';
+    html += '<div style="font-size:10px; color:var(--dim); margin:4px 0 4px 40px;">Derived Banks:</div>';
+    html += '<div class="lineage-children">';
+    lineage.children.forEach(c => { html += renderNode(c, false); });
+    html += '</div>';
+  }
+  html += '</div>';
+  document.getElementById('lineageView').innerHTML = html;
+}
+
+// ── Render AI ────────────────────────────────────────────────────────────────
+function renderAI(b) {
+  let depletionData = null;
+  let rebankData = null;
+  try { depletionData = JSON.parse(b.ai_depletion_est || 'null'); } catch (_e) { /* ignore */ }
+  try { rebankData = JSON.parse(b.ai_rebank_rec || 'null'); } catch (_e) { /* ignore */ }
+
+  document.getElementById('aiView').innerHTML = `
+    <div class="ai-panel">
+      <h4>Inventory Depletion Forecast</h4>
+      ${depletionData ? `<p>${depletionData.summary || 'No analysis available.'}</p>
+        <p style="color:var(--dim);">Projected depletion: ${depletionData.projectedDepletionDate || '--'} | Rebank trigger: ${depletionData.rebankTriggerDate || '--'}</p>
+        <p><span class="badge badge-${depletionData.urgency === 'critical' ? 'expired' : depletionData.urgency === 'urgent' ? 'quarantine' : 'active'}">${depletionData.urgency || 'unknown'}</span></p>`
+      : '<p style="color:var(--dim);">No depletion analysis yet.</p>'}
+      <button class="ai-btn" onclick="runAI('depletion', '${b.bank_id}')">Analyse Depletion</button>
+    </div>
+
+    <div class="ai-panel">
+      <h4>Rebanking Recommendation</h4>
+      ${rebankData ? `<p>${rebankData.summary || 'No recommendation available.'}</p>
+        <p style="color:var(--dim);">Recommended start: ${rebankData.recommendedStartDate || '--'}</p>
+        <p><span class="badge badge-${rebankData.urgency === 'urgent' ? 'expired' : rebankData.urgency === 'warning' ? 'quarantine' : 'active'}">${rebankData.urgency || 'unknown'}</span></p>`
+      : '<p style="color:var(--dim);">No rebanking recommendation yet.</p>'}
+      <button class="ai-btn" onclick="runAI('rebank', '${b.bank_id}')">Analyse Rebanking</button>
+    </div>
+
+    <div class="ai-panel">
+      <h4>Post-Thaw Viability Trend</h4>
+      <p style="color:var(--dim);">Analyse viability trends across all withdrawals from this bank.</p>
+      <button class="ai-btn" onclick="runViabilityTrend('${b.bank_id}')">Analyse Viability</button>
+      <div id="viabilityResult"></div>
+    </div>
+
+    <div class="ai-panel">
+      <h4>Cross-Bank Analysis</h4>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="ai-btn" onclick="runExpiryAlerts()">Expiry Alerts</button>
+        <button class="ai-btn" onclick="runUsageOptimization()">Usage Optimization</button>
+        <button class="ai-btn" onclick="runComplianceCheck()">Compliance Check</button>
+      </div>
+      <div id="crossBankResult" style="margin-top:12px;"></div>
+    </div>`;
+}
+
+// ── Tab Switching ────────────────────────────────────────────────────────────
+function switchTab(tab, btn) {
+  document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  ['dashboard', 'detail', 'vials', 'testing', 'transactions', 'lineage', 'ai'].forEach(t => {
+    document.getElementById(t + 'View').style.display = t === tab ? '' : 'none';
+  });
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────────
+function openCreateModal() {
+  document.getElementById('createModal').classList.add('show');
+  // Load MCBs for parent bank dropdown
+  const mcbs = banks.filter(b => b.bank_type === 'mcb' && b.status !== 'retired');
+  const sel = document.getElementById('cbParentBank');
+  sel.innerHTML = '<option value="">-- Select MCB --</option>' + mcbs.map(m => `<option value="${esc(m.bank_id)}">${esc(m.bank_id)} - ${esc(m.name)}</option>`).join('');
+  onBankTypeChange();
+  document.getElementById('cbBackup').addEventListener('input', () => {
+    document.getElementById('splitStorageWarn').style.display = document.getElementById('cbBackup').value ? 'none' : '';
+  });
+}
+
+function onBankTypeChange() {
+  const type = document.getElementById('cbType').value;
+  document.getElementById('parentBankRow').style.display = type === 'wcb' ? '' : 'none';
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+async function createBank() {
+  const body = {
+    name: document.getElementById('cbName').value,
+    bankType: document.getElementById('cbType').value,
+    cellLine: document.getElementById('cbCellLine').value,
+    cloneId: document.getElementById('cbCloneId').value,
+    product: document.getElementById('cbProduct').value,
+    parentBankId: document.getElementById('cbParentBank').value,
+    passageNumber: parseInt(document.getElementById('cbPassage').value) || 0,
+    maxPassageLimit: parseInt(document.getElementById('cbMaxPassage').value) || 60,
+    dateBanked: document.getElementById('cbDateBanked').value || null,
+    expiryDate: document.getElementById('cbExpiry').value || null,
+    storageTemp: document.getElementById('cbTemp').value,
+    freezerId: document.getElementById('cbFreezer').value,
+    storageLocation: document.getElementById('cbLocation').value,
+    backupStorageLocation: document.getElementById('cbBackup').value,
+    totalVials: parseInt(document.getElementById('cbTotalVials').value) || 0,
+    volumePerVial: parseFloat(document.getElementById('cbVolume').value) || 1.0,
+    viabilityAtBank: parseFloat(document.getElementById('cbViability').value) || null,
+    vcdAtBank: parseFloat(document.getElementById('cbVcd').value) || null,
+    cellCountPerVial: parseInt(document.getElementById('cbCellCount').value) || null,
+    coaReference: document.getElementById('cbCoa').value,
+    bankingSopReference: document.getElementById('cbSop').value,
+    freezingProtocol: document.getElementById('cbFreezeProto').value,
+    notes: document.getElementById('cbNotes').value,
+  };
+
+  if (!body.name) return alert('Name is required');
+  if (!body.cellLine) return alert('Cell line is required');
+
+  try {
+    const res = await authFetch('/cell-banks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    log(`Created cell bank ${data.bankId} with ${data.vialsCreated} vials and ${data.testsGenerated} tests`);
+    if (data.warnings && data.warnings.length) data.warnings.forEach(w => log(w, 'warn'));
+    closeModal('createModal');
+    await loadBanks();
+    loadBankDetail(data.bankId);
+  } catch (e) {
+    log('Create failed: ' + e.message, 'error');
+    alert('Error: ' + e.message);
+  }
+}
+
+function openWithdrawModal(bankId) {
+  const b = banks.find(x => x.bank_id === bankId) || selectedBank;
+  if (!b) return;
+  const warnEl = document.getElementById('withdrawQualWarn');
+  if (b.qualification_status !== 'qualified') {
+    warnEl.style.display = '';
+    warnEl.textContent = `Warning: This bank is not qualified (${b.qualification_status}). Production withdrawals will be blocked.`;
+  } else {
+    warnEl.style.display = 'none';
+  }
+  document.getElementById('passageLimitInfo').innerHTML = `Passage: ${b.passage_number} / ${b.max_passage_limit} | Available: ${b.available_vials} vials`;
+  document.getElementById('withdrawModal').classList.add('show');
+  document.getElementById('withdrawModal').dataset.bankId = bankId;
+}
+
+async function submitWithdraw() {
+  const bankId = document.getElementById('withdrawModal').dataset.bankId;
+  const body = {
+    quantity: parseInt(document.getElementById('wdQuantity').value) || 1,
+    purpose: document.getElementById('wdPurpose').value,
+    batchNumber: document.getElementById('wdBatch').value,
+    witness: document.getElementById('wdWitness').value,
+    notes: document.getElementById('wdNotes').value,
+  };
+
+  try {
+    const res = await authFetch(`/cell-banks/${bankId}/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    log(`Withdrawal ${data.transactionId}: ${body.quantity} vials from ${bankId}${data.fifoOverride ? ' (FIFO override)' : ''}`);
+    closeModal('withdrawModal');
+    loadBankDetail(bankId);
+    loadBanks();
+  } catch (e) {
+    log('Withdraw failed: ' + e.message, 'error');
+    alert('Error: ' + e.message);
+  }
+}
+
+function openPostThawModal(txnId) {
+  document.getElementById('ptTxnId').value = txnId;
+  document.getElementById('postThawModal').classList.add('show');
+}
+
+async function submitPostThaw() {
+  const txnId = document.getElementById('ptTxnId').value;
+  const body = {
+    postThawViability: parseFloat(document.getElementById('ptViability').value) || null,
+    postThawVcd: parseFloat(document.getElementById('ptVcd').value) || null,
+    timeOutOfStorageMinutes: parseInt(document.getElementById('ptTimeOut').value) || null,
+    witness: document.getElementById('ptWitness').value,
+    eSig: {
+      signer: document.getElementById('ptSigner').value,
+      meaning: document.getElementById('ptMeaning').value,
+      timestamp: new Date().toISOString(),
+      method: 'typed_name',
+    },
+    notes: document.getElementById('ptNotes').value,
+  };
+
+  try {
+    const res = await authFetch(`/cell-banks/transactions/${txnId}/complete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    log(`Transaction ${txnId} completed`);
+    if (data.warnings) data.warnings.forEach(w => log(w, 'warn'));
+    closeModal('postThawModal');
+    if (selectedBank) loadBankDetail(selectedBank.bank_id);
+  } catch (e) {
+    log('Complete failed: ' + e.message, 'error');
+    alert('Error: ' + e.message);
+  }
+}
+
+async function approveTransaction(txnId) {
+  const signer = prompt('E-Signature: Enter your full name to approve');
+  if (!signer) return;
+  try {
+    const res = await authFetch(`/cell-banks/transactions/${txnId}/approve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eSig: { signer, meaning: 'I approve this withdrawal', timestamp: new Date().toISOString(), method: 'typed_name' } }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    log(`Transaction ${txnId} approved`);
+    if (selectedBank) loadBankDetail(selectedBank.bank_id);
+  } catch (e) {
+    log('Approve failed: ' + e.message, 'error');
+    alert('Error: ' + e.message);
+  }
+}
+
+async function qualifyBank(bankId) {
+  const signer = prompt('E-Signature: Enter your full name to certify qualification');
+  if (!signer) return;
+  try {
+    const res = await authFetch(`/cell-banks/${bankId}/qualify`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eSig: { signer, meaning: 'I certify this bank meets qualification criteria', timestamp: new Date().toISOString(), method: 'typed_name' } }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    log(`Bank ${bankId} qualified`);
+    loadBankDetail(bankId);
+    loadBanks();
+  } catch (e) {
+    log('Qualify failed: ' + e.message, 'error');
+    alert('Error: ' + e.message);
+  }
+}
+
+async function retireBank(bankId) {
+  if (!confirm(`Retire bank ${bankId}? This cannot be undone.`)) return;
+  try {
+    const res = await authFetch(`/cell-banks/${bankId}/retire`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    log(`Bank ${bankId} retired`);
+    loadBankDetail(bankId);
+    loadBanks();
+  } catch (e) {
+    log('Retire failed: ' + e.message, 'error');
+  }
+}
+
+async function reserveVial(bankId, vialId) {
+  const reservedFor = prompt('Reserve for (batch number or reference):');
+  if (reservedFor === null) return;
+  try {
+    const res = await authFetch(`/cell-banks/${bankId}/vials/${vialId}/reserve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservedFor }),
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+    log(`Vial ${vialId} reserved`);
+    loadBankDetail(bankId);
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function quarantineVial(bankId, vialId) {
+  const reason = prompt('Quarantine reason:');
+  if (!reason) return;
+  try {
+    const res = await authFetch(`/cell-banks/${bankId}/vials/${vialId}/quarantine`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+    log(`Vial ${vialId} quarantined`);
+    loadBankDetail(bankId);
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function releaseVial(bankId, vialId) {
+  if (!confirm('Release this vial back to available?')) return;
+  try {
+    const res = await authFetch(`/cell-banks/${bankId}/vials/${vialId}/release`, { method: 'POST' });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+    log(`Vial ${vialId} released`);
+    loadBankDetail(bankId);
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function destroyVial(bankId, vialId) {
+  const reason = prompt('Destruction reason:');
+  if (!reason) return;
+  try {
+    const res = await authFetch(`/cell-banks/${bankId}/vials/${vialId}/destroy`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+    log(`Vial ${vialId} destroyed`);
+    loadBankDetail(bankId);
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function editTest(bankId, testId) {
+  const result = prompt('Test result (pass / fail / pending / in_progress):');
+  if (!result || !['pass', 'fail', 'pending', 'in_progress'].includes(result)) return;
+  const reviewedBy = result === 'pass' || result === 'fail' ? prompt('Reviewed by:') : '';
+  try {
+    const res = await authFetch(`/cell-banks/${bankId}/tests/${testId}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ result, status: result === 'pending' ? 'scheduled' : result === 'in_progress' ? 'in_progress' : 'completed', reviewedBy: reviewedBy || undefined }),
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+    log(`Test ${testId} updated to ${result}`);
+    loadBankDetail(bankId);
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+function showVialActions(bankId, vialId, status) {
+  // Clicking a vial in the grid shows a tooltip-style action menu (simplified)
+  if (status === 'available') {
+    const action = prompt(`Vial ${vialId} is available.\nType: reserve, quarantine, or destroy`);
+    if (action === 'reserve') reserveVial(bankId, vialId);
+    else if (action === 'quarantine') quarantineVial(bankId, vialId);
+    else if (action === 'destroy') destroyVial(bankId, vialId);
+  } else if (['reserved', 'quarantine'].includes(status)) {
+    if (confirm(`Release vial ${vialId} from ${status}?`)) releaseVial(bankId, vialId);
+  }
+}
+
+// ── AI Actions ───────────────────────────────────────────────────────────────
+async function runAI(type, bankId) {
+  log(`Running AI ${type} analysis for ${bankId}...`);
+  try {
+    const res = await authFetch(`/cell-banks/${bankId}/ai/${type}`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    log(`AI ${type} analysis complete`);
+    loadBankDetail(bankId);
+  } catch (e) {
+    log(`AI ${type} failed: ${e.message}`, 'error');
+  }
+}
+
+async function runViabilityTrend(bankId) {
+  log('Running viability trend analysis...');
+  try {
+    const res = await authFetch('/cell-banks/ai/viability-trend', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bankId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const el = document.getElementById('viabilityResult');
+    el.innerHTML = `<p style="margin-top:8px;">${esc(data.summary) || 'Analysis complete.'}</p>
+      <p>Trend: <span class="badge badge-${data.trend === 'declining' ? 'expired' : data.trend === 'stable' ? 'active' : 'pending'}">${esc(data.trend) || 'unknown'}</span></p>
+      ${(data.alerts || []).map(a => `<p style="color:var(--gold); font-size:10px;">${a.message}</p>`).join('')}`;
+    log('Viability trend analysis complete');
+  } catch (e) { log('Viability analysis failed: ' + e.message, 'error'); }
+}
+
+async function runExpiryAlerts() {
+  log('Running expiry alerts...');
+  try {
+    const res = await authFetch('/cell-banks/ai/expiry-alerts', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const el = document.getElementById('crossBankResult');
+    el.innerHTML = `<h4 style="font-size:12px; color:var(--accent);">Expiry Alerts</h4>
+      <p style="font-size:11px;">${data.summary || ''}</p>
+      ${(data.alerts || []).map(a => `<div style="padding:6px; margin:4px 0; background:var(--s2); border-radius:3px; font-size:11px;">
+        <span class="badge badge-${a.urgency === 'expired' ? 'expired' : a.urgency === 'critical' ? 'expired' : 'quarantine'}">${a.urgency}</span>
+        ${a.bankId}: ${a.name} (${a.daysRemaining} days) — ${a.recommendedAction}
+      </div>`).join('')}`;
+    log('Expiry alerts complete');
+  } catch (e) { log('Expiry alerts failed: ' + e.message, 'error'); }
+}
+
+async function runUsageOptimization() {
+  log('Running usage optimization...');
+  try {
+    const res = await authFetch('/cell-banks/ai/usage-optimization', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const el = document.getElementById('crossBankResult');
+    el.innerHTML = `<h4 style="font-size:12px; color:var(--accent);">Usage Optimization</h4>
+      <p style="font-size:11px;">${data.summary || ''}</p>
+      ${(data.findings || []).map(f => `<div style="padding:6px; margin:4px 0; background:var(--s2); border-radius:3px; font-size:11px;">
+        <span class="badge badge-${f.severity === 'high' ? 'expired' : f.severity === 'medium' ? 'quarantine' : 'active'}">${f.severity}</span>
+        [${f.type}] ${f.description} — ${f.recommendation}
+      </div>`).join('')}`;
+    log('Usage optimization complete');
+  } catch (e) { log('Usage optimization failed: ' + e.message, 'error'); }
+}
+
+async function runComplianceCheck() {
+  log('Running compliance check...');
+  try {
+    const res = await authFetch('/cell-banks/compliance-check');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const el = document.getElementById('crossBankResult');
+    el.innerHTML = `<h4 style="font-size:12px; color:var(--accent);">Compliance Check</h4>
+      <p style="font-size:11px;">${data.summary || ''}</p>
+      <p style="font-size:11px;">Overall: <span class="badge badge-${data.overallStatus === 'green' ? 'active' : data.overallStatus === 'amber' ? 'quarantine' : 'expired'}">${data.overallStatus}</span> | Critical: ${data.criticalCount || 0} | Warnings: ${data.warningCount || 0}</p>
+      ${(data.bankResults || []).map(b => `<div style="padding:6px; margin:4px 0; background:var(--s2); border-radius:3px; font-size:11px;">
+        <span class="badge badge-${b.status === 'green' ? 'active' : b.status === 'amber' ? 'quarantine' : 'expired'}">${b.status}</span>
+        ${b.bankId}: ${b.name}
+        ${(b.issues || []).map(i => `<div style="margin-left:16px; color:var(--dim);">${i.severity}: ${i.description}</div>`).join('')}
+      </div>`).join('')}`;
+    log('Compliance check complete');
+  } catch (e) { log('Compliance check failed: ' + e.message, 'error'); }
+}
+
+// ── Resizers ─────────────────────────────────────────────────────────────────
+function setupResizers() {
+  const wb = document.querySelector('.workbench');
+  const rV = document.getElementById('resizerV');
+  const rH = document.getElementById('resizerH');
+
+  let dragging = null;
+
+  rV.addEventListener('mousedown', e => { e.preventDefault(); dragging = 'v'; rV.classList.add('dragging'); });
+  rH.addEventListener('mousedown', e => { e.preventDefault(); dragging = 'h'; rH.classList.add('dragging'); });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    if (dragging === 'v') {
+      const x = Math.max(200, Math.min(e.clientX, window.innerWidth - 300));
+      wb.style.gridTemplateColumns = `${x}px 4px 1fr`;
+    } else {
+      const rect = wb.getBoundingClientRect();
+      const y = Math.max(100, Math.min(rect.bottom - e.clientY, 400));
+      wb.style.gridTemplateRows = `1fr 4px ${y}px`;
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (dragging) {
+      rV.classList.remove('dragging');
+      rH.classList.remove('dragging');
+      dragging = null;
+    }
+  });
+}
+</script>
+</body>
+</html>

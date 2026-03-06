@@ -150,7 +150,7 @@ var ALL_PAGES = [
   // INOCULATION — Cell bank, thaw, seed train, scale-up to production
   // Almost a separate division. Dedicated cleanroom, dedicated team.
   // ═══════════════════════════════════════════════════════════════════
-  { id:'inoc-cell-bank',    title:'Cell Bank Management',     desc:'MCB/WCB inventory at -150°C to -196°C LN2. Vial accounting, location tracking, expiry alerts, chain of custody, certificate of analysis linkage.', path:null, status:'planned', roles:['operator','qa','msat'] },
+  { id:'inoc-cell-bank',    title:'Cell Bank Management',     desc:'MCB/WCB inventory at -150°C to -196°C LN2. Vial accounting, location tracking, expiry alerts, chain of custody, certificate of analysis linkage.', path:'/cell-banks.html', status:'live', roles:['operator','qa','msat'] },
   { id:'inoc-thaw',         title:'Cell Thaw & Revival',      desc:'WCB thaw protocol execution: 37°C water bath timing, cryoprotectant removal, post-thaw viability (>70% threshold), seeding density calc, revival incubation conditions.', path:null, status:'planned', roles:['operator','msat'] },
   { id:'inoc-passage',      title:'Passage Tracker',          desc:'T-flask → shake flask → spinner flask → WAVE bag expansion. Passage number tracking, split ratios, population doubling times, cumulative PDL, morphology checks.', path:null, status:'planned', roles:['operator','msat'] },
   { id:'inoc-seed-train',   title:'Seed Train Monitor',       desc:'N-3 → N-2 → N-1 bioreactor expansion. Growth kinetics (VCD, viability), metabolite trending (glucose, lactate, glutamine, ammonia), pH/DO/temp control.', path:null, status:'planned', roles:['operator','msat','engineering'] },
@@ -201,16 +201,16 @@ var ALL_PAGES = [
   { id:'qa-workflow',     title:'QA Workflow',              desc:'Workflow management and status tracking across all quality events.',                                              path:'/workflow.html',     status:'live',    roles:['qa','director','admin'] },
   { id:'deviation-mgr',   title:'Deviation Manager',       desc:'Full lifecycle: initiate, classify (critical/major/minor), investigate (5-Why, Ishikawa), root cause, CAPA link, close.', path:'/deviations.html', status:'live', roles:['qa','operator','msat','engineering'] },
   { id:'capa-tracker',    title:'CAPA Tracker',            desc:'Corrective/preventive actions. Assign owners, track deadlines, verify effectiveness 30-90 days post-implementation.', path:'/capas.html', status:'live', roles:['qa','director','admin'] },
-  { id:'change-control',  title:'Change Control',          desc:'Cross-functional impact assessment, regulatory classification (Type IA/IB/II), implementation tracking, closure.', path:null,  status:'planned', roles:['qa','regulatory','validation','engineering','msat'] },
-  { id:'batch-disposition',title:'Batch Disposition',      desc:'Batch record review queue, QA release checklist, QP certification. AI-powered review by exception.',               path:null,  status:'planned', roles:['qa','director'] },
+  { id:'change-control',  title:'Change Control',          desc:'Cross-functional impact assessment, regulatory classification (Type IA/IB/II), implementation tracking, closure.', path:'/change-control.html',  status:'live', roles:['qa','regulatory','validation','engineering','msat'] },
+  { id:'batch-disposition',title:'Batch Disposition',      desc:'Batch record review queue, QA release checklist, QP certification. AI-powered review by exception.',               path:'/dispositions.html',  status:'live', roles:['qa','director'] },
   { id:'doc-control',     title:'Document Control',        desc:'SOP lifecycle: draft, review, approve, distribute, train, retire. Version control, periodic review scheduling.',   path:null,  status:'planned', roles:['qa','admin'] },
   { id:'supplier-quality', title:'Supplier Quality',       desc:'Supplier qualification, quality agreements, audit scheduling, performance scorecards, approved supplier list.',    path:'/suppliers.html', status:'live', roles:['qa'] },
-  { id:'complaint-mgr',   title:'Complaints & Recalls',   desc:'Product complaint intake, investigation, batch linkage, trending, recall execution tracking.',                    path:null,  status:'planned', roles:['qa','director'] },
+  { id:'complaint-mgr',   title:'Complaints & Recalls',   desc:'Product complaint intake, investigation, batch linkage, trending, recall execution tracking.',                    path:'/complaints.html',  status:'live', roles:['qa','director'] },
 
   // ═══════════════════════════════════════════════════════════════════
   // QUALITY CONTROL
   // ═══════════════════════════════════════════════════════════════════
-  { id:'qc-lab',          title:'QC Lab Dashboard',        desc:'Sample queue, test status, analyst workload, instrument schedule. Priority flagging for batch-critical tests.',    path:null,  status:'planned', roles:['qc','qa'] },
+  { id:'qc-lab',          title:'QC Lab Dashboard',        desc:'Sample queue, test status, analyst workload, instrument schedule. Priority flagging for batch-critical tests.',    path:'/qc-lab.html',  status:'live', roles:['qc','qa'] },
   { id:'oos-invest',      title:'OOS Investigation',       desc:'Phase I (lab checks within 1 day) and Phase II (full-scale). Enforced timeline, cross-batch impact assessment.',  path:null,  status:'planned', roles:['qc','qa'] },
   { id:'env-monitoring',  title:'Environmental Monitoring', desc:'Viable/non-viable particle trending, EM schedule, excursion alerts, cleanroom status board.',                    path:null,  status:'planned', roles:['qc','qa','operator'] },
   { id:'stability',       title:'Stability Program',       desc:'ICH stability study tracking (25/60, 30/65, 40/75). Pull scheduling, trend analysis, OOT alerts.',                path:null,  status:'planned', roles:['qc','qa','regulatory'] },

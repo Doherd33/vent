@@ -815,6 +815,892 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 COMMENT ON TABLE cleaning_records IS 'GMP equipment cleaning records — hold time tracking, rinse conductivity, second-person verification.';
+
+-- ══════════════════════════════════════════════════════════════
+-- ROUND 3 TABLES
+-- ══════════════════════════════════════════════════════════════
+
+-- ══════════════════════════════════════════════════════════════
+-- CHANGE CONTROL (ICH Q10 Change Management)
+-- ══════════════════════════════════════════════════════════════
+
+-- ── Change Controls ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS change_controls (
+  id                    UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  cc_id                 TEXT UNIQUE NOT NULL,
+  title                 TEXT NOT NULL,
+  description           TEXT NOT NULL DEFAULT '',
+  change_type           TEXT NOT NULL DEFAULT 'process',
+  sub_category          TEXT DEFAULT '',
+  category              TEXT NOT NULL DEFAULT 'minor',
+  status                TEXT DEFAULT 'draft',
+  priority              TEXT DEFAULT 'medium',
+  urgency               TEXT DEFAULT 'planned',
+  regulatory_class      TEXT DEFAULT 'none',
+  regulatory_filing_type TEXT DEFAULT '',
+  originator            TEXT NOT NULL,
+  originator_dept       TEXT DEFAULT '',
+  affected_departments  JSONB DEFAULT '[]',
+  affected_sops         JSONB DEFAULT '[]',
+  affected_equipment    JSONB DEFAULT '[]',
+  affected_batches      JSONB DEFAULT '[]',
+  justification         TEXT DEFAULT '',
+  proposed_change       TEXT DEFAULT '',
+  risk_assessment       TEXT DEFAULT '',
+  risk_severity         INTEGER DEFAULT 0,
+  risk_probability      INTEGER DEFAULT 0,
+  risk_detectability    INTEGER DEFAULT 0,
+  risk_rpn              INTEGER DEFAULT 0,
+  ccb_required          BOOLEAN DEFAULT false,
+  effectiveness_criteria TEXT DEFAULT '',
+  implementation_plan   TEXT DEFAULT '',
+  implementation_date   DATE,
+  target_completion     DATE,
+  actual_completion     DATE,
+  effectiveness_check   TEXT DEFAULT '',
+  effectiveness_date    DATE,
+  effectiveness_result  TEXT DEFAULT '',
+  effectiveness_due_date DATE,
+  linked_deviation_id   TEXT DEFAULT '',
+  linked_capa_id        TEXT DEFAULT '',
+  linked_audit_finding  TEXT DEFAULT '',
+  ai_impact_summary     TEXT DEFAULT '',
+  ai_reg_classification TEXT DEFAULT '',
+  ai_risk_score         JSONB DEFAULT '{}',
+  ai_checklist          JSONB DEFAULT '[]',
+  ai_affected_sops      JSONB DEFAULT '[]',
+  ai_similar_changes    JSONB DEFAULT '[]',
+  ai_effectiveness_criteria TEXT DEFAULT '',
+  closure_notes         TEXT DEFAULT '',
+  sla_assessment_due    DATE,
+  sla_approval_due      DATE,
+  created_by            TEXT NOT NULL DEFAULT 'system',
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  updated_at            TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cc_status ON change_controls(status);
+CREATE INDEX IF NOT EXISTS idx_cc_type ON change_controls(change_type);
+CREATE INDEX IF NOT EXISTS idx_cc_priority ON change_controls(priority);
+CREATE INDEX IF NOT EXISTS idx_cc_urgency ON change_controls(urgency);
+CREATE INDEX IF NOT EXISTS idx_cc_regulatory ON change_controls(regulatory_class);
+CREATE INDEX IF NOT EXISTS idx_cc_originator ON change_controls(originator);
+CREATE INDEX IF NOT EXISTS idx_cc_ccb ON change_controls(ccb_required);
+CREATE INDEX IF NOT EXISTS idx_cc_effectiveness_due ON change_controls(effectiveness_due_date);
+ALTER TABLE change_controls ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'change_controls_all') THEN
+    CREATE POLICY change_controls_all ON change_controls FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── Change Control Impact Assessments ────────────────────────
+CREATE TABLE IF NOT EXISTS cc_impact_assessments (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  assessment_id     TEXT UNIQUE NOT NULL,
+  cc_id             TEXT NOT NULL REFERENCES change_controls(cc_id),
+  department        TEXT NOT NULL,
+  assessor          TEXT NOT NULL,
+  impact_level      TEXT DEFAULT 'none',
+  impact_details    TEXT DEFAULT '',
+  mitigation        TEXT DEFAULT '',
+  validation_required BOOLEAN DEFAULT false,
+  validation_type   TEXT DEFAULT '',
+  regulatory_impact BOOLEAN DEFAULT false,
+  cascade_impacts   TEXT DEFAULT '',
+  status            TEXT DEFAULT 'pending',
+  due_date          DATE,
+  completed_at      TIMESTAMPTZ,
+  created_by        TEXT NOT NULL DEFAULT 'system',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_ccia_cc ON cc_impact_assessments(cc_id);
+CREATE INDEX IF NOT EXISTS idx_ccia_dept ON cc_impact_assessments(department);
+CREATE INDEX IF NOT EXISTS idx_ccia_status ON cc_impact_assessments(status);
+CREATE INDEX IF NOT EXISTS idx_ccia_due ON cc_impact_assessments(due_date);
+ALTER TABLE cc_impact_assessments ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'cc_impact_assessments_all') THEN
+    CREATE POLICY cc_impact_assessments_all ON cc_impact_assessments FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── Change Control Approvals ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS cc_approvals (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  approval_id     TEXT UNIQUE NOT NULL,
+  cc_id           TEXT NOT NULL REFERENCES change_controls(cc_id),
+  approver        TEXT NOT NULL,
+  approver_role   TEXT NOT NULL,
+  approval_tier   INTEGER DEFAULT 1,
+  decision        TEXT DEFAULT 'pending',
+  signature_meaning TEXT DEFAULT '',
+  comments        TEXT DEFAULT '',
+  decided_at      TIMESTAMPTZ,
+  created_by      TEXT NOT NULL DEFAULT 'system',
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cc_approvals_cc ON cc_approvals(cc_id);
+CREATE INDEX IF NOT EXISTS idx_cc_approvals_approver ON cc_approvals(approver);
+CREATE INDEX IF NOT EXISTS idx_cc_approvals_decision ON cc_approvals(decision);
+CREATE INDEX IF NOT EXISTS idx_cc_approvals_tier ON cc_approvals(approval_tier);
+ALTER TABLE cc_approvals ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'cc_approvals_all') THEN
+    CREATE POLICY cc_approvals_all ON cc_approvals FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── Change Control Implementation Tasks ──────────────────────
+CREATE TABLE IF NOT EXISTS cc_implementation_tasks (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  task_id         TEXT UNIQUE NOT NULL,
+  cc_id           TEXT NOT NULL REFERENCES change_controls(cc_id),
+  title           TEXT NOT NULL,
+  description     TEXT DEFAULT '',
+  task_order      INTEGER DEFAULT 0,
+  assigned_to     TEXT DEFAULT '',
+  assigned_role   TEXT DEFAULT '',
+  status          TEXT DEFAULT 'pending',
+  due_date        DATE,
+  completed_at    TIMESTAMPTZ,
+  completed_by    TEXT DEFAULT '',
+  verification_required BOOLEAN DEFAULT false,
+  verified_by     TEXT DEFAULT '',
+  verified_at     TIMESTAMPTZ,
+  effort_estimate TEXT DEFAULT '',
+  notes           TEXT DEFAULT '',
+  created_by      TEXT NOT NULL DEFAULT 'system',
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cc_tasks_cc ON cc_implementation_tasks(cc_id);
+CREATE INDEX IF NOT EXISTS idx_cc_tasks_status ON cc_implementation_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_cc_tasks_assigned ON cc_implementation_tasks(assigned_to);
+ALTER TABLE cc_implementation_tasks ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'cc_implementation_tasks_all') THEN
+    CREATE POLICY cc_implementation_tasks_all ON cc_implementation_tasks FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+COMMENT ON TABLE change_controls IS 'Change control records — ICH Q10 four-stage lifecycle, 21 CFR 211.100(b) compliant.';
+
+-- ══════════════════════════════════════════════════════════════
+-- COMPLAINTS & RECALLS (FDA 21 CFR 211.198, 21 CFR Part 7, EU GMP Chapter 8)
+-- ══════════════════════════════════════════════════════════════
+
+-- ── Complaints ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS complaints (
+  id                          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  complaint_id                TEXT UNIQUE NOT NULL,
+  title                       TEXT NOT NULL,
+  description                 TEXT NOT NULL DEFAULT '',
+  complaint_type              TEXT NOT NULL DEFAULT 'product_quality',
+  source                      TEXT NOT NULL DEFAULT 'customer',
+  severity                    TEXT DEFAULT 'minor',
+  status                      TEXT DEFAULT 'received',
+  priority                    TEXT DEFAULT 'medium',
+  product_name                TEXT DEFAULT '',
+  product_strength            TEXT DEFAULT '',
+  dosage_form                 TEXT DEFAULT '',
+  batch_number                TEXT DEFAULT '',
+  lot_number                  TEXT DEFAULT '',
+  date_received               DATE NOT NULL DEFAULT CURRENT_DATE,
+  date_of_event               DATE,
+  complainant_name            TEXT DEFAULT '',
+  complainant_contact         TEXT DEFAULT '',
+  complainant_org             TEXT DEFAULT '',
+  country                     TEXT DEFAULT '',
+  investigation               TEXT DEFAULT '',
+  root_cause                  TEXT DEFAULT '',
+  investigation_declined_reason TEXT DEFAULT '',
+  initial_risk_assessment     TEXT DEFAULT '',
+  immediate_action            TEXT DEFAULT '',
+  linked_deviation_id         TEXT DEFAULT '',
+  linked_capa_id              TEXT DEFAULT '',
+  linked_recall_id            TEXT DEFAULT '',
+  affected_batches            JSONB DEFAULT '[]',
+  reply_to_complainant        TEXT DEFAULT '',
+  reply_date                  DATE,
+  follow_up_notes             TEXT DEFAULT '',
+  follow_up_date              DATE,
+  reportable                  BOOLEAN DEFAULT false,
+  reported_to                 TEXT DEFAULT '',
+  reported_date               DATE,
+  regulatory_report_type      TEXT DEFAULT '',
+  regulatory_report_number    TEXT DEFAULT '',
+  report_deadline             DATE,
+  report_submitted_date       DATE,
+  reported_within_deadline    BOOLEAN,
+  counterfeit_assessed        BOOLEAN DEFAULT false,
+  counterfeit_notes           TEXT DEFAULT '',
+  rapid_alert_issued          BOOLEAN DEFAULT false,
+  other_batches_checked       BOOLEAN DEFAULT false,
+  related_batch_findings      TEXT DEFAULT '',
+  competent_authority_notified BOOLEAN DEFAULT false,
+  competent_authority_notified_date DATE,
+  sample_available            BOOLEAN DEFAULT false,
+  sample_tested               BOOLEAN DEFAULT false,
+  temperature_excursion       BOOLEAN DEFAULT false,
+  ai_classification           JSONB DEFAULT '{}',
+  ai_batch_impact             JSONB DEFAULT '{}',
+  ai_trend_summary            TEXT DEFAULT '',
+  ai_recall_risk              JSONB DEFAULT '{}',
+  closure_notes               TEXT DEFAULT '',
+  closed_by                   TEXT DEFAULT '',
+  closed_at                   TIMESTAMPTZ,
+  archived_at                 TIMESTAMPTZ,
+  archived_by                 TEXT DEFAULT '',
+  created_by                  TEXT NOT NULL DEFAULT 'system',
+  created_at                  TIMESTAMPTZ DEFAULT now(),
+  updated_at                  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status);
+CREATE INDEX IF NOT EXISTS idx_complaints_type ON complaints(complaint_type);
+CREATE INDEX IF NOT EXISTS idx_complaints_severity ON complaints(severity);
+CREATE INDEX IF NOT EXISTS idx_complaints_batch ON complaints(batch_number);
+CREATE INDEX IF NOT EXISTS idx_complaints_product ON complaints(product_name);
+CREATE INDEX IF NOT EXISTS idx_complaints_date ON complaints(date_received);
+CREATE INDEX IF NOT EXISTS idx_complaints_reportable ON complaints(reportable);
+CREATE INDEX IF NOT EXISTS idx_complaints_report_deadline ON complaints(report_deadline);
+
+ALTER TABLE complaints ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'complaints_all') THEN
+    CREATE POLICY complaints_all ON complaints FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── Recall Events ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS recall_events (
+  id                          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  recall_id                   TEXT UNIQUE NOT NULL,
+  title                       TEXT NOT NULL,
+  description                 TEXT NOT NULL DEFAULT '',
+  recall_class                TEXT NOT NULL DEFAULT 'class_ii',
+  status                      TEXT DEFAULT 'initiated',
+  scope                       TEXT DEFAULT '',
+  reason                      TEXT DEFAULT '',
+  affected_batches            JSONB DEFAULT '[]',
+  affected_markets            JSONB DEFAULT '[]',
+  distribution_data           TEXT DEFAULT '',
+  units_distributed           INTEGER DEFAULT 0,
+  units_recovered             INTEGER DEFAULT 0,
+  recovery_rate               NUMERIC(5,2) DEFAULT 0,
+  linked_complaint_id         TEXT DEFAULT '',
+  notification_status         JSONB DEFAULT '{}',
+  regulatory_body             TEXT DEFAULT '',
+  regulatory_ref              TEXT DEFAULT '',
+  recall_depth                TEXT DEFAULT 'wholesale',
+  public_notification_method  TEXT DEFAULT 'none',
+  health_hazard_evaluation    JSONB DEFAULT '{}',
+  fda_recall_number           TEXT DEFAULT '',
+  effectiveness_check_level   TEXT DEFAULT 'C',
+  effectiveness_check_results JSONB DEFAULT '{}',
+  consignee_tracking          JSONB DEFAULT '[]',
+  status_report_dates         JSONB DEFAULT '[]',
+  competent_authority_notified BOOLEAN DEFAULT false,
+  competent_authority_notified_date DATE,
+  rapid_alert_issued          BOOLEAN DEFAULT false,
+  recalled_product_disposition TEXT DEFAULT '',
+  initiated_by                TEXT NOT NULL,
+  initiated_date              DATE NOT NULL DEFAULT CURRENT_DATE,
+  target_completion           DATE,
+  actual_completion           DATE,
+  effectiveness_check         TEXT DEFAULT '',
+  ai_scope_assessment         JSONB DEFAULT '{}',
+  closure_notes               TEXT DEFAULT '',
+  lessons_learned             TEXT DEFAULT '',
+  created_by                  TEXT NOT NULL DEFAULT 'system',
+  created_at                  TIMESTAMPTZ DEFAULT now(),
+  updated_at                  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_recalls_status ON recall_events(status);
+CREATE INDEX IF NOT EXISTS idx_recalls_class ON recall_events(recall_class);
+CREATE INDEX IF NOT EXISTS idx_recalls_complaint ON recall_events(linked_complaint_id);
+CREATE INDEX IF NOT EXISTS idx_recalls_fda_number ON recall_events(fda_recall_number);
+
+ALTER TABLE recall_events ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'recall_events_all') THEN
+    CREATE POLICY recall_events_all ON recall_events FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ══════════════════════════════════════════════════════════════
+-- BATCH DISPOSITION (QP Release / Batch Record Review)
+-- ══════════════════════════════════════════════════════════════
+
+-- ── Batch Dispositions ──────────────────────────────────────
+CREATE TABLE IF NOT EXISTS batch_dispositions (
+  id                    UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  disposition_id        TEXT UNIQUE NOT NULL,
+  batch_number          TEXT NOT NULL,
+  product_name          TEXT NOT NULL,
+  status                TEXT DEFAULT 'pending_review',
+  priority              TEXT DEFAULT 'normal',
+  batch_start_date      DATE,
+  batch_end_date        DATE,
+  batch_size            TEXT DEFAULT '',
+  yield_actual          TEXT DEFAULT '',
+  yield_expected        TEXT DEFAULT '',
+  reviewer              TEXT DEFAULT '',
+  reviewer_role         TEXT DEFAULT '',
+  review_started_at     TIMESTAMPTZ,
+  review_completed_at   TIMESTAMPTZ,
+  qp_name              TEXT DEFAULT '',
+  qp_decision          TEXT DEFAULT '',
+  qp_decision_date     TIMESTAMPTZ,
+  qp_comments          TEXT DEFAULT '',
+  qp_signature_meaning TEXT DEFAULT '',
+  open_deviations       JSONB DEFAULT '[]',
+  open_capas            JSONB DEFAULT '[]',
+  open_change_controls  JSONB DEFAULT '[]',
+  test_results_summary  JSONB DEFAULT '{}',
+  missing_documents     JSONB DEFAULT '[]',
+  ai_prescreen_result   TEXT DEFAULT '',
+  ai_risk_score         INTEGER DEFAULT NULL,
+  ai_anomalies          JSONB DEFAULT '[]',
+  ai_review_summary     TEXT DEFAULT '',
+  ai_release_recommendation TEXT DEFAULT '',
+  ai_confidence         NUMERIC(3,2) DEFAULT NULL,
+  rejection_reason      TEXT DEFAULT '',
+  rejection_disposition TEXT DEFAULT '',
+  hold_reason           TEXT DEFAULT '',
+  conditional_release   BOOLEAN DEFAULT false,
+  conditional_conditions TEXT DEFAULT '',
+  conditional_expiry    DATE,
+  conditional_final_disposition TEXT DEFAULT '',
+  regulatory_framework  TEXT DEFAULT 'eu_gmp',
+  expiry_date           DATE,
+  release_date          DATE,
+  notes                 TEXT DEFAULT '',
+  created_by            TEXT NOT NULL DEFAULT 'system',
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  updated_at            TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_dispositions_status ON batch_dispositions(status);
+CREATE INDEX IF NOT EXISTS idx_dispositions_batch ON batch_dispositions(batch_number);
+CREATE INDEX IF NOT EXISTS idx_dispositions_product ON batch_dispositions(product_name);
+CREATE INDEX IF NOT EXISTS idx_dispositions_priority ON batch_dispositions(priority);
+CREATE INDEX IF NOT EXISTS idx_dispositions_qp ON batch_dispositions(qp_name);
+ALTER TABLE batch_dispositions ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'batch_dispositions_all') THEN
+    CREATE POLICY batch_dispositions_all ON batch_dispositions FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── Disposition Checklists ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS disposition_checklists (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  checklist_id      TEXT UNIQUE NOT NULL,
+  disposition_id    TEXT NOT NULL REFERENCES batch_dispositions(disposition_id),
+  item_category     TEXT NOT NULL DEFAULT 'general',
+  item_description  TEXT NOT NULL,
+  item_order        INTEGER DEFAULT 0,
+  status            TEXT DEFAULT 'pending',
+  checked_by        TEXT DEFAULT '',
+  checked_at        TIMESTAMPTZ,
+  finding           TEXT DEFAULT '',
+  severity          TEXT DEFAULT 'none',
+  acceptance_criteria TEXT DEFAULT '',
+  ai_flagged        BOOLEAN DEFAULT false,
+  ai_classification TEXT DEFAULT 'pending',
+  ai_reason         TEXT DEFAULT '',
+  ai_auto_cleared   BOOLEAN DEFAULT false,
+  ai_cleared_basis  TEXT DEFAULT '',
+  reviewer_override BOOLEAN DEFAULT false,
+  override_justification TEXT DEFAULT '',
+  notes             TEXT DEFAULT '',
+  created_by        TEXT NOT NULL DEFAULT 'system',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_dchk_disposition ON disposition_checklists(disposition_id);
+CREATE INDEX IF NOT EXISTS idx_dchk_status ON disposition_checklists(status);
+CREATE INDEX IF NOT EXISTS idx_dchk_category ON disposition_checklists(item_category);
+CREATE INDEX IF NOT EXISTS idx_dchk_flagged ON disposition_checklists(ai_flagged);
+CREATE INDEX IF NOT EXISTS idx_dchk_classification ON disposition_checklists(ai_classification);
+ALTER TABLE disposition_checklists ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'disposition_checklists_all') THEN
+    CREATE POLICY disposition_checklists_all ON disposition_checklists FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── QP Certification Register (Annex 16) ────────────────────
+CREATE TABLE IF NOT EXISTS qp_certification_register (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  cert_id           TEXT UNIQUE NOT NULL,
+  disposition_id    TEXT NOT NULL REFERENCES batch_dispositions(disposition_id),
+  batch_number      TEXT NOT NULL,
+  product_name      TEXT NOT NULL,
+  batch_size        TEXT DEFAULT '',
+  qp_name           TEXT NOT NULL,
+  qp_role           TEXT NOT NULL DEFAULT 'qualified_person',
+  certification_date TIMESTAMPTZ NOT NULL DEFAULT now(),
+  decision          TEXT NOT NULL DEFAULT 'released',
+  conditions        TEXT DEFAULT '',
+  batch_reference   TEXT DEFAULT '',
+  regulatory_framework TEXT DEFAULT 'eu_gmp',
+  signature_meaning TEXT DEFAULT 'batch certified for release',
+  signature_hash    TEXT DEFAULT '',
+  notes             TEXT DEFAULT '',
+  created_by        TEXT NOT NULL DEFAULT 'system',
+  created_at        TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_qpcert_disposition ON qp_certification_register(disposition_id);
+CREATE INDEX IF NOT EXISTS idx_qpcert_batch ON qp_certification_register(batch_number);
+CREATE INDEX IF NOT EXISTS idx_qpcert_qp ON qp_certification_register(qp_name);
+CREATE INDEX IF NOT EXISTS idx_qpcert_date ON qp_certification_register(certification_date);
+ALTER TABLE qp_certification_register ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'qp_certification_register_insert') THEN
+    CREATE POLICY qp_certification_register_insert ON qp_certification_register FOR INSERT TO authenticated WITH CHECK (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'qp_certification_register_select') THEN
+    CREATE POLICY qp_certification_register_select ON qp_certification_register FOR SELECT TO authenticated USING (true);
+  END IF;
+END $$;
+
+COMMENT ON TABLE qp_certification_register IS 'Append-only QP certification register — EU GMP Annex 16. No UPDATE or DELETE.';
+
+-- ══════════════════════════════════════════════════════════════
+-- QC LAB DASHBOARD (Quality Control Laboratory Management)
+-- ══════════════════════════════════════════════════════════════
+
+-- ── QC Samples ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS qc_samples (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sample_id         TEXT UNIQUE NOT NULL,
+  batch_number      TEXT NOT NULL DEFAULT '',
+  product_name      TEXT NOT NULL DEFAULT '',
+  sample_type       TEXT NOT NULL DEFAULT 'in_process',
+  sample_point      TEXT DEFAULT '',
+  description       TEXT DEFAULT '',
+  status            TEXT DEFAULT 'received',
+  priority          TEXT DEFAULT 'normal',
+  batch_critical    BOOLEAN DEFAULT false,
+  received_by       TEXT NOT NULL,
+  received_date     TIMESTAMPTZ DEFAULT now(),
+  required_tests    JSONB DEFAULT '[]',
+  storage_condition TEXT DEFAULT 'room_temp',
+  storage_location  TEXT DEFAULT '',
+  expiry_date       DATE,
+  quantity          TEXT DEFAULT '',
+  units             TEXT DEFAULT '',
+  chain_of_custody  JSONB DEFAULT '[]',
+  notes             TEXT DEFAULT '',
+  completed_date    TIMESTAMPTZ,
+  ai_priority_score INTEGER,
+  ai_turnaround_est TEXT DEFAULT '',
+  stability_protocol_id TEXT DEFAULT '',
+  stability_condition   TEXT DEFAULT '',
+  stability_time_point  TEXT DEFAULT '',
+  pull_date             DATE,
+  is_reserve_sample     BOOLEAN DEFAULT false,
+  reserve_disposal_date DATE,
+  created_by        TEXT NOT NULL DEFAULT 'system',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_qc_samples_status ON qc_samples(status);
+CREATE INDEX IF NOT EXISTS idx_qc_samples_batch ON qc_samples(batch_number);
+CREATE INDEX IF NOT EXISTS idx_qc_samples_type ON qc_samples(sample_type);
+CREATE INDEX IF NOT EXISTS idx_qc_samples_priority ON qc_samples(priority);
+CREATE INDEX IF NOT EXISTS idx_qc_samples_critical ON qc_samples(batch_critical);
+CREATE INDEX IF NOT EXISTS idx_qc_samples_received ON qc_samples(received_date);
+ALTER TABLE qc_samples ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'qc_samples_all') THEN
+    CREATE POLICY qc_samples_all ON qc_samples FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── QC Tests ───────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS qc_tests (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  test_id           TEXT UNIQUE NOT NULL,
+  sample_id         TEXT NOT NULL REFERENCES qc_samples(sample_id),
+  test_name         TEXT NOT NULL,
+  test_method       TEXT DEFAULT '',
+  test_method_id    TEXT DEFAULT '',
+  test_category     TEXT DEFAULT 'chemical',
+  spec_version      TEXT DEFAULT '1.0',
+  spec_effective_date DATE,
+  status            TEXT DEFAULT 'pending',
+  assigned_analyst  TEXT DEFAULT '',
+  assigned_date     TIMESTAMPTZ,
+  started_date      TIMESTAMPTZ,
+  completed_date    TIMESTAMPTZ,
+  instrument_id     TEXT DEFAULT '',
+  specification_min NUMERIC,
+  specification_max NUMERIC,
+  specification_unit TEXT DEFAULT '',
+  specification_text TEXT DEFAULT '',
+  target_tat_hours  INTEGER DEFAULT 48,
+  due_date          TIMESTAMPTZ,
+  notes             TEXT DEFAULT '',
+  created_by        TEXT NOT NULL DEFAULT 'system',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_qc_tests_sample ON qc_tests(sample_id);
+CREATE INDEX IF NOT EXISTS idx_qc_tests_status ON qc_tests(status);
+CREATE INDEX IF NOT EXISTS idx_qc_tests_analyst ON qc_tests(assigned_analyst);
+CREATE INDEX IF NOT EXISTS idx_qc_tests_instrument ON qc_tests(instrument_id);
+CREATE INDEX IF NOT EXISTS idx_qc_tests_due ON qc_tests(due_date);
+ALTER TABLE qc_tests ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'qc_tests_all') THEN
+    CREATE POLICY qc_tests_all ON qc_tests FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── QC Results ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS qc_results (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  result_id         TEXT UNIQUE NOT NULL,
+  test_id           TEXT NOT NULL REFERENCES qc_tests(test_id),
+  sample_id         TEXT NOT NULL REFERENCES qc_samples(sample_id),
+  result_value      NUMERIC,
+  result_text       TEXT DEFAULT '',
+  result_unit       TEXT DEFAULT '',
+  pass_fail         TEXT DEFAULT '',
+  oos_flag          BOOLEAN DEFAULT false,
+  oot_flag          BOOLEAN DEFAULT false,
+  reviewed_by       TEXT DEFAULT '',
+  reviewed_date     TIMESTAMPTZ,
+  approved_by       TEXT DEFAULT '',
+  approved_date     TIMESTAMPTZ,
+  review_status     TEXT DEFAULT 'pending_review',
+  raw_data          JSONB DEFAULT '{}',
+  calculation_notes TEXT DEFAULT '',
+  retest            BOOLEAN DEFAULT false,
+  retest_reason     TEXT DEFAULT '',
+  linked_oos_id     TEXT DEFAULT '',
+  oos_investigation_phase    TEXT DEFAULT '',
+  oos_investigation_status   TEXT DEFAULT '',
+  oos_investigation_due_date TIMESTAMPTZ,
+  oos_assignee               TEXT DEFAULT '',
+  oos_root_cause_category    TEXT DEFAULT '',
+  oos_conclusion             TEXT DEFAULT '',
+  ai_anomaly_flag   BOOLEAN DEFAULT false,
+  ai_anomaly_reason TEXT DEFAULT '',
+  notes             TEXT DEFAULT '',
+  created_by        TEXT NOT NULL DEFAULT 'system',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_qc_results_test ON qc_results(test_id);
+CREATE INDEX IF NOT EXISTS idx_qc_results_sample ON qc_results(sample_id);
+CREATE INDEX IF NOT EXISTS idx_qc_results_oos ON qc_results(oos_flag);
+CREATE INDEX IF NOT EXISTS idx_qc_results_review ON qc_results(review_status);
+ALTER TABLE qc_results ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'qc_results_all') THEN
+    CREATE POLICY qc_results_all ON qc_results FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── QC Instruments ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS qc_instruments (
+  id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  instrument_id       TEXT UNIQUE NOT NULL,
+  name                TEXT NOT NULL,
+  instrument_type     TEXT NOT NULL DEFAULT 'analytical',
+  model               TEXT DEFAULT '',
+  serial_number       TEXT DEFAULT '',
+  location            TEXT DEFAULT '',
+  status              TEXT DEFAULT 'qualified',
+  qualification_date  DATE,
+  next_qualification  DATE,
+  calibration_date    DATE,
+  next_calibration    DATE,
+  maintenance_date    DATE,
+  next_maintenance    DATE,
+  responsible_person  TEXT DEFAULT '',
+  sop_reference       TEXT DEFAULT '',
+  notes               TEXT DEFAULT '',
+  created_by          TEXT NOT NULL DEFAULT 'system',
+  created_at          TIMESTAMPTZ DEFAULT now(),
+  updated_at          TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_qc_instruments_status ON qc_instruments(status);
+CREATE INDEX IF NOT EXISTS idx_qc_instruments_type ON qc_instruments(instrument_type);
+CREATE INDEX IF NOT EXISTS idx_qc_instruments_next_cal ON qc_instruments(next_calibration);
+ALTER TABLE qc_instruments ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'qc_instruments_all') THEN
+    CREATE POLICY qc_instruments_all ON qc_instruments FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── QC Analyst Qualifications ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS qc_analyst_qualifications (
+  id                    UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  qualification_id      TEXT UNIQUE NOT NULL,
+  analyst_id            TEXT NOT NULL,
+  analyst_name          TEXT NOT NULL DEFAULT '',
+  test_method           TEXT NOT NULL,
+  test_method_id        TEXT DEFAULT '',
+  qualified_date        DATE NOT NULL,
+  requalification_due   DATE,
+  qualification_status  TEXT DEFAULT 'qualified',
+  trainer               TEXT DEFAULT '',
+  training_record_ref   TEXT DEFAULT '',
+  notes                 TEXT DEFAULT '',
+  created_by            TEXT NOT NULL DEFAULT 'system',
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  updated_at            TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_qc_analyst_quals_analyst ON qc_analyst_qualifications(analyst_id);
+CREATE INDEX IF NOT EXISTS idx_qc_analyst_quals_method ON qc_analyst_qualifications(test_method);
+CREATE INDEX IF NOT EXISTS idx_qc_analyst_quals_status ON qc_analyst_qualifications(qualification_status);
+CREATE INDEX IF NOT EXISTS idx_qc_analyst_quals_requaldue ON qc_analyst_qualifications(requalification_due);
+ALTER TABLE qc_analyst_qualifications ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'qc_analyst_quals_all') THEN
+    CREATE POLICY qc_analyst_quals_all ON qc_analyst_qualifications FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── QC Test Methods ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS qc_test_methods (
+  id                   UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  method_id            TEXT UNIQUE NOT NULL,
+  method_name          TEXT NOT NULL,
+  method_category      TEXT DEFAULT 'chemical',
+  version              TEXT DEFAULT '1.0',
+  validation_status    TEXT DEFAULT 'validated',
+  validated_date       DATE,
+  next_revalidation    DATE,
+  sop_reference        TEXT DEFAULT '',
+  applicable_products  JSONB DEFAULT '[]',
+  instrument_types     JSONB DEFAULT '[]',
+  notes                TEXT DEFAULT '',
+  created_by           TEXT NOT NULL DEFAULT 'system',
+  created_at           TIMESTAMPTZ DEFAULT now(),
+  updated_at           TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_qc_test_methods_status ON qc_test_methods(validation_status);
+CREATE INDEX IF NOT EXISTS idx_qc_test_methods_category ON qc_test_methods(method_category);
+CREATE INDEX IF NOT EXISTS idx_qc_test_methods_reval ON qc_test_methods(next_revalidation);
+ALTER TABLE qc_test_methods ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'qc_test_methods_all') THEN
+    CREATE POLICY qc_test_methods_all ON qc_test_methods FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── QC Test Templates ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS qc_test_templates (
+  id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  template_id   TEXT UNIQUE NOT NULL,
+  template_name TEXT NOT NULL,
+  sample_type   TEXT NOT NULL,
+  product_name  TEXT DEFAULT '',
+  tests         JSONB DEFAULT '[]',
+  notes         TEXT DEFAULT '',
+  created_by    TEXT NOT NULL DEFAULT 'system',
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  updated_at    TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_qc_test_templates_type ON qc_test_templates(sample_type);
+CREATE INDEX IF NOT EXISTS idx_qc_test_templates_product ON qc_test_templates(product_name);
+ALTER TABLE qc_test_templates ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'qc_test_templates_all') THEN
+    CREATE POLICY qc_test_templates_all ON qc_test_templates FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+COMMENT ON TABLE qc_samples IS 'QC laboratory sample management — FDA 21 CFR 211, ICH Q6B compliant sample lifecycle.';
+COMMENT ON TABLE qc_results IS 'QC test results with OOS investigation workflow — FDA 2006 OOS guidance, 21 CFR Part 11.';
+
+-- ══════════════════════════════════════════════════════════════
+-- CELL BANK MANAGEMENT (Inoculation Suite)
+-- ══════════════════════════════════════════════════════════════
+
+-- ── Cell Banks (Cell Bank Management) ─────────────────────
+CREATE TABLE IF NOT EXISTS cell_banks (
+  id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  bank_id             TEXT UNIQUE NOT NULL,
+  name                TEXT NOT NULL,
+  bank_type           TEXT NOT NULL DEFAULT 'wcb',
+  cell_line           TEXT NOT NULL DEFAULT '',
+  clone_id            TEXT DEFAULT '',
+  product             TEXT DEFAULT '',
+  status              TEXT DEFAULT 'active',
+  passage_number      INTEGER DEFAULT 0,
+  max_passage_limit   INTEGER DEFAULT 60,
+  parent_bank_id      TEXT DEFAULT '',
+  total_vials         INTEGER DEFAULT 0,
+  available_vials     INTEGER DEFAULT 0,
+  withdrawn_vials     INTEGER DEFAULT 0,
+  destroyed_vials     INTEGER DEFAULT 0,
+  reserved_vials      INTEGER DEFAULT 0,
+  quarantine_vials    INTEGER DEFAULT 0,
+  storage_temp        TEXT DEFAULT '-196C_LN2',
+  storage_location    TEXT DEFAULT '',
+  backup_storage_location TEXT DEFAULT '',
+  freezer_id          TEXT DEFAULT '',
+  date_banked         DATE,
+  expiry_date         DATE,
+  viability_at_bank   NUMERIC(5,2),
+  vcd_at_bank         NUMERIC(10,2),
+  coa_reference       TEXT DEFAULT '',
+  mycoplasma_status   TEXT DEFAULT 'pending',
+  sterility_status    TEXT DEFAULT 'pending',
+  identity_status     TEXT DEFAULT 'pending',
+  adventitious_status TEXT DEFAULT 'pending',
+  karyology_status    TEXT DEFAULT 'pending',
+  retrovirus_status   TEXT DEFAULT 'pending',
+  genetic_stability_status TEXT DEFAULT 'pending',
+  qualification_status TEXT DEFAULT 'pending',
+  qualification_approved_by TEXT DEFAULT '',
+  qualification_approved_date TIMESTAMPTZ,
+  banking_sop_reference TEXT DEFAULT '',
+  freezing_protocol   TEXT DEFAULT '',
+  stability_protocol  TEXT DEFAULT '',
+  deviation_id        TEXT DEFAULT '',
+  notes               TEXT DEFAULT '',
+  ai_depletion_est    TEXT DEFAULT '',
+  ai_rebank_rec       TEXT DEFAULT '',
+  created_by          TEXT NOT NULL DEFAULT 'system',
+  created_at          TIMESTAMPTZ DEFAULT now(),
+  updated_at          TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cell_banks_type ON cell_banks(bank_type);
+CREATE INDEX IF NOT EXISTS idx_cell_banks_status ON cell_banks(status);
+CREATE INDEX IF NOT EXISTS idx_cell_banks_cell_line ON cell_banks(cell_line);
+CREATE INDEX IF NOT EXISTS idx_cell_banks_product ON cell_banks(product);
+CREATE INDEX IF NOT EXISTS idx_cell_banks_expiry ON cell_banks(expiry_date);
+CREATE INDEX IF NOT EXISTS idx_cell_banks_qualification ON cell_banks(qualification_status);
+ALTER TABLE cell_banks ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'cell_banks_all') THEN
+    CREATE POLICY cell_banks_all ON cell_banks FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── Cell Bank Vials ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS cell_bank_vials (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  vial_id           TEXT UNIQUE NOT NULL,
+  bank_id           TEXT NOT NULL REFERENCES cell_banks(bank_id),
+  vial_number       INTEGER NOT NULL,
+  status            TEXT DEFAULT 'available',
+  freezer_id        TEXT DEFAULT '',
+  rack              TEXT DEFAULT '',
+  box               TEXT DEFAULT '',
+  position          TEXT DEFAULT '',
+  volume_ml         NUMERIC(6,2) DEFAULT 1.0,
+  cell_count        NUMERIC(12,0),
+  viability         NUMERIC(5,2),
+  passage_number    INTEGER DEFAULT 0,
+  freeze_date       DATE,
+  thaw_date         DATE,
+  thawed_by         TEXT DEFAULT '',
+  reserved_for      TEXT DEFAULT '',
+  reserved_date     TIMESTAMPTZ,
+  quarantine_reason TEXT DEFAULT '',
+  quarantine_date   TIMESTAMPTZ,
+  destroyed_date    DATE,
+  destroyed_by      TEXT DEFAULT '',
+  destruction_reason TEXT DEFAULT '',
+  notes             TEXT DEFAULT '',
+  created_by        TEXT NOT NULL DEFAULT 'system',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cb_vials_bank ON cell_bank_vials(bank_id);
+CREATE INDEX IF NOT EXISTS idx_cb_vials_status ON cell_bank_vials(status);
+CREATE INDEX IF NOT EXISTS idx_cb_vials_freezer ON cell_bank_vials(freezer_id);
+CREATE INDEX IF NOT EXISTS idx_cb_vials_location ON cell_bank_vials(rack, box, position);
+CREATE INDEX IF NOT EXISTS idx_cb_vials_freeze_date ON cell_bank_vials(freeze_date);
+ALTER TABLE cell_bank_vials ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'cell_bank_vials_all') THEN
+    CREATE POLICY cell_bank_vials_all ON cell_bank_vials FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── Cell Bank Transactions ────────────────────────────────
+CREATE TABLE IF NOT EXISTS cell_bank_transactions (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  transaction_id    TEXT UNIQUE NOT NULL,
+  bank_id           TEXT NOT NULL REFERENCES cell_banks(bank_id),
+  vial_id           TEXT DEFAULT '',
+  transaction_type  TEXT NOT NULL DEFAULT 'withdraw',
+  quantity          INTEGER DEFAULT 1,
+  purpose           TEXT DEFAULT '',
+  batch_number      TEXT DEFAULT '',
+  requested_by      TEXT NOT NULL,
+  approved_by       TEXT DEFAULT '',
+  approved_date     TIMESTAMPTZ,
+  performed_by      TEXT DEFAULT '',
+  performed_date    TIMESTAMPTZ,
+  witness           TEXT DEFAULT '',
+  status            TEXT DEFAULT 'requested',
+  from_location     TEXT DEFAULT '',
+  to_location       TEXT DEFAULT '',
+  post_thaw_viability NUMERIC(5,2),
+  post_thaw_vcd     NUMERIC(10,2),
+  time_out_of_storage_minutes INTEGER,
+  chain_of_custody  JSONB DEFAULT '[]',
+  temperature_log   JSONB DEFAULT '[]',
+  e_signature       JSONB DEFAULT '{}',
+  notes             TEXT DEFAULT '',
+  created_by        TEXT NOT NULL DEFAULT 'system',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  updated_at        TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cbt_bank ON cell_bank_transactions(bank_id);
+CREATE INDEX IF NOT EXISTS idx_cbt_type ON cell_bank_transactions(transaction_type);
+CREATE INDEX IF NOT EXISTS idx_cbt_status ON cell_bank_transactions(status);
+CREATE INDEX IF NOT EXISTS idx_cbt_batch ON cell_bank_transactions(batch_number);
+CREATE INDEX IF NOT EXISTS idx_cbt_date ON cell_bank_transactions(performed_date);
+ALTER TABLE cell_bank_transactions ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'cell_bank_transactions_all') THEN
+    CREATE POLICY cell_bank_transactions_all ON cell_bank_transactions FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── Cell Bank Testing ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS cell_bank_testing (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  test_id         TEXT UNIQUE NOT NULL,
+  bank_id         TEXT NOT NULL REFERENCES cell_banks(bank_id),
+  test_type       TEXT NOT NULL,
+  test_method     TEXT DEFAULT '',
+  test_date       DATE,
+  result          TEXT DEFAULT 'pending',
+  report_reference TEXT DEFAULT '',
+  performed_by    TEXT DEFAULT '',
+  reviewed_by     TEXT DEFAULT '',
+  reviewed_date   TIMESTAMPTZ,
+  status          TEXT DEFAULT 'scheduled',
+  notes           TEXT DEFAULT '',
+  created_by      TEXT NOT NULL DEFAULT 'system',
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cbt_testing_bank ON cell_bank_testing(bank_id);
+CREATE INDEX IF NOT EXISTS idx_cbt_testing_type ON cell_bank_testing(test_type);
+CREATE INDEX IF NOT EXISTS idx_cbt_testing_status ON cell_bank_testing(status);
+ALTER TABLE cell_bank_testing ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'cell_bank_testing_all') THEN
+    CREATE POLICY cell_bank_testing_all ON cell_bank_testing FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+  END IF;
+END $$;
   `.trim();
     res.type('text/plain').send(sql);
   });

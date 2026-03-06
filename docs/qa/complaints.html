@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Complaints & Recalls</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 280px 4px 1fr;
+  grid-template-rows: 1fr 4px 140px;
+  overflow: hidden;
+}
+
+/* ── RESIZE HANDLES ── */
+.resizer { background: #3c3c3c; z-index: 10; transition: background 0.15s; position: relative; }
+.resizer:hover, .resizer.dragging { background: #007acc; }
+.resizer-v { cursor: col-resize; grid-row: 1; }
+.resizer-h { cursor: row-resize; grid-column: 1 / 4; grid-row: 2; }
+.resizer::after { content: ''; position: absolute; inset: 0; }
+.resizer-v::after  { left: -4px; right: -4px; }
+.resizer-h::after  { top: -4px; bottom: -4px; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  grid-column: 1; grid-row: 1 / 2;
+  background: #252526; border-right: 1px solid #3c3c3c;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-header {
+  padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: #8e8e8e; border-bottom: 1px solid #3c3c3c;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-badge {
+  background: #007acc; color: #fff; font-size: 10px; padding: 1px 6px;
+  border-radius: 8px; font-weight: 600;
+}
+.filter-bar {
+  display: flex; gap: 2px; padding: 6px 8px; border-bottom: 1px solid #2d2d30; flex-wrap: wrap;
+}
+.filter-btn {
+  background: none; border: 1px solid #3c3c3c; color: #8e8e8e; font-size: 10px;
+  padding: 2px 8px; border-radius: 2px; cursor: pointer; transition: all .15s;
+}
+.filter-btn:hover { color: #ccc; border-color: #5a5a5a; }
+.filter-btn.active { background: #007acc; color: #fff; border-color: #007acc; }
+.tab-toggle { display: flex; border-bottom: 1px solid #2d2d30; }
+.tab-toggle-btn {
+  flex: 1; padding: 6px 0; font-size: 10px; font-weight: 600; text-align: center;
+  cursor: pointer; color: #8e8e8e; background: none; border: none;
+  border-bottom: 2px solid transparent; transition: all .15s;
+}
+.tab-toggle-btn:hover { color: #ccc; }
+.tab-toggle-btn.active { color: #fff; border-bottom-color: #007acc; }
+.search-bar { padding: 6px 8px; border-bottom: 1px solid #2d2d30; }
+.search-bar input {
+  width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 11px; padding: 4px 8px; outline: none; box-sizing: border-box;
+}
+.search-bar input:focus { border-color: #007acc; }
+.item-list { flex: 1; overflow-y: auto; }
+
+/* ── CARD ── */
+.item-card {
+  padding: 8px 10px; border-radius: 2px; margin-bottom: 1px;
+  cursor: pointer; transition: background 0.1s; border-left: 2px solid transparent;
+}
+.item-card:hover { background: #2a2d2e; }
+.item-card.active { background: #094771; border-left-color: #007acc; }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.card-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #9cdcfe; }
+.card-title { font-size: 11px; color: #d4d4d4; line-height: 1.4; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { font-size: 10px; color: #5a5a5a; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.card-badges { display: flex; gap: 4px; align-items: center; }
+
+/* ── SEVERITY BADGES ── */
+.risk-badge { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; text-transform: uppercase; letter-spacing: .03em; }
+.sev-critical { background: rgba(244,71,71,0.2);  color: #f44747; border: 1px solid rgba(244,71,71,0.35); }
+.sev-major    { background: rgba(255,198,77,0.15); color: #ffc64d; border: 1px solid rgba(255,198,77,0.3); }
+.sev-minor    { background: rgba(78,201,176,0.15); color: #4ec9b0; border: 1px solid rgba(78,201,176,0.3); }
+
+/* ── STATUS BADGES ── */
+.status-badge { font-size: 9px; padding: 1px 6px; border-radius: 2px; text-transform: capitalize; }
+.st-received        { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+.st-triaging        { background: rgba(0,122,204,0.18); color: #4fc1ff; }
+.st-investigating   { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.st-pending_capa    { background: rgba(206,145,255,0.15); color: #ce91ff; }
+.st-pending_response { background: rgba(77,200,110,0.15); color: #4dc86e; }
+.st-closed          { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+.st-void            { background: rgba(244,71,71,0.1); color: #f44747; }
+
+/* Recall status */
+.st-initiated             { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+.st-strategy_approved     { background: rgba(0,122,204,0.18); color: #4fc1ff; }
+.st-notifications_sent    { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.st-in_progress           { background: rgba(206,145,255,0.15); color: #ce91ff; }
+.st-effectiveness_checking { background: rgba(77,200,110,0.15); color: #4dc86e; }
+.st-pending_termination   { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.st-terminated            { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+
+/* Recall class badges */
+.rcl-class_i   { background: rgba(244,71,71,0.2);  color: #f44747; border: 1px solid rgba(244,71,71,0.35); }
+.rcl-class_ii  { background: rgba(255,198,77,0.15); color: #ffc64d; border: 1px solid rgba(255,198,77,0.3); }
+.rcl-class_iii { background: rgba(78,201,176,0.15); color: #4ec9b0; border: 1px solid rgba(78,201,176,0.3); }
+
+/* Reportable badge */
+.badge-reportable { background: rgba(244,71,71,0.15); color: #f44747; font-size: 9px; padding: 1px 5px; border-radius: 2px; font-weight: 700; }
+.badge-deadline { background: rgba(255,198,77,0.15); color: #ffc64d; font-size: 9px; padding: 1px 5px; border-radius: 2px; }
+
+/* ── CENTER PANEL ── */
+.center-panel {
+  grid-column: 3; grid-row: 1 / 2;
+  background: var(--bg, #1e1e1e); display: flex; flex-direction: column; overflow: hidden;
+}
+.editor-tabs {
+  display: flex; gap: 0; background: #252526; border-bottom: 1px solid #3c3c3c;
+  min-height: 34px; align-items: flex-end; overflow-x: auto;
+}
+.editor-tab {
+  padding: 6px 14px; font-size: 11px; color: #8e8e8e; cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s;
+}
+.editor-tab:hover { color: #ccc; }
+.editor-tab.active { color: #fff; border-bottom-color: #007acc; }
+.center-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-state .ei { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.empty-state p { color: #5a5a5a; font-size: 12px; }
+
+/* ── DETAIL SECTIONS ── */
+.detail-section { margin-bottom: 20px; }
+.section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #8e8e8e; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #2d2d30;
+  display: flex; align-items: center; gap: 8px;
+}
+.obs-text { font-size: 12px; color: #b0b0b0; line-height: 1.6; white-space: pre-wrap; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+.field-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.field-item label { font-size: 10px; color: #6c6c6c; display: block; margin-bottom: 2px; }
+.field-item .val { font-size: 12px; color: #ccc; }
+.field-item .val.empty { color: #5a5a5a; font-style: italic; }
+
+/* ── WORKFLOW BAR ── */
+.workflow-bar { display: flex; gap: 2px; margin-bottom: 16px; }
+.wf-step {
+  flex: 1; text-align: center; padding: 6px 4px; font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .03em; border-radius: 2px;
+  background: #252526; color: #5a5a5a; border: 1px solid #3c3c3c; cursor: pointer;
+  transition: all .15s;
+}
+.wf-step:hover { border-color: #5a5a5a; }
+.wf-step.current { background: #007acc; color: #fff; border-color: #007acc; }
+.wf-step.done { background: rgba(78,201,176,0.15); color: #4ec9b0; border-color: rgba(78,201,176,0.3); }
+
+/* ── BUTTONS ── */
+.wf-btn {
+  padding: 5px 14px; font-size: 11px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.wf-btn:hover { border-color: #5a5a5a; color: #fff; }
+.wf-primary { background: #007acc; border-color: #007acc; color: #fff; }
+.wf-primary:hover { background: #0098ff; }
+.wf-danger { background: rgba(244,71,71,0.15); border-color: rgba(244,71,71,0.4); color: #f44747; }
+.wf-danger:hover { background: rgba(244,71,71,0.25); }
+.action-btn {
+  padding: 4px 10px; font-size: 10px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.action-btn:hover { border-color: #5a5a5a; color: #fff; }
+.action-btn.primary { background: #007acc; border-color: #007acc; color: #fff; }
+.action-btn.primary:hover { background: #0098ff; }
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+/* ── AI PANELS ── */
+.ai-card {
+  background: #1a1a24; border: 1px solid #2d2d44; border-radius: 4px; margin-bottom: 12px;
+  overflow: hidden;
+}
+.ai-card-header {
+  padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; background: #1e1e2e; border-bottom: 1px solid #2d2d44;
+}
+.ai-card-header h4 { font-size: 11px; color: #9cdcfe; margin: 0; font-weight: 600; }
+.ai-badge { font-size: 9px; background: rgba(0,122,204,0.15); color: #007acc; padding: 1px 6px; border-radius: 2px; }
+.ai-card-body { padding: 10px 12px; font-size: 11px; color: #b0b0b0; line-height: 1.5; }
+.ai-card-body.collapsed { display: none; }
+.ai-confidence { display: inline-block; background: #252526; padding: 2px 8px; border-radius: 2px; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+/* ── RISK GAUGE ── */
+.risk-gauge { width: 100%; height: 8px; background: #252526; border-radius: 4px; overflow: hidden; margin: 6px 0; }
+.risk-gauge-fill { height: 100%; border-radius: 4px; transition: width .3s; }
+.risk-low { background: #4ec9b0; }
+.risk-medium { background: #ffc64d; }
+.risk-high { background: #f44747; }
+
+/* ── PROGRESS BAR ── */
+.progress-bar { width: 100%; height: 6px; background: #252526; border-radius: 3px; overflow: hidden; margin: 4px 0; }
+.progress-fill { height: 100%; background: #007acc; border-radius: 3px; transition: width .3s; }
+
+/* ── STATS DASHBOARD ── */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.stat-card {
+  background: #252526; border: 1px solid #3c3c3c; border-radius: 4px; padding: 10px 12px;
+  text-align: center;
+}
+.stat-value { font-size: 22px; font-weight: 700; color: #e0e0e0; font-family: 'JetBrains Mono', monospace; }
+.stat-label { font-size: 10px; color: #8e8e8e; text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; }
+
+/* ── CONSIGNEE TABLE ── */
+.consignee-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.consignee-table th { text-align: left; padding: 4px 8px; color: #8e8e8e; font-weight: 600; border-bottom: 1px solid #3c3c3c; font-size: 10px; }
+.consignee-table td { padding: 4px 8px; color: #ccc; border-bottom: 1px solid #2d2d30; }
+.consignee-table input { background: #1e1e1e; border: 1px solid #3c3c3c; color: #d4d4d4; font-size: 11px; padding: 2px 6px; border-radius: 2px; width: 100%; box-sizing: border-box; }
+
+/* ── BOTTOM PANEL ── */
+.bottom-panel { grid-column: 1 / 4; grid-row: 3; background: #252526; border-top: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; }
+.bottom-tabs { display: flex; gap: 0; border-bottom: 1px solid #2d2d30; }
+.bottom-tab { padding: 4px 12px; font-size: 10px; color: #8e8e8e; cursor: pointer; border-bottom: 2px solid transparent; }
+.bottom-tab.active { color: #ccc; border-bottom-color: #007acc; }
+.bottom-content { flex: 1; overflow-y: auto; padding: 6px 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.log-line { padding: 1px 0; color: #8e8e8e; }
+.log-time { color: #5a5a5a; margin-right: 8px; }
+.log-info { color: #4ec9b0; }
+.log-warn { color: #ffc64d; }
+.log-error { color: #f44747; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: #007acc; display: flex; align-items: center; padding: 0 10px;
+  font-size: 11px; color: #fff; gap: 6px;
+}
+.status-bar .s-sep { color: rgba(255,255,255,0.4); }
+.status-bar .s-right { margin-left: auto; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-box { background: #252526; border: 1px solid #3c3c3c; border-radius: 4px; width: 600px; max-width: 90vw; max-height: 85vh; overflow-y: auto; }
+.modal-header { padding: 16px 20px; border-bottom: 1px solid #3c3c3c; }
+.modal-header h3 { font-size: 14px; color: #e0e0e0; margin: 0 0 4px 0; }
+.modal-header p { font-size: 11px; color: #8e8e8e; margin: 0; }
+.modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.modal-body label { font-size: 11px; color: #8e8e8e; display: flex; flex-direction: column; gap: 4px; }
+.modal-body input, .modal-body textarea, .modal-body select {
+  background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 12px; font-family: inherit; padding: 6px 8px; outline: none;
+}
+.modal-body input:focus, .modal-body textarea:focus, .modal-body select:focus { border-color: #007acc; }
+.modal-body .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-body .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid #3c3c3c; display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── AUDIT TRAIL ── */
+.audit-list { display: flex; flex-direction: column; gap: 6px; }
+.audit-entry { background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; padding: 8px 12px; font-size: 11px; }
+.audit-entry.ae-create { border-left: 3px solid #4ec9b0; }
+.audit-entry.ae-status { border-left: 3px solid #007acc; }
+.audit-time { color: #5a5a5a; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+.audit-action { color: #ccc; font-weight: 600; margin: 2px 0; }
+.audit-user { color: #8e8e8e; }
+.audit-reason { color: #6c6c6c; font-style: italic; margin-top: 2px; }
+
+/* ── LOADING ── */
+.ai-loading { text-align: center; padding: 20px; color: #8e8e8e; font-size: 11px; }
+.ai-loading::before { content: ''; display: inline-block; width: 14px; height: 14px; border: 2px solid #3c3c3c; border-top-color: #007acc; border-radius: 50%; animation: spin .8s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── CHECKBOX FIELD ── */
+.check-field { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #ccc; }
+.check-field input[type="checkbox"] { accent-color: #007acc; }
+</style>
+<script src="shared/i18n.js"></script>
+<script src="shared/nav.js"></script>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="query.html"       class="nav-tab" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab active" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
+      <a href="feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- WORKBENCH -->
+<div class="workbench" id="workbench">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="panel-header">
+      <span id="panelTitle">Complaints</span>
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span class="panel-badge" id="itemCount">0</span>
+        <button class="action-btn primary" onclick="showCreateComplaintModal()" style="font-size:10px;padding:2px 8px;">+ New</button>
+      </span>
+    </div>
+    <div class="tab-toggle">
+      <button class="tab-toggle-btn active" id="tabComplaints" onclick="switchListView('complaints')">Complaints</button>
+      <button class="tab-toggle-btn" id="tabRecalls" onclick="switchListView('recalls')">Recalls</button>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search ID, title, batch, product..." oninput="renderLeft()">
+    </div>
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('critical',this)">Critical</button>
+      <button class="filter-btn" onclick="setFilter('major',this)">Major</button>
+      <button class="filter-btn" onclick="setFilter('minor',this)">Minor</button>
+    </div>
+    <div class="item-list" id="itemList"></div>
+  </div>
+
+  <!-- RESIZER -->
+  <div class="resizer resizer-v" id="resizerLC"></div>
+
+  <!-- CENTER PANEL -->
+  <div class="center-panel">
+    <div class="editor-tabs" id="editorTabs">
+      <div class="editor-tab active" data-tab="detail" onclick="switchTab('detail',this)">Detail</div>
+      <div class="editor-tab" data-tab="investigation" onclick="switchTab('investigation',this)">Investigation</div>
+      <div class="editor-tab" data-tab="regulatory" onclick="switchTab('regulatory',this)">Regulatory</div>
+      <div class="editor-tab" data-tab="ai" onclick="switchTab('ai',this)">AI Analysis</div>
+      <div class="editor-tab" data-tab="audit" onclick="switchTab('audit',this)">Audit Trail</div>
+    </div>
+    <div class="center-content" id="centerContent">
+      <div class="empty-state">
+        <div class="ei">&#128203;</div>
+        <p>Select a complaint or recall from the left panel, or create a new one</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZER: horizontal -->
+  <div class="resizer resizer-h" id="resizerBottom"></div>
+
+  <!-- BOTTOM PANEL -->
+  <div class="bottom-panel">
+    <div class="bottom-tabs">
+      <div class="bottom-tab active">Activity Log</div>
+    </div>
+    <div class="bottom-content" id="bottomContent"></div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>&#128203; Complaints &amp; Recalls</span>
+  <span class="s-sep">|</span>
+  <span id="statusCount">Loading...</span>
+  <span class="s-sep">|</span>
+  <span id="statusSel">No selection</span>
+  <div class="s-right">
+    <span>Connected</span>
+  </div>
+</div>
+
+<!-- CREATE COMPLAINT MODAL -->
+<div class="modal-overlay" id="createComplaintModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Log New Complaint</h3>
+      <p>Record product complaint per FDA 21 CFR 211.198. AI can auto-classify.</p>
+    </div>
+    <div class="modal-body">
+      <label>Title <input id="newCompTitle" placeholder="Brief complaint summary"></label>
+      <label>Description <textarea id="newCompDesc" rows="3" placeholder="Detailed complaint description"></textarea></label>
+      <div class="row">
+        <label>Type
+          <select id="newCompType">
+            <option value="product_quality">Product Quality</option>
+            <option value="adverse_event">Adverse Event</option>
+            <option value="adverse_reaction">Adverse Reaction</option>
+            <option value="packaging_integrity">Packaging Integrity</option>
+            <option value="labelling_error">Labelling Error</option>
+            <option value="potency_failure">Potency Failure</option>
+            <option value="sterility_failure">Sterility Failure</option>
+            <option value="particulate_matter">Particulate Matter</option>
+            <option value="delivery_logistics">Delivery/Logistics</option>
+            <option value="counterfeit_suspect">Counterfeit Suspect</option>
+            <option value="device_malfunction">Device Malfunction</option>
+            <option value="stability_failure">Stability Failure</option>
+          </select>
+        </label>
+        <label>Source
+          <select id="newCompSource">
+            <option value="customer">Customer</option>
+            <option value="internal">Internal</option>
+            <option value="regulatory">Regulatory</option>
+            <option value="distributor">Distributor</option>
+          </select>
+        </label>
+      </div>
+      <div class="row3">
+        <label>Severity
+          <select id="newCompSeverity">
+            <option value="minor">Minor</option>
+            <option value="major">Major</option>
+            <option value="critical">Critical</option>
+          </select>
+        </label>
+        <label>Product Name <input id="newCompProduct" placeholder="Product name"></label>
+        <label>Product Strength <input id="newCompStrength" placeholder="e.g. 100mg/mL"></label>
+      </div>
+      <div class="row3">
+        <label>Dosage Form <input id="newCompDosage" placeholder="e.g. Injectable"></label>
+        <label>Batch Number <input id="newCompBatch" placeholder="e.g. LOT-2026-001"></label>
+        <label>Lot Number <input id="newCompLot" placeholder="Lot number"></label>
+      </div>
+      <div class="row">
+        <label>Date of Event <input type="date" id="newCompEventDate"></label>
+        <label>Country <input id="newCompCountry" placeholder="Country"></label>
+      </div>
+      <div class="row">
+        <label>Complainant Name <input id="newCompName" placeholder="Name"></label>
+        <label>Complainant Contact <input id="newCompContact" placeholder="Email/Phone"></label>
+      </div>
+      <label>Complainant Organisation <input id="newCompOrg" placeholder="Organisation"></label>
+      <label>Immediate Action Taken <textarea id="newCompAction" rows="2" placeholder="Describe any immediate actions"></textarea></label>
+      <div class="check-field">
+        <input type="checkbox" id="newCompSample"> <label for="newCompSample">Sample Available</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="hideModal('createComplaintModal')">Cancel</button>
+      <button class="wf-btn" onclick="aiAutoClassify()">AI Auto-Classify</button>
+      <button class="wf-btn wf-primary" onclick="createComplaint()">Create Complaint</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE RECALL MODAL -->
+<div class="modal-overlay" id="createRecallModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Initiate Recall</h3>
+      <p>Create recall event per FDA 21 CFR Part 7. AI can assess scope.</p>
+    </div>
+    <div class="modal-body">
+      <label>Title <input id="newRecTitle" placeholder="Recall event title"></label>
+      <label>Reason <textarea id="newRecReason" rows="2" placeholder="Reason for recall"></textarea></label>
+      <div class="row">
+        <label>Classification
+          <select id="newRecClass">
+            <option value="class_i">Class I - Serious health consequences or death</option>
+            <option value="class_ii" selected>Class II - Temporary/reversible health consequences</option>
+            <option value="class_iii">Class III - Unlikely to cause adverse health consequences</option>
+          </select>
+        </label>
+        <label>Recall Depth
+          <select id="newRecDepth">
+            <option value="wholesale">Wholesale</option>
+            <option value="retail">Retail</option>
+            <option value="consumer_user">Consumer/User</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label>Affected Batches <input id="newRecBatches" placeholder="Comma-separated batch numbers"></label>
+        <label>Affected Markets <input id="newRecMarkets" placeholder="Comma-separated markets"></label>
+      </div>
+      <div class="row">
+        <label>Units Distributed <input type="number" id="newRecUnits" placeholder="0"></label>
+        <label>Target Completion <input type="date" id="newRecTarget"></label>
+      </div>
+      <label>Distribution Data <textarea id="newRecDist" rows="2" placeholder="Distribution summary"></textarea></label>
+      <div class="row">
+        <label>Public Notification
+          <select id="newRecNotify">
+            <option value="none">None</option>
+            <option value="press_release">Press Release</option>
+            <option value="direct_notification">Direct Notification</option>
+            <option value="both">Both</option>
+          </select>
+        </label>
+        <label>Effectiveness Check Level
+          <select id="newRecEffLevel">
+            <option value="A">A - 100% verification</option>
+            <option value="B">B - >10% verification</option>
+            <option value="C" selected>C - 10% verification</option>
+            <option value="D">D - 2% verification</option>
+            <option value="E">E - None required</option>
+          </select>
+        </label>
+      </div>
+      <label>Linked Complaint ID <input id="newRecComplaint" placeholder="e.g. COMP-1234"></label>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="hideModal('createRecallModal')">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="createRecall()">Initiate Recall</button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERIC PROMPT MODAL -->
+<div class="modal-overlay" id="promptModal" style="display:none">
+  <div class="modal-box" style="width:420px;">
+    <div class="modal-header">
+      <h3 id="promptTitle">Action</h3>
+      <p id="promptDesc"></p>
+    </div>
+    <div class="modal-body">
+      <label id="promptLabel">Justification <textarea id="promptInput" rows="3"></textarea></label>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="hideModal('promptModal')">Cancel</button>
+      <button class="wf-btn wf-primary" id="promptConfirm" onclick="">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =================================================================
+   COMPLAINTS & RECALLS — Client-side Application
+   ================================================================= */
+
+var SERVER = window.VENT_SERVER || '';
+var complaints = [];
+var recalls = [];
+var filter = 'all';
+var selected = null;
+var selectedType = null; // 'complaint' or 'recall'
+var currentTab = 'detail';
+var listView = 'complaints'; // 'complaints' or 'recalls'
+var searchText = '';
+
+// ── Demo data ───────────────────────────────────────────────
+var DEMO_COMPLAINTS = [
+  {
+    complaint_id: 'COMP-4201', title: 'Visible particulates in injectable vial — Lot 2026-042',
+    description: 'Hospital pharmacy reports visible white particulates in 3 out of 20 vials from Lot 2026-042. Particles described as fibrous, approximately 1mm. No adverse events reported to date.',
+    complaint_type: 'particulate_matter', source: 'customer', severity: 'critical', priority: 'high',
+    status: 'investigating', product_name: 'VentaBio mAb-X', product_strength: '100mg/mL',
+    dosage_form: 'Injectable', batch_number: 'LOT-2026-042', lot_number: 'LOT-2026-042',
+    date_received: '2026-03-01', date_of_event: '2026-02-28',
+    complainant_name: 'Dr. Sarah Walsh', complainant_contact: 'swalsh@hospital.ie', complainant_org: 'St. James Hospital', country: 'Ireland',
+    investigation: 'Particle identification testing initiated. Retained samples under examination.',
+    root_cause: '', initial_risk_assessment: 'High — injectable product with visible particulates poses patient safety risk.',
+    immediate_action: 'Quarantined remaining inventory of LOT-2026-042. Initiated retained sample testing.',
+    linked_deviation_id: 'DEV-4201', linked_capa_id: '', linked_recall_id: '',
+    affected_batches: ['LOT-2026-042', 'LOT-2026-043'],
+    reportable: true, reported_to: 'FDA', regulatory_report_type: 'field_alert',
+    report_deadline: '2026-03-04', report_submitted_date: null,
+    counterfeit_assessed: true, counterfeit_notes: 'Not suspected counterfeit.',
+    sample_available: true, sample_tested: true, temperature_excursion: false,
+    ai_classification: { type: 'particulate_matter', severity: 'critical', confidence: 0.95, reasoning: 'Visible particulates in injectable biologic — direct patient safety risk.', reportable_assessment: 'Likely reportable — field alert evaluation required within 3 days.', recommended_investigation_scope: 'multiple_batches', adverse_event_flag: false, counterfeit_flag: false },
+    ai_batch_impact: { same_batch_complaints: [], related_batch_complaints: [], risk_assessment: 'high', recommended_scope: 'multiple_batches', recall_recommendation: 'quarantine', affected_batch_list: ['LOT-2026-042', 'LOT-2026-043'], estimated_units_at_risk: 15000, reasoning: 'Visible particulates in injectable — adjacent batch LOT-2026-043 from same manufacturing campaign should be investigated.' },
+    ai_trend_summary: 'Signal detected: 2 particulate complaints in 30 days on VentaBio mAb-X product line.',
+    ai_recall_risk: { recall_risk_score: 0.72, risk_level: 'high', contributing_factors: ['Visible particulates in injectable product', 'Adjacent batch potentially affected'] },
+    reply_to_complainant: '', reply_date: null, follow_up_notes: '', follow_up_date: null,
+    closure_notes: '', closed_by: '', closed_at: null, archived_at: null,
+    created_by: 'QA Team', created_at: '2026-03-01T09:00:00Z', updated_at: '2026-03-03T14:00:00Z'
+  },
+  {
+    complaint_id: 'COMP-4202', title: 'Label missing expiry date — 5 cartons returned',
+    description: 'Distributor returned 5 cartons of VentaBio mAb-Y where the expiry date is not printed on the outer carton label. Inner vial labels are correct.',
+    complaint_type: 'labelling_error', source: 'distributor', severity: 'major', priority: 'medium',
+    status: 'triaging', product_name: 'VentaBio mAb-Y', product_strength: '50mg/mL',
+    dosage_form: 'Injectable', batch_number: 'LOT-2026-038', lot_number: 'LOT-2026-038',
+    date_received: '2026-03-03', date_of_event: '2026-03-02',
+    complainant_name: 'Mike O\'Brien', complainant_contact: 'mobrien@pharmdist.ie', complainant_org: 'PharmaDistrib Ltd', country: 'Ireland',
+    investigation: '', root_cause: '', initial_risk_assessment: '',
+    immediate_action: 'Quarantined returned cartons. Checking remaining distribution inventory.',
+    linked_deviation_id: '', linked_capa_id: '', linked_recall_id: '',
+    affected_batches: ['LOT-2026-038'], reportable: false,
+    counterfeit_assessed: false, sample_available: true, sample_tested: false, temperature_excursion: false,
+    ai_classification: { type: 'labelling_error', severity: 'major', confidence: 0.91, reasoning: 'Missing expiry date on outer carton is a significant labelling deficiency.', reportable_assessment: 'Potentially reportable if widespread.', recommended_investigation_scope: 'single_batch' },
+    ai_batch_impact: {}, ai_trend_summary: '', ai_recall_risk: {},
+    reply_to_complainant: '', reply_date: null, follow_up_notes: '', follow_up_date: null,
+    closure_notes: '', closed_by: '', closed_at: null, archived_at: null,
+    created_by: 'QA Team', created_at: '2026-03-03T11:00:00Z', updated_at: '2026-03-03T11:00:00Z'
+  },
+  {
+    complaint_id: 'COMP-4203', title: 'Patient reports injection site reaction — adverse event',
+    description: 'Healthcare provider reports patient experienced severe injection site reaction (swelling, redness, pain) within 2 hours of administration. Patient required medical attention but recovered fully within 24 hours.',
+    complaint_type: 'adverse_event', source: 'customer', severity: 'critical', priority: 'high',
+    status: 'received', product_name: 'VentaBio mAb-X', product_strength: '100mg/mL',
+    dosage_form: 'Injectable', batch_number: 'LOT-2026-040', lot_number: 'LOT-2026-040',
+    date_received: '2026-03-05', date_of_event: '2026-03-04',
+    complainant_name: 'Dr. James Murphy', complainant_contact: 'jmurphy@clinic.ie', complainant_org: 'Dublin Medical Centre', country: 'Ireland',
+    investigation: '', root_cause: '', initial_risk_assessment: '',
+    immediate_action: '', linked_deviation_id: '', linked_capa_id: '', linked_recall_id: '',
+    affected_batches: ['LOT-2026-040'], reportable: true, regulatory_report_type: 'medwatch',
+    report_deadline: '2026-03-20',
+    counterfeit_assessed: false, sample_available: false, sample_tested: false, temperature_excursion: false,
+    ai_classification: {}, ai_batch_impact: {}, ai_trend_summary: '', ai_recall_risk: {},
+    reply_to_complainant: '', reply_date: null, follow_up_notes: '', follow_up_date: null,
+    closure_notes: '', closed_by: '', closed_at: null, archived_at: null,
+    created_by: 'QA Team', created_at: '2026-03-05T08:30:00Z', updated_at: '2026-03-05T08:30:00Z'
+  }
+];
+
+var DEMO_RECALLS = [
+  {
+    recall_id: 'RCL-3001', title: 'Voluntary Recall — VentaBio mAb-X LOT-2026-042 Particulate Matter',
+    description: 'Voluntary recall initiated due to visible particulate reports in injectable vials.',
+    recall_class: 'class_ii', status: 'in_progress', scope: 'Lot-specific',
+    reason: 'Visible particulates reported in 3/20 vials by hospital pharmacy.',
+    affected_batches: ['LOT-2026-042'], affected_markets: ['Ireland', 'UK'],
+    distribution_data: 'Distributed to 12 hospitals and 3 distributors across Ireland and UK.',
+    units_distributed: 5000, units_recovered: 2100, recovery_rate: 42.0,
+    linked_complaint_id: 'COMP-4201',
+    recall_depth: 'retail', public_notification_method: 'direct_notification',
+    effectiveness_check_level: 'B',
+    health_hazard_evaluation: { disease_injuries_occurred: false, vulnerable_populations: 'Immunocompromised patients', seriousness: 'medium', likelihood_of_occurrence: 'medium', consequences_assessment: 'Particulates in injectable could cause emboli or immune response', overall_risk: 'medium' },
+    consignee_tracking: [
+      { consignee: 'St. James Hospital', notified_date: '2026-03-02', responded: true, quantity_accounted: 200, action_taken: 'Quarantined and returning' },
+      { consignee: 'Beaumont Hospital', notified_date: '2026-03-02', responded: true, quantity_accounted: 150, action_taken: 'Quarantined' },
+      { consignee: 'PharmaDistrib Ltd', notified_date: '2026-03-02', responded: false, quantity_accounted: 0, action_taken: '' }
+    ],
+    notification_status: { fda: true, hpra: true, ema: false },
+    status_report_dates: ['2026-03-03'],
+    ai_scope_assessment: { recommended_class: 'class_ii', recommended_depth: 'retail', recommended_effectiveness_level: 'B' },
+    initiated_by: 'Dr. S. Chen', initiated_date: '2026-03-02',
+    target_completion: '2026-04-02', actual_completion: null,
+    closure_notes: '', lessons_learned: '',
+    created_by: 'QA Director', created_at: '2026-03-02T10:00:00Z', updated_at: '2026-03-05T09:00:00Z'
+  }
+];
+
+// ── Detect server URL ───────────────────────────────────────
+(function() {
+  if (SERVER) return;
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    SERVER = 'http://localhost:' + (location.port || '3000');
+  } else {
+    SERVER = location.origin;
+  }
+})();
+
+// ── Load data ───────────────────────────────────────────────
+async function loadComplaints() {
+  try {
+    var res = await authFetch(SERVER + '/complaints');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    complaints = await res.json();
+    if ((!complaints || complaints.length === 0) && localStorage.getItem('vent_token') === 'demo') complaints = DEMO_COMPLAINTS;
+    addLog(complaints.length + ' complaints loaded', 'info');
+  } catch (err) {
+    addLog('Failed to load complaints: ' + err.message, 'warn');
+    if (localStorage.getItem('vent_token') === 'demo') complaints = DEMO_COMPLAINTS;
+    else complaints = [];
+  }
+}
+
+async function loadRecalls() {
+  try {
+    var res = await authFetch(SERVER + '/recalls');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    recalls = await res.json();
+    if ((!recalls || recalls.length === 0) && localStorage.getItem('vent_token') === 'demo') recalls = DEMO_RECALLS;
+    addLog(recalls.length + ' recalls loaded', 'info');
+  } catch (err) {
+    addLog('Failed to load recalls: ' + err.message, 'warn');
+    if (localStorage.getItem('vent_token') === 'demo') recalls = DEMO_RECALLS;
+    else recalls = [];
+  }
+}
+
+async function loadAll() {
+  await Promise.all([loadComplaints(), loadRecalls()]);
+  renderLeft();
+  document.getElementById('statusCount').textContent = complaints.length + ' complaints, ' + recalls.length + ' recalls';
+}
+
+// ── List view toggle ────────────────────────────────────────
+function switchListView(view) {
+  listView = view;
+  document.getElementById('tabComplaints').classList.toggle('active', view === 'complaints');
+  document.getElementById('tabRecalls').classList.toggle('active', view === 'recalls');
+  document.getElementById('panelTitle').textContent = view === 'complaints' ? 'Complaints' : 'Recalls';
+
+  // Update filter bar
+  var fb = document.getElementById('filterBar');
+  if (view === 'complaints') {
+    fb.innerHTML = '<button class="filter-btn active" onclick="setFilter(\'all\',this)">All</button>' +
+      '<button class="filter-btn" onclick="setFilter(\'critical\',this)">Critical</button>' +
+      '<button class="filter-btn" onclick="setFilter(\'major\',this)">Major</button>' +
+      '<button class="filter-btn" onclick="setFilter(\'minor\',this)">Minor</button>';
+  } else {
+    fb.innerHTML = '<button class="filter-btn active" onclick="setFilter(\'all\',this)">All</button>' +
+      '<button class="filter-btn" onclick="setFilter(\'class_i\',this)">Class I</button>' +
+      '<button class="filter-btn" onclick="setFilter(\'class_ii\',this)">Class II</button>' +
+      '<button class="filter-btn" onclick="setFilter(\'class_iii\',this)">Class III</button>';
+  }
+  filter = 'all';
+  selected = null;
+  selectedType = null;
+  renderLeft();
+  document.getElementById('centerContent').innerHTML = '<div class="empty-state"><div class="ei">&#128203;</div><p>Select an item from the left panel</p></div>';
+}
+
+// ── Filter ──────────────────────────────────────────────────
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.filter-bar .filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  renderLeft();
+}
+
+// ── Render left panel ───────────────────────────────────────
+function renderLeft() {
+  var list = document.getElementById('itemList');
+  searchText = (document.getElementById('searchInput').value || '').toLowerCase();
+
+  if (listView === 'complaints') {
+    var filtered = complaints;
+    if (filter !== 'all') filtered = filtered.filter(function(c) { return c.severity === filter; });
+    if (searchText) filtered = filtered.filter(function(c) {
+      return (c.complaint_id + ' ' + c.title + ' ' + c.batch_number + ' ' + c.product_name + ' ' + c.complainant_name).toLowerCase().indexOf(searchText) >= 0;
+    });
+    document.getElementById('itemCount').textContent = filtered.length;
+
+    list.innerHTML = filtered.map(function(c) {
+      var isActive = selected && selectedType === 'complaint' && selected.complaint_id === c.complaint_id;
+      var daysOpen = c.status !== 'closed' && c.status !== 'void' ? Math.floor((Date.now() - new Date(c.created_at).getTime()) / 86400000) : null;
+      var deadlineWarn = c.report_deadline && !c.report_submitted_date;
+      return '<div class="item-card ' + (isActive ? 'active' : '') + '" onclick="selectComplaint(\'' + c.complaint_id + '\')">' +
+        '<div class="card-top">' +
+          '<span class="card-id">' + c.complaint_id + '</span>' +
+          '<div class="card-badges">' +
+            (c.reportable ? '<span class="badge-reportable">!</span>' : '') +
+            (deadlineWarn ? '<span class="badge-deadline">&#9202;</span>' : '') +
+            '<span class="risk-badge sev-' + c.severity + '">' + c.severity + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="card-title">' + escHtml(c.title) + '</div>' +
+        '<div class="card-meta">' +
+          '<span class="status-badge st-' + c.status + '">' + c.status.replace(/_/g, ' ') + '</span>' +
+          (daysOpen !== null ? ' &middot; ' + daysOpen + 'd open' : '') +
+          ' &middot; ' + (c.date_received || '').slice(0, 10) +
+        '</div>' +
+      '</div>';
+    }).join('');
+  } else {
+    var filtered = recalls;
+    if (filter !== 'all') filtered = filtered.filter(function(r) { return r.recall_class === filter; });
+    if (searchText) filtered = filtered.filter(function(r) {
+      return (r.recall_id + ' ' + r.title + ' ' + (r.affected_batches || []).join(' ')).toLowerCase().indexOf(searchText) >= 0;
+    });
+    document.getElementById('itemCount').textContent = filtered.length;
+
+    list.innerHTML = filtered.map(function(r) {
+      var isActive = selected && selectedType === 'recall' && selected.recall_id === r.recall_id;
+      return '<div class="item-card ' + (isActive ? 'active' : '') + '" onclick="selectRecall(\'' + r.recall_id + '\')">' +
+        '<div class="card-top">' +
+          '<span class="card-id">' + r.recall_id + '</span>' +
+          '<span class="risk-badge rcl-' + r.recall_class + '">' + r.recall_class.replace('_', ' ').toUpperCase() + '</span>' +
+        '</div>' +
+        '<div class="card-title">' + escHtml(r.title) + '</div>' +
+        '<div class="card-meta">' +
+          '<span class="status-badge st-' + r.status + '">' + r.status.replace(/_/g, ' ') + '</span>' +
+          ' &middot; ' + (r.initiated_date || '').slice(0, 10) +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+// ── Select items ────────────────────────────────────────────
+async function selectComplaint(compId) {
+  if (localStorage.getItem('vent_token') === 'demo') {
+    selected = complaints.find(function(c) { return c.complaint_id === compId; }) || null;
+  } else {
+    try {
+      var res = await authFetch(SERVER + '/complaints/' + compId);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      selected = await res.json();
+    } catch (err) {
+      addLog('Failed to load complaint: ' + err.message, 'error');
+      return;
+    }
+  }
+  selectedType = 'complaint';
+  currentTab = 'detail';
+  document.querySelectorAll('.editor-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === 'detail'); });
+  renderLeft();
+  renderCenter();
+  document.getElementById('statusSel').textContent = compId;
+}
+
+async function selectRecall(recallId) {
+  if (localStorage.getItem('vent_token') === 'demo') {
+    selected = recalls.find(function(r) { return r.recall_id === recallId; }) || null;
+  } else {
+    try {
+      var res = await authFetch(SERVER + '/recalls/' + recallId);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      selected = await res.json();
+    } catch (err) {
+      addLog('Failed to load recall: ' + err.message, 'error');
+      return;
+    }
+  }
+  selectedType = 'recall';
+  currentTab = 'detail';
+  document.querySelectorAll('.editor-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === 'detail'); });
+  renderLeft();
+  renderCenter();
+  document.getElementById('statusSel').textContent = recallId;
+}
+
+// ── Tab switching ───────────────────────────────────────────
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.editor-tab').forEach(function(t) { t.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderCenter();
+}
+
+// ── Center panel rendering ──────────────────────────────────
+function renderCenter() {
+  var content = document.getElementById('centerContent');
+  if (!selected) {
+    content.innerHTML = '<div class="empty-state"><div class="ei">&#128203;</div><p>Select an item from the left panel</p></div>';
+    return;
+  }
+
+  if (selectedType === 'complaint') {
+    switch (currentTab) {
+      case 'detail': content.innerHTML = renderComplaintDetail(selected); break;
+      case 'investigation': content.innerHTML = renderInvestigationTab(selected); break;
+      case 'regulatory': content.innerHTML = renderRegulatoryTab(selected); break;
+      case 'ai': content.innerHTML = renderAiTab(selected); break;
+      case 'audit': loadAuditTrail(selected.complaint_id); break;
+    }
+  } else if (selectedType === 'recall') {
+    switch (currentTab) {
+      case 'detail': content.innerHTML = renderRecallDetail(selected); break;
+      case 'ai': content.innerHTML = renderRecallAiTab(selected); break;
+      case 'audit': loadAuditTrail(selected.recall_id); break;
+      default: content.innerHTML = renderRecallDetail(selected); break;
+    }
+  }
+}
+
+// ── Complaint Detail Tab ────────────────────────────────────
+function renderComplaintDetail(c) {
+  var statuses = ['received','triaging','investigating','pending_capa','pending_response','closed'];
+  var idx = statuses.indexOf(c.status);
+
+  var html = '<div class="detail-section">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+  html += '<div><span class="card-id" style="font-size:13px;">' + c.complaint_id + '</span>';
+  html += ' <span class="risk-badge sev-' + c.severity + '">' + c.severity + '</span>';
+  html += ' <span class="status-badge st-' + c.status + '">' + c.status.replace(/_/g, ' ') + '</span>';
+  if (c.reportable) html += ' <span class="badge-reportable">REPORTABLE</span>';
+  if (c.priority) html += ' <span style="font-size:9px;color:#8e8e8e;margin-left:4px;">Priority: ' + c.priority + '</span>';
+  html += '</div>';
+  html += '<div class="btn-row">';
+  if (c.status === 'received') html += '<button class="action-btn primary" onclick="doTriage()">Triage</button>';
+  if (c.status === 'triaging') html += '<button class="action-btn primary" onclick="doInvestigate()">Start Investigation</button>';
+  if (c.status !== 'closed' && c.status !== 'void') html += '<button class="action-btn" onclick="doVoid()">Void</button>';
+  if (['pending_capa','pending_response'].includes(c.status)) html += '<button class="action-btn primary" onclick="doClose()">Close</button>';
+  html += '</div></div>';
+
+  // Workflow bar
+  html += '<div class="workflow-bar">';
+  statuses.forEach(function(s, i) {
+    var cls = i < idx ? 'done' : i === idx ? 'current' : '';
+    html += '<div class="wf-step ' + cls + '">' + s.replace(/_/g, ' ') + '</div>';
+  });
+  html += '</div></div>';
+
+  // Title & description
+  html += '<div class="detail-section"><div class="section-label">Complaint Details</div>';
+  html += '<h3 style="font-size:14px;color:#e0e0e0;margin:0 0 8px 0;">' + escHtml(c.title) + '</h3>';
+  html += '<div class="obs-text">' + escHtml(c.description) + '</div></div>';
+
+  // Product/batch info
+  html += '<div class="detail-section"><div class="section-label">Product &amp; Batch Information</div>';
+  html += '<div class="field-grid cols-3">';
+  html += fieldItem('Product Name', c.product_name);
+  html += fieldItem('Strength', c.product_strength);
+  html += fieldItem('Dosage Form', c.dosage_form);
+  html += fieldItem('Batch Number', c.batch_number);
+  html += fieldItem('Lot Number', c.lot_number);
+  html += fieldItem('Date of Event', c.date_of_event);
+  html += '</div></div>';
+
+  // Complainant info
+  html += '<div class="detail-section"><div class="section-label">Complainant Information</div>';
+  html += '<div class="field-grid">';
+  html += fieldItem('Name', c.complainant_name);
+  html += fieldItem('Contact', c.complainant_contact);
+  html += fieldItem('Organisation', c.complainant_org);
+  html += fieldItem('Country', c.country);
+  html += '</div></div>';
+
+  // Immediate action
+  if (c.immediate_action) {
+    html += '<div class="detail-section"><div class="section-label">Immediate Action</div>';
+    html += '<div class="obs-text">' + escHtml(c.immediate_action) + '</div></div>';
+  }
+
+  // Linked records
+  if (c.linked_deviation_id || c.linked_capa_id || c.linked_recall_id) {
+    html += '<div class="detail-section"><div class="section-label">Linked Records</div>';
+    html += '<div class="field-grid cols-3">';
+    if (c.linked_deviation_id) html += '<div class="field-item"><label>Deviation</label><div class="val"><a href="deviations.html" style="color:#9cdcfe;">' + c.linked_deviation_id + '</a></div></div>';
+    if (c.linked_capa_id) html += '<div class="field-item"><label>CAPA</label><div class="val"><a href="capas.html" style="color:#9cdcfe;">' + c.linked_capa_id + '</a></div></div>';
+    if (c.linked_recall_id) html += '<div class="field-item"><label>Recall</label><div class="val" style="color:#9cdcfe;cursor:pointer;" onclick="switchListView(\'recalls\');selectRecall(\'' + c.linked_recall_id + '\')">' + c.linked_recall_id + '</div></div>';
+    html += '</div></div>';
+  }
+
+  // Affected batches
+  if (c.affected_batches && c.affected_batches.length > 0) {
+    html += '<div class="detail-section"><div class="section-label">Affected Batches</div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+    c.affected_batches.forEach(function(b) {
+      html += '<span style="background:#252526;border:1px solid #3c3c3c;padding:2px 8px;border-radius:2px;font-size:11px;color:#ccc;font-family:JetBrains Mono,monospace;">' + escHtml(b) + '</span>';
+    });
+    html += '</div></div>';
+  }
+
+  // Sample tracking
+  html += '<div class="detail-section"><div class="section-label">Sample Tracking</div>';
+  html += '<div class="field-grid cols-3">';
+  html += '<div class="check-field"><input type="checkbox" ' + (c.sample_available ? 'checked' : '') + ' disabled> Sample Available</div>';
+  html += '<div class="check-field"><input type="checkbox" ' + (c.sample_tested ? 'checked' : '') + ' disabled> Sample Tested</div>';
+  html += '<div class="check-field"><input type="checkbox" ' + (c.temperature_excursion ? 'checked' : '') + ' disabled> Temperature Excursion</div>';
+  html += '</div></div>';
+
+  // Reply to complainant
+  html += '<div class="detail-section"><div class="section-label">Reply to Complainant <span style="font-size:9px;color:#6c6c6c;">(FDA 211.198(b) field 5)</span></div>';
+  if (c.reply_to_complainant) {
+    html += '<div class="obs-text">' + escHtml(c.reply_to_complainant) + '</div>';
+    html += '<div style="font-size:10px;color:#6c6c6c;margin-top:4px;">Replied: ' + (c.reply_date || 'N/A') + '</div>';
+  } else {
+    html += '<button class="action-btn" onclick="doRespond()">Record Reply</button>';
+  }
+  html += '</div>';
+
+  // Follow-up
+  html += '<div class="detail-section"><div class="section-label">Follow-up <span style="font-size:9px;color:#6c6c6c;">(FDA 211.198(b) field 8)</span></div>';
+  if (c.follow_up_notes) {
+    html += '<div class="obs-text">' + escHtml(c.follow_up_notes) + '</div>';
+    html += '<div style="font-size:10px;color:#6c6c6c;margin-top:4px;">Date: ' + (c.follow_up_date || 'N/A') + '</div>';
+  } else {
+    html += '<button class="action-btn" onclick="doFollowUp()">Record Follow-up</button>';
+  }
+  html += '</div>';
+
+  return html;
+}
+
+// ── Investigation Tab ───────────────────────────────────────
+function renderInvestigationTab(c) {
+  var html = '<div class="detail-section"><div class="section-label">Investigation</div>';
+  html += '<div class="obs-text">' + escHtml(c.investigation || 'No investigation notes yet.') + '</div></div>';
+
+  html += '<div class="detail-section"><div class="section-label">Root Cause</div>';
+  html += '<div class="obs-text">' + escHtml(c.root_cause || 'Not yet identified.') + '</div></div>';
+
+  html += '<div class="detail-section"><div class="section-label">Initial Risk Assessment</div>';
+  html += '<div class="obs-text">' + escHtml(c.initial_risk_assessment || 'Not yet assessed.') + '</div></div>';
+
+  if (c.investigation_declined_reason) {
+    html += '<div class="detail-section"><div class="section-label" style="color:#f44747;">Investigation Declined</div>';
+    html += '<div class="obs-text" style="color:#f44747;">' + escHtml(c.investigation_declined_reason) + '</div></div>';
+  }
+
+  // EU GMP Chapter 8 fields
+  html += '<div class="detail-section"><div class="section-label">EU GMP Chapter 8 — Cross-Batch Checks</div>';
+  html += '<div class="check-field"><input type="checkbox" ' + (c.other_batches_checked ? 'checked' : '') + ' disabled> Other Batches Checked</div>';
+  if (c.related_batch_findings) {
+    html += '<div class="obs-text" style="margin-top:6px;">' + escHtml(c.related_batch_findings) + '</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="btn-row">';
+  if (c.status === 'triaging') {
+    html += '<button class="action-btn primary" onclick="doInvestigate()">Start Investigation</button>';
+    html += '<button class="action-btn wf-danger" onclick="doDeclineInvestigation()">Decline Investigation</button>';
+  }
+  html += '</div>';
+
+  return html;
+}
+
+// ── Regulatory Tab ──────────────────────────────────────────
+function renderRegulatoryTab(c) {
+  var html = '<div class="detail-section"><div class="section-label">Regulatory Reporting</div>';
+  html += '<div class="field-grid">';
+  html += fieldItem('Reportable', c.reportable ? '<span style="color:#f44747;font-weight:700;">Yes</span>' : 'No', true);
+  html += fieldItem('Report Type', formatEnum(c.regulatory_report_type));
+  html += fieldItem('Report Number', c.regulatory_report_number);
+  html += fieldItem('Reported To', c.reported_to);
+  html += fieldItem('Report Deadline', c.report_deadline);
+  html += fieldItem('Submitted Date', c.report_submitted_date);
+  html += '</div>';
+  if (c.report_deadline) {
+    var withinDeadline = c.reported_within_deadline;
+    var daysLeft = c.report_submitted_date ? null : Math.ceil((new Date(c.report_deadline) - Date.now()) / 86400000);
+    html += '<div style="margin-top:8px;">';
+    if (withinDeadline === true) html += '<span style="color:#4ec9b0;font-weight:700;font-size:11px;">Submitted within deadline</span>';
+    else if (withinDeadline === false) html += '<span style="color:#f44747;font-weight:700;font-size:11px;">OVERDUE — submitted after deadline</span>';
+    else if (daysLeft !== null) {
+      if (daysLeft < 0) html += '<span style="color:#f44747;font-weight:700;font-size:11px;">OVERDUE by ' + Math.abs(daysLeft) + ' days</span>';
+      else if (daysLeft <= 3) html += '<span style="color:#ffc64d;font-weight:700;font-size:11px;">URGENT — ' + daysLeft + ' days remaining</span>';
+      else html += '<span style="color:#4ec9b0;font-size:11px;">' + daysLeft + ' days remaining</span>';
+    }
+    html += '</div>';
+  }
+  html += '<div class="btn-row"><button class="action-btn primary" onclick="aiDraftReport()">AI: Draft Report</button></div>';
+  html += '</div>';
+
+  // EU GMP Chapter 8
+  html += '<div class="detail-section"><div class="section-label">EU GMP Compliance</div>';
+  html += '<div class="field-grid">';
+  html += '<div class="check-field"><input type="checkbox" ' + (c.counterfeit_assessed ? 'checked' : '') + ' disabled> Counterfeit Assessed</div>';
+  html += '<div class="check-field"><input type="checkbox" ' + (c.competent_authority_notified ? 'checked' : '') + ' disabled> Competent Authority Notified</div>';
+  html += '<div class="check-field"><input type="checkbox" ' + (c.rapid_alert_issued ? 'checked' : '') + ' disabled> Rapid Alert Issued</div>';
+  html += '</div>';
+  if (c.counterfeit_notes) html += '<div class="obs-text" style="margin-top:8px;">' + escHtml(c.counterfeit_notes) + '</div>';
+  if (c.competent_authority_notified_date) html += '<div style="font-size:10px;color:#6c6c6c;margin-top:4px;">Notified: ' + c.competent_authority_notified_date + '</div>';
+  html += '</div>';
+
+  return html;
+}
+
+// ── AI Analysis Tab ─────────────────────────────────────────
+function renderAiTab(c) {
+  var html = '';
+
+  // Classification
+  var cls = c.ai_classification || {};
+  html += '<div class="ai-card"><div class="ai-card-header" onclick="toggleAiCard(this)"><h4>Auto-Classification</h4><span class="ai-badge">AI</span></div>';
+  html += '<div class="ai-card-body">';
+  if (cls.type) {
+    html += '<div class="field-grid" style="margin-bottom:8px;">';
+    html += fieldItem('Type', formatEnum(cls.type));
+    html += fieldItem('Severity', '<span class="risk-badge sev-' + cls.severity + '">' + cls.severity + '</span>', true);
+    html += fieldItem('Confidence', '<span class="ai-confidence">' + Math.round((cls.confidence || 0) * 100) + '%</span>', true);
+    html += fieldItem('Adverse Event', cls.adverse_event_flag ? '<span style="color:#f44747;">Yes</span>' : 'No', true);
+    html += '</div>';
+    html += '<div class="obs-text">' + escHtml(cls.reasoning || '') + '</div>';
+    if (cls.reportable_assessment) html += '<div style="margin-top:8px;padding:8px;background:#252526;border-radius:2px;font-size:11px;color:#ffc64d;">' + escHtml(cls.reportable_assessment) + '</div>';
+  } else {
+    html += '<p style="color:#5a5a5a;">Not yet classified.</p>';
+  }
+  html += '<div class="btn-row"><button class="action-btn primary" onclick="aiClassify()">Run Classification</button></div>';
+  html += '</div></div>';
+
+  // Batch Impact
+  var bi = c.ai_batch_impact || {};
+  html += '<div class="ai-card"><div class="ai-card-header" onclick="toggleAiCard(this)"><h4>Batch Impact Analysis</h4><span class="ai-badge">AI</span></div>';
+  html += '<div class="ai-card-body">';
+  if (bi.risk_assessment) {
+    html += '<div class="field-grid" style="margin-bottom:8px;">';
+    html += fieldItem('Risk', '<span class="risk-badge sev-' + (bi.risk_assessment === 'high' ? 'critical' : bi.risk_assessment === 'medium' ? 'major' : 'minor') + '">' + bi.risk_assessment + '</span>', true);
+    html += fieldItem('Scope', formatEnum(bi.recommended_scope));
+    html += fieldItem('Recall Rec.', formatEnum(bi.recall_recommendation));
+    html += fieldItem('Units at Risk', (bi.estimated_units_at_risk || 0).toLocaleString());
+    html += '</div>';
+    if (bi.affected_batch_list && bi.affected_batch_list.length > 0) {
+      html += '<div style="margin-bottom:6px;font-size:10px;color:#8e8e8e;">Affected batches: ' + bi.affected_batch_list.join(', ') + '</div>';
+    }
+    html += '<div class="obs-text">' + escHtml(bi.reasoning || '') + '</div>';
+  } else {
+    html += '<p style="color:#5a5a5a;">Not yet analysed.</p>';
+  }
+  html += '<div class="btn-row"><button class="action-btn primary" onclick="aiBatchImpact()">Run Batch Impact</button></div>';
+  html += '</div></div>';
+
+  // Trends
+  html += '<div class="ai-card"><div class="ai-card-header" onclick="toggleAiCard(this)"><h4>Trend Detection</h4><span class="ai-badge">AI</span></div>';
+  html += '<div class="ai-card-body">';
+  if (c.ai_trend_summary) {
+    html += '<div class="obs-text">' + escHtml(c.ai_trend_summary) + '</div>';
+  } else {
+    html += '<p style="color:#5a5a5a;">No trend analysis available.</p>';
+  }
+  html += '<div class="btn-row"><button class="action-btn primary" onclick="aiTrends()">Run Trend Analysis</button></div>';
+  html += '</div></div>';
+
+  // Recall Risk
+  var rr = c.ai_recall_risk || {};
+  html += '<div class="ai-card"><div class="ai-card-header" onclick="toggleAiCard(this)"><h4>Predictive Recall Risk</h4><span class="ai-badge">AI — Competitive Differentiator</span></div>';
+  html += '<div class="ai-card-body">';
+  if (rr.recall_risk_score !== undefined) {
+    var score = rr.recall_risk_score;
+    var pct = Math.round(score * 100);
+    var riskColor = score >= 0.6 ? 'risk-high' : score >= 0.3 ? 'risk-medium' : 'risk-low';
+    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">';
+    html += '<span style="font-size:28px;font-weight:700;font-family:JetBrains Mono,monospace;color:' + (score >= 0.6 ? '#f44747' : score >= 0.3 ? '#ffc64d' : '#4ec9b0') + ';">' + pct + '%</span>';
+    html += '<div style="flex:1;"><div class="risk-gauge"><div class="risk-gauge-fill ' + riskColor + '" style="width:' + pct + '%;"></div></div>';
+    html += '<span class="risk-badge ' + (rr.risk_level === 'high' || rr.risk_level === 'critical' ? 'sev-critical' : rr.risk_level === 'medium' ? 'sev-major' : 'sev-minor') + '">' + (rr.risk_level || '') + ' risk</span></div></div>';
+    if (rr.contributing_factors && rr.contributing_factors.length > 0) {
+      html += '<div style="font-size:10px;color:#8e8e8e;margin-bottom:4px;">Contributing Factors:</div>';
+      html += '<ul style="margin:0;padding-left:16px;font-size:11px;color:#ccc;">';
+      rr.contributing_factors.forEach(function(f) { html += '<li>' + escHtml(f) + '</li>'; });
+      html += '</ul>';
+    }
+  } else {
+    html += '<p style="color:#5a5a5a;">No recall risk prediction available.</p>';
+  }
+  html += '<div class="btn-row"><button class="action-btn primary" onclick="aiPredictRecall()">Predict Recall Risk</button></div>';
+  html += '</div></div>';
+
+  return html;
+}
+
+// ── Recall Detail ───────────────────────────────────────────
+function renderRecallDetail(r) {
+  var statuses = ['initiated','strategy_approved','notifications_sent','in_progress','effectiveness_checking','pending_termination','terminated'];
+  var idx = statuses.indexOf(r.status);
+
+  var html = '<div class="detail-section">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+  html += '<div><span class="card-id" style="font-size:13px;">' + r.recall_id + '</span>';
+  html += ' <span class="risk-badge rcl-' + r.recall_class + '">' + r.recall_class.replace('_', ' ').toUpperCase() + '</span>';
+  html += ' <span class="status-badge st-' + r.status + '">' + r.status.replace(/_/g, ' ') + '</span>';
+  html += '</div>';
+  html += '<div class="btn-row">';
+  if (r.status === 'initiated') html += '<button class="action-btn primary" onclick="recallAction(\'approve-strategy\')">Approve Strategy</button>';
+  if (r.status === 'strategy_approved') html += '<button class="action-btn primary" onclick="recallAction(\'send-notifications\')">Send Notifications</button>';
+  if (r.status === 'notifications_sent') html += '<button class="action-btn primary" onclick="recallAction(\'start-recovery\')">Start Recovery</button>';
+  if (r.status === 'in_progress') html += '<button class="action-btn primary" onclick="recallAction(\'effectiveness-check\')">Effectiveness Check</button>';
+  if (r.status === 'effectiveness_checking') html += '<button class="action-btn primary" onclick="recallAction(\'submit-termination\')">Submit Termination</button>';
+  if (r.status === 'pending_termination') html += '<button class="action-btn primary" onclick="recallAction(\'terminate\')">Terminate</button>';
+  html += '</div></div>';
+
+  // Workflow bar
+  html += '<div class="workflow-bar">';
+  statuses.forEach(function(s, i) {
+    var cls = i < idx ? 'done' : i === idx ? 'current' : '';
+    html += '<div class="wf-step ' + cls + '" style="font-size:8px;">' + s.replace(/_/g, ' ') + '</div>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="detail-section"><div class="section-label">Recall Details</div>';
+  html += '<h3 style="font-size:14px;color:#e0e0e0;margin:0 0 8px 0;">' + escHtml(r.title) + '</h3>';
+  html += '<div class="obs-text">' + escHtml(r.reason || r.description) + '</div></div>';
+
+  // Strategy info
+  html += '<div class="detail-section"><div class="section-label">Recall Strategy</div>';
+  html += '<div class="field-grid">';
+  html += fieldItem('Recall Depth', formatEnum(r.recall_depth));
+  html += fieldItem('Notification Method', formatEnum(r.public_notification_method));
+  html += fieldItem('Effectiveness Level', r.effectiveness_check_level || '-');
+  html += fieldItem('FDA Recall #', r.fda_recall_number);
+  html += fieldItem('Regulatory Body', r.regulatory_body);
+  html += fieldItem('Target Completion', r.target_completion);
+  html += '</div></div>';
+
+  // Health Hazard Evaluation
+  var hhe = r.health_hazard_evaluation || {};
+  if (hhe.overall_risk) {
+    html += '<div class="detail-section"><div class="section-label">Health Hazard Evaluation</div>';
+    html += '<div class="field-grid">';
+    html += fieldItem('Injuries Occurred', hhe.disease_injuries_occurred ? 'Yes' : 'No');
+    html += fieldItem('Vulnerable Pop.', hhe.vulnerable_populations);
+    html += fieldItem('Seriousness', hhe.seriousness);
+    html += fieldItem('Likelihood', hhe.likelihood_of_occurrence);
+    html += fieldItem('Overall Risk', '<span class="risk-badge sev-' + (hhe.overall_risk === 'high' ? 'critical' : hhe.overall_risk === 'medium' ? 'major' : 'minor') + '">' + hhe.overall_risk + '</span>', true);
+    html += '</div>';
+    if (hhe.consequences_assessment) html += '<div class="obs-text" style="margin-top:8px;">' + escHtml(hhe.consequences_assessment) + '</div>';
+    html += '</div>';
+  }
+
+  // Recovery tracking
+  html += '<div class="detail-section"><div class="section-label">Recovery Tracking</div>';
+  html += '<div class="field-grid cols-3">';
+  html += fieldItem('Units Distributed', (r.units_distributed || 0).toLocaleString());
+  html += fieldItem('Units Recovered', (r.units_recovered || 0).toLocaleString());
+  html += fieldItem('Recovery Rate', (r.recovery_rate || 0) + '%');
+  html += '</div>';
+  var recoveryPct = r.units_distributed > 0 ? Math.round((r.units_recovered || 0) / r.units_distributed * 100) : 0;
+  html += '<div class="progress-bar"><div class="progress-fill" style="width:' + recoveryPct + '%;"></div></div>';
+  html += '</div>';
+
+  // Affected batches & markets
+  html += '<div class="detail-section"><div class="section-label">Affected Batches &amp; Markets</div>';
+  html += '<div class="field-grid">';
+  html += fieldItem('Batches', (r.affected_batches || []).join(', '));
+  html += fieldItem('Markets', (r.affected_markets || []).join(', '));
+  html += '</div></div>';
+
+  // Consignee tracking
+  var cons = r.consignee_tracking || [];
+  if (cons.length > 0) {
+    html += '<div class="detail-section"><div class="section-label">Consignee Tracking</div>';
+    html += '<table class="consignee-table"><thead><tr><th>Consignee</th><th>Notified</th><th>Responded</th><th>Qty Accounted</th><th>Action</th></tr></thead><tbody>';
+    cons.forEach(function(cn) {
+      html += '<tr><td>' + escHtml(cn.consignee || '') + '</td><td>' + (cn.notified_date || '-') + '</td>';
+      html += '<td>' + (cn.responded ? '<span style="color:#4ec9b0;">Yes</span>' : '<span style="color:#f44747;">No</span>') + '</td>';
+      html += '<td>' + (cn.quantity_accounted || 0) + '</td><td>' + escHtml(cn.action_taken || '-') + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // Status reports
+  var reports = r.status_report_dates || [];
+  if (reports.length > 0) {
+    html += '<div class="detail-section"><div class="section-label">Status Reports to FDA</div>';
+    reports.forEach(function(d) {
+      html += '<div style="font-size:11px;color:#ccc;padding:2px 0;">Report submitted: ' + d + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Linked complaint
+  if (r.linked_complaint_id) {
+    html += '<div class="detail-section"><div class="section-label">Linked Complaint</div>';
+    html += '<span style="color:#9cdcfe;cursor:pointer;font-size:12px;" onclick="switchListView(\'complaints\');selectComplaint(\'' + r.linked_complaint_id + '\')">' + r.linked_complaint_id + '</span>';
+    html += '</div>';
+  }
+
+  return html;
+}
+
+// ── Recall AI Tab ───────────────────────────────────────────
+function renderRecallAiTab(r) {
+  var html = '';
+  var sa = r.ai_scope_assessment || {};
+  html += '<div class="ai-card"><div class="ai-card-header" onclick="toggleAiCard(this)"><h4>Scope Assessment</h4><span class="ai-badge">AI</span></div>';
+  html += '<div class="ai-card-body">';
+  if (sa.recommended_class) {
+    html += '<div class="field-grid" style="margin-bottom:8px;">';
+    html += fieldItem('Recommended Class', '<span class="risk-badge rcl-' + sa.recommended_class + '">' + sa.recommended_class.replace('_', ' ').toUpperCase() + '</span>', true);
+    html += fieldItem('Recommended Depth', formatEnum(sa.recommended_depth));
+    html += fieldItem('Effectiveness Level', sa.recommended_effectiveness_level);
+    html += fieldItem('Estimated Units', (sa.estimated_affected_units || 0).toLocaleString());
+    html += '</div>';
+    if (sa.reasoning) html += '<div class="obs-text">' + escHtml(sa.reasoning) + '</div>';
+    if (sa.notification_draft) {
+      html += '<div style="margin-top:8px;padding:8px;background:#252526;border-radius:2px;">';
+      html += '<div style="font-size:10px;color:#8e8e8e;margin-bottom:4px;">Draft Notification:</div>';
+      html += '<div class="obs-text">' + escHtml(sa.notification_draft) + '</div></div>';
+    }
+  } else {
+    html += '<p style="color:#5a5a5a;">No scope assessment yet.</p>';
+  }
+  html += '<div class="btn-row"><button class="action-btn primary" onclick="aiRecallScope()">Run Scope Assessment</button></div>';
+  html += '</div></div>';
+  return html;
+}
+
+// ── Audit Trail ─────────────────────────────────────────────
+async function loadAuditTrail(entityId) {
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">Loading audit trail...</div>';
+  try {
+    var res = await authFetch(SERVER + '/audit/' + entityId);
+    var entries = res.ok ? await res.json() : [];
+    if (entries.length === 0 && localStorage.getItem('vent_token') === 'demo') {
+      entries = [
+        { timestamp: selected.created_at, action: selectedType === 'complaint' ? 'complaint.created' : 'recall.created', user_id: selected.created_by || 'system', reason: 'Record created' }
+      ];
+    }
+    var html = '<div class="detail-section"><div class="section-label">Audit Trail — 21 CFR Part 11</div>';
+    html += '<div class="audit-list">';
+    entries.forEach(function(e) {
+      var cls = e.action.includes('create') ? 'ae-create' : 'ae-status';
+      html += '<div class="audit-entry ' + cls + '">';
+      html += '<div class="audit-time">' + new Date(e.timestamp).toLocaleString() + '</div>';
+      html += '<div class="audit-action">' + escHtml(e.action) + '</div>';
+      html += '<div class="audit-user">By: ' + escHtml(e.user_id || 'system') + '</div>';
+      if (e.reason) html += '<div class="audit-reason">' + escHtml(e.reason) + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    content.innerHTML = html;
+  } catch (err) {
+    content.innerHTML = '<div class="empty-state"><p>Failed to load audit trail: ' + escHtml(err.message) + '</p></div>';
+  }
+}
+
+// ── Helper functions ────────────────────────────────────────
+function fieldItem(label, value, isHtml) {
+  var v = value || '';
+  if (isHtml) return '<div class="field-item"><label>' + label + '</label><div class="val">' + v + '</div></div>';
+  return '<div class="field-item"><label>' + label + '</label><div class="val ' + (!v ? 'empty' : '') + '">' + escHtml(v || '—') + '</div></div>';
+}
+
+function formatEnum(val) {
+  if (!val) return '—';
+  return val.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function toggleAiCard(header) {
+  var body = header.nextElementSibling;
+  body.classList.toggle('collapsed');
+}
+
+function addLog(msg, level) {
+  var bc = document.getElementById('bottomContent');
+  var t = new Date().toLocaleTimeString();
+  bc.innerHTML += '<div class="log-line"><span class="log-time">' + t + '</span><span class="log-' + (level || 'info') + '">' + escHtml(msg) + '</span></div>';
+  bc.scrollTop = bc.scrollHeight;
+}
+
+function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+function showCreateComplaintModal() { showModal('createComplaintModal'); }
+function showCreateRecallModal() { showModal('createRecallModal'); }
+
+// ── Prompt modal helper ─────────────────────────────────────
+function promptFor(title, desc, label, callback) {
+  document.getElementById('promptTitle').textContent = title;
+  document.getElementById('promptDesc').textContent = desc;
+  document.getElementById('promptLabel').textContent = label;
+  document.getElementById('promptInput').value = '';
+  document.getElementById('promptConfirm').onclick = function() {
+    var val = document.getElementById('promptInput').value;
+    hideModal('promptModal');
+    callback(val);
+  };
+  showModal('promptModal');
+}
+
+// ── CRUD operations ─────────────────────────────────────────
+async function createComplaint() {
+  var body = {
+    title: document.getElementById('newCompTitle').value,
+    description: document.getElementById('newCompDesc').value,
+    complaintType: document.getElementById('newCompType').value,
+    source: document.getElementById('newCompSource').value,
+    severity: document.getElementById('newCompSeverity').value,
+    productName: document.getElementById('newCompProduct').value,
+    productStrength: document.getElementById('newCompStrength').value,
+    dosageForm: document.getElementById('newCompDosage').value,
+    batchNumber: document.getElementById('newCompBatch').value,
+    lotNumber: document.getElementById('newCompLot').value,
+    dateOfEvent: document.getElementById('newCompEventDate').value,
+    country: document.getElementById('newCompCountry').value,
+    complainantName: document.getElementById('newCompName').value,
+    complainantContact: document.getElementById('newCompContact').value,
+    complainantOrg: document.getElementById('newCompOrg').value,
+    immediateAction: document.getElementById('newCompAction').value,
+    sampleAvailable: document.getElementById('newCompSample').checked,
+  };
+  if (!body.title) return alert('Title is required');
+  try {
+    var res = await authFetch(SERVER + '/complaints', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    var data = await res.json();
+    if (data.ok) {
+      addLog('Complaint created: ' + data.complaintId, 'info');
+      hideModal('createComplaintModal');
+      await loadAll();
+      selectComplaint(data.complaintId);
+    } else {
+      addLog('Error: ' + (data.error || 'Unknown'), 'error');
+    }
+  } catch (err) {
+    addLog('Create failed: ' + err.message, 'error');
+  }
+}
+
+async function createRecall() {
+  var body = {
+    title: document.getElementById('newRecTitle').value,
+    reason: document.getElementById('newRecReason').value,
+    recallClass: document.getElementById('newRecClass').value,
+    recallDepth: document.getElementById('newRecDepth').value,
+    affectedBatches: document.getElementById('newRecBatches').value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+    affectedMarkets: document.getElementById('newRecMarkets').value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+    unitsDistributed: parseInt(document.getElementById('newRecUnits').value) || 0,
+    targetCompletion: document.getElementById('newRecTarget').value,
+    distributionData: document.getElementById('newRecDist').value,
+    publicNotificationMethod: document.getElementById('newRecNotify').value,
+    effectivenessCheckLevel: document.getElementById('newRecEffLevel').value,
+    linkedComplaintId: document.getElementById('newRecComplaint').value,
+  };
+  if (!body.title) return alert('Title is required');
+  try {
+    var res = await authFetch(SERVER + '/recalls', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    var data = await res.json();
+    if (data.ok) {
+      addLog('Recall initiated: ' + data.recallId, 'info');
+      hideModal('createRecallModal');
+      await loadAll();
+      switchListView('recalls');
+      selectRecall(data.recallId);
+    } else {
+      addLog('Error: ' + (data.error || 'Unknown'), 'error');
+    }
+  } catch (err) {
+    addLog('Create failed: ' + err.message, 'error');
+  }
+}
+
+// ── Workflow actions ────────────────────────────────────────
+async function doTriage() {
+  if (!selected) return;
+  try {
+    var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/triage', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ priority: selected.priority || 'medium' })
+    });
+    var data = await res.json();
+    if (data.ok) { addLog('Triaged: ' + selected.complaint_id, 'info'); await loadAll(); selectComplaint(selected.complaint_id); }
+    else addLog('Error: ' + data.error, 'error');
+  } catch (err) { addLog('Triage failed: ' + err.message, 'error'); }
+}
+
+async function doInvestigate() {
+  if (!selected) return;
+  try {
+    var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/investigate', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}'
+    });
+    var data = await res.json();
+    if (data.ok) { addLog('Investigation started: ' + selected.complaint_id, 'info'); await loadAll(); selectComplaint(selected.complaint_id); }
+    else addLog('Error: ' + data.error, 'error');
+  } catch (err) { addLog('Failed: ' + err.message, 'error'); }
+}
+
+function doDeclineInvestigation() {
+  promptFor('Decline Investigation', 'FDA requires justification when investigation is not conducted.', 'Reason (mandatory)', async function(reason) {
+    if (!reason) return alert('Justification is required (FDA 211.198)');
+    try {
+      var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/decline-investigation', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ reason: reason })
+      });
+      var data = await res.json();
+      if (data.ok) { addLog('Investigation declined', 'warn'); await loadAll(); selectComplaint(selected.complaint_id); }
+      else addLog('Error: ' + data.error, 'error');
+    } catch (err) { addLog('Failed: ' + err.message, 'error'); }
+  });
+}
+
+function doRespond() {
+  promptFor('Reply to Complainant', 'FDA 211.198(b) field 5 — record reply to complainant.', 'Reply text', async function(reply) {
+    if (!reply) return;
+    try {
+      var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/respond', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ reply_to_complainant: reply })
+      });
+      var data = await res.json();
+      if (data.ok) { addLog('Reply recorded', 'info'); await loadAll(); selectComplaint(selected.complaint_id); }
+      else addLog('Error: ' + data.error, 'error');
+    } catch (err) { addLog('Failed: ' + err.message, 'error'); }
+  });
+}
+
+function doFollowUp() {
+  promptFor('Record Follow-up', 'FDA 211.198(b) field 8 — record follow-up.', 'Follow-up notes', async function(notes) {
+    if (!notes) return;
+    try {
+      var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/follow-up', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ follow_up_notes: notes })
+      });
+      var data = await res.json();
+      if (data.ok) { addLog('Follow-up recorded', 'info'); await loadAll(); selectComplaint(selected.complaint_id); }
+      else addLog('Error: ' + data.error, 'error');
+    } catch (err) { addLog('Failed: ' + err.message, 'error'); }
+  });
+}
+
+function doClose() {
+  promptFor('Close Complaint', 'Record closure notes and close this complaint.', 'Closure notes (required)', async function(notes) {
+    if (!notes) return alert('Closure notes are required');
+    try {
+      var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/close', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ closureNotes: notes })
+      });
+      var data = await res.json();
+      if (data.ok) { addLog('Complaint closed', 'info'); await loadAll(); selectComplaint(selected.complaint_id); }
+      else addLog('Error: ' + data.error, 'error');
+    } catch (err) { addLog('Failed: ' + err.message, 'error'); }
+  });
+}
+
+function doVoid() {
+  promptFor('Void Complaint', 'Void duplicate or invalid complaint. Requires justification.', 'Justification (required)', async function(reason) {
+    if (!reason) return alert('Justification is required');
+    try {
+      var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/void', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ reason: reason })
+      });
+      var data = await res.json();
+      if (data.ok) { addLog('Complaint voided', 'warn'); await loadAll(); selectComplaint(selected.complaint_id); }
+      else addLog('Error: ' + data.error, 'error');
+    } catch (err) { addLog('Failed: ' + err.message, 'error'); }
+  });
+}
+
+async function recallAction(action) {
+  if (!selected || selectedType !== 'recall') return;
+  try {
+    var res = await authFetch(SERVER + '/recalls/' + selected.recall_id + '/' + action, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}'
+    });
+    var data = await res.json();
+    if (data.ok) { addLog('Recall action: ' + action, 'info'); await loadAll(); selectRecall(selected.recall_id); }
+    else addLog('Error: ' + data.error, 'error');
+  } catch (err) { addLog('Failed: ' + err.message, 'error'); }
+}
+
+// ── AI actions ──────────────────────────────────────────────
+async function aiClassify() {
+  if (!selected) return;
+  addLog('Running AI classification...', 'info');
+  try {
+    var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/ai/classify', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    var data = await res.json();
+    if (data.ok) { addLog('Classification complete', 'info'); selectComplaint(selected.complaint_id); }
+    else addLog('Error: ' + data.error, 'error');
+  } catch (err) { addLog('AI classify failed: ' + err.message, 'error'); }
+}
+
+async function aiBatchImpact() {
+  if (!selected) return;
+  addLog('Running batch impact analysis...', 'info');
+  try {
+    var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/ai/batch-impact', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    var data = await res.json();
+    if (data.ok) { addLog('Batch impact analysis complete', 'info'); selectComplaint(selected.complaint_id); }
+    else addLog('Error: ' + data.error, 'error');
+  } catch (err) { addLog('AI batch impact failed: ' + err.message, 'error'); }
+}
+
+async function aiTrends() {
+  if (!selected) return;
+  addLog('Running trend detection...', 'info');
+  try {
+    var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/ai/trends', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    var data = await res.json();
+    if (data.ok) { addLog('Trend analysis complete', 'info'); selectComplaint(selected.complaint_id); }
+    else addLog('Error: ' + data.error, 'error');
+  } catch (err) { addLog('AI trends failed: ' + err.message, 'error'); }
+}
+
+async function aiPredictRecall() {
+  addLog('Running predictive recall risk...', 'info');
+  try {
+    var res = await authFetch(SERVER + '/complaints/ai/predict-recall-risk', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    var data = await res.json();
+    if (data.ok) { addLog('Recall risk prediction complete: ' + (data.prediction.risk_level || ''), 'info'); }
+    else addLog('Error: ' + data.error, 'error');
+  } catch (err) { addLog('AI predict failed: ' + err.message, 'error'); }
+}
+
+async function aiDraftReport() {
+  if (!selected) return;
+  addLog('Generating regulatory report draft...', 'info');
+  try {
+    var res = await authFetch(SERVER + '/complaints/' + selected.complaint_id + '/ai/draft-report', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    var data = await res.json();
+    if (data.ok) {
+      addLog('Report draft generated: ' + data.report.report_type, 'info');
+      var rpt = data.report;
+      var html = '<div class="detail-section"><div class="section-label">AI-Generated ' + formatEnum(rpt.report_type) + ' Draft</div>';
+      html += '<div class="obs-text">' + escHtml(rpt.narrative_summary || '') + '</div>';
+      if (rpt.submission_notes) html += '<div style="margin-top:8px;padding:8px;background:#252526;border-radius:2px;font-size:11px;color:#ffc64d;">' + escHtml(rpt.submission_notes) + '</div>';
+      html += '</div>';
+      document.getElementById('centerContent').innerHTML = html;
+    } else addLog('Error: ' + data.error, 'error');
+  } catch (err) { addLog('AI draft report failed: ' + err.message, 'error'); }
+}
+
+async function aiAutoClassify() {
+  var title = document.getElementById('newCompTitle').value;
+  var desc = document.getElementById('newCompDesc').value;
+  if (!title && !desc) return alert('Enter a title and/or description first');
+  addLog('AI auto-classifying...', 'info');
+
+  // For demo mode, fill in synthetic classification
+  if (localStorage.getItem('vent_token') === 'demo') {
+    document.getElementById('newCompType').value = 'product_quality';
+    document.getElementById('newCompSeverity').value = 'major';
+    addLog('Demo: Auto-classified as product_quality / major', 'info');
+    return;
+  }
+
+  // Create a temp complaint, classify, then let user submit
+  try {
+    var tempBody = { title: title, description: desc, productName: document.getElementById('newCompProduct').value, batchNumber: document.getElementById('newCompBatch').value };
+    var res = await authFetch(SERVER + '/complaints', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(tempBody) });
+    var data = await res.json();
+    if (data.ok) {
+      var classRes = await authFetch(SERVER + '/complaints/' + data.complaintId + '/ai/classify', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+      var classData = await classRes.json();
+      if (classData.ok && classData.classification) {
+        document.getElementById('newCompType').value = classData.classification.type || 'product_quality';
+        document.getElementById('newCompSeverity').value = classData.classification.severity || 'minor';
+        addLog('AI classified: ' + classData.classification.type + ' / ' + classData.classification.severity + ' (confidence: ' + Math.round((classData.classification.confidence || 0) * 100) + '%)', 'info');
+      }
+      // Update the already-created complaint rather than creating duplicate
+      hideModal('createComplaintModal');
+      await loadAll();
+      selectComplaint(data.complaintId);
+    }
+  } catch (err) { addLog('Auto-classify failed: ' + err.message, 'error'); }
+}
+
+async function aiRecallScope() {
+  if (!selected || selectedType !== 'recall') return;
+  addLog('Running AI scope assessment...', 'info');
+  try {
+    var res = await authFetch(SERVER + '/recalls/' + selected.recall_id + '/ai/scope', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    var data = await res.json();
+    if (data.ok) { addLog('Scope assessment complete', 'info'); selectRecall(selected.recall_id); }
+    else addLog('Error: ' + data.error, 'error');
+  } catch (err) { addLog('AI scope failed: ' + err.message, 'error'); }
+}
+
+// ── Resizer logic ───────────────────────────────────────────
+(function() {
+  function setupResizer(resizerId, direction) {
+    var resizer = document.getElementById(resizerId);
+    if (!resizer) return;
+    var wb = document.getElementById('workbench');
+    var dragging = false;
+    resizer.addEventListener('mousedown', function(e) {
+      dragging = true;
+      resizer.classList.add('dragging');
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      var rect = wb.getBoundingClientRect();
+      if (direction === 'v') {
+        var x = Math.max(180, Math.min(e.clientX - rect.left, rect.width - 200));
+        wb.style.gridTemplateColumns = x + 'px 4px 1fr';
+      } else {
+        var y = Math.max(60, Math.min(rect.bottom - e.clientY, rect.height - 100));
+        wb.style.gridTemplateRows = '1fr 4px ' + y + 'px';
+      }
+    });
+    document.addEventListener('mouseup', function() { dragging = false; resizer.classList.remove('dragging'); });
+  }
+  setupResizer('resizerLC', 'v');
+  setupResizer('resizerBottom', 'h');
+})();
+
+// ── Initialise ──────────────────────────────────────────────
+loadAll();
+</script>
+<script src="/shared/dev-progress.js"></script>
+</body>
+</html>

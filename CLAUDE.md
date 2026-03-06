@@ -2,7 +2,7 @@
 
 ## What Is This
 
-Vent is an AI-powered manufacturing intelligence platform for GMP biologics facilities. 76 planned modules across 14 departments. 23 live, 0 WIP, 53 planned.
+Vent is an AI-powered manufacturing intelligence platform for GMP biologics facilities. 76 planned modules across 14 departments. 28 live, 0 WIP, 48 planned.
 
 Built by one developer (Darren) acting as project manager, with Claude Code as the engineering team using parallel 5-agent git worktree builds.
 
@@ -52,6 +52,11 @@ All entity IDs are centralised. Pattern: `PREFIX-1000..9999`
 - `VNT-` submissions, `DEV-` deviations, `EQ-` equipment, `EQLOG-` equipment logs
 - `INOC-` incubators, `ILOG-` incubator logs, `IALM-` alarms, `ICAL-` calibrations, `IMNT-` maintenance
 - `MP-` media prep, `TRN-` training, `CAPA-` CAPAs
+- `SUP-` suppliers, `SAUD-` supplier audits, `QAG-` quality agreements, `HO-` handovers, `CLN-` cleaning
+- `CC-` change controls, `CCAP-` approvals, `CCIA-` impact assessments, `CCTK-` tasks, `COMP-` complaints, `RCL-` recalls
+- `DISP-` dispositions, `DCHK-` checklists, `CERT-` QP certifications
+- `QCS-` QC samples, `QCT-` QC tests, `QCR-` QC results, `QCI-` QC instruments, `QCAQ-` analyst quals, `QCM-` methods, `QCTP-` templates
+- `CB-` cell banks, `CBV-` vials, `CBT-` transactions, `CBTEST-` testing
 
 ### Frontend Pattern
 ```
@@ -86,25 +91,91 @@ Track in:
 - `docs/project.html` — Gantt chart, registry, progress, rounds
 - `docs/shared/dev-progress.js` — floating bar on all module pages
 
-## 5-Agent Build Process
+## Agent Ecosystem (26 Agents, 6 Pipelines)
+
+Custom subagents live in `.claude/agents/`. Organized into specialized agents and orchestration pipelines.
+
+### Build Agents (Module Construction)
+
+| Agent | Purpose |
+|-------|---------|
+| `file-organizer` | Reorganize stray files into department folders |
+| `round-planner` | Parse dependency graph, recommend next 5-module batch |
+| `spec-writer` | Write detailed agent specs (DB, API, frontend, AI) |
+| `module-builder` x5 | Build modules in parallel worktrees (service + routes + HTML) |
+| `code-reviewer` x5 | Review output against spec and conventions |
+| `shared-file-merger` | Merge 5 worktree outputs into ids.js, admin.js, index.js |
+| `schema-validator` | Validate SQL structure, FKs, RLS, naming |
+| `test-writer` | Write Vitest unit tests for service layers |
+| `i18n-agent` | Add EN/ZH/ES translations for new modules |
+| `merge-debugger` | Start server, fix wiring bugs until clean startup |
+| `integration-tester` | Hit every endpoint with auth, report pass/fail |
+| `security-auditor` | Check auth guards, RLS, OWASP, 21 CFR Part 11 |
+| `progress-updater` | Update dev-progress.js, dev.html, project.html |
+| `docs-generator` | Create technical READMEs per module |
+| `rag-updater` | Create SOPs, ingest into RAG for Charlie AI |
+
+### Intelligence & Research Agents
+
+| Agent | Purpose |
+|-------|---------|
+| `research-agent` | Deep web research on any topic — regulations, competitors, best practices |
+| `pitch-researcher` | Research specific prospects/investors for tailored positioning |
+
+### Quality & Analysis Agents
+
+| Agent | Purpose |
+|-------|---------|
+| `code-profiler` | Analyze code health — complexity, patterns, dead code, tech debt |
+| `ux-reviewer` | Review frontend UX, accessibility, design consistency |
+| `performance-analyzer` | Profile endpoints, find slow queries, measure page weights |
+| `compliance-auditor` | Map modules against FDA 21 CFR Part 11, EU GMP, ALCOA+ |
+| `test-coverage-analyzer` | Find untested critical code paths, prioritize test writing |
+| `refactor-planner` | Identify duplication, inconsistencies, and improvement opportunities |
+
+### Release & Operations Agents
+
+| Agent | Purpose |
+|-------|---------|
+| `migration-planner` | Plan safe, reversible database migrations for Supabase |
+| `changelog-generator` | Generate release notes from git history and round outputs |
+| `demo-data-generator` | Generate realistic GMP demo data with cross-module relationships |
+| `demo-script-writer` | Write click-by-click demo scripts tailored to specific audiences |
+
+### Orchestration Pipelines
+
+| Pipeline | Agents | Purpose | Trigger |
+|----------|--------|---------|---------|
+| `pipeline-orchestrator` | 26 spawns, 9 phases | Full build round end-to-end | "Run Round {N}" |
+| `pipeline-code-quality` | 6 agents, 5 parallel | Codebase health evaluation | "Evaluate code quality" |
+| `pipeline-compliance` | 3 agents | Regulatory gap analysis | "Check FDA compliance" |
+| `pipeline-demo-prep` | 4 agents | Complete demo package for a target | "Prepare demo for {audience}" |
+| `pipeline-release` | 4 agents parallel | Safe deployment preparation | "Prepare release" |
+| `pipeline-competitive-intel` | 4 agents | Market and competitor research | "Research the competition" |
+
+### 5-Agent Build Process
 
 Each build round:
-1. Darren writes agent specs (DB schema, API endpoints, frontend, AI features)
-2. 5 Claude Code agents launch in parallel git worktrees
-3. Each agent produces 3 files: service, routes, frontend HTML
-4. Darren merges: copies new files, combines shared file changes
-5. Shared files to merge: `ids.js`, `admin.js`, `index.js`, `nav.js`
-6. Update `dev.html` + `project.html` + `dev-progress.js` with new module status
+1. `round-planner` resolves dependencies, picks next 5 modules
+2. `spec-writer` produces detailed specs in `round-N-specs/`
+3. 5 `module-builder` agents launch in parallel git worktrees
+4. Each agent produces 3 files: service, routes, frontend HTML
+5. `code-reviewer` validates each module (gate)
+6. `shared-file-merger` combines changes into shared files
+7. `merge-debugger` fixes wiring until server starts clean
+8. `test-writer` + `i18n-agent` run in parallel
+9. `integration-tester` + `security-auditor` validate (gate)
+10. `progress-updater` + `docs-generator` + `rag-updater` finalize
 
 ## Build Phases
 
 | Phase | Modules | Weeks | Status |
 |-------|---------|-------|--------|
-| 1. Quality Core | 7 | W1-7 | Round 1 (5) + Round 2 (2) complete |
-| 2. Daily Operations | 4 | W7-10 | Round 2 (3) complete |
-| 3. QC Lab | 4 | W10-14 | Planned |
+| 1. Quality Core | 7 | W1-7 | R1 (5) + R2 (2) + R3 (3) complete |
+| 2. Daily Operations | 4 | W7-10 | R2 (3) complete |
+| 3. QC Lab | 4 | W10-14 | R3 (1: qc-lab) complete, 3 planned |
 | 4. Batch / MES | 7 | W14-22 | Planned |
-| 5. Inoculation Suite | 10 | W22-28 | Planned |
+| 5. Inoculation Suite | 10 | W22-28 | R3 (1: inoc-cell-bank) complete, 9 planned |
 | 6. Process Operations | 14 | W28-36 | Planned |
 | 7. Support Functions | 12 | W36-43 | Planned |
 | 8. Analytics & Leadership | 5 | W43-46 | Planned |
@@ -128,6 +199,11 @@ Each build round:
 | Project command centre | `docs/project.html` |
 | Facility contacts | `server/data/contacts.js` |
 | SOP source docs | `server/docs/sops/*.md` |
+| Custom subagents | `.claude/agents/*.md` |
+| Round 3 specs | `round-3-specs/agent-*.md` |
+| Pitch decks | `docs/pitches/` |
+| Research docs | `docs/research/` |
+| NDRC materials | `docs/ndrc/` |
 
 ## Conventions
 

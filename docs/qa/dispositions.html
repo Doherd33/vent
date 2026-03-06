@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Batch Disposition</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: flex; gap: 8px; padding: 8px 10px; border-bottom: 1px solid #2d2d30;
+  overflow-x: auto; flex-shrink: 0;
+}
+.stat-card {
+  background: #1e1e1e; border: 1px solid #2d2d30; border-radius: 4px;
+  padding: 6px 12px; min-width: 90px; text-align: center; flex-shrink: 0;
+}
+.stat-value { font-size: 18px; font-weight: 700; color: #e0e0e0; font-family: 'JetBrains Mono', monospace; }
+.stat-label { font-size: 9px; color: #6c6c6c; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+.stat-value.sv-warn { color: #ffc64d; }
+.stat-value.sv-danger { color: #f44747; }
+.stat-value.sv-ok { color: #4ec9b0; }
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 280px 4px 1fr;
+  overflow: hidden;
+}
+
+/* ── RESIZE HANDLE ── */
+.resizer { background: #3c3c3c; z-index: 10; transition: background 0.15s; position: relative; cursor: col-resize; }
+.resizer:hover, .resizer.dragging { background: #007acc; }
+.resizer::after { content: ''; position: absolute; inset: 0; left: -4px; right: -4px; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  grid-column: 1; background: #252526; border-right: 1px solid #3c3c3c;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-header {
+  padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: #8e8e8e; border-bottom: 1px solid #3c3c3c;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-badge {
+  background: #007acc; color: #fff; font-size: 10px; padding: 1px 6px;
+  border-radius: 8px; font-weight: 600;
+}
+.filter-bar {
+  display: flex; gap: 2px; padding: 6px 8px; border-bottom: 1px solid #2d2d30; flex-wrap: wrap;
+}
+.filter-btn {
+  background: none; border: 1px solid #3c3c3c; color: #8e8e8e; font-size: 10px;
+  padding: 2px 8px; border-radius: 2px; cursor: pointer; transition: all .15s;
+}
+.filter-btn:hover { color: #ccc; border-color: #5a5a5a; }
+.filter-btn.active { background: #007acc; color: #fff; border-color: #007acc; }
+.search-input {
+  width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 11px; padding: 5px 8px; outline: none; margin: 6px 8px;
+  box-sizing: border-box;
+}
+.search-input:focus { border-color: #007acc; }
+.submission-list { flex: 1; overflow-y: auto; }
+
+/* ── DISP CARD ── */
+.disp-card {
+  padding: 8px 10px; border-radius: 2px; margin-bottom: 1px;
+  cursor: pointer; transition: background 0.1s; border-left: 2px solid transparent;
+}
+.disp-card:hover { background: #2a2d2e; }
+.disp-card.active { background: #094771; border-left-color: #007acc; }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.card-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #9cdcfe; }
+.card-title { font-size: 11px; color: #d4d4d4; line-height: 1.4; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { font-size: 10px; color: #5a5a5a; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* ── STATUS BADGES ── */
+.status-badge { font-size: 9px; padding: 1px 6px; border-radius: 2px; text-transform: capitalize; }
+.st-pending_review      { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.st-in_review           { background: rgba(0,122,204,0.18); color: #4fc1ff; }
+.st-on_hold             { background: rgba(255,140,50,0.18); color: #ff8c32; }
+.st-conditional_release { background: rgba(206,145,255,0.15); color: #ce91ff; }
+.st-released            { background: rgba(78,201,176,0.15); color: #4ec9b0; }
+.st-rejected            { background: rgba(244,71,71,0.2); color: #f44747; }
+
+/* ── PRIORITY BADGES ── */
+.pri-badge { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; text-transform: uppercase; }
+.pri-urgent  { background: rgba(255,140,50,0.2); color: #ff8c32; border: 1px solid rgba(255,140,50,0.35); }
+.pri-critical { background: rgba(244,71,71,0.2); color: #f44747; border: 1px solid rgba(244,71,71,0.35); }
+
+/* ── RISK SCORE BADGE ── */
+.risk-badge { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; font-family: 'JetBrains Mono', monospace; }
+.risk-low    { background: rgba(78,201,176,0.15); color: #4ec9b0; }
+.risk-medium { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.risk-high   { background: rgba(244,71,71,0.2); color: #f44747; }
+
+/* ── AI CLASSIFICATION BADGES ── */
+.ai-cls { font-size: 9px; padding: 1px 6px; border-radius: 2px; font-weight: 600; }
+.ai-cleared       { background: rgba(78,201,176,0.12); color: #4ec9b0; }
+.ai-informational { background: rgba(0,122,204,0.12); color: #4fc1ff; }
+.ai-flagged       { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.ai-critical      { background: rgba(244,71,71,0.2); color: #f44747; }
+.ai-pending       { background: rgba(100,100,100,0.15); color: #8e8e8e; }
+
+/* ── CENTER PANEL ── */
+.center-panel {
+  grid-column: 3; background: var(--bg, #1e1e1e); display: flex; flex-direction: column; overflow: hidden;
+}
+.editor-tabs {
+  display: flex; gap: 0; background: #252526; border-bottom: 1px solid #3c3c3c;
+  min-height: 34px; align-items: flex-end; overflow-x: auto; flex-shrink: 0;
+}
+.editor-tab {
+  padding: 6px 14px; font-size: 11px; color: #8e8e8e; cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s;
+}
+.editor-tab:hover { color: #ccc; }
+.editor-tab.active { color: #fff; border-bottom-color: #007acc; }
+.center-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-state .ei { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.empty-state p { color: #5a5a5a; font-size: 12px; }
+
+/* ── DETAIL SECTIONS ── */
+.detail-section { margin-bottom: 20px; }
+.section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #8e8e8e; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #2d2d30;
+  display: flex; align-items: center; gap: 8px;
+}
+.obs-text { font-size: 12px; color: #b0b0b0; line-height: 1.6; white-space: pre-wrap; }
+.sop-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.sop-table td { padding: 4px 0; color: #cccccc; border-bottom: 1px solid #2d2d30; }
+.sop-highlight { background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; padding: 10px 12px; font-size: 12px; color: #cccccc; line-height: 1.5; }
+
+/* ── WORKFLOW BUTTONS ── */
+.wf-btn {
+  padding: 5px 14px; font-size: 11px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.wf-btn:hover { border-color: #5a5a5a; color: #fff; }
+.wf-primary { background: #007acc; border-color: #007acc; color: #fff; }
+.wf-primary:hover { background: #0098ff; }
+.wf-danger { background: rgba(244,71,71,0.15); border-color: rgba(244,71,71,0.4); color: #f44747; }
+.wf-danger:hover { background: rgba(244,71,71,0.25); }
+.wf-warn { background: rgba(255,198,77,0.1); border-color: rgba(255,198,77,0.35); color: #ffc64d; }
+.wf-success { background: rgba(78,201,176,0.1); border-color: rgba(78,201,176,0.35); color: #4ec9b0; }
+.action-btn {
+  padding: 4px 10px; font-size: 10px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.action-btn:hover { border-color: #5a5a5a; color: #fff; }
+.action-btn.primary { background: #007acc; border-color: #007acc; color: #fff; }
+.action-btn.primary:hover { background: #0098ff; }
+.why-ai-badge { font-size: 9px; background: rgba(0,122,204,0.15); color: #007acc; padding: 1px 6px; border-radius: 2px; }
+
+/* ── CHECKLIST ── */
+.checklist-item {
+  background: #252526; border: 1px solid #2d2d30; border-radius: 2px;
+  padding: 8px 12px; margin-bottom: 4px; transition: all .15s;
+}
+.checklist-item.cl-flagged { border-left: 3px solid #ffc64d; }
+.checklist-item.cl-critical { border-left: 3px solid #f44747; background: rgba(244,71,71,0.05); }
+.checklist-item.cl-cleared { opacity: 0.6; }
+.checklist-item.cl-cleared.collapsed { display: none; }
+.cl-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.cl-desc { font-size: 11px; color: #d4d4d4; flex: 1; }
+.cl-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.cl-details { margin-top: 6px; font-size: 11px; color: #8e8e8e; }
+.cl-criteria { font-size: 10px; color: #6c6c6c; margin-top: 4px; }
+.cl-ai-reason { font-size: 10px; color: #007acc; margin-top: 4px; font-style: italic; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal { background: #252526; border: 1px solid #3c3c3c; border-radius: 4px; width: 560px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+.modal-header { padding: 16px 20px; border-bottom: 1px solid #3c3c3c; }
+.modal-header h3 { font-size: 14px; color: #e0e0e0; margin: 0 0 4px 0; }
+.modal-header p { font-size: 11px; color: #8e8e8e; margin: 0; }
+.modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.modal-body label { font-size: 11px; color: #8e8e8e; display: flex; flex-direction: column; gap: 4px; }
+.modal-body input, .modal-body textarea, .modal-body select {
+  background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 12px; font-family: inherit; padding: 6px 8px; outline: none;
+}
+.modal-body input:focus, .modal-body textarea:focus, .modal-body select:focus { border-color: #007acc; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid #3c3c3c; display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── WARNING BANNER ── */
+.warn-banner {
+  background: rgba(244,71,71,0.1); border: 1px solid rgba(244,71,71,0.3); border-radius: 2px;
+  padding: 8px 12px; font-size: 11px; color: #f44747; margin-bottom: 12px;
+}
+.info-banner {
+  background: rgba(0,122,204,0.1); border: 1px solid rgba(0,122,204,0.3); border-radius: 2px;
+  padding: 8px 12px; font-size: 11px; color: #4fc1ff; margin-bottom: 12px;
+}
+
+/* ── AUDIT TRAIL ── */
+.audit-list { display: flex; flex-direction: column; gap: 6px; }
+.audit-entry { background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; padding: 8px 12px; font-size: 11px; }
+.audit-entry.ae-create { border-left: 3px solid #4ec9b0; }
+.audit-entry.ae-status { border-left: 3px solid #007acc; }
+.audit-entry.ae-esig   { border-left: 3px solid #ffc64d; }
+.audit-entry.ae-ai     { border-left: 3px solid #ce91ff; }
+.audit-time { color: #5a5a5a; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+.audit-action { color: #ccc; font-weight: 600; margin: 2px 0; }
+.audit-user { color: #8e8e8e; }
+.audit-reason { color: #6c6c6c; font-style: italic; margin-top: 2px; }
+.audit-hash { color: #3c3c3c; font-family: 'JetBrains Mono', monospace; font-size: 9px; margin-top: 2px; }
+
+/* ── REGISTER TABLE ── */
+.reg-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.reg-table th { text-align: left; padding: 6px 8px; background: #252526; color: #8e8e8e; font-weight: 600; border-bottom: 1px solid #3c3c3c; font-size: 10px; text-transform: uppercase; letter-spacing: .03em; }
+.reg-table td { padding: 6px 8px; color: #ccc; border-bottom: 1px solid #2d2d30; }
+.reg-table tr:hover td { background: #252526; }
+
+/* ── LOADING ── */
+.ai-loading { text-align: center; padding: 20px; color: #8e8e8e; font-size: 11px; }
+.ai-loading::before { content: ''; display: inline-block; width: 14px; height: 14px; border: 2px solid #3c3c3c; border-top-color: #007acc; border-radius: 50%; animation: spin .8s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: #007acc; display: flex; align-items: center; padding: 0 10px;
+  font-size: 11px; color: #fff; gap: 6px;
+}
+.status-bar .s-sep { color: rgba(255,255,255,0.4); }
+.status-bar .s-right { margin-left: auto; }
+</style>
+<script src="shared/i18n.js"></script>
+<script src="shared/nav.js"></script>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="query.html"       class="nav-tab" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
+      <a href="builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="qa.html"          class="nav-tab active" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="dashboard.html"   class="nav-tab" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
+      <a href="feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div style="display:flex;flex-direction:column;overflow:hidden;">
+
+  <!-- STATS BAR -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card"><div class="stat-value" id="stPending">-</div><div class="stat-label">Pending</div></div>
+    <div class="stat-card"><div class="stat-value" id="stReview">-</div><div class="stat-label">In Review</div></div>
+    <div class="stat-card"><div class="stat-value" id="stConditional">-</div><div class="stat-label">Conditional</div></div>
+    <div class="stat-card"><div class="stat-value" id="stReleased">-</div><div class="stat-label">Released (mo)</div></div>
+    <div class="stat-card"><div class="stat-value" id="stRejected">-</div><div class="stat-label">Rejected (mo)</div></div>
+    <div class="stat-card"><div class="stat-value" id="stAvgDays">-</div><div class="stat-label">Avg Review (d)</div></div>
+    <div class="stat-card"><div class="stat-value" id="stOnHold">-</div><div class="stat-label">On Hold</div></div>
+    <div class="stat-card"><div class="stat-value" id="stRFT">-</div><div class="stat-label">RFT %</div></div>
+  </div>
+
+  <!-- WORKBENCH -->
+  <div class="workbench" id="workbench">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+      <div class="panel-header">
+        Batch Dispositions
+        <span style="display:flex;align-items:center;gap:6px;">
+          <span class="panel-badge" id="dispCount">0</span>
+          <button class="action-btn primary" onclick="showCreateModal()" style="font-size:10px;padding:2px 8px;">+ New</button>
+        </span>
+      </div>
+      <input class="search-input" id="searchInput" placeholder="Search batch, product, ID..." oninput="renderLeft()">
+      <div class="filter-bar" id="filterBar">
+        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('pending_review',this)">Pending</button>
+        <button class="filter-btn" onclick="setFilter('in_review',this)">Review</button>
+        <button class="filter-btn" onclick="setFilter('on_hold',this)">Hold</button>
+        <button class="filter-btn" onclick="setFilter('conditional_release',this)">Conditional</button>
+        <button class="filter-btn" onclick="setFilter('released',this)">Released</button>
+        <button class="filter-btn" onclick="setFilter('rejected',this)">Rejected</button>
+      </div>
+      <div class="submission-list" id="dispList"></div>
+    </div>
+
+    <!-- RESIZER -->
+    <div class="resizer" id="resizerLC"></div>
+
+    <!-- CENTER PANEL -->
+    <div class="center-panel">
+      <div class="editor-tabs" id="editorTabs">
+        <div class="editor-tab active" data-tab="detail" onclick="switchTab('detail',this)">Detail</div>
+        <div class="editor-tab" data-tab="checklist" onclick="switchTab('checklist',this)">Checklist</div>
+        <div class="editor-tab" data-tab="ai" onclick="switchTab('ai',this)">AI Analysis</div>
+        <div class="editor-tab" data-tab="audit" onclick="switchTab('audit',this)">Audit Trail</div>
+        <div class="editor-tab" data-tab="exceptions" onclick="switchTab('exceptions',this)">Exceptions</div>
+        <div class="editor-tab" data-tab="register" onclick="switchTab('register',this)">QP Register</div>
+      </div>
+      <div class="center-content" id="centerContent">
+        <div class="empty-state">
+          <div class="ei">&#128220;</div>
+          <p>Select a batch disposition or create a new one</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>&#128220; Batch Disposition &amp; QP Release</span>
+  <span class="s-sep">|</span>
+  <span id="statusCount">Loading...</span>
+  <span class="s-sep">|</span>
+  <span id="statusSel">No selection</span>
+  <div class="s-right"><span>Connected</span></div>
+</div>
+
+<!-- CREATE MODAL -->
+<div class="modal-overlay" id="createModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Create Batch Disposition</h3>
+      <p>Initiate a new batch disposition record for QP review.</p>
+    </div>
+    <div class="modal-body">
+      <label>Batch Number <input id="newBatch" placeholder="e.g. B2026-0089"></label>
+      <label>Product Name <input id="newProduct" placeholder="e.g. mAb-X 200mg"></label>
+      <div style="display:flex;gap:8px;">
+        <label style="flex:1;">Batch Start Date <input id="newStartDate" type="date"></label>
+        <label style="flex:1;">Batch End Date <input id="newEndDate" type="date"></label>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <label style="flex:1;">Batch Size <input id="newBatchSize" placeholder="e.g. 2000L"></label>
+        <label style="flex:1;">Expected Yield <input id="newYieldExp" placeholder="e.g. 92%"></label>
+        <label style="flex:1;">Actual Yield <input id="newYieldAct" placeholder="e.g. 89%"></label>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <label style="flex:1;">Priority
+          <select id="newPriority">
+            <option value="normal">Normal</option>
+            <option value="urgent">Urgent</option>
+            <option value="critical">Critical</option>
+          </select>
+        </label>
+        <label style="flex:1;">Expiry Date <input id="newExpiry" type="date"></label>
+      </div>
+      <label>Notes <textarea id="newNotes" rows="3" placeholder="Additional notes..."></textarea></label>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="hideModal('createModal')">Cancel</button>
+      <button class="wf-btn wf-primary" id="createBtn" onclick="createDisposition()">Create Disposition</button>
+    </div>
+  </div>
+</div>
+
+<!-- QP DECISION MODAL -->
+<div class="modal-overlay" id="qpModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>QP Release Decision</h3>
+      <p>21 CFR Part 11 / EU GMP Annex 16 — Electronic signature required</p>
+    </div>
+    <div class="modal-body" id="qpModalBody">
+      <div id="qpWarnings"></div>
+      <label>Decision
+        <select id="qpDecision" onchange="updateQPModal()">
+          <option value="release">Release</option>
+          <option value="conditional_release">Conditional Release</option>
+          <option value="reject">Reject</option>
+        </select>
+      </label>
+      <label>QP Name <input id="qpName" placeholder="Printed name"></label>
+      <label>Signature Meaning
+        <select id="qpMeaning">
+          <option value="batch certified for release">Batch certified for release</option>
+          <option value="batch certified for conditional release">Batch certified for conditional release</option>
+          <option value="batch rejected">Batch rejected</option>
+        </select>
+      </label>
+      <label>Comments <textarea id="qpComments" rows="3" placeholder="QP comments..."></textarea></label>
+      <div id="qpConditionalFields" style="display:none;">
+        <label>Conditions <textarea id="qpConditions" rows="2" placeholder="e.g. Pending sterility test results due 2026-03-10"></textarea></label>
+        <label>Condition Expiry Date <input id="qpCondExpiry" type="date"></label>
+      </div>
+      <div id="qpRejectFields" style="display:none;">
+        <label>Rejection Reason <textarea id="qpRejectReason" rows="2" placeholder="Reason for rejection (required)"></textarea></label>
+        <label>Rejection Disposition
+          <select id="qpRejectDisp">
+            <option value="">Select disposition...</option>
+            <option value="destroy">Destroy</option>
+            <option value="reprocess">Reprocess</option>
+            <option value="rework">Rework</option>
+            <option value="return_to_supplier">Return to Supplier</option>
+          </select>
+        </label>
+      </div>
+      <div style="border-top:1px solid #3c3c3c;padding-top:12px;margin-top:4px;">
+        <label>E-Signature — Re-enter password to confirm
+          <input id="qpPassword" type="password" placeholder="Password">
+        </label>
+        <p style="font-size:10px;color:#6c6c6c;margin-top:4px;">Your identity, role, timestamp, and signature meaning will be permanently recorded per 21 CFR Part 11.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="hideModal('qpModal')">Cancel</button>
+      <button class="wf-btn wf-primary" id="qpSubmitBtn" onclick="submitQPDecision()">Sign &amp; Submit</button>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/dev-progress.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   BATCH DISPOSITION — Client-side Application
+   ═══════════════════════════════════════════════════════════════ */
+
+var SERVER = window.VENT_SERVER || '';
+var dispositions = [];
+var filter = 'all';
+var selected = null;
+var currentTab = 'detail';
+var showCleared = false;
+
+// ── Demo data ─────────────────────────────────────────────────
+var DEMO = [
+  {
+    disposition_id: 'DISP-4201', batch_number: 'B2026-0089', product_name: 'mAb-X 200mg',
+    status: 'in_review', priority: 'normal', batch_start_date: '2026-02-15', batch_end_date: '2026-02-28',
+    batch_size: '2000L', yield_actual: '87.3%', yield_expected: '92%',
+    reviewer: 'Dr. S. Chen', reviewer_role: 'qa', review_started_at: '2026-03-02T09:00:00Z',
+    ai_risk_score: 35, ai_prescreen_result: 'medium', ai_confidence: 0.89,
+    ai_anomalies: [{ category: 'yield', severity: 'medium', classification: 'flagged', description: 'Yield 87.3% below historical mean 92.1%', recommendation: 'Investigate yield reduction' }],
+    ai_review_summary: '', ai_release_recommendation: '',
+    open_deviations: [{ dev_id: 'DEV-4201', title: 'ATF filter flush volume incorrect', status: 'investigating', severity: 'major' }],
+    open_capas: [{ capa_id: 'CAPA-1012', title: 'Update PBR flush volumes', status: 'open' }],
+    open_change_controls: [], test_results_summary: { identity: 'Pass', purity: '99.2%', potency: '98.5%', sterility: 'Pending' },
+    missing_documents: [], regulatory_framework: 'eu_gmp', expiry_date: '2027-02-28',
+    notes: '', created_by: 'QA System', created_at: '2026-03-01T10:00:00Z', updated_at: '2026-03-03T14:00:00Z',
+    qp_name: '', qp_decision: '', qp_decision_date: null, qp_comments: '',
+    conditional_release: false, conditional_conditions: '', conditional_expiry: null,
+    hold_reason: '', rejection_reason: '', rejection_disposition: '',
+    checklist: [
+      { checklist_id: 'DCHK-1001', item_category: 'batch_record', item_description: 'Batch record completeness', status: 'complete', ai_classification: 'cleared', ai_reason: 'All pages present and signed', acceptance_criteria: 'All pages present', finding: '', severity: 'none', ai_flagged: false, reviewer_override: false },
+      { checklist_id: 'DCHK-1002', item_category: 'deviations', item_description: 'All deviations closed or justified', status: 'pending', ai_classification: 'flagged', ai_reason: 'DEV-4201 still in investigating status', acceptance_criteria: 'Zero open deviations', finding: '', severity: 'none', ai_flagged: true, reviewer_override: false },
+      { checklist_id: 'DCHK-1003', item_category: 'capas', item_description: 'All CAPAs addressed', status: 'pending', ai_classification: 'informational', ai_reason: 'CAPA-1012 open but has approved timeline', acceptance_criteria: 'All CAPAs closed or timeline approved', finding: '', severity: 'none', ai_flagged: false, reviewer_override: false },
+      { checklist_id: 'DCHK-1004', item_category: 'test_results', item_description: 'Release test results within specification', status: 'pending', ai_classification: 'flagged', ai_reason: 'Sterility test result pending', acceptance_criteria: 'All release tests within spec', finding: '', severity: 'none', ai_flagged: true, reviewer_override: false },
+      { checklist_id: 'DCHK-1005', item_category: 'yield', item_description: 'Yield within acceptable range', status: 'pending', ai_classification: 'flagged', ai_reason: 'Yield 87.3% below historical mean 92.1%', acceptance_criteria: 'Within +/- 10% of expected', finding: '', severity: 'none', ai_flagged: true, reviewer_override: false },
+      { checklist_id: 'DCHK-1006', item_category: 'cleaning', item_description: 'Cleaning records complete', status: 'complete', ai_classification: 'cleared', ai_reason: 'All cleaning records present', acceptance_criteria: 'Cleaning records present', finding: '', severity: 'none', ai_flagged: false, reviewer_override: false },
+      { checklist_id: 'DCHK-1007', item_category: 'equipment', item_description: 'Equipment logs reviewed', status: 'complete', ai_classification: 'cleared', ai_reason: 'All equipment qualified and calibrated', acceptance_criteria: 'All equipment qualified', finding: '', severity: 'none', ai_flagged: false, reviewer_override: false },
+    ]
+  },
+  {
+    disposition_id: 'DISP-4202', batch_number: 'B2026-0090', product_name: 'mAb-Y 100mg',
+    status: 'pending_review', priority: 'urgent', batch_start_date: '2026-02-20', batch_end_date: '2026-03-04',
+    batch_size: '1500L', yield_actual: '94.1%', yield_expected: '93%',
+    reviewer: '', reviewer_role: '', review_started_at: null,
+    ai_risk_score: null, ai_prescreen_result: '', ai_confidence: null, ai_anomalies: [],
+    ai_review_summary: '', ai_release_recommendation: '',
+    open_deviations: [], open_capas: [], open_change_controls: [],
+    test_results_summary: {}, missing_documents: [], regulatory_framework: 'eu_gmp',
+    expiry_date: '2027-03-04', notes: '', created_by: 'QA System',
+    created_at: '2026-03-04T08:00:00Z', updated_at: '2026-03-04T08:00:00Z',
+    qp_name: '', qp_decision: '', qp_decision_date: null, qp_comments: '',
+    conditional_release: false, conditional_conditions: '', conditional_expiry: null,
+    hold_reason: '', rejection_reason: '', rejection_disposition: '', checklist: []
+  },
+  {
+    disposition_id: 'DISP-4200', batch_number: 'B2026-0088', product_name: 'mAb-X 200mg',
+    status: 'released', priority: 'normal', batch_start_date: '2026-02-01', batch_end_date: '2026-02-14',
+    batch_size: '2000L', yield_actual: '93.5%', yield_expected: '92%',
+    reviewer: 'Dr. S. Chen', reviewer_role: 'qa', review_started_at: '2026-02-16T09:00:00Z',
+    ai_risk_score: 12, ai_prescreen_result: 'low', ai_confidence: 0.95, ai_anomalies: [],
+    ai_review_summary: '', ai_release_recommendation: 'release',
+    open_deviations: [], open_capas: [], open_change_controls: [],
+    test_results_summary: { identity: 'Pass', purity: '99.5%', potency: '99.1%', sterility: 'Pass' },
+    missing_documents: [], regulatory_framework: 'eu_gmp', expiry_date: '2027-02-14',
+    notes: '', created_by: 'QA System', created_at: '2026-02-15T10:00:00Z', updated_at: '2026-02-18T16:00:00Z',
+    qp_name: 'Dr. M. Walsh', qp_decision: 'released', qp_decision_date: '2026-02-18T15:30:00Z',
+    qp_comments: 'All criteria met. Batch certified for release.',
+    qp_signature_meaning: 'batch certified for release', release_date: '2026-02-18',
+    review_completed_at: '2026-02-18T15:30:00Z',
+    conditional_release: false, conditional_conditions: '', conditional_expiry: null,
+    hold_reason: '', rejection_reason: '', rejection_disposition: '', checklist: []
+  }
+];
+
+// ── Server URL ────────────────────────────────────────────────
+(function() {
+  if (SERVER) return;
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    SERVER = 'http://localhost:' + (location.port || '3000');
+  } else {
+    SERVER = location.origin;
+  }
+})();
+
+// ── Load dispositions ─────────────────────────────────────────
+async function loadDispositions() {
+  try {
+    var res = await authFetch(SERVER + '/dispositions');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    dispositions = await res.json();
+    if ((!dispositions || dispositions.length === 0) && localStorage.getItem('vent_token') === 'demo') {
+      dispositions = DEMO;
+    }
+  } catch (err) {
+    if (localStorage.getItem('vent_token') === 'demo') dispositions = DEMO;
+    else dispositions = [];
+  }
+  renderLeft();
+  document.getElementById('statusCount').textContent = dispositions.length + ' dispositions';
+}
+
+// ── Load stats ────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    var res = await authFetch(SERVER + '/dispositions/stats');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var s = await res.json();
+    document.getElementById('stPending').textContent = s.pending || 0;
+    document.getElementById('stReview').textContent = s.in_review || 0;
+    var condEl = document.getElementById('stConditional');
+    condEl.textContent = s.conditional_release || 0;
+    if (s.overdue_conditional > 0) condEl.className = 'stat-value sv-danger';
+    document.getElementById('stReleased').textContent = s.released_this_month || 0;
+    document.getElementById('stRejected').textContent = s.rejected_this_month || 0;
+    document.getElementById('stAvgDays').textContent = s.avg_review_days != null ? s.avg_review_days : '-';
+    document.getElementById('stOnHold').textContent = s.on_hold || 0;
+    var rftEl = document.getElementById('stRFT');
+    rftEl.textContent = s.right_first_time != null ? s.right_first_time + '%' : '-';
+    if (s.right_first_time >= 90) rftEl.className = 'stat-value sv-ok';
+    else if (s.right_first_time >= 70) rftEl.className = 'stat-value sv-warn';
+    else if (s.right_first_time != null) rftEl.className = 'stat-value sv-danger';
+  } catch (err) {
+    // Demo stats
+    document.getElementById('stPending').textContent = '1';
+    document.getElementById('stReview').textContent = '1';
+    document.getElementById('stReleased').textContent = '1';
+  }
+}
+
+// ── Render left panel ─────────────────────────────────────────
+function renderLeft() {
+  var list = document.getElementById('dispList');
+  var search = (document.getElementById('searchInput').value || '').toLowerCase();
+  var filtered = dispositions.filter(function(d) {
+    if (filter !== 'all' && d.status !== filter) return false;
+    if (search) {
+      return (d.disposition_id + ' ' + d.batch_number + ' ' + d.product_name).toLowerCase().indexOf(search) >= 0;
+    }
+    return true;
+  });
+  document.getElementById('dispCount').textContent = filtered.length;
+
+  list.innerHTML = filtered.map(function(d) {
+    var daysPending = d.review_started_at ? Math.floor((Date.now() - new Date(d.review_started_at)) / 86400000) : Math.floor((Date.now() - new Date(d.created_at)) / 86400000);
+    var riskCls = d.ai_risk_score != null ? (d.ai_risk_score < 30 ? 'risk-low' : d.ai_risk_score <= 70 ? 'risk-medium' : 'risk-high') : '';
+    var priHtml = d.priority === 'urgent' ? ' <span class="pri-badge pri-urgent">URG</span>' : d.priority === 'critical' ? ' <span class="pri-badge pri-critical">CRIT</span>' : '';
+
+    return '<div class="disp-card ' + (selected && selected.disposition_id === d.disposition_id ? 'active' : '') + '" onclick="selectDisposition(\'' + d.disposition_id + '\')">' +
+      '<div class="card-top">' +
+        '<span class="card-id">' + d.disposition_id + '</span>' +
+        '<span>' + priHtml + (d.ai_risk_score != null ? ' <span class="risk-badge ' + riskCls + '">R:' + d.ai_risk_score + '</span>' : '') + '</span>' +
+      '</div>' +
+      '<div class="card-title">' + escHtml(d.batch_number) + ' — ' + escHtml(d.product_name) + '</div>' +
+      '<div class="card-meta">' +
+        '<span class="status-badge st-' + d.status + '">' + d.status.replace(/_/g, ' ') + '</span>' +
+        ' <span>' + daysPending + 'd</span>' +
+        (d.status === 'conditional_release' && d.conditional_expiry ? conditionalWarning(d.conditional_expiry) : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function conditionalWarning(expiry) {
+  var days = Math.floor((new Date(expiry) - Date.now()) / 86400000);
+  if (days < 0) return ' <span style="color:#f44747;font-weight:700;">OVERDUE</span>';
+  if (days <= 7) return ' <span style="color:#ffc64d;">' + days + 'd left</span>';
+  return '';
+}
+
+// ── Select disposition ────────────────────────────────────────
+async function selectDisposition(dispId) {
+  if (localStorage.getItem('vent_token') === 'demo') {
+    selected = dispositions.find(function(d) { return d.disposition_id === dispId; }) || null;
+    renderLeft(); renderCenter();
+    document.getElementById('statusSel').textContent = dispId;
+    return;
+  }
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + dispId);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    selected = await res.json();
+    renderLeft(); renderCenter();
+    document.getElementById('statusSel').textContent = dispId;
+  } catch (err) {
+    console.error('Failed to load disposition:', err);
+  }
+}
+
+// ── Render center ─────────────────────────────────────────────
+function renderCenter() {
+  if (!selected && !['exceptions', 'register'].includes(currentTab)) return;
+  var content = document.getElementById('centerContent');
+  switch (currentTab) {
+    case 'detail':     content.innerHTML = renderDetailTab(); break;
+    case 'checklist':  content.innerHTML = renderChecklistTab(); break;
+    case 'ai':         content.innerHTML = renderAITab(); break;
+    case 'audit':      loadTimeline(); break;
+    case 'exceptions': loadExceptions(); break;
+    case 'register':   loadRegister(); break;
+  }
+}
+
+// ── Detail Tab ────────────────────────────────────────────────
+function renderDetailTab() {
+  var d = selected;
+  var html = '<div class="detail-section">' +
+    '<div class="section-label">Disposition ' + d.disposition_id + '</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+      '<span class="status-badge st-' + d.status + '">' + d.status.replace(/_/g, ' ') + '</span>' +
+      (d.priority !== 'normal' ? '<span class="pri-badge pri-' + d.priority + '">' + d.priority.toUpperCase() + '</span>' : '') +
+      (d.ai_risk_score != null ? '<span class="risk-badge ' + (d.ai_risk_score < 30 ? 'risk-low' : d.ai_risk_score <= 70 ? 'risk-medium' : 'risk-high') + '">Risk: ' + d.ai_risk_score + '</span>' : '') +
+      (d.regulatory_framework ? '<span class="why-ai-badge">' + d.regulatory_framework.toUpperCase().replace('_', ' ') + '</span>' : '') +
+    '</div>' +
+    '<h3 style="color:#e0e0e0;font-size:14px;margin:0 0 12px 0;">' + escHtml(d.batch_number) + ' — ' + escHtml(d.product_name) + '</h3>' +
+  '</div>';
+
+  // Batch info table
+  html += '<div class="detail-section">' +
+    '<div class="section-label">Batch Information</div>' +
+    '<table class="sop-table">' +
+      tr('Batch Number', d.batch_number) +
+      tr('Product', d.product_name) +
+      tr('Batch Size', d.batch_size) +
+      tr('Yield', (d.yield_actual || '-') + ' / ' + (d.yield_expected || '-') + ' (actual / expected)') +
+      tr('Start Date', d.batch_start_date) +
+      tr('End Date', d.batch_end_date) +
+      tr('Expiry', d.expiry_date) +
+      tr('Reviewer', d.reviewer) +
+      tr('Created', new Date(d.created_at).toLocaleString()) +
+    '</table></div>';
+
+  // Open deviations
+  if (d.open_deviations && d.open_deviations.length > 0) {
+    html += '<div class="detail-section">' +
+      '<div class="section-label">Open Deviations (' + d.open_deviations.length + ')</div>';
+    d.open_deviations.forEach(function(dev) {
+      html += '<div class="sop-highlight" style="margin-bottom:4px;">' +
+        '<strong>' + escHtml(dev.dev_id || '') + '</strong> — ' + escHtml(dev.title || '') +
+        ' <span class="status-badge st-' + (dev.status || '') + '">' + (dev.status || '').replace(/_/g, ' ') + '</span>' +
+        (dev.severity ? ' <span class="ai-cls ai-' + (dev.severity === 'critical' ? 'critical' : dev.severity === 'major' ? 'flagged' : 'informational') + '">' + dev.severity + '</span>' : '') +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Open CAPAs
+  if (d.open_capas && d.open_capas.length > 0) {
+    html += '<div class="detail-section"><div class="section-label">Open CAPAs (' + d.open_capas.length + ')</div>';
+    d.open_capas.forEach(function(c) {
+      html += '<div class="sop-highlight" style="margin-bottom:4px;"><strong>' + escHtml(c.capa_id || '') + '</strong> — ' + escHtml(c.title || '') + ' <span class="status-badge">' + (c.status || '') + '</span></div>';
+    });
+    html += '</div>';
+  }
+
+  // Test results
+  if (d.test_results_summary && Object.keys(d.test_results_summary).length > 0) {
+    html += '<div class="detail-section"><div class="section-label">Test Results</div><table class="sop-table">';
+    Object.entries(d.test_results_summary).forEach(function(e) {
+      var passColor = String(e[1]).toLowerCase() === 'pass' ? '#4ec9b0' : String(e[1]).toLowerCase() === 'pending' ? '#ffc64d' : '#ccc';
+      html += '<tr><td style="color:#6c6c6c;width:140px;">' + escHtml(e[0]) + '</td><td style="color:' + passColor + ';">' + escHtml(String(e[1])) + '</td></tr>';
+    });
+    html += '</table></div>';
+  }
+
+  // QP Decision (if made)
+  if (d.qp_decision) {
+    html += '<div class="detail-section">' +
+      '<div class="section-label">QP Decision</div>' +
+      '<div class="sop-highlight">' +
+        '<strong style="color:' + (d.qp_decision === 'released' ? '#4ec9b0' : d.qp_decision === 'rejected' ? '#f44747' : '#ce91ff') + ';">' + d.qp_decision.replace(/_/g, ' ').toUpperCase() + '</strong><br>' +
+        'QP: ' + escHtml(d.qp_name || '') + '<br>' +
+        'Date: ' + (d.qp_decision_date ? new Date(d.qp_decision_date).toLocaleString() : '-') + '<br>' +
+        'Meaning: ' + escHtml(d.qp_signature_meaning || '') + '<br>' +
+        (d.qp_comments ? 'Comments: ' + escHtml(d.qp_comments) : '') +
+      '</div></div>';
+  }
+
+  // Conditional release section
+  if (d.status === 'conditional_release') {
+    var daysLeft = d.conditional_expiry ? Math.floor((new Date(d.conditional_expiry) - Date.now()) / 86400000) : null;
+    html += '<div class="detail-section">' +
+      '<div class="section-label">Conditional Release</div>' +
+      '<div class="' + (daysLeft !== null && daysLeft < 0 ? 'warn-banner' : 'info-banner') + '">' +
+        '<strong>Conditions:</strong> ' + escHtml(d.conditional_conditions || '') + '<br>' +
+        (d.conditional_expiry ? '<strong>Expiry:</strong> ' + d.conditional_expiry + (daysLeft !== null ? ' (' + (daysLeft < 0 ? '<strong>OVERDUE by ' + Math.abs(daysLeft) + ' days</strong>' : daysLeft + ' days remaining') + ')' : '') : '') +
+      '</div>' +
+      '<div style="display:flex;gap:6px;">' +
+        '<button class="wf-btn wf-success" onclick="resolveConditional(\'confirmed_release\')">Confirm Release</button>' +
+        '<button class="wf-btn wf-danger" onclick="resolveConditional(\'withdrawn\')">Withdraw</button>' +
+      '</div></div>';
+  }
+
+  // Workflow buttons
+  html += '<div class="detail-section" style="display:flex;gap:6px;flex-wrap:wrap;">' + renderWorkflowButtons(d) + '</div>';
+
+  return html;
+}
+
+function tr(label, val) {
+  return '<tr><td style="color:#6c6c6c;width:140px;">' + label + '</td><td>' + escHtml(val || '-') + '</td></tr>';
+}
+
+function renderWorkflowButtons(d) {
+  var html = '';
+  if (d.status === 'pending_review') {
+    html += '<button class="wf-btn wf-primary" onclick="startReview()">Start Review</button>';
+  }
+  if (d.status === 'in_review' || d.status === 'on_hold') {
+    html += '<button class="wf-btn wf-success" onclick="showQPModal()">QP Decision</button>';
+    if (d.status !== 'on_hold') html += '<button class="wf-btn wf-warn" onclick="holdBatch()">Place on Hold</button>';
+  }
+  return html;
+}
+
+// ── Checklist Tab ─────────────────────────────────────────────
+function renderChecklistTab() {
+  if (!selected) return '<div class="empty-state"><p>Select a disposition first</p></div>';
+  var items = selected.checklist || [];
+  var clearedCount = items.filter(function(c) { return c.ai_classification === 'cleared'; }).length;
+  var flaggedCount = items.filter(function(c) { return c.ai_classification === 'flagged'; }).length;
+  var criticalCount = items.filter(function(c) { return c.ai_classification === 'critical'; }).length;
+
+  var html = '<div class="detail-section">' +
+    '<div class="section-label">Review Checklist — RBE Enabled <span class="why-ai-badge">Review by Exception</span></div>' +
+    '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">' +
+      '<button class="action-btn primary" onclick="aiPrescreen()">AI: Pre-Screen All</button>' +
+      '<button class="action-btn" onclick="toggleCleared()">' + (showCleared ? 'Hide' : 'Show') + ' Cleared (' + clearedCount + ')</button>' +
+      '<span class="ai-cls ai-cleared">' + clearedCount + ' cleared</span>' +
+      '<span class="ai-cls ai-flagged">' + flaggedCount + ' flagged</span>' +
+      '<span class="ai-cls ai-critical">' + criticalCount + ' critical</span>' +
+    '</div>';
+
+  // Group by category
+  var categories = {};
+  items.forEach(function(c) {
+    var cat = c.item_category || 'general';
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(c);
+  });
+
+  Object.entries(categories).forEach(function(entry) {
+    var cat = entry[0];
+    var catItems = entry[1];
+    html += '<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:#6c6c6c;text-transform:uppercase;margin-bottom:4px;">' + cat.replace(/_/g, ' ') + '</div>';
+    catItems.forEach(function(c) {
+      var clsClass = c.ai_classification === 'cleared' ? 'cl-cleared' + (showCleared ? '' : ' collapsed') :
+                     c.ai_classification === 'flagged' ? 'cl-flagged' :
+                     c.ai_classification === 'critical' ? 'cl-critical' : '';
+      html += '<div class="checklist-item ' + clsClass + '">' +
+        '<div class="cl-top">' +
+          '<span class="cl-desc">' +
+            '<span class="ai-cls ai-' + (c.ai_classification || 'pending') + '">' + (c.ai_classification || 'pending') + '</span> ' +
+            escHtml(c.item_description) +
+          '</span>' +
+          '<span class="cl-actions">' +
+            '<span class="status-badge ' + (c.status === 'complete' ? 'st-released' : 'st-pending_review') + '">' + c.status + '</span>' +
+            (c.status !== 'complete' ? '<button class="action-btn" onclick="toggleCheckItem(\'' + c.checklist_id + '\',\'complete\')">&#10003;</button>' : '') +
+            (c.ai_classification && c.ai_classification !== 'pending' ? '<button class="action-btn" onclick="overrideItem(\'' + c.checklist_id + '\')">Override</button>' : '') +
+          '</span>' +
+        '</div>' +
+        (c.ai_reason ? '<div class="cl-ai-reason">AI: ' + escHtml(c.ai_reason) + '</div>' : '') +
+        (c.acceptance_criteria ? '<div class="cl-criteria">Criteria: ' + escHtml(c.acceptance_criteria) + '</div>' : '') +
+        (c.finding ? '<div class="cl-details">Finding: ' + escHtml(c.finding) + '</div>' : '') +
+        (c.reviewer_override ? '<div class="cl-details" style="color:#ffc64d;">Override: ' + escHtml(c.override_justification || '') + '</div>' : '') +
+      '</div>';
+    });
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+// ── AI Tab ────────────────────────────────────────────────────
+function renderAITab() {
+  if (!selected) return '<div class="empty-state"><p>Select a disposition first</p></div>';
+  var d = selected;
+
+  var html = '<div class="detail-section">' +
+    '<div class="section-label">AI Analysis <span class="why-ai-badge">Advisory Only — QP retains full authority</span></div>' +
+    '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">' +
+      '<button class="action-btn primary" onclick="aiPrescreen()">Pre-Screen</button>' +
+      '<button class="action-btn" onclick="aiSummary()">Summary</button>' +
+      '<button class="action-btn" onclick="aiRecommend()">Recommendation</button>' +
+      '<button class="action-btn" onclick="aiMissingDocs()">Missing Docs</button>' +
+      '<button class="action-btn" onclick="aiTrend()">Trend Analysis</button>' +
+      '<button class="action-btn" onclick="aiInvestigation()">Investigation Review</button>' +
+    '</div></div>';
+
+  // Pre-screen results
+  if (d.ai_risk_score != null) {
+    var riskCls = d.ai_risk_score < 30 ? 'risk-low' : d.ai_risk_score <= 70 ? 'risk-medium' : 'risk-high';
+    html += '<div class="detail-section">' +
+      '<div class="section-label">Pre-Screen Results</div>' +
+      '<div class="sop-highlight">' +
+        '<div style="display:flex;gap:12px;margin-bottom:8px;">' +
+          '<span>Risk Score: <strong class="risk-badge ' + riskCls + '" style="font-size:14px;padding:2px 10px;">' + d.ai_risk_score + '</strong></span>' +
+          '<span>Level: <strong>' + (d.ai_prescreen_result || '-').toUpperCase() + '</strong></span>' +
+          '<span>Confidence: <strong>' + (d.ai_confidence || '-') + '</strong></span>' +
+        '</div>';
+
+    if (d.ai_anomalies && d.ai_anomalies.length > 0) {
+      html += '<div style="margin-top:8px;"><strong>Anomalies:</strong></div>';
+      d.ai_anomalies.forEach(function(a) {
+        html += '<div style="padding:4px 0;border-bottom:1px solid #2d2d30;">' +
+          '<span class="ai-cls ai-' + (a.classification || 'flagged') + '">' + (a.severity || '') + '</span> ' +
+          '<strong>' + escHtml(a.category || '') + ':</strong> ' + escHtml(a.description || '') +
+          (a.recommendation ? '<br><span style="color:#6c6c6c;font-size:10px;">' + escHtml(a.recommendation) + '</span>' : '') +
+        '</div>';
+      });
+    }
+    html += '</div></div>';
+  }
+
+  // Review summary
+  if (d.ai_review_summary) {
+    html += '<div class="detail-section">' +
+      '<div class="section-label">AI Review Summary</div>' +
+      '<div class="obs-text">' + escHtml(d.ai_review_summary) + '</div></div>';
+  }
+
+  // Release recommendation
+  if (d.ai_release_recommendation) {
+    var recColor = d.ai_release_recommendation === 'release' ? '#4ec9b0' : d.ai_release_recommendation === 'reject' ? '#f44747' : '#ce91ff';
+    html += '<div class="detail-section">' +
+      '<div class="section-label">AI Recommendation</div>' +
+      '<div class="sop-highlight">' +
+        '<strong style="color:' + recColor + ';">' + d.ai_release_recommendation.replace(/_/g, ' ').toUpperCase() + '</strong>' +
+        '<p style="font-size:10px;color:#6c6c6c;margin-top:4px;">This is an AI-generated advisory recommendation. The Qualified Person retains full authority for the release decision.</p>' +
+      '</div></div>';
+  }
+
+  return html;
+}
+
+// ── Audit Timeline ────────────────────────────────────────────
+async function loadTimeline() {
+  var content = document.getElementById('centerContent');
+  if (!selected) { content.innerHTML = '<div class="empty-state"><p>Select a disposition first</p></div>'; return; }
+  content.innerHTML = '<div class="ai-loading">Loading audit trail...</div>';
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/timeline');
+    var entries = await res.json();
+    if (!entries || entries.length === 0) {
+      content.innerHTML = '<div class="detail-section"><div class="section-label">Audit Trail</div><p style="color:#5a5a5a;font-size:12px;">No audit entries found.</p></div>';
+      return;
+    }
+    content.innerHTML = '<div class="detail-section">' +
+      '<div class="section-label">Audit Trail (' + entries.length + ' entries)</div>' +
+      '<div class="audit-list">' +
+        entries.map(function(e) {
+          var cls = e.action.indexOf('create') >= 0 ? 'ae-create' : e.action.indexOf('ai_') >= 0 ? 'ae-ai' : e.action.indexOf('release') >= 0 || e.action.indexOf('reject') >= 0 ? 'ae-esig' : 'ae-status';
+          return '<div class="audit-entry ' + cls + '">' +
+            '<div class="audit-time">' + new Date(e.timestamp).toLocaleString() + '</div>' +
+            '<div class="audit-action">' + e.action.replace(/_/g, ' ') + '</div>' +
+            '<div class="audit-user">' + e.user_id + ' (' + e.user_role + ')</div>' +
+            (e.reason ? '<div class="audit-reason">' + escHtml(e.reason) + '</div>' : '') +
+            '<div class="audit-hash" title="Integrity checksum">' + (e.checksum || '').slice(0, 16) + '...</div>' +
+          '</div>';
+        }).join('') +
+      '</div></div>';
+  } catch (err) {
+    content.innerHTML = '<p style="color:#5a5a5a;padding:20px;">Could not load audit trail.</p>';
+  }
+}
+
+// ── Exceptions Tab ────────────────────────────────────────────
+async function loadExceptions() {
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">Loading exceptions...</div>';
+  try {
+    var res = await authFetch(SERVER + '/dispositions/exceptions');
+    var data = await res.json();
+    if (!data || data.length === 0) {
+      content.innerHTML = '<div class="detail-section"><div class="section-label">Exception Dashboard</div><p style="color:#5a5a5a;font-size:12px;">No flagged or critical items across active dispositions.</p></div>';
+      return;
+    }
+    var html = '<div class="detail-section"><div class="section-label">Exception Dashboard <span class="why-ai-badge">Review by Exception</span></div>';
+    data.forEach(function(group) {
+      html += '<div style="margin-bottom:16px;"><h4 style="color:#d4d4d4;font-size:12px;margin:0 0 8px 0;">' +
+        escHtml(group.disposition_id) + ' — ' + escHtml(group.batch_number || '') + ' / ' + escHtml(group.product_name || '') +
+        ' <span class="status-badge st-' + group.status + '">' + (group.status || '').replace(/_/g, ' ') + '</span></h4>';
+      group.items.forEach(function(item) {
+        html += '<div class="checklist-item ' + (item.ai_classification === 'critical' ? 'cl-critical' : 'cl-flagged') + '">' +
+          '<span class="ai-cls ai-' + item.ai_classification + '">' + item.ai_classification + '</span> ' +
+          escHtml(item.item_description) +
+          (item.ai_reason ? '<div class="cl-ai-reason">' + escHtml(item.ai_reason) + '</div>' : '') +
+        '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    content.innerHTML = html;
+  } catch (err) {
+    content.innerHTML = '<p style="color:#5a5a5a;padding:20px;">Could not load exceptions.</p>';
+  }
+}
+
+// ── QP Certification Register ─────────────────────────────────
+async function loadRegister() {
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">Loading QP register...</div>';
+  try {
+    var res = await authFetch(SERVER + '/dispositions/register');
+    var data = await res.json();
+    var html = '<div class="detail-section">' +
+      '<div class="section-label">QP Certification Register <span class="why-ai-badge">EU GMP Annex 16</span></div>' +
+      '<div style="margin-bottom:8px;"><button class="action-btn" onclick="exportRegisterCSV()">Export CSV</button></div>';
+
+    if (!data || data.length === 0) {
+      html += '<p style="color:#5a5a5a;font-size:12px;">No certifications recorded yet.</p>';
+    } else {
+      html += '<table class="reg-table"><thead><tr>' +
+        '<th>Cert ID</th><th>Batch</th><th>Product</th><th>Size</th><th>QP</th><th>Date</th><th>Decision</th><th>Conditions</th>' +
+        '</tr></thead><tbody>';
+      data.forEach(function(r) {
+        html += '<tr>' +
+          '<td style="font-family:JetBrains Mono,monospace;font-size:10px;color:#9cdcfe;">' + escHtml(r.cert_id) + '</td>' +
+          '<td>' + escHtml(r.batch_number) + '</td>' +
+          '<td>' + escHtml(r.product_name) + '</td>' +
+          '<td>' + escHtml(r.batch_size || '') + '</td>' +
+          '<td>' + escHtml(r.qp_name) + '</td>' +
+          '<td>' + new Date(r.certification_date).toLocaleDateString() + '</td>' +
+          '<td><span class="status-badge st-' + r.decision + '">' + r.decision.replace(/_/g, ' ') + '</span></td>' +
+          '<td>' + escHtml(r.conditions || '-') + '</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+    content.innerHTML = html;
+  } catch (err) {
+    content.innerHTML = '<p style="color:#5a5a5a;padding:20px;">Could not load register.</p>';
+  }
+}
+
+// ── Actions ───────────────────────────────────────────────────
+
+async function createDisposition() {
+  var batch_number = document.getElementById('newBatch').value.trim();
+  var product_name = document.getElementById('newProduct').value.trim();
+  if (!batch_number || !product_name) { alert('Batch number and product name are required'); return; }
+
+  var btn = document.getElementById('createBtn');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  try {
+    var res = await authFetch(SERVER + '/dispositions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        batch_number: batch_number,
+        product_name: product_name,
+        batch_start_date: document.getElementById('newStartDate').value || null,
+        batch_end_date: document.getElementById('newEndDate').value || null,
+        batch_size: document.getElementById('newBatchSize').value.trim(),
+        yield_expected: document.getElementById('newYieldExp').value.trim(),
+        yield_actual: document.getElementById('newYieldAct').value.trim(),
+        priority: document.getElementById('newPriority').value,
+        expiry_date: document.getElementById('newExpiry').value || null,
+        notes: document.getElementById('newNotes').value.trim(),
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    var result = await res.json();
+    hideModal('createModal');
+    await loadDispositions();
+    selectDisposition(result.dispositionId);
+  } catch (err) {
+    alert('Create failed: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Disposition';
+  }
+}
+
+async function startReview() {
+  if (!selected) return;
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/start-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    await selectDisposition(selected.disposition_id);
+  } catch (err) { alert('Start review failed: ' + err.message); }
+}
+
+async function holdBatch() {
+  if (!selected) return;
+  var reason = prompt('Hold reason:');
+  if (!reason) return;
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/hold', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hold_reason: reason }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    await loadDispositions();
+    await selectDisposition(selected.disposition_id);
+  } catch (err) { alert('Hold failed: ' + err.message); }
+}
+
+async function resolveConditional(finalDisp) {
+  if (!selected) return;
+  var reason = prompt('Reason for ' + finalDisp.replace(/_/g, ' ') + ':');
+  if (!reason) return;
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/conditional-release/resolve', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ final_disposition: finalDisp, reason: reason }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    await loadDispositions();
+    await selectDisposition(selected.disposition_id);
+  } catch (err) { alert('Resolve failed: ' + err.message); }
+}
+
+// ── Checklist actions ─────────────────────────────────────────
+
+async function toggleCheckItem(checkId, newStatus) {
+  if (!selected) return;
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/checklist/' + checkId, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    await selectDisposition(selected.disposition_id);
+  } catch (err) { alert('Update failed: ' + err.message); }
+}
+
+async function overrideItem(checkId) {
+  if (!selected) return;
+  var justification = prompt('Override justification (required for audit trail):');
+  if (!justification) return;
+  var newCls = prompt('New classification (cleared / informational / flagged / critical):');
+  if (!newCls || !['cleared', 'informational', 'flagged', 'critical'].includes(newCls)) { alert('Invalid classification'); return; }
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/checklist/' + checkId, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewer_override: true, override_justification: justification, ai_classification: newCls }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    await selectDisposition(selected.disposition_id);
+  } catch (err) { alert('Override failed: ' + err.message); }
+}
+
+function toggleCleared() {
+  showCleared = !showCleared;
+  renderCenter();
+}
+
+// ── AI actions ────────────────────────────────────────────────
+
+async function aiPrescreen() {
+  if (!selected) return;
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">AI pre-screening batch record...</div>';
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/ai/prescreen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    await selectDisposition(selected.disposition_id);
+    currentTab = 'checklist';
+    renderCenter();
+  } catch (err) {
+    alert('AI pre-screen failed: ' + err.message);
+    renderCenter();
+  }
+}
+
+async function aiSummary() {
+  if (!selected) return;
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">AI generating review summary...</div>';
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/ai/summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    await selectDisposition(selected.disposition_id);
+    renderCenter();
+  } catch (err) { alert('AI summary failed: ' + err.message); renderCenter(); }
+}
+
+async function aiRecommend() {
+  if (!selected) return;
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">AI generating release recommendation...</div>';
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/ai/recommend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    await selectDisposition(selected.disposition_id);
+    renderCenter();
+  } catch (err) { alert('AI recommend failed: ' + err.message); renderCenter(); }
+}
+
+async function aiMissingDocs() {
+  if (!selected) return;
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">AI checking for missing documents...</div>';
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/ai/missing-docs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    await selectDisposition(selected.disposition_id);
+    renderCenter();
+  } catch (err) { alert('AI missing docs failed: ' + err.message); renderCenter(); }
+}
+
+async function aiTrend() {
+  if (!selected) return;
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">AI analysing trends across batches...</div>';
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/ai/trend-analysis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    var result = await res.json();
+    var html = '<div class="detail-section"><div class="section-label">Trend Analysis <span class="why-ai-badge">Advisory</span></div>';
+    if (result.trends && result.trends.length > 0) {
+      result.trends.forEach(function(t) {
+        html += '<div class="sop-highlight" style="margin-bottom:6px;">' +
+          '<strong>' + escHtml(t.parameter || '') + '</strong> — <span class="ai-cls ai-' + (t.severity === 'alert' ? 'critical' : t.severity === 'warning' ? 'flagged' : 'informational') + '">' + (t.trend_type || '') + '</span><br>' +
+          '<span style="color:#b0b0b0;">' + escHtml(t.description || '') + '</span></div>';
+      });
+    }
+    if (result.overall_trend_assessment) {
+      html += '<div class="obs-text" style="margin-top:8px;">' + escHtml(result.overall_trend_assessment) + '</div>';
+    }
+    html += '<p style="font-size:10px;color:#6c6c6c;margin-top:8px;">Confidence: ' + (result.confidence || '-') + ' — ' + (result.advisory_note || '') + '</p></div>';
+    content.innerHTML = html;
+  } catch (err) { alert('AI trend failed: ' + err.message); renderCenter(); }
+}
+
+async function aiInvestigation() {
+  if (!selected) return;
+  var content = document.getElementById('centerContent');
+  content.innerHTML = '<div class="ai-loading">AI reviewing investigation adequacy...</div>';
+  try {
+    var res = await authFetch(SERVER + '/dispositions/' + selected.disposition_id + '/ai/investigation-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    var result = await res.json();
+    var html = '<div class="detail-section"><div class="section-label">Investigation Adequacy Review <span class="why-ai-badge">Advisory</span></div>';
+    if (result.assessments && result.assessments.length > 0) {
+      result.assessments.forEach(function(a) {
+        var adColor = a.adequacy === 'adequate' ? '#4ec9b0' : a.adequacy === 'inadequate' ? '#f44747' : '#ffc64d';
+        html += '<div class="sop-highlight" style="margin-bottom:6px;">' +
+          '<strong>' + escHtml(a.deviation_id || '') + '</strong> — ' + escHtml(a.title || '') +
+          ' <span style="color:' + adColor + ';font-weight:700;">' + (a.adequacy || '').toUpperCase() + '</span>';
+        if (a.findings && a.findings.length) {
+          html += '<ul style="margin:4px 0;padding-left:16px;">';
+          a.findings.forEach(function(f) { html += '<li style="color:#b0b0b0;font-size:11px;">' + escHtml(f) + '</li>'; });
+          html += '</ul>';
+        }
+        html += '</div>';
+      });
+    }
+    html += '<p style="font-size:10px;color:#6c6c6c;margin-top:8px;">' + (result.advisory_note || '') + '</p></div>';
+    content.innerHTML = html;
+  } catch (err) { alert('AI investigation review failed: ' + err.message); renderCenter(); }
+}
+
+// ── QP Decision Modal ─────────────────────────────────────────
+
+function showQPModal() {
+  if (!selected) return;
+  // Auto-fill QP name
+  var user = window.__user || {};
+  document.getElementById('qpName').value = user.name || '';
+  document.getElementById('qpDecision').value = 'release';
+  document.getElementById('qpComments').value = '';
+  document.getElementById('qpPassword').value = '';
+  document.getElementById('qpConditions') && (document.getElementById('qpConditions').value = '');
+  document.getElementById('qpRejectReason') && (document.getElementById('qpRejectReason').value = '');
+
+  // Show warnings
+  var warnings = '';
+  var checklist = selected.checklist || [];
+  var critPending = checklist.filter(function(c) { return c.ai_classification === 'critical' && c.status === 'pending' && !c.reviewer_override; });
+  if (critPending.length > 0) {
+    warnings += '<div class="warn-banner">' + critPending.length + ' critical checklist item(s) still pending without override justification. Release will be blocked.</div>';
+  }
+  var openDevs = (selected.open_deviations || []).filter(function(d) { return d.status !== 'closed'; });
+  if (openDevs.length > 0) {
+    warnings += '<div class="warn-banner">' + openDevs.length + ' open/unresolved deviation(s). Per Annex 16 / 211.192, ensure all deviations are justified before release.</div>';
+  }
+  document.getElementById('qpWarnings').innerHTML = warnings;
+
+  updateQPModal();
+  document.getElementById('qpModal').style.display = 'flex';
+}
+
+function updateQPModal() {
+  var decision = document.getElementById('qpDecision').value;
+  document.getElementById('qpConditionalFields').style.display = decision === 'conditional_release' ? 'block' : 'none';
+  document.getElementById('qpRejectFields').style.display = decision === 'reject' ? 'block' : 'none';
+
+  var meanings = { release: 'batch certified for release', conditional_release: 'batch certified for conditional release', reject: 'batch rejected' };
+  document.getElementById('qpMeaning').value = meanings[decision] || '';
+}
+
+async function submitQPDecision() {
+  if (!selected) return;
+  var decision = document.getElementById('qpDecision').value;
+  var qp_name = document.getElementById('qpName').value.trim();
+  var signature_meaning = document.getElementById('qpMeaning').value;
+  var qp_comments = document.getElementById('qpComments').value.trim();
+  var password = document.getElementById('qpPassword').value;
+
+  if (!qp_name) { alert('QP name is required'); return; }
+  if (!password) { alert('E-signature password is required'); return; }
+
+  var url, body;
+  if (decision === 'release') {
+    url = SERVER + '/dispositions/' + selected.disposition_id + '/release';
+    body = { qp_name: qp_name, qp_comments: qp_comments, signature_meaning: signature_meaning, signature_password: password };
+  } else if (decision === 'conditional_release') {
+    var conditions = document.getElementById('qpConditions').value.trim();
+    var condExpiry = document.getElementById('qpCondExpiry').value;
+    if (!conditions) { alert('Conditions text is required'); return; }
+    url = SERVER + '/dispositions/' + selected.disposition_id + '/conditional-release';
+    body = { qp_name: qp_name, qp_comments: qp_comments, signature_meaning: signature_meaning, conditions: conditions, conditional_expiry: condExpiry || null, signature_password: password };
+  } else if (decision === 'reject') {
+    var rejection_reason = document.getElementById('qpRejectReason').value.trim();
+    var rejection_disposition = document.getElementById('qpRejectDisp').value;
+    if (!rejection_reason) { alert('Rejection reason is required'); return; }
+    if (!rejection_disposition) { alert('Rejection disposition is required'); return; }
+    url = SERVER + '/dispositions/' + selected.disposition_id + '/reject';
+    body = { qp_name: qp_name, qp_comments: qp_comments, signature_meaning: signature_meaning, rejection_reason: rejection_reason, rejection_disposition: rejection_disposition, signature_password: password };
+  }
+
+  var btn = document.getElementById('qpSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Signing...';
+  try {
+    var res = await authFetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    hideModal('qpModal');
+    await loadDispositions();
+    await loadStats();
+    await selectDisposition(selected.disposition_id);
+  } catch (err) {
+    alert('QP decision failed: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign & Submit';
+  }
+}
+
+// ── Register CSV Export ───────────────────────────────────────
+async function exportRegisterCSV() {
+  try {
+    var res = await authFetch(SERVER + '/dispositions/register?format=csv');
+    var blob = await res.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'qp_certification_register.csv';
+    a.click(); URL.revokeObjectURL(url);
+  } catch (err) { alert('Export failed: ' + err.message); }
+}
+
+// ── Utility ───────────────────────────────────────────────────
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.editor-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  renderCenter();
+}
+
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderLeft();
+}
+
+function showCreateModal() {
+  document.getElementById('createModal').style.display = 'flex';
+}
+
+function hideModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Resizer ───────────────────────────────────────────────────
+(function() {
+  var resizer = document.getElementById('resizerLC');
+  var wb = document.getElementById('workbench');
+  var dragging = false;
+  resizer.addEventListener('mousedown', function(e) { dragging = true; resizer.classList.add('dragging'); e.preventDefault(); });
+  document.addEventListener('mousemove', function(e) { if (!dragging) return; var x = Math.max(200, Math.min(e.clientX, 500)); wb.style.gridTemplateColumns = x + 'px 4px 1fr'; });
+  document.addEventListener('mouseup', function() { dragging = false; resizer.classList.remove('dragging'); });
+})();
+
+// ── Init ──────────────────────────────────────────────────────
+loadDispositions();
+loadStats();
+</script>
+</body>
+</html>

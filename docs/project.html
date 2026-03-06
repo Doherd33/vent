@@ -431,13 +431,13 @@ var MODULES = [
     aiFeatures:['Effectiveness prediction','Similar CAPA search','Auto-suggest preventive actions'] },
 
   { id:'change-control', title:'Change Control', desc:'Cross-functional impact assessment, regulatory classification (Type IA/IB/II), implementation tracking, closure.',
-    path:null, status:'planned', roles:['qa','regulatory','validation','engineering','msat'],
+    path:'/change-control.html', status:'live', builtRound:3, roles:['qa','regulatory','validation','engineering','msat'],
     phase:1, phaseLabel:'Quality Core', complexity:'L', daysEstimate:7, startWeek:4,
     dependencies:['deviation-mgr','capa-tracker'],
-    dbTables:['change_controls'],
-    apiEndpoints:['POST /change-controls','GET /change-controls','GET /change-controls/:ccId','PUT /change-controls/:ccId','POST /change-controls/:ccId/approve'],
+    dbTables:['change_controls','cc_impact_assessments','cc_approvals','cc_implementation_tasks'],
+    apiEndpoints:['POST /change-controls','GET /change-controls','GET /change-controls/:ccId','PUT /change-controls/:ccId','POST /change-controls/:ccId/approve','POST /change-controls/:ccId/impact','GET /change-controls/:ccId/impacts','POST /change-controls/:ccId/tasks','GET /change-controls/:ccId/tasks'],
     frontendPages:['docs/qa/change-control.html'],
-    aiFeatures:['Auto-assess cross-functional impact','Suggest regulatory classification','Generate implementation checklist','Identify affected SOPs'] },
+    aiFeatures:['Auto-assess cross-functional impact','Suggest regulatory classification','Generate implementation checklist','Identify affected SOPs','FMEA risk scoring','Emergency change pathway'] },
 
   { id:'doc-control', title:'Document Control', desc:'SOP lifecycle: draft, review, approve, distribute, train, retire. Version control, periodic review scheduling.',
     path:null, status:'planned', roles:['qa','admin'],
@@ -449,13 +449,13 @@ var MODULES = [
     aiFeatures:['Auto-detect documents needing review','Suggest updates from deviations/CAPAs','Periodic review reminders'] },
 
   { id:'batch-disposition', title:'Batch Disposition', desc:'Batch record review queue, QA release checklist, QP certification. AI-powered review by exception.',
-    path:null, status:'planned', roles:['qa','director'],
+    path:'/dispositions.html', status:'live', builtRound:3, roles:['qa','director'],
     phase:1, phaseLabel:'Quality Core', complexity:'M', daysEstimate:5, startWeek:6,
     dependencies:['capa-tracker','qa-centre'],
-    dbTables:['batch_dispositions'],
-    apiEndpoints:['POST /dispositions','GET /dispositions','PUT /dispositions/:id','POST /dispositions/:id/release'],
+    dbTables:['batch_dispositions','disposition_checklists','qp_certification_register'],
+    apiEndpoints:['POST /dispositions','GET /dispositions','PUT /dispositions/:id','POST /dispositions/:id/release','POST /dispositions/:id/checklist','GET /dispositions/:id/checklist','GET /dispositions/qp-register','POST /dispositions/:id/ai-screen'],
     frontendPages:['docs/qa/dispositions.html'],
-    aiFeatures:['AI pre-screen batch records','Flag anomalies','Generate review summary','QP release checklist'] },
+    aiFeatures:['AI pre-screen batch records','Flag anomalies','Generate review summary','QP release checklist','RBE classification'] },
 
   { id:'supplier-quality', title:'Supplier Quality', desc:'Supplier qualification, quality agreements, audit scheduling, performance scorecards, approved supplier list.',
     path:'/suppliers.html', status:'live', builtRound:2, roles:['qa'],
@@ -467,13 +467,13 @@ var MODULES = [
     aiFeatures:['Performance trend analysis','Risk scoring','Audit finding tracking'] },
 
   { id:'complaint-mgr', title:'Complaints & Recalls', desc:'Product complaint intake, investigation, batch linkage, trending, recall execution tracking.',
-    path:null, status:'planned', roles:['qa','director'],
+    path:'/complaints.html', status:'live', builtRound:3, roles:['qa','director'],
     phase:1, phaseLabel:'Quality Core', complexity:'L', daysEstimate:6, startWeek:7,
     dependencies:['deviation-mgr','capa-tracker'],
     dbTables:['complaints','recall_events'],
-    apiEndpoints:['POST /complaints','GET /complaints','PUT /complaints/:id','POST /recalls','GET /recalls'],
+    apiEndpoints:['POST /complaints','GET /complaints','PUT /complaints/:id','POST /recalls','GET /recalls','POST /complaints/:id/investigate','GET /complaints/trending','POST /recalls/:id/execute'],
     frontendPages:['docs/qa/complaints.html'],
-    aiFeatures:['Auto-classify complaint type','Batch linkage','Trend detection','Recall impact assessment'] },
+    aiFeatures:['Auto-classify complaint type','Batch linkage','Trend detection','Recall impact assessment','FDA 211.198 field validation','Root cause suggestion'] },
 
   // ═══ PHASE 2: DAILY OPERATIONS (Weeks 7-10) ═══
   { id:'shift-handover', title:'Shift Handover', desc:'Structured handover: open batches, pending samples, equipment holds, voice notes from outgoing shift.',
@@ -514,13 +514,13 @@ var MODULES = [
 
   // ═══ PHASE 3: QUALITY CONTROL LAB (Weeks 10-14) ═══
   { id:'qc-lab', title:'QC Lab Dashboard', desc:'Sample queue, test status, analyst workload, instrument schedule. Priority flagging for batch-critical tests.',
-    path:null, status:'planned', roles:['qc','qa'],
+    path:'/qc-lab.html', status:'live', builtRound:3, roles:['qc','qa'],
     phase:3, phaseLabel:'Quality Control Lab', complexity:'L', daysEstimate:7, startWeek:10,
     dependencies:['equip-logbook'],
-    dbTables:['qc_samples','qc_tests','qc_results','qc_instruments'],
-    apiEndpoints:['POST /qc/samples','GET /qc/samples','POST /qc/results','GET /qc/results','GET /qc/instruments','GET /qc/workload'],
+    dbTables:['qc_samples','qc_tests','qc_results','qc_instruments','qc_analyst_qualifications','qc_test_methods','qc_test_templates'],
+    apiEndpoints:['POST /qc/samples','GET /qc/samples','POST /qc/results','GET /qc/results','GET /qc/instruments','GET /qc/workload','POST /qc/tests','GET /qc/methods','POST /qc/qualifications','GET /qc/templates','POST /qc/results/:id/review'],
     frontendPages:['docs/qc/lab.html'],
-    aiFeatures:['Predict turnaround times','Flag anomalous results','Workload optimisation','Auto-priority for batch-critical'] },
+    aiFeatures:['Predict turnaround times','Flag anomalous results','Workload optimisation','Auto-priority for batch-critical','OOS two-phase investigation'] },
 
   { id:'oos-invest', title:'OOS Investigation', desc:'Phase I (lab checks within 1 day) and Phase II (full-scale). Enforced timeline, cross-batch impact assessment.',
     path:null, status:'planned', roles:['qc','qa'],
@@ -615,13 +615,13 @@ var MODULES = [
 
   // ═══ PHASE 5: INOCULATION SUITE (Weeks 22-28) ═══
   { id:'inoc-cell-bank', title:'Cell Bank Management', desc:'MCB/WCB inventory at -150\u00b0C to -196\u00b0C LN2. Vial accounting, location tracking, expiry alerts, chain of custody, certificate of analysis linkage.',
-    path:null, status:'planned', roles:['operator','qa','msat'],
+    path:'/cell-banks.html', status:'live', builtRound:3, roles:['operator','qa','msat'],
     phase:5, phaseLabel:'Inoculation Suite', complexity:'L', daysEstimate:7, startWeek:22,
     dependencies:['equip-logbook'],
-    dbTables:['cell_banks','cell_bank_vials','cell_bank_transactions'],
-    apiEndpoints:['POST /cell-banks','GET /cell-banks','GET /cell-banks/:id','POST /cell-banks/:id/withdraw','GET /cell-banks/:id/inventory'],
+    dbTables:['cell_banks','cell_bank_vials','cell_bank_transactions','cell_bank_testing'],
+    apiEndpoints:['POST /cell-banks','GET /cell-banks','GET /cell-banks/:id','POST /cell-banks/:id/withdraw','GET /cell-banks/:id/inventory','POST /cell-banks/:id/tests','GET /cell-banks/:id/lineage','POST /cell-banks/:id/ai/viability'],
     frontendPages:['docs/inoc/cell-banks.html'],
-    aiFeatures:['Predict inventory depletion','Suggest rebanking timelines','Expiry alerts'] },
+    aiFeatures:['Predict inventory depletion','Suggest rebanking timelines','Expiry alerts','Viability trend analysis','Compliance checking','Usage optimisation'] },
 
   { id:'inoc-thaw', title:'Cell Thaw & Revival', desc:'WCB thaw protocol execution: 37\u00b0C water bath timing, cryoprotectant removal, post-thaw viability (\u226570% threshold), seeding density calc.',
     path:null, status:'planned', roles:['operator','msat'],
