@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vent — NDRC Q&A Preparation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', sans-serif; max-width: 860px; margin: 40px auto; padding: 0 24px; color: #1c1c1c; background: #faf8f5; line-height: 1.6; }
+h1 { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+h2 { font-size: 18px; font-weight: 800; color: #c45d2c; margin-top: 48px; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid #ede8e2; text-transform: uppercase; letter-spacing: 0.08em; }
+.subtitle { font-size: 15px; color: #5a554f; margin-bottom: 40px; }
+.qa { margin-bottom: 32px; }
+.question { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: #1a3a5c; }
+.answer { font-size: 15px; color: #1c1c1c; line-height: 1.65; padding: 16px 20px; background: #fff; border: 1px solid #d4ccc3; border-radius: 10px; }
+.answer strong { color: #c45d2c; }
+.warning { font-size: 13px; color: #a63d2f; margin-top: 8px; padding: 8px 16px; background: rgba(166,61,47,0.06); border-left: 3px solid #a63d2f; border-radius: 0 6px 6px 0; }
+.tip { font-size: 13px; color: #3a7d52; margin-top: 8px; padding: 8px 16px; background: rgba(58,125,82,0.06); border-left: 3px solid #3a7d52; border-radius: 0 6px 6px 0; }
+@media print { body { background: #fff; } }
+</style>
+</head>
+<body>
+
+<h1>NDRC Q&A Preparation</h1>
+<div class="subtitle">Anticipated questions and honest answers. Read these, internalise them, but don't memorise word-for-word. Know the substance and say it in your own words.</div>
+
+
+<h2>1. Questions the insider warned you about</h2>
+
+<div class="qa">
+  <div class="question">What are the compliance and regulatory rules around this? Is it legally complicated to get off the ground?</div>
+  <div class="answer">
+    <strong>The short answer is: it's simpler than you'd think, because Vent doesn't replace the regulated system.</strong><br><br>
+    In pharma manufacturing, the QMS — Veeva, TrackWise, MasterControl — is the system of record. That's where the regulated data lives. That system needs full GMP validation: IQ/OQ/PQ, 21 CFR Part 11, the lot.<br><br>
+    Vent sits upstream of that. It captures the observation, helps with the analysis, and drafts documentation. But the final record still goes into the QMS. Think of it like a drafting tool, not a regulated system.<br><br>
+    That said, a pharma site won't use any software without doing due diligence. They'll want to see a validation package, data security, audit trails. I've designed for that from the start — but the formal paperwork is what I need time to complete.
+  </div>
+  <div class="tip">This is a strong answer. It shows you understand the regulatory landscape without overclaiming. If they push further, you can mention 21 CFR Part 11 e-signatures and ALCOA+ data integrity — you've built the architecture for it.</div>
+</div>
+
+<div class="qa">
+  <div class="question">Are large companies automating this internally? Why not?</div>
+  <div class="answer">
+    <strong>Some are trying. But internal IT teams build tools for managers, not for operators.</strong><br><br>
+    I've seen it firsthand. When a pharma company's IT department builds an internal tool, they build it for the compliance team — dashboards, reports, approvals. Nobody asks the person on the floor what they actually need.<br><br>
+    The result is another system that operators have to navigate on top of the five they already use. It doesn't reduce friction — it adds more.<br><br>
+    The insight behind Vent isn't technical. It's cultural. I know why people don't report things, because I work alongside them. An internal IT team doesn't have that context.
+  </div>
+  <div class="tip">This is where your domain expertise is your moat. No IT department has spent years on a manufacturing floor watching people avoid the system. You have.</div>
+</div>
+
+<div class="qa">
+  <div class="question">Why has no one built this before?</div>
+  <div class="answer">
+    <strong>Two reasons. The AI didn't exist until recently, and the people who understand the problem don't usually build software.</strong><br><br>
+    The QMS vendors — Veeva, MasterControl — they're enterprise software companies. They build for the buyer, which is the QA director or the VP of Quality. They've never worked on a manufacturing floor.<br><br>
+    The people who actually see the problem every day — operators, process associates — they don't typically have the technical background to build a solution. I happen to have both. Immunology degree, working on the floor daily, and I've taught myself to build with AI tools.<br><br>
+    That combination is unusual. That's why it hasn't been done.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="question">How big can this business be?</div>
+  <div class="answer">
+    <strong>The pharma QMS market is $3 billion and growing at 13% a year.</strong> But honestly, I'm not focused on the total market right now.<br><br>
+    There are roughly 300 biopharmaceutical manufacturing sites in Ireland alone. 9 of the top 10 global pharma companies have manufacturing here. Each site is a potential customer.<br><br>
+    If Vent works at one site, the playbook is to expand site-by-site within that company, then company-by-company within Ireland, then internationally. Pharma is global but the processes are remarkably standardised — what works in Cork works in Boston.<br><br>
+    I don't know exactly how big this gets. But the problem is real, the market is large, and it starts with one site.
+  </div>
+  <div class="tip">"I don't know exactly how big this gets" is a good line. It's honest. Follow it immediately with "but the problem is real" so it doesn't sound uncertain.</div>
+</div>
+
+<div class="qa">
+  <div class="question">What is your strategy for selling to pharma companies? Do you have connections to get in the door?</div>
+  <div class="answer">
+    <strong>I work inside a major CDMO. I'm already in the building.</strong><br><br>
+    My first target is a pilot at a site I can access directly — either my own facility or one of the multinationals nearby. Pfizer, Lilly, MSD, Regeneron all have manufacturing within two hours of me.<br><br>
+    Pharma sales are long cycles — 6 to 18 months typically. But I'm not starting cold. I'm starting as someone who works on the floor, who understands the problem, and who can demo a working prototype to a QA director over coffee. That's a very different conversation to a cold sales email.<br><br>
+    After the first pilot, the sell becomes easier because you have a reference site and real data.
+  </div>
+</div>
+
+
+<h2>2. The solo founder questions</h2>
+
+<div class="qa">
+  <div class="question">You're a solo founder with no technical co-founder. Who's going to build the production version?</div>
+  <div class="answer">
+    <strong>I built the prototype myself — that's what I can show you today.</strong><br><br>
+    I used AI-assisted development tools and I've gotten surprisingly far. The SOP search works. The GDP checker works. The interface is functional.<br><br>
+    But I'm honest — to take this to enterprise-grade, production-ready software, I need a technical co-founder. Someone with experience scaling SaaS products. That's one of the three things I'm here to get help with.<br><br>
+    I don't think the programming is the hard part. Understanding the problem deeply enough to build the right thing — that's the hard part. And I have that.
+  </div>
+  <div class="warning">They will almost certainly ask this. Don't get defensive. Own it: "I need help scaling it. That's why I'm here." Confidence in what you've built, honesty about what you need.</div>
+</div>
+
+<div class="qa">
+  <div class="question">How long have you been working on this?</div>
+  <div class="answer">
+    <strong>A few weeks.</strong><br><br>
+    I know that sounds early. But look at what exists — a working SOP search, a GDP documentation tool, a prototype that real operators have used and given feedback on. I've moved fast because I understand the problem inside out and the AI development tools available today are genuinely powerful.<br><br>
+    I've been thinking about this problem for years. I've been building for weeks.
+  </div>
+  <div class="tip">"Thinking about it for years, building for weeks" — use this line. It reframes the timeline from "just started" to "finally acting on something I've known for ages."</div>
+</div>
+
+<div class="qa">
+  <div class="question">What makes you the right person to do this?</div>
+  <div class="answer">
+    <strong>I have the domain expertise, I understand the science, and I've proven I can build.</strong><br><br>
+    I studied Immunology at Trinity. I work in biopharmaceutical manufacturing every day. I understand the SOPs, the deviations, the CAPAs, the culture on the floor. That's not something you can hire for easily.<br><br>
+    On the technical side — I'm not a software engineer, but I've built a working prototype that real people are using and giving feedback on. I've learned fast and I'll keep learning.<br><br>
+    On the sales side — I work inside the industry. I know the people, I know the pain points, and I know how to talk to a QA director about their problems because I live them.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="question">Will you stick at this? You haven't been doing it long.</div>
+  <div class="answer">
+    <strong>I'm working evenings and weekends on top of a full-time job on a manufacturing floor. I wouldn't be doing that if I wasn't serious.</strong><br><br>
+    I'm here asking for help to leave a stable, well-paying job to pursue this. That's not a decision I take lightly. But every shift I work, I see the problem. And now I know it can be solved.<br><br>
+    The speed I've moved at should tell you something about my commitment. I'm not testing the water. I'm in.
+  </div>
+</div>
+
+
+<h2>3. Product and market questions</h2>
+
+<div class="qa">
+  <div class="question">Are these paying customers?</div>
+  <div class="answer">
+    <strong>No. This is feedback from colleagues at my facility.</strong><br><br>
+    I work with these people. I showed them the prototype and asked what they thought. They weren't being polite — they were telling me what they'd actually use on the floor.<br><br>
+    Getting a formal pilot with a paying customer is exactly what I need time and support to do. I can't run a sales process while working full-time shifts.
+  </div>
+  <div class="warning">Don't try to make informal feedback sound like customer validation. Just be honest. "These are colleagues, not customers. Getting to customers is why I'm here." That's a perfectly good answer at pre-accelerator stage.</div>
+</div>
+
+<div class="qa">
+  <div class="question">What happens if Veeva or MasterControl adds this functionality?</div>
+  <div class="answer">
+    <strong>They could, but they probably won't — and here's why.</strong><br><br>
+    Veeva and MasterControl are built around compliance workflows. Their entire architecture, their user base, their sales motion — it's all aimed at QA departments. Building an operator-facing, low-friction reporting tool is a fundamentally different product for a fundamentally different user.<br><br>
+    It's like asking why Salesforce didn't build Slack. They could have. But it's not what their product does or who their user is.<br><br>
+    And even if they tried, they'd build it as an add-on to their existing system. It would still feel like a QMS tool. The whole point of Vent is that it doesn't.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="question">How do you protect the IP? What's the moat?</div>
+  <div class="answer">
+    <strong>The moat isn't the technology. It's the domain knowledge embedded in the product.</strong><br><br>
+    Anyone can build an AI tool. But knowing which SOPs matter for which observations, understanding how a CAPA should be structured for a biologics facility, knowing what a training lead needs versus what an operator needs — that comes from working on the floor.<br><br>
+    Over time, the moat deepens: every site that uses Vent generates data about their specific deviation patterns, their SOPs, their processes. That becomes a flywheel that's very hard to replicate.
+  </div>
+</div>
+
+<div class="qa">
+  <div class="question">What's the pricing model?</div>
+  <div class="answer">
+    <strong>I haven't validated pricing yet. But the direction is SaaS, per site, annual licence.</strong><br><br>
+    Current QMS tools charge anywhere from €60K to €480K per site per year. I think Vent sits well below that — maybe €35K to €60K per site — but I'd need to validate that with actual buyers.<br><br>
+    The ROI case is straightforward: if a site runs 30 to 100 CAPAs a year, each taking 40 to 60 man-hours, even a 30% reduction in investigation time saves more than the licence costs in labour alone.
+  </div>
+  <div class="tip">It's fine to not have validated pricing. Say "I haven't validated it yet" — that's honest at this stage. Then give the directional range so they know you've thought about it.</div>
+</div>
+
+<div class="qa">
+  <div class="question">Can you give us a demo?</div>
+  <div class="answer">
+    <strong>Yes — I can show the SOP search working live and walk through the GDP checker.</strong><br><br>
+    The SOP search is the strongest feature right now. I can search for a process step in plain language and get the right section of the right document. It works against real documentation.<br><br>
+    The CAPA generation and risk classification — I can show you what the output looks like, but I'd be honest that it's early. The prompts work but it needs more testing before I'd trust it in a production environment.
+  </div>
+  <div class="warning">If they ask for a demo, only show what actually works. SOP search live, GDP checker if it's behaving. Walk through screenshots or outputs for the CAPA stuff. Don't try to demo something that might break.</div>
+</div>
+
+
+<h2>4. Quick-fire answers</h2>
+
+<div class="qa">
+  <div class="question">What's your runway?</div>
+  <div class="answer">I'm still employed full-time. I have no burn rate. But I also have no time — that's the constraint, not money.</div>
+</div>
+
+<div class="qa">
+  <div class="question">What do you need from NDRC specifically?</div>
+  <div class="answer">Time, mentorship, and introductions. Time to go full-time. Mentorship on the go-to-market and GMP validation pathway. Introductions to people who've sold enterprise software to pharma.</div>
+</div>
+
+<div class="qa">
+  <div class="question">What's your timeline for a first pilot?</div>
+  <div class="answer">If I can go full-time, I'd want to have a pilot site lined up within 3 months and running within 6. The product is close enough that the main work is sales and validation, not development.</div>
+</div>
+
+<div class="qa">
+  <div class="question">What's the biggest risk?</div>
+  <div class="answer">Pharma sales cycles. The problem is real, the product works, but getting a regulated facility to formally adopt new software takes time. That's why starting with a pilot — even informal — matters so much.</div>
+</div>
+
+<div class="qa">
+  <div class="question">Are you willing to leave your job?</div>
+  <div class="answer">Yes. That's literally what I'm asking for help with. I'm ready to go.</div>
+</div>
+
+</body>
+</html>

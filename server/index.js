@@ -161,8 +161,8 @@ const PAGE_MAP = {
   'dispositions.html': 'qa/dispositions.html',
   'qc-lab.html':      'qc/lab.html',
   'cell-banks.html':  'inoc/cell-banks.html',
-  'dev.html':         'dev.html',
-  'project.html':     'project.html',
+  'dev.html':         'admin/dev.html',
+  'project.html':     'admin/project.html',
 };
 Object.entries(PAGE_MAP).forEach(([urlSlug, filePath]) => {
   app.get(`/${urlSlug}`, (req, res) => {

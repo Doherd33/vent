@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vent — Deck & Positioning Feedback Analysis</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@media print {
+  body { background: #fff; }
+  .page { box-shadow: none; margin: 0; max-width: 100%; }
+  .page-break { page-break-before: always; }
+  @page { size: A4; margin: 20mm 18mm; }
+}
+
+body {
+  background: #f0f0f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  color: #1a1a1a;
+  line-height: 1.65;
+  padding: 32px;
+}
+
+.page {
+  max-width: 800px;
+  margin: 0 auto 32px;
+  background: #fff;
+  padding: 56px 52px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+}
+
+.doc-header {
+  border-bottom: 3px solid #c45d2c;
+  padding-bottom: 24px;
+  margin-bottom: 36px;
+}
+.doc-header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.doc-header .subtitle {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
+}
+.doc-header .date {
+  font-size: 12px;
+  color: #999;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #c45d2c;
+  margin: 36px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8e2db;
+}
+h2:first-of-type { margin-top: 0; }
+
+h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 20px 0 8px;
+  color: #1a1a1a;
+}
+
+p {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.verdict {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  padding: 14px 18px;
+  background: #fdf6f0;
+  border-left: 4px solid #c45d2c;
+  border-radius: 0 6px 6px 0;
+  margin: 16px 0;
+}
+
+.quote {
+  font-style: italic;
+  color: #555;
+  padding: 12px 18px;
+  background: #f8f6f3;
+  border-left: 3px solid #d4ccc3;
+  border-radius: 0 6px 6px 0;
+  margin: 14px 0;
+  font-size: 13.5px;
+}
+
+.gap-box {
+  padding: 14px 18px;
+  background: #fff8f5;
+  border: 1px solid #f0ddd3;
+  border-radius: 6px;
+  margin: 14px 0;
+}
+.gap-box strong {
+  color: #a63d2f;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.strength-box {
+  padding: 14px 18px;
+  background: #f4faf6;
+  border: 1px solid #d0e8d8;
+  border-radius: 6px;
+  margin: 14px 0;
+}
+.strength-box strong {
+  color: #2a7d4a;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
+ul {
+  padding-left: 20px;
+  margin: 10px 0 14px;
+}
+ul li {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.section-num {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #c45d2c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 24px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.bottom-line {
+  background: #1a1a1a;
+  color: #fff;
+  padding: 28px 28px;
+  border-radius: 8px;
+  margin-top: 32px;
+}
+.bottom-line h2 {
+  color: #c45d2c;
+  border-bottom: 1px solid #333;
+  margin-top: 0;
+}
+.bottom-line p {
+  color: #ccc;
+}
+.bottom-line ol {
+  padding-left: 20px;
+  margin: 12px 0;
+}
+.bottom-line ol li {
+  color: #ddd;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.bottom-line ol li strong {
+  color: #fff;
+}
+.bottom-line .final {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #333;
+}
+
+.ref-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-right: 4px;
+}
+.ref-deck { background: #fdf0e8; color: #c45d2c; border: 1px solid #f0ddd3; }
+.ref-readme { background: #eef4ff; color: #3366aa; border: 1px solid #d0dfef; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="doc-header">
+    <h1>Deck & Positioning Feedback Analysis</h1>
+    <div class="subtitle">Assessment against investor-grade QMS positioning framework</div>
+    <div class="date">Vent — February 2026 · Based on deck.html and readme.html</div>
+  </div>
+
+  <!-- ═══ QUESTION 1 ═══ -->
+  <h2><span class="section-num">1</span> What painful problem exists today?</h2>
+
+  <div class="strength-box">
+    <strong>What your deck already has</strong>
+    Slide 2 ("The Problem") frames three real pain points: operators fear reporting because names are attached, 30–40% of man-hours consumed by documentation, and signal degrades at every handoff. Slide 3 ("The Cost") backs it with hard numbers: 40–60 man-hours per CAPA, €1–5M per batch failure, 60–90 day deviation-to-closure cycles.
+  </div>
+
+  <div class="gap-box">
+    <strong>What's missing</strong>
+    The problem is framed as an <em>information flow</em> problem ("The floor knows. The facility doesn't."). The buyer doesn't care about information flow. They care about what happens when that 60–90 day deviation cycle means a batch sits unreleased. What happens when the HPRA walks in and the CAPA backlog is 40 items deep. What an FDA 483 observation costs to remediate.
+  </div>
+
+  <div class="verdict">The raw material is strong. The framing needs to shift from <em>"operators aren't heard"</em> to <em>"your facility is carrying unquantified regulatory risk and you can't see it."</em></div>
+
+  <p>The real pain — from the buyer's perspective — is not "manual process is annoying." It is:</p>
+  <ul>
+    <li>Regulatory risk and compliance exposure</li>
+    <li>Audit failure and inspection findings (483s)</li>
+    <li>CAPA delays creating investigation backlogs</li>
+    <li>Batch release delays (delayed revenue recognition)</li>
+    <li>Human error in audit-critical documentation</li>
+    <li>Slow deviation closure (your 60–90 day stat)</li>
+    <li>Excess admin burden on quality teams (your 30–40% stat)</li>
+  </ul>
+
+  <p>Your positioning should sound like:</p>
+  <div class="quote">"We eliminate 30–40% of manual, audit-critical QA workload that creates regulatory risk and delays batch release — at 1/5th the cost of a legacy QMS."</div>
+  <p>Not:</p>
+  <div class="quote" style="border-left-color:#a63d2f;">"We amplify manufacturing intelligence from the floor."</div>
+  <p>The first sells an outcome. The second describes a feature.</p>
+
+
+  <!-- ═══ QUESTION 2 ═══ -->
+  <h2><span class="section-num">2</span> Why does the problem exist?</h2>
+
+  <div class="strength-box">
+    <strong>What your deck already has</strong>
+    Slide 13 states it clearly: "The incumbents were built for the office. Vent is built for the floor." The competitive matrix shows all four incumbents (Veeva, MasterControl, TrackWise, ETQ) scoring zero on anonymous floor reporting, AI SOP analysis, auto-generated CAPA packages, and operator-first UX.
+  </div>
+
+  <div class="gap-box">
+    <strong>What's missing</strong>
+    You position this as a <em>competitive differentiator</em> rather than the <em>root cause explanation</em>. The structural reason this problem exists is because the entire QMS category was designed around the wrong persona — the QA team who controls the budget, not the operator who generates the signal. That's your core structural insight. It should appear in Slide 2 ("The Problem"), not Slide 13 ("Competitive Landscape").
+  </div>
+
+  <div class="verdict">Move the "built for the office vs built for the floor" insight from the competitive slide to the problem slide. It's not just a differentiator — it's the <em>explanation</em> for why the problem has persisted this long.</div>
+
+  <p>Your deck explains <em>what</em> is broken (operators swallow observations, SOPs in PDFs, deviations filed weeks late) but doesn't articulate the structural <em>why</em>: every tool in the category was purpose-built for QA procurement budgets, not operator workflows. That's why the gap has persisted for 20 years despite billions in QMS spend.</p>
+
+
+  <!-- ═══ QUESTION 3 ═══ -->
+  <h2><span class="section-num">3</span> Why is your approach fundamentally better?</h2>
+
+  <div class="strength-box">
+    <strong>Where you're strongest</strong>
+    <ul style="margin-top:8px;">
+      <li><strong>Data flywheel</strong> <span class="ref-tag ref-deck">Slide 6</span> — 6 months of anonymised observation data creates a pattern library no competitor can replicate. Genuinely defensible moat.</li>
+      <li><strong>Compliance architecture</strong> <span class="ref-tag ref-deck">Slide 10</span> — 21 CFR Part 11, SHA-256 audit trail, ALCOA+ data integrity built from line one, not bolted on.</li>
+      <li><strong>Pricing</strong> <span class="ref-tag ref-readme">Readme §2</span> — 3–10x cheaper than incumbents. Flat site-based pricing vs per-user. Veeva: €60–240K/yr. MasterControl: €50–300K/yr. Vent: €35–60K/yr.</li>
+      <li><strong>Competitive matrix</strong> <span class="ref-tag ref-deck">Slide 13</span> — Four red Xs for every incumbent on the four features that matter most.</li>
+      <li><strong>CAPA ROI calculation</strong> <span class="ref-tag ref-readme">Readme §2</span> — 30% CAPA cycle reduction = €21K–€144K/yr saving per site, exceeding the licence cost at any tier.</li>
+    </ul>
+  </div>
+
+  <div class="gap-box">
+    <strong>Where you're weakest</strong>
+    Your positioning line on Slide 4 is: <em>"Vent is an intelligence amplifier."</em> That is abstract feature language. The winning version — provable from your own data — is: <em>"We eliminate 30–40% of manual, audit-critical QA workload that creates regulatory risk and delays batch release."</em> Same product, different language, completely different buyer reaction.
+  </div>
+
+  <div class="verdict">The substance is strong. The CAPA ROI is your most compelling data point and it's buried on page 6 of the readme. It should be on a slide.</div>
+
+</div>
+
+
+<!-- ═══ PAGE 2 ═══ -->
+<div class="page page-break">
+
+  <h2><span class="section-num">4</span> Persona Messaging</h2>
+
+  <p>Your deck is implicitly structured around personas — operator layer (slide 7), QA layer (slide 8), director/leadership (slide 5 phase 4) — but you never explicitly address what each persona cares about. Here's what's missing:</p>
+
+  <h3>Head of Quality</h3>
+  <p><strong>Cares about:</strong> Audit readiness, inspection findings, CAPA cycle time, risk exposure.</p>
+  <p><strong>Your message should be:</strong> "Reduce audit observations. Real-time compliance visibility. Faster deviation closure. Fewer 483s."</p>
+  <p><strong>Current deck language:</strong> "The floor knows. The facility doesn't." — This resonates with a <em>founder</em>, not a Head of Quality worrying about their next HPRA inspection.</p>
+
+  <h3>QA Manager</h3>
+  <p><strong>Cares about:</strong> Workload, manual documentation, chasing signatures, rework, burnout.</p>
+  <p><strong>Your message should be:</strong> "Remove 30–40% of manual admin burden. Auto-route CAPA tasks. Reduce rework. Standardise documentation."</p>
+  <p><strong>Current deck language:</strong> Slide 8 ("QA has a command centre, not a queue") is actually well-framed for this persona. The problem is it's one slide in 17 — this should be a core message track.</p>
+
+  <h3>IT / CSV / Validation</h3>
+  <p><strong>Cares about:</strong> System validation cost, 21 CFR Part 11 compliance, data integrity, implementation burden.</p>
+  <p><strong>Your message should be:</strong> "Built for GxP from day one. Pre-validated architecture. Low validation overhead. Lower IT lift."</p>
+  <p><strong>Current deck language:</strong> Slide 10 (Compliance Architecture) covers this well technically. The readme adds the GMP validation premium argument (€10–50K implementation savings). These need to merge into a clear IT/CSV value prop.</p>
+
+  <h3>QP (Qualified Person) / Regulatory Affairs</h3>
+  <p><strong>Cares about:</strong> Batch release confidence, regulatory submission readiness, audit trail completeness.</p>
+  <p><strong>Your message should be:</strong> Not addressed anywhere in current materials. Needs to exist.</p>
+
+
+  <!-- ═══ SECTION 5 ═══ -->
+  <h2><span class="section-num">5</span> Quantification</h2>
+
+  <div class="strength-box">
+    <strong>Your readme is outstanding on this</strong>
+    The CAPA ROI calculation in Readme Section 2: a typical biologics site runs 30–100+ CAPAs per year. At 40–60 man-hours each at €60–80/hr, that's €2,400–€4,800 per CAPA. A 30% reduction in cycle time = €21K–€144K/yr saving — exceeding the Vent licence cost at any tier.
+  </div>
+
+  <div class="gap-box">
+    <strong>But it's in the wrong place</strong>
+    This is your single most powerful investor slide and it doesn't exist as a slide. Instead of: <em>"Automates deviation review"</em> — say: <em>"Reduces deviation cycle time from 60–90 days to under 40 days."</em> Instead of: <em>"Improves documentation flow"</em> — say: <em>"Removes 30–40% of manual QA admin workload."</em>
+  </div>
+
+  <div class="verdict">Enterprise pharma buyers think in cost of delay, cost of non-compliance, cost of remediation, and inspection impact. Your data supports all four. Surface it.</div>
+
+
+  <!-- ═══ SECTION 6 ═══ -->
+  <h2><span class="section-num">6</span> "Why not just use Veeva?"</h2>
+
+  <p>Your readme's pitch notes (Section 5) answer this well:</p>
+  <div class="quote">"We're not replacing Veeva. We're building the layer underneath it that their customers are missing. Once we establish that floor-to-QA intelligence pipeline, we become the data source that other systems integrate with — not the one that gets replaced."</div>
+
+  <p>This is your best competitive positioning line. The complement-not-replacement framing reduces rip-and-replace fear, lowers procurement friction, and positions you as additive value rather than a risky migration. This line should be on a slide.</p>
+
+  <p>Your readme also positions flat site-based pricing as a deliberate advantage over per-user models — a site with 50 QA users on TrackWise at $200/user/month = $120K/year. Vent's flat fee means the same cost whether deployed to 10 or 200 users. This is a procurement conversation winner.</p>
+
+
+  <!-- ═══ SECTION 7 ═══ -->
+  <h2><span class="section-num">7</span> Wedge Strategy</h2>
+
+  <p>The feedback says: pick one painful, repetitive, audit-exposed workflow. Automate it extremely well. Measure improvement. Build proof.</p>
+
+  <p>Looking at what you've actually built, your wedge is clear:</p>
+
+  <div class="verdict" style="border-left-color:#2a7d4a; background:#f4faf6;"><strong>Anonymous observation capture + AI-generated CAPA packages.</strong><br><br>This is the thing no one else has. It's the only feature where all four incumbents score zero. It's the workflow that touches every persona (operator submits → AI analyses → QA reviews → director sees patterns). Lead with it. Win on it. Expand later.</div>
+
+  <p>Your deck currently tries to present the entire platform (SOP query, doc builder, QA control centre, workflow, dashboard, compliance, analytics). That's a product tour, not a wedge. The investor needs to hear: "We do this one thing better than anyone, and it's the thing that costs your site €150K/yr in manual CAPA overhead."</p>
+
+
+  <!-- ═══ SECTION 8 ═══ -->
+  <h2><span class="section-num">8</span> The Critical Reframe</h2>
+
+  <div class="gap-box">
+    <strong>The biggest risk in your current positioning</strong>
+    Your deck says "intelligence amplifier" and "manufacturing intelligence built for the floor." Your readme says "AI-native floor intelligence and CAPA management layer." These are <strong>efficiency frames</strong>. But pharma buys <strong>risk reduction</strong>.
+  </div>
+
+  <p>You must sell:</p>
+  <ul>
+    <li><strong>Regulatory safety</strong> — not "better information flow"</li>
+    <li><strong>Audit confidence</strong> — not "pattern detection"</li>
+    <li><strong>Executive visibility into compliance posture</strong> — not "director dashboard"</li>
+    <li><strong>Cost of non-compliance avoided</strong> — not "hours saved"</li>
+  </ul>
+
+  <p>Efficiency is secondary. The buyer signs the cheque because the cost of <em>not</em> buying is measured in 483s, warning letters, batch holds, and remediation costs — not in saved man-hours.</p>
+
+
+  <!-- ═══ BOTTOM LINE ═══ -->
+  <div class="bottom-line">
+    <h2>Bottom Line</h2>
+    <p>Your materials are stronger than this feedback probably assumes. The competitive data, the pricing validation, the compliance architecture, the CAPA ROI calculation, the data flywheel — it's all there. The problem isn't the substance. The problem is the packaging.</p>
+
+    <ol>
+      <li><strong>Reframe from "intelligence" to "risk reduction and audit readiness."</strong> Same product, different language, different buyer reaction.</li>
+      <li><strong>Lead with the CAPA ROI number.</strong> It's your single most compelling data point and it's buried on page 6 of the readme. Put it on a slide.</li>
+      <li><strong>Commit to the wedge:</strong> anonymous observation capture + AI CAPA generation. Win on one workflow. Expand later.</li>
+      <li><strong>Add explicit persona messaging</strong> for Head of Quality, QA Manager, IT/CSV, and QP. Design messaging per persona.</li>
+      <li><strong>Change the tagline</strong> from "Manufacturing intelligence, built for the floor" to something like "Eliminate the compliance risk your QMS can't see."</li>
+    </ol>
+
+    <p class="final">The bones are strong. The language needs to stop selling the product and start selling the outcome.</p>
+  </div>
+
+</div>
+
+</body>
+</html>

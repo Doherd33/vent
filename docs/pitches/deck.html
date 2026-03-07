@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vent , Dogpatch Labs 2026</title>
+<!-- 17 slides total -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f0eb;
+  --surface: #ffffff;
+  --surface2: #ede8e2;
+  --border: #d4ccc3;
+  --teal: #c45d2c;
+  --teal-dim: rgba(196,93,44,0.10);
+  --blue: #1a3a5c;
+  --amber: #b8860b;
+  --red: #a63d2f;
+  --green: #3a7d52;
+  --text: #1c1c1c;
+  --text-dim: #5a554f;
+  --text-muted: #9a928a;
+}
+
+body {
+  background: #e8e2db;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  padding: 24px;
+}
+
+/* ─── SLIDE BASE ─────────────────────────────────────── */
+.slide {
+  width: 1280px;
+  height: 720px;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto 32px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+}
+
+/* subtle dot grid */
+.slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(196,93,44,0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.slide-num {
+  position: absolute;
+  bottom: 28px;
+  right: 36px;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  font-weight: 500;
+}
+
+.slide-footer {
+  position: absolute;
+  bottom: 28px;
+  left: 60px;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+/* ─── TYPOGRAPHY ─────────────────────────────────────── */
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 14px;
+}
+
+.h1 { font-size: 72px; font-weight: 900; line-height: 1.0; letter-spacing: -0.03em; }
+.h2 { font-size: 48px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+.h3 { font-size: 32px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
+.h4 { font-size: 22px; font-weight: 600; line-height: 1.3; }
+.body { font-size: 16px; font-weight: 400; line-height: 1.65; color: var(--text-dim); }
+.body-sm { font-size: 14px; font-weight: 400; line-height: 1.6; color: var(--text-dim); }
+
+.italic { font-family: 'Playfair Display', serif; font-style: italic; color: var(--teal); }
+
+/* ─── LAYOUT HELPERS ─────────────────────────────────── */
+.pad { padding: 64px 72px; }
+.pad-sm { padding: 48px 60px; }
+.row { display: flex; gap: 32px; }
+.col { display: flex; flex-direction: column; }
+.flex-1 { flex: 1; }
+.center { align-items: center; justify-content: center; }
+.gap-8  { gap: 8px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+.gap-32 { gap: 32px; }
+.mb-8  { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.mb-32 { margin-bottom: 32px; }
+.mb-40 { margin-bottom: 40px; }
+
+/* ─── CARDS ──────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+}
+.card-teal { border-color: rgba(196,93,44,0.3); background: rgba(196,93,44,0.06); }
+.card-blue { border-color: rgba(26,58,92,0.3); background: rgba(26,58,92,0.06); }
+.card-amber { border-color: rgba(184,134,11,0.3); background: rgba(184,134,11,0.06); }
+.card-red { border-color: rgba(166,61,47,0.25); background: rgba(166,61,47,0.05); }
+
+/* ─── ACCENT ELEMENTS ────────────────────────────────── */
+.teal { color: var(--teal); }
+.blue { color: var(--blue); }
+.amber { color: var(--amber); }
+.red { color: var(--red); }
+.green { color: var(--green); }
+.dim { color: var(--text-dim); }
+
+.pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.pill-teal { background: var(--teal-dim); color: var(--teal); border: 1px solid rgba(196,93,44,0.25); }
+.pill-red  { background: rgba(166,61,47,0.1); color: var(--red); border: 1px solid rgba(166,61,47,0.2); }
+.pill-amber { background: rgba(184,134,11,0.1); color: var(--amber); border: 1px solid rgba(184,134,11,0.2); }
+
+.stat-big {
+  font-size: 52px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.0;
+}
+.stat-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.divider {
+  width: 48px;
+  height: 3px;
+  background: var(--teal);
+  border-radius: 2px;
+  margin: 20px 0;
+}
+
+.check { color: var(--green); margin-right: 8px; }
+.cross { color: var(--red); margin-right: 8px; }
+
+/* ─── PHASE BADGE ────────────────────────────────────── */
+.phase-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--teal);
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ─── UI MOCKUP ──────────────────────────────────────── */
+.mockup-wrap {
+  background: #f7f4f0;
+  border: 1px solid #d4ccc3;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.mockup-bar {
+  background: #ede8e2;
+  border-bottom: 1px solid #d4ccc3;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mockup-dot { width: 8px; height: 8px; border-radius: 50%; }
+.md-red { background: #e05a4f; }
+.md-yellow { background: #e8a832; }
+.md-green { background: #3a7d52; }
+.mockup-url {
+  font-size: 10px;
+  color: #3a4155;
+  margin-left: 8px;
+  font-family: monospace;
+}
+.mockup-nav {
+  background: #f0ece7;
+  border-bottom: 1px solid #d4ccc3;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 38px;
+}
+.mnav-logo { font-size: 13px; font-weight: 700; color: #e8edf5; }
+.mnav-logo span { color: var(--teal); }
+.mnav-item { font-size: 11px; color: #5a554f; }
+.mnav-item.active {
+  color: var(--teal);
+  background: rgba(196,93,44,0.1);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+.mockup-body { padding: 24px 20px; }
+
+/* ─── GRADIENT ACCENTS ───────────────────────────────── */
+.glow-tl {
+  position: absolute;
+  top: -120px;
+  left: -80px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(196,93,44,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+.glow-br {
+  position: absolute;
+  bottom: -120px;
+  right: -80px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(26,58,92,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.glow-tr {
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(196,93,44,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ─── FLOW ARROW ─────────────────────────────────────── */
+.flow-arrow {
+  color: var(--text-muted);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  padding-top: 16px;
+}
+
+/* ─── PRINT ──────────────────────────────────────────── */
+@media print {
+  body { background: #f5f0eb; padding: 0; }
+  .slide {
+    margin: 0;
+    page-break-after: always;
+    break-after: page;
+    box-shadow: none;
+    border-radius: 0;
+    width: 100%;
+    height: 100vh;
+  }
+  @page { size: A4 landscape; margin: 0; }
+}
+
+/* ─── TIMELINE ───────────────────────────────────────── */
+.timeline-item {
+  display: flex;
+  gap: 20px;
+}
+.timeline-dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+.timeline-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--teal);
+  background: var(--bg);
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.timeline-dot.done { background: var(--teal); }
+.timeline-line {
+  width: 1px;
+  flex: 1;
+  background: var(--border);
+  margin-top: 4px;
+}
+
+/* ─── TAG ────────────────────────────────────────────── */
+.tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+.tag-done { background: rgba(196,93,44,0.12); color: var(--teal); }
+.tag-next { background: rgba(26,58,92,0.12); color: var(--blue); }
+.tag-future { background: rgba(154,146,138,0.15); color: #9a928a; }
+
+/* ─── SAM/TAM circles ────────────────────────────────── */
+.market-rings {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  flex-shrink: 0;
+}
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+}
+.ring-tam {
+  inset: 0;
+  border-color: rgba(196,93,44,0.2);
+  background: rgba(196,93,44,0.03);
+}
+.ring-sam {
+  inset: 52px;
+  border-color: rgba(196,93,44,0.35);
+  background: rgba(196,93,44,0.06);
+}
+.ring-som {
+  inset: 104px;
+  border-color: rgba(196,93,44,0.6);
+  background: rgba(196,93,44,0.12);
+}
+.ring-label-tam {
+  position: absolute;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: rgba(196,93,44,0.6);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.ring-label-sam {
+  position: absolute;
+  top: 62px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: rgba(196,93,44,0.75);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 1 , COVER
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="justify-content: center; align-items: flex-start; padding: 0 96px;">
+  <div class="glow-tl"></div>
+  <div class="glow-br"></div>
+
+  <div style="max-width: 680px; position: relative; z-index: 1;">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom: 40px;">
+      <div style="width:48px; height:48px; border-radius:12px; background:var(--teal-dim); border:1px solid rgba(196,93,44,0.3); display:flex; align-items:center; justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <span style="font-size:28px; font-weight:800; letter-spacing:-0.01em;">Vent</span>
+      <div class="pill pill-teal" style="margin-left:4px;">PROTOTYPE</div>
+    </div>
+
+    <div class="h1 mb-16" style="font-size:62px; line-height:1.05;">
+      Manufacturing intelligence,<br>
+      <span class="italic" style="font-size:66px;">built for the floor.</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <p class="body" style="font-size:18px; max-width:560px; margin-bottom:56px;">
+      An AI-driven platform that captures operator knowledge in real time and turns it into structured intelligence for QA, manufacturing management, and facility leadership, in a GMP-compliant, regulation-ready system.
+    </p>
+
+    <div style="display:flex; align-items:center; gap:32px; padding-top:8px; border-top:1px solid var(--border);">
+      <div>
+        <div style="font-size:15px; font-weight:600;">Darren Doherty</div>
+        <div style="font-size:12px; color:var(--text-dim);">Founder · Bioprocess Associate, WuXi Biologics</div>
+      </div>
+      <div style="width:1px; height:32px; background:var(--border);"></div>
+      <div>
+        <div style="font-size:12px; color:var(--text-dim);">Dogpatch Labs Application</div>
+        <div style="font-size:12px; color:var(--text-dim);">February 2026</div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="slide-num">1 / 17</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 2 , THE PROBLEM
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide pad">
+  <div class="glow-tl"></div>
+
+  <div class="label">The Problem</div>
+  <div class="h2 mb-16" style="max-width:700px;">The floor knows.<br>The facility doesn't.</div>
+  <p class="body mb-40" style="max-width:620px;">In regulated biologics manufacturing, the operators closest to the process are the first to spot deviations, inefficiencies, and procedure gaps. Almost none of it gets captured in time to be useful.</p>
+
+  <div class="row" style="flex:1; align-items:stretch;">
+    <div class="card card-red flex-1">
+      <div style="font-size:22px; margin-bottom:12px;">🚨</div>
+      <div class="h4 mb-8 red">Reporting is feared</div>
+      <p class="body-sm">Deviation systems are traceable. Operators know that raising an issue means their name is attached. So observations go unreported, and the facility operates blind.</p>
+    </div>
+    <div class="card flex-1" style="border-color:rgba(184,134,11,0.25); background:rgba(184,134,11,0.04);">
+      <div style="font-size:22px; margin-bottom:12px;">📋</div>
+      <div class="h4 mb-8 amber">Documentation consumes the day</div>
+      <p class="body-sm">30–40% of facility man-hours go to documentation. SOPs live in PDFs nobody reads proactively. Deviations are filed weeks after they happen. The signal is always delayed.</p>
+    </div>
+    <div class="card flex-1" style="border-color:rgba(166,61,47,0.2); background:rgba(166,61,47,0.04);">
+      <div style="font-size:22px; margin-bottom:12px;">📉</div>
+      <div class="h4 mb-8 red">Signal degrades at every handoff</div>
+      <p class="body-sm">By the time an observation reaches QA or management, it has been filtered, delayed, and summarised. The original insight , the one that could prevent the next deviation , is gone.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:28px; padding:18px 24px; background:var(--surface2); border-left:3px solid var(--teal); border-radius:0 8px 8px 0;">
+    <p style="font-size:15px; font-style:italic; color:var(--text-dim);">"The same deviation happens three times across three shifts before anyone connects the dots , because the system isn't designed to connect them."</p>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:6px;">, A reality observed daily on biologics manufacturing floors</p>
+  </div>
+
+  <div class="slide-num">2 / 17</div>
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 3 , THE COST
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide pad">
+  <div class="glow-tr"></div>
+
+  <div class="label">The Cost</div>
+  <div class="h2 mb-8">This costs the industry billions.</div>
+  <p class="body mb-40">These aren't theoretical numbers. They are the operating reality of every regulated biologics facility in the world right now.</p>
+
+  <div class="row" style="gap:20px; flex:1;">
+    <div class="card flex-1 col center" style="text-align:center; padding:36px 24px;">
+      <div class="stat-big teal">40–60</div>
+      <div class="stat-label"><strong>man-hours</strong><br>per CAPA investigation event</div>
+    </div>
+    <div class="card flex-1 col center" style="text-align:center; padding:36px 24px;">
+      <div class="stat-big" style="color:var(--red);">€1–5M</div>
+      <div class="stat-label"><strong>per batch failure</strong><br>in biologics drug substance manufacturing</div>
+    </div>
+    <div class="card flex-1 col center" style="text-align:center; padding:36px 24px;">
+      <div class="stat-big amber">30–40%</div>
+      <div class="stat-label"><strong>of facility man-hours</strong><br>consumed by documentation in GMP operations</div>
+    </div>
+    <div class="card flex-1 col center" style="text-align:center; padding:36px 24px;">
+      <div class="stat-big blue">60–90</div>
+      <div class="stat-label"><strong>days</strong><br>average deviation-to-closure cycle<br>under traditional QMS workflows</div>
+    </div>
+  </div>
+
+  <div style="margin-top:24px; padding:16px 24px; background:var(--surface); border:1px solid var(--border); border-radius:8px; display:flex; gap:24px; align-items:center;">
+    <div style="font-size:20px;">💡</div>
+    <p class="body-sm">And behind every one of these numbers is a human cost: the operator who noticed something and said nothing, the QA reviewer buried in paperwork, the director making decisions on data that's already two weeks old.</p>
+  </div>
+
+  <div class="slide-num">3 / 17</div>
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 4 , THE SOLUTION
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide pad">
+  <div class="glow-tl"></div>
+  <div class="glow-br"></div>
+
+  <div class="label">The Solution</div>
+  <div class="h2 mb-8">Vent is an <span class="teal">intelligence amplifier.</span></div>
+  <p class="body mb-40" style="max-width:660px;">It takes the deep, real-time knowledge that exists in the heads and hands of the people closest to the process , and makes that knowledge instantly actionable at every level of the organisation.</p>
+
+  <div class="row" style="flex:1; gap:40px; align-items:center;">
+    <div class="col flex-1 gap-16">
+      <div style="font-size:14px; font-weight:600; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">Without Vent</div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text-dim);"><span class="cross">✗</span>Operators swallow observations to avoid blame</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text-dim);"><span class="cross">✗</span>SOPs sit in binders nobody reads in the moment they're needed</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text-dim);"><span class="cross">✗</span>QA manually cross-references deviations against SOP libraries</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text-dim);"><span class="cross">✗</span>CAPA packages built from scratch, 40+ hours each</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text-dim);"><span class="cross">✗</span>Recurring patterns invisible until a third or fourth occurrence</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text-dim);"><span class="cross">✗</span>Director gets a weekly summary written by someone else</div>
+      </div>
+    </div>
+
+    <div style="width:1px; height:100%; background:var(--border);"></div>
+
+    <div class="col flex-1 gap-16">
+      <div style="font-size:14px; font-weight:600; color:var(--teal); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">With Vent</div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text);"><span class="check">✓</span>Operators submit anonymously in 30 seconds, from any device</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text);"><span class="check">✓</span>SOP query in plain language , step-by-step answer in seconds</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text);"><span class="check">✓</span>AI cross-references every submission against all relevant SOPs automatically</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text);"><span class="check">✓</span>Structured CAPA package drafted in seconds, reviewed by QA</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text);"><span class="check">✓</span>Pattern detection flags recurring issues on first repeat occurrence</div>
+        <div style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text);"><span class="check">✓</span>Director sees live facility intelligence , not a weekly summary</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-num">4 / 17</div>
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 5 , HOW IT WORKS
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide pad">
+  <div class="glow-tl"></div>
+
+  <div class="label">How It Works</div>
+  <div class="h2 mb-40" style="max-width:600px;">Four layers. One closed loop.</div>
+
+  <div class="row" style="flex:1; align-items:stretch; gap:0;">
+
+    <div class="col flex-1" style="padding:28px; background:var(--surface); border:1px solid var(--border); border-radius:12px 0 0 12px; border-right:none;">
+      <div class="phase-badge mb-16">1</div>
+      <div class="h4 mb-12">Capture</div>
+      <div class="pill pill-teal mb-16" style="font-size:10px;">OPERATOR</div>
+      <p class="body-sm">Anonymous 30-second observation submission. Plain language. Photo/video attachments. No form templates, no deviation numbers, no fear of blame.</p>
+      <div style="margin-top:auto; padding-top:20px; font-size:12px; color:var(--teal);">→ Raise an observation<br>→ Query a procedure<br>→ Build a document</div>
+    </div>
+
+    <div style="width:1px; background:var(--border);"></div>
+
+    <div class="col flex-1" style="padding:28px; background:var(--surface); border:1px solid var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+      <div class="phase-badge mb-16">2</div>
+      <div class="h4 mb-12">Analyse</div>
+      <div class="pill pill-teal mb-16" style="font-size:10px;">AI ENGINE</div>
+      <p class="body-sm">Claude + VoyageAI RAG pipeline. Semantic SOP search, root cause hypothesis, priority classification, CAPA generation, contact routing, pattern detection.</p>
+      <div style="margin-top:auto; padding-top:20px; font-size:12px; color:var(--teal);">→ SOP cross-reference<br>→ Risk level assessment<br>→ Pattern matching</div>
+    </div>
+
+    <div style="width:1px; background:var(--border);"></div>
+
+    <div class="col flex-1" style="padding:28px; background:var(--surface); border:1px solid var(--border); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+      <div class="phase-badge mb-16">3</div>
+      <div class="h4 mb-12">Workflow</div>
+      <div class="pill pill-teal mb-16" style="font-size:10px;">QA &amp; MFG SUPPORT</div>
+      <p class="body-sm">Structured 4-phase lifecycle. Electronic signatures on approval transitions. Immutable audit trail. SOP change management. 21 CFR Part 11 / EU Annex 11 compliant.</p>
+      <div style="margin-top:auto; padding-top:20px; font-size:12px; color:var(--teal);">→ QA review &amp; sign-off<br>→ CAPA tracking<br>→ Doc control</div>
+    </div>
+
+    <div style="width:1px; background:var(--border);"></div>
+
+    <div class="col flex-1" style="padding:28px; background:var(--surface); border:1px solid var(--border); border-radius:0 12px 12px 0; border-left:none;">
+      <div class="phase-badge mb-16">4</div>
+      <div class="h4 mb-12">Intelligence</div>
+      <div class="pill pill-teal mb-16" style="font-size:10px;">LEADERSHIP</div>
+      <p class="body-sm">Live facility dashboard. Submission trends by area, priority, and status. CAPA metrics. Cross-submission pattern analysis. Real decisions, not weekly summaries.</p>
+      <div style="margin-top:auto; padding-top:20px; font-size:12px; color:var(--teal);">→ Director dashboard<br>→ Trend analysis<br>→ Compliance reporting</div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:20px; display:flex; justify-content:center;">
+    <div style="font-size:13px; color:var(--text-muted); background:var(--surface); border:1px solid var(--border); padding:8px 20px; border-radius:20px;">Every submission tightens the loop. Every observation makes the facility smarter.</div>
+  </div>
+
+  <div class="slide-num">5 / 17</div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 6 , DATA FLYWHEEL
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding: 48px 64px;">
+  <div class="glow-tl"></div>
+  <div class="glow-br"></div>
+
+  <div class="label">The Data Moat</div>
+  <div class="h2 mb-8" style="font-size:38px;">The longer Vent runs, <span class="teal">the harder it is to replace.</span></div>
+  <p class="body mb-24" style="font-size:13px; max-width:680px;">Every submission enriches the facility's pattern library. After six months of live data, Vent knows that site's deviation patterns better than any QA system ever has. You can copy software. You cannot copy data.</p>
+
+  <div class="row" style="flex:1; gap:48px; align-items:center;">
+
+    <!-- Flywheel diagram -->
+    <div style="position:relative; width:300px; height:300px; flex-shrink:0; overflow:visible;">
+      <!-- Dashed ring -->
+      <div style="position:absolute; inset:35px; border-radius:50%; border:1px dashed rgba(196,93,44,0.25); pointer-events:none;"></div>
+      <!-- Center -->
+      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:76px; height:76px; border-radius:50%; background:rgba(196,93,44,0.1); border:2px solid var(--teal); display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; z-index:2;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        <span style="font-size:8px; font-weight:800; color:var(--teal); margin-top:3px; letter-spacing:0.08em;">FLYWHEEL</span>
+      </div>
+      <!-- Node 1: top -->
+      <div style="position:absolute; top:5px; left:110px; background:var(--surface); border:1px solid var(--teal); border-radius:8px; padding:6px 8px; text-align:center; width:80px;">
+        <div style="font-size:9px; font-weight:700; color:var(--teal); margin-bottom:2px;">01</div>
+        <div style="font-size:9px; color:var(--text-dim); line-height:1.35;">Operator submits observation</div>
+      </div>
+      <!-- Node 2: top-right -->
+      <div style="position:absolute; top:89px; left:216px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 8px; text-align:center; width:80px;">
+        <div style="font-size:9px; font-weight:700; color:var(--teal); margin-bottom:2px;">02</div>
+        <div style="font-size:9px; color:var(--text-dim); line-height:1.35;">AI analyses against SOPs</div>
+      </div>
+      <!-- Node 3: bottom-right -->
+      <div style="position:absolute; top:218px; left:175px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 8px; text-align:center; width:80px;">
+        <div style="font-size:9px; font-weight:700; color:var(--teal); margin-bottom:2px;">03</div>
+        <div style="font-size:9px; color:var(--text-dim); line-height:1.35;">CAPA drafted in seconds</div>
+      </div>
+      <!-- Node 4: bottom-left -->
+      <div style="position:absolute; top:218px; left:45px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 8px; text-align:center; width:80px;">
+        <div style="font-size:9px; font-weight:700; color:var(--teal); margin-bottom:2px;">04</div>
+        <div style="font-size:9px; color:var(--text-dim); line-height:1.35;">Patterns grow richer with every shift</div>
+      </div>
+      <!-- Node 5: top-left -->
+      <div style="position:absolute; top:89px; left:4px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 8px; text-align:center; width:80px;">
+        <div style="font-size:9px; font-weight:700; color:var(--teal); margin-bottom:2px;">05</div>
+        <div style="font-size:9px; color:var(--text-dim); line-height:1.35;">Deviation risk falls. ROI visible.</div>
+      </div>
+      <!-- Arrows -->
+      <div style="position:absolute; top:62px; left:198px; font-size:11px; color:var(--teal); transform:rotate(38deg); opacity:0.7;">➜</div>
+      <div style="position:absolute; top:175px; left:238px; font-size:11px; color:var(--teal); transform:rotate(110deg); opacity:0.7;">➜</div>
+      <div style="position:absolute; top:255px; left:132px; font-size:11px; color:var(--teal); transform:rotate(182deg); opacity:0.7;">➜</div>
+      <div style="position:absolute; top:178px; left:24px; font-size:11px; color:var(--teal); transform:rotate(252deg); opacity:0.7;">➜</div>
+      <div style="position:absolute; top:62px; left:76px; font-size:11px; color:var(--teal); transform:rotate(322deg); opacity:0.7;">➜</div>
+    </div>
+
+    <!-- Right: explanation -->
+    <div class="col flex-1 gap-16">
+      <div class="card card-teal" style="padding:20px;">
+        <div style="font-size:13px; font-weight:700; color:var(--teal); margin-bottom:8px;">The compounding advantage</div>
+        <p class="body-sm">Each observation submission enriches the facility's pattern library. Cross-submission detection sharpens with every data point. Six months in, Vent understands that site's deviation fingerprint better than any human analyst could.</p>
+      </div>
+      <div class="card" style="padding:20px;">
+        <div style="font-size:13px; font-weight:700; margin-bottom:8px;">Why competitors cannot catch up</div>
+        <p class="body-sm">A competitor arriving at a facility where Vent has been running for a year has no access to 12 months of anonymised observations, SOP gap flags, and deviation patterns. That intelligence is locked in Vent's model of that site, and it took a year of real operations to build.</p>
+      </div>
+      <div style="padding:14px 18px; background:var(--surface2); border-left:3px solid var(--teal); border-radius:0 8px 8px 0;">
+        <p style="font-size:13px; color:var(--text-dim); margin:0;">Every site that runs Vent for a full production cycle becomes a facility intelligence asset, one that compounds every shift and makes displacement progressively harder to justify.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">6 / 17</div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 7 , PRODUCT: OPERATOR
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding: 52px 60px;">
+  <div class="glow-br"></div>
+
+  <div class="label">Product , Operator Layer</div>
+  <div class="h3 mb-8">Designed for the floor, not the office.</div>
+  <p class="body mb-28" style="max-width:600px;">Two core tools, built for people whose hands are busy. No training required. No system navigation. Just ask or report.</p>
+
+  <div class="row" style="flex:1; gap:28px; align-items:stretch;">
+
+    <!-- Left: SOP Query -->
+    <div class="mockup-wrap flex-1 col" style="display:flex; flex-direction:column;">
+      <div class="mockup-bar">
+        <div class="mockup-dot md-red"></div><div class="mockup-dot md-yellow"></div><div class="mockup-dot md-green"></div>
+        <span class="mockup-url">vent-production.up.railway.app/query</span>
+      </div>
+      <div class="mockup-nav">
+        <span class="mnav-logo">Vent <span>•</span></span>
+        <span class="mnav-item active">Query SOPs</span>
+        <span class="mnav-item">Doc Builder</span>
+        <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+          <span style="font-size:10px; padding:2px 8px; background:rgba(196,93,44,0.1); color:var(--teal); border-radius:3px;">Operator</span>
+        </div>
+      </div>
+      <div class="mockup-body" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center;">
+        <div style="width:44px; height:44px; background:rgba(196,93,44,0.1); border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:4px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div style="font-size:18px; font-weight:700;">Ask the <span class="italic" style="font-size:20px;">procedures.</span></div>
+        <div style="font-size:11px; color:var(--text-dim); max-width:260px;">Search the facility SOPs in plain language. Get step-by-step instructions and exact parameter values.</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:4px;">
+          <span style="padding:4px 10px; border:1px solid var(--border); border-radius:12px; font-size:10px; color:var(--text-dim);">pH control</span>
+          <span style="padding:4px 10px; border:1px solid var(--border); border-radius:12px; font-size:10px; color:var(--text-dim);">Inoculation criteria</span>
+          <span style="padding:4px 10px; border:1px solid var(--border); border-radius:12px; font-size:10px; color:var(--text-dim);">DO control cascade</span>
+          <span style="padding:4px 10px; border:1px solid var(--border); border-radius:12px; font-size:10px; color:var(--text-dim);">Bleed rate</span>
+        </div>
+        <div style="margin-top:auto; width:100%; background:#f0ece7; border:1px solid #d4ccc3; border-radius:6px; padding:10px 14px; font-size:11px; color:#9a928a; text-align:left;">
+          Ask a question about any SOP procedure, parameter, or step...
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Raise Observation -->
+    <div class="mockup-wrap flex-1 col">
+      <div class="mockup-bar">
+        <div class="mockup-dot md-red"></div><div class="mockup-dot md-yellow"></div><div class="mockup-dot md-green"></div>
+        <span class="mockup-url">, Raise an observation</span>
+      </div>
+      <div class="mockup-body" style="flex:1; display:flex; flex-direction:column; gap:14px; padding:20px;">
+        <div style="font-size:15px; font-weight:700;">Raise an observation</div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:-8px;">Anonymous · routed to QA &amp; MSAT</div>
+
+        <div style="font-size:11px; color:#5a554f; letter-spacing:0.08em; text-transform:uppercase;">Observation</div>
+        <div style="background:#f0ece7; border:1.5px solid var(--teal); border-radius:6px; padding:12px; font-size:11px; color:#9a928a; height:72px;">What did you observe? Any deviation, concern, or SOP gap?</div>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div style="flex:1; background:#f0ece7; border:1px solid #d4ccc3; border-radius:5px; padding:6px 10px; font-size:10px; color:#5a554f;">Upstream Bioreactor ▾</div>
+          <div style="padding:5px 10px; border:1px solid #3a4155; border-radius:4px; font-size:10px; color:#5a554f;">Low</div>
+          <div style="padding:5px 10px; background:rgba(184,134,11,0.15); border:1px solid rgba(184,134,11,0.4); border-radius:4px; font-size:10px; color:var(--amber); font-weight:600;">Med</div>
+          <div style="padding:5px 10px; border:1px solid #3a4155; border-radius:4px; font-size:10px; color:#5a554f;">High</div>
+        </div>
+
+        <div style="font-size:11px; color:#9a928a;">🔒 &nbsp;Anonymous to colleagues. Traceable by the system for compliance.</div>
+
+        <div style="font-size:11px; color:#5a554f; letter-spacing:0.08em; text-transform:uppercase;">Photos or Video , optional</div>
+        <div style="background:#f0ece7; border:1px dashed #d4ccc3; border-radius:6px; padding:14px; text-align:center; font-size:11px; color:#9a928a;">
+          Add photos or video<br><span style="font-size:10px;">Drag &amp; drop or click · up to 5 files</span>
+        </div>
+
+        <div style="margin-top:auto; background:var(--teal); border-radius:6px; padding:11px; text-align:center; font-size:13px; font-weight:700; color:#ffffff;">Submit observation →</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">7 / 17</div>
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 8 , PRODUCT: QA CONTROL
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding: 52px 60px;">
+  <div class="glow-tl"></div>
+
+  <div class="label">Product , QA Intelligence Layer</div>
+  <div class="h3 mb-8">QA has a command centre, not a queue.</div>
+  <p class="body mb-28" style="max-width:620px;">Every submission arrives fully analysed , SOP references, risk level, corrective actions, and contact routing already generated. QA reviews, decides, signs.</p>
+
+  <div class="row" style="flex:1; gap:20px;">
+    <!-- Main mockup -->
+    <div class="mockup-wrap" style="flex:1.8;">
+      <div class="mockup-bar">
+        <div class="mockup-dot md-red"></div><div class="mockup-dot md-yellow"></div><div class="mockup-dot md-green"></div>
+        <span class="mockup-url">vent-production.up.railway.app/qa</span>
+      </div>
+      <div class="mockup-nav">
+        <span class="mnav-logo">Vent <span>•</span></span>
+        <span class="mnav-item">Submit</span>
+        <span class="mnav-item active">QA Control</span>
+        <span class="mnav-item">Workflow</span>
+        <span class="mnav-item">Dashboard</span>
+        <div style="margin-left:auto; font-size:10px; padding:2px 8px; background:rgba(196,93,44,0.1); color:var(--teal); border-radius:3px;">QA</div>
+      </div>
+      <div style="display:flex; height:calc(100% - 70px);">
+        <!-- Sidebar -->
+        <div style="width:180px; border-right:1px solid #d4ccc3; padding:12px 10px; display:flex; flex-direction:column; gap:8px;">
+          <div style="font-size:9px; color:#9a928a; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:4px;">Submissions</div>
+          <div style="background:rgba(166,61,47,0.1); border-radius:5px; padding:8px 10px;">
+            <div style="font-size:10px; color:var(--teal); font-weight:600;">VNT-4821</div>
+            <div style="font-size:9px; color:#5a554f;">DO spike · Bioreactor</div>
+            <div style="font-size:9px; color:var(--red);">⬤ HIGH</div>
+          </div>
+          <div style="background:#ede8e2; border-radius:5px; padding:8px 10px;">
+            <div style="font-size:10px; color:#1c1c1c; font-weight:600;">VNT-3307</div>
+            <div style="font-size:9px; color:#5a554f;">Media pH · Media Prep</div>
+            <div style="font-size:9px; color:var(--amber);">⬤ MED</div>
+          </div>
+          <div style="background:#ede8e2; border-radius:5px; padding:8px 10px;">
+            <div style="font-size:10px; color:#1c1c1c; font-weight:600;">VNT-2190</div>
+            <div style="font-size:9px; color:#5a554f;">Cell viability · N-1</div>
+            <div style="font-size:9px; color:#5a554f;">⬤ LOW</div>
+          </div>
+        </div>
+        <!-- Main content -->
+        <div style="flex:1; padding:14px; overflow:hidden;">
+          <div style="font-size:12px; font-weight:600; margin-bottom:8px;">VNT-4821 , Upstream Bioreactor</div>
+          <div style="font-size:11px; color:#5a554f; margin-bottom:12px; padding:8px; background:#f0ece7; border-radius:4px; border-left:2px solid var(--red);">
+            "DO reading dropped to 18% during night shift, recovered after 2h. No alarm triggered on the SCADA system. Not sure if this was captured in the BPR."
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:10px;">
+            <div style="background:#f0ece7; border:1px solid #d4ccc3; border-radius:4px; padding:8px;">
+              <div style="color:var(--teal); font-weight:600; margin-bottom:4px;">SOP References</div>
+              <div style="color:#5a554f;">SOP-UP-003 §4.2.1 , DO control cascade</div>
+              <div style="color:#5a554f;">BPR-UP-001 §6.4 , In-process monitoring</div>
+            </div>
+            <div style="background:#f0ece7; border:1px solid #d4ccc3; border-radius:4px; padding:8px;">
+              <div style="color:var(--amber); font-weight:600; margin-bottom:4px;">Risk Assessment</div>
+              <div style="color:#5a554f;">Root cause: DO probe calibration drift</div>
+              <div style="color:#5a554f;">Regulatory flag: Yes , 21 CFR §211.192</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right callouts -->
+    <div class="col" style="flex:1; gap:16px; justify-content:center;">
+      <div class="card" style="padding:20px;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:6px; color:var(--teal);">Auto SOP cross-reference</div>
+        <p class="body-sm">Every submission arrives with the exact SOP sections cited by ref number. Click any reference to read the full section inline.</p>
+      </div>
+      <div class="card" style="padding:20px;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:6px; color:var(--amber);">CAPA package drafted</div>
+        <p class="body-sm">Corrective actions generated with timing bands , immediate, short-term, long-term , and automatically assigned to the right contact.</p>
+      </div>
+      <div class="card" style="padding:20px;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:6px; color:var(--blue);">Electronic signatures</div>
+        <p class="body-sm">QA approval, director sign-off, and closure require user ID + reason , logged with timestamps and SHA-256 checksums.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-num">8 / 17</div>
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 9 , PRODUCT: DOC BUILDER
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding: 52px 60px;">
+  <div class="glow-br"></div>
+
+  <div class="label">Product , Document Intelligence Layer</div>
+  <div class="h3 mb-8">Living documents, authored by the people who use them.</div>
+  <p class="body mb-28" style="max-width:640px;">A full IDE-style authoring environment for SOPs, work instructions, and batch record templates , built into the same platform operators use every day.</p>
+
+  <div class="row" style="flex:1; gap:28px; align-items:stretch;">
+
+    <div class="mockup-wrap" style="flex:2;">
+      <div class="mockup-bar">
+        <div class="mockup-dot md-red"></div><div class="mockup-dot md-yellow"></div><div class="mockup-dot md-green"></div>
+        <span class="mockup-url">vent-production.up.railway.app/builder</span>
+      </div>
+      <div class="mockup-nav">
+        <span class="mnav-logo">Vent <span>•</span></span>
+        <span class="mnav-item">Submit</span>
+        <span class="mnav-item">Query SOPs</span>
+        <span class="mnav-item active">Doc Builder</span>
+        <span class="mnav-item">QA Control</span>
+      </div>
+      <div style="display:flex; height:calc(100% - 70px);">
+        <!-- Left panel -->
+        <div style="width:160px; border-right:1px solid #d4ccc3; padding:10px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <span style="font-size:9px; color:#9a928a; letter-spacing:0.12em; text-transform:uppercase;">Documents</span>
+            <span style="font-size:9px; background:#d4ccc3; padding:2px 6px; border-radius:3px; color:#5a554f;">+ New</span>
+          </div>
+          <div style="background:#f0ece7; border-radius:4px; padding:6px 8px; margin-bottom:4px;">
+            <div style="font-size:9px; color:var(--teal);">Bioreactor Setup</div>
+            <div style="font-size:8px; color:#9a928a;">Draft · 4 steps</div>
+          </div>
+          <div style="padding:6px 8px; margin-bottom:4px;">
+            <div style="font-size:9px; color:#5a554f;">Media Preparation</div>
+            <div style="font-size:8px; color:#9a928a;">Approved · 8 steps</div>
+          </div>
+          <div style="padding:6px 8px;">
+            <div style="font-size:9px; color:#5a554f;">Cell Viability Protocol</div>
+            <div style="font-size:8px; color:#9a928a;">In Review · 6 steps</div>
+          </div>
+        </div>
+        <!-- Centre panel -->
+        <div style="flex:1; padding:12px; border-right:1px solid #d4ccc3;">
+          <div style="font-size:11px; font-weight:600; margin-bottom:10px; color:#1c1c1c;">Bioreactor Setup Protocol</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:#ede8e2; border:1px solid #d4ccc3; border-radius:4px; padding:8px 10px; font-size:10px;">
+              <span style="color:var(--teal); font-weight:600;">Step 1:</span> <span style="color:#5a554f;">Pre-use calibration and pressure hold test</span>
+            </div>
+            <div style="background:#ede8e2; border:1px solid #d4ccc3; border-radius:4px; padding:8px 10px; font-size:10px;">
+              <span style="color:var(--teal); font-weight:600;">Step 2:</span> <span style="color:#5a554f;">Probe polarisation and equilibration</span>
+            </div>
+            <div style="background:rgba(196,93,44,0.06); border:1px solid rgba(196,93,44,0.2); border-radius:4px; padding:8px 10px; font-size:10px;">
+              <span style="color:var(--teal); font-weight:600;">Step 3:</span> <span style="color:#6b5d52;">Inoculation criteria verification , editing...</span>
+            </div>
+          </div>
+          <div style="margin-top:12px; background:#f0ece7; border-top:1px solid #d4ccc3; padding-top:8px; font-size:9px; color:#9a928a;">Activity Log , Document Builder initialised. Ready.</div>
+        </div>
+        <!-- Right panel -->
+        <div style="width:180px; padding:10px;">
+          <div style="display:flex; gap:0; margin-bottom:12px;">
+            <span style="font-size:10px; padding:4px 10px; background:rgba(196,93,44,0.1); color:var(--teal); border-radius:4px 0 0 4px; border:1px solid rgba(196,93,44,0.3);">Edit</span>
+            <span style="font-size:10px; padding:4px 10px; color:#5a554f; border:1px solid #d4ccc3; border-left:none;">AI Assist</span>
+            <span style="font-size:10px; padding:4px 10px; color:#5a554f; border:1px solid #d4ccc3; border-left:none; border-radius:0 4px 4px 0;">Versions</span>
+          </div>
+          <div style="font-size:9px; color:#9a928a; margin-bottom:8px;">Step title</div>
+          <div style="background:#f0ece7; border:1px solid #d4ccc3; border-radius:4px; padding:6px; font-size:9px; color:#5a554f; margin-bottom:8px;">Inoculation criteria verification</div>
+          <div style="font-size:9px; color:#9a928a; margin-bottom:6px;">Instructions</div>
+          <div style="background:#f0ece7; border:1px solid rgba(196,93,44,0.2); border-radius:4px; padding:6px; font-size:9px; color:#5a554f; height:70px;">Confirm cell viability ≥85%, density within target range per BPR-UP-001...</div>
+          <div style="margin-top:10px; background:var(--teal); border-radius:4px; padding:5px; text-align:center; font-size:9px; font-weight:700; color:#ffffff;">Save Step</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col" style="flex:1; gap:16px; justify-content:center;">
+      <div style="font-size:14px; font-weight:600; margin-bottom:4px;">Key capabilities</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; gap:10px; align-items:flex-start; font-size:13px;"><span class="check">✓</span><span class="dim">Step-based document structure with version snapshots</span></div>
+        <div style="display:flex; gap:10px; align-items:flex-start; font-size:13px;"><span class="check">✓</span><span class="dim">Drag-to-reorder steps , VS Code-style IDE layout</span></div>
+        <div style="display:flex; gap:10px; align-items:flex-start; font-size:13px;"><span class="check">✓</span><span class="dim">Draft → In Review → Approved lifecycle tracking</span></div>
+        <div style="display:flex; gap:10px; align-items:flex-start; font-size:13px;"><span class="check">✓</span><span class="dim">AI Assist tab , Claude-powered draft generation</span></div>
+        <div style="display:flex; gap:10px; align-items:flex-start; font-size:13px;"><span class="check">✓</span><span class="dim">Real-time activity log for audit compliance</span></div>
+        <div style="display:flex; gap:10px; align-items:flex-start; font-size:13px;"><span class="check">✓</span><span class="dim">Media attachments , photos, video, files</span></div>
+      </div>
+      <div style="margin-top:8px; padding:14px; background:var(--surface); border:1px solid var(--border); border-radius:8px;">
+        <p class="body-sm" style="font-size:12px;">Operators author documents in the same tool they use for queries and observations. No EDMS login, no separate system, no friction.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">9 / 17</div>
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 10 , COMPLIANCE
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide pad">
+  <div class="glow-tl"></div>
+
+  <div class="label">Compliance Architecture</div>
+  <div class="h2 mb-8">Regulation-ready <span class="teal">by design.</span></div>
+  <p class="body mb-32" style="max-width:620px;">Most QMS tools bolt compliance on as an afterthought. Vent is built for regulated environments from the first line of code , because it was designed by someone who lives those requirements.</p>
+
+  <div class="row" style="flex:1; gap:20px; align-items:stretch;">
+
+    <div class="col" style="flex:1; gap:16px;">
+      <div class="card card-teal" style="padding:22px;">
+        <div style="font-size:11px; font-weight:700; color:var(--teal); margin-bottom:8px; letter-spacing:0.08em;">21 CFR PART 11 / EU ANNEX 11</div>
+        <p class="body-sm">Electronic signatures with user ID and justification required on all approval transitions , QA sign-off, director approval, closure, rejection.</p>
+      </div>
+      <div class="card" style="padding:22px;">
+        <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:8px; letter-spacing:0.08em;">IMMUTABLE AUDIT TRAIL</div>
+        <p class="body-sm">Every action , submission, status change, SOP modification, CAPA update, login , logged with SHA-256 checksums, timestamps, IP addresses, and user agents.</p>
+      </div>
+      <div class="card" style="padding:22px;">
+        <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:8px; letter-spacing:0.08em;">ALCOA+ DATA INTEGRITY</div>
+        <p class="body-sm">Data is Attributable, Legible, Contemporaneous, Original, and Accurate. Anonymity for operators does not compromise traceability for the system , these are separated by design.</p>
+      </div>
+    </div>
+
+    <div class="col" style="flex:1; gap:16px;">
+      <div class="card" style="padding:22px;">
+        <div style="font-size:11px; font-weight:700; color:var(--text); margin-bottom:8px; letter-spacing:0.08em;">ROLE-BASED ACCESS CONTROL</div>
+        <p class="body-sm">Six distinct roles (Operator, QA, Director, MSAT, Engineering, Admin) with fine-grained route-level enforcement. Sensitive transitions locked by role.</p>
+      </div>
+      <div class="card card-blue" style="padding:22px;">
+        <div style="font-size:11px; font-weight:700; color:var(--blue); margin-bottom:8px; letter-spacing:0.08em;">DATABASE-LEVEL SECURITY</div>
+        <p class="body-sm">Supabase Row Level Security policies. No direct table access without authentication. All queries proxy through the authenticated Express server.</p>
+      </div>
+      <div style="padding:20px; background:var(--surface2); border-radius:10px; border:1px solid var(--border);">
+        <div style="font-size:13px; font-weight:600; margin-bottom:6px;">Why this matters for customers</div>
+        <p class="body-sm" style="font-size:13px;">FDA and HPRA inspectors audit electronic records systems. A platform without a compliant audit architecture cannot enter a GMP facility , full stop. Vent is inspection-ready from day one, which removes the single biggest procurement blocker.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">10 / 17</div>
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 11 , MARKET
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide pad">
+  <div class="glow-br"></div>
+
+  <div class="label">Market Opportunity</div>
+  <div class="h2 mb-8">A regulated, underserved, <span class="teal">fast-growing market.</span></div>
+  <p class="body mb-32" style="max-width:620px;">Biologics is the fastest-growing segment of pharma. Every facility runs on GMP. Every GMP facility has the same floor-to-QA information problem. None of them have a solution built for the floor.</p>
+
+  <div class="row" style="flex:1; gap:32px; align-items:center;">
+
+    <!-- Market rings -->
+    <div class="market-rings" style="flex-shrink:0;">
+      <div class="ring ring-tam">
+        <div class="ring-label-tam">TAM</div>
+      </div>
+      <div class="ring ring-sam">
+        <div class="ring-label-sam">SAM</div>
+      </div>
+      <div class="ring ring-som" style="display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center;">
+        <div style="font-size:11px; font-weight:700; color:var(--teal);">SOM</div>
+      </div>
+    </div>
+
+    <!-- Market breakdown -->
+    <div class="col flex-1 gap-24">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+          <span style="font-size:13px; font-weight:600; color:var(--text-dim);">TAM , Global Quality Management Software</span>
+          <span style="font-size:22px; font-weight:800; color:var(--teal);">$11B</span>
+        </div>
+        <div style="height:4px; background:rgba(196,93,44,0.15); border-radius:2px;"><div style="width:100%; height:100%; background:rgba(196,93,44,0.25); border-radius:2px;"></div></div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">2024 market size · 10.6% CAGR · life sciences, biotech, medtech and regulated manufacturing</div>
+      </div>
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+          <span style="font-size:13px; font-weight:600; color:var(--text-dim);">SAM , Pharma QMS, CAPA &amp; Doc Control</span>
+          <span style="font-size:22px; font-weight:800; color:var(--blue);">$3B</span>
+        </div>
+        <div style="height:4px; background:rgba(26,58,92,0.15); border-radius:2px;"><div style="width:28%; height:100%; background:rgba(26,58,92,0.3); border-radius:2px;"></div></div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Pharma QMS 2030 projection · 13.3% CAGR · ~5,000 regulated biologics target sites globally</div>
+      </div>
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+          <span style="font-size:13px; font-weight:600; color:var(--text-dim);">SOM , AI-native Floor Intelligence (5yr)</span>
+          <span style="font-size:22px; font-weight:800; color:var(--amber);">$200M</span>
+        </div>
+        <div style="height:4px; background:rgba(184,134,11,0.15); border-radius:2px;"><div style="width:7%; height:100%; background:rgba(184,134,11,0.4); border-radius:2px;"></div></div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">~4,000 GMP sites (EU + US) · avg €50K ARR · biologics and drug substance manufacturing</div>
+      </div>
+
+      <div style="padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; margin-top:4px;">
+        <div style="font-size:12px; font-weight:600; margin-bottom:6px;">Ireland as the entry point</div>
+        <p class="body-sm" style="font-size:12px;">9 of the world's top 10 pharma companies manufacture in Ireland. Pfizer, Eli Lilly, MSD, BMS, Regeneron, AbbVie — the world's densest pharma cluster per capita. The founder works inside it every day.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-num">11 / 17</div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 12 , IRISH PHARMA CORRIDOR
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding: 48px 60px;">
+  <div class="glow-tr"></div>
+
+  <div style="display:flex; align-items:flex-start; gap:48px; height:100%;">
+    <!-- LEFT: Clusters -->
+    <div style="flex:1.4; display:flex; flex-direction:column; gap:20px;">
+
+      <div>
+        <div style="font-size:11px; font-weight:700; letter-spacing:2.5px; color:var(--teal); text-transform:uppercase; margin-bottom:10px;">Why Ireland First</div>
+        <h2 style="font-size:34px; font-weight:800; line-height:1.15; color:var(--text); margin-bottom:10px;">Europe's most concentrated<br>biopharma cluster.</h2>
+        <p style="font-size:14px; color:var(--text-dim); max-width:480px; line-height:1.6;">9 of the world's 10 largest pharmaceutical companies manufacture in Ireland. This is not a market we need to reach — it is the environment the founder operates in every day.</p>
+      </div>
+
+      <!-- Two cluster columns -->
+      <div style="display:flex; gap:20px; flex:1;">
+
+        <!-- Cork / Munster Cluster -->
+        <div style="flex:1; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 20px;">
+          <div style="font-size:10px; font-weight:700; letter-spacing:2px; color:var(--teal); text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+            <div style="width:7px; height:7px; border-radius:50%; background:var(--teal);"></div>
+            Cork / Munster Cluster
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">Pfizer <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Ringaskiddy, Cork</span></div>
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">Eli Lilly <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Kinsale, Cork</span></div>
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">MSD <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Brinny, Cork</span></div>
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">GSK <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Dungarvan, Waterford</span></div>
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">Regeneron <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Limerick</span></div>
+          </div>
+        </div>
+
+        <!-- National Sites -->
+        <div style="flex:1; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 20px;">
+          <div style="font-size:10px; font-weight:700; letter-spacing:2px; color:var(--blue); text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+            <div style="width:7px; height:7px; border-radius:50%; background:var(--blue);"></div>
+            National Sites
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">AbbVie <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Sligo</span></div>
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">Alexion / AZ <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Athlone</span></div>
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">Takeda <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Bray, Wicklow</span></div>
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">BMS <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Dublin 15</span></div>
+            <div style="background:var(--surface2); border-radius:6px; padding:8px 12px; font-size:13px; font-weight:600; color:var(--text);">WuXi Biologics <span style="font-weight:400; color:var(--text-dim); font-size:11px;">Dundalk, Louth</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: Stats + Callout -->
+    <div style="width:232px; display:flex; flex-direction:column; gap:14px; padding-top:52px;">
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; text-align:center;">
+        <div style="font-size:40px; font-weight:900; color:var(--teal); line-height:1;">9/10</div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:6px; line-height:1.5;">of the world's top 10 pharma companies manufacture here</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; text-align:center;">
+        <div style="font-size:32px; font-weight:900; color:var(--blue); line-height:1;">€80B+</div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:6px; line-height:1.5;">pharma exports annually — Ireland's #1 export sector</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; text-align:center;">
+        <div style="font-size:32px; font-weight:900; color:var(--amber); line-height:1;">90+</div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:6px; line-height:1.5;">licensed manufacturing sites across the island</div>
+      </div>
+
+      <div style="background:rgba(196,93,44,0.08); border:1px solid rgba(196,93,44,0.3); border-radius:10px; padding:16px;">
+        <div style="font-size:10px; font-weight:700; letter-spacing:2px; color:var(--teal); text-transform:uppercase; margin-bottom:8px;">Insider Access</div>
+        <div style="font-size:12px; color:var(--text); line-height:1.6;">The founder works inside one of these facilities. The first sale is a warm door, not a cold call.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="slide-num">12 / 17</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 13 , COMPETITIVE LANDSCAPE
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding: 44px 60px;">
+  <div class="glow-tr"></div>
+
+  <div class="label">Competitive Landscape</div>
+  <div class="h2 mb-8" style="font-size:38px;">The incumbents were built for the office.<br><span class="teal">Vent is built for the floor.</span></div>
+  <p class="body mb-20" style="font-size:13px; max-width:700px;">Existing QMS tools serve QA teams who control the budget. Nobody has ever built for the operators who generate the signal. That gap is where Vent lives.</p>
+
+  <div class="row" style="flex:1; gap:28px; align-items:stretch;">
+
+    <!-- Left: positioning map + cost callout -->
+    <div class="col" style="width:300px; flex-shrink:0; gap:16px;">
+
+      <!-- 2x2 quadrant -->
+      <div style="flex:1; position:relative; background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; min-height:220px;">
+        <!-- Axis lines -->
+        <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:var(--border);"></div>
+        <div style="position:absolute; left:50%; top:0; bottom:0; width:1px; background:var(--border);"></div>
+        <!-- Axis labels -->
+        <div style="position:absolute; top:8px; left:50%; transform:translateX(-50%); font-size:9px; font-weight:700; color:var(--teal); letter-spacing:0.1em; white-space:nowrap;">AI-NATIVE</div>
+        <div style="position:absolute; bottom:8px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--text-muted); letter-spacing:0.08em; white-space:nowrap;">LEGACY</div>
+        <div style="position:absolute; left:6px; top:50%; transform:translateY(-50%) rotate(-90deg); font-size:9px; font-weight:700; color:var(--teal); letter-spacing:0.08em; white-space:nowrap; transform-origin:center;">OPERATOR</div>
+        <div style="position:absolute; right:2px; top:50%; transform:translateY(-50%) rotate(90deg); font-size:9px; color:var(--text-muted); letter-spacing:0.08em; white-space:nowrap; transform-origin:center;">QA / OFFICE</div>
+        <!-- Vent dot -->
+        <div style="position:absolute; top:22%; left:22%; transform:translate(-50%,-50%);">
+          <div style="width:48px; height:48px; border-radius:50%; background:rgba(196,93,44,0.15); border:2px solid var(--teal); display:flex; align-items:center; justify-content:center;">
+            <span style="font-size:10px; font-weight:800; color:var(--teal);">Vent</span>
+          </div>
+        </div>
+        <!-- Competitor cluster -->
+        <div style="position:absolute; top:72%; left:75%; transform:translate(-50%,-50%);">
+          <div style="position:relative; width:80px; height:70px;">
+            <div style="position:absolute; top:0; left:10px; font-size:8px; color:var(--text-muted); background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:3px 6px;">Veeva</div>
+            <div style="position:absolute; top:22px; left:0; font-size:8px; color:var(--text-muted); background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:3px 6px;">MasterControl</div>
+            <div style="position:absolute; top:44px; left:8px; font-size:8px; color:var(--text-muted); background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:3px 6px;">TrackWise</div>
+          </div>
+        </div>
+        <!-- Quadrant label -->
+        <div style="position:absolute; top:12px; left:12px; font-size:8px; color:rgba(196,93,44,0.4); font-weight:600; letter-spacing:0.06em;">UNCONTESTED</div>
+      </div>
+
+      <!-- Cost callout -->
+      <div style="background:rgba(184,134,11,0.06); border:1px solid rgba(184,134,11,0.25); border-radius:10px; padding:14px 16px;">
+        <div style="font-size:10px; font-weight:700; color:var(--amber); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px;">To replicate Vent today</div>
+        <div style="font-size:12px; color:var(--text-dim); line-height:1.5;">QMS licence + doc management + training LMS + AI integration layer</div>
+        <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:baseline;">
+          <span style="font-size:11px; color:var(--text-muted);">Combined cost</span>
+          <span style="font-size:16px; font-weight:800; color:var(--red);">€100–500K+/yr</span>
+        </div>
+        <div style="margin-top:4px; display:flex; justify-content:space-between; align-items:baseline;">
+          <span style="font-size:11px; color:var(--text-muted);">Vent (all-in)</span>
+          <span style="font-size:16px; font-weight:800; color:var(--teal);">€35–60K/yr</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: feature matrix -->
+    <div class="col flex-1" style="gap:0;">
+      <!-- Header row -->
+      <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; gap:0; margin-bottom:6px; padding:0 12px;">
+        <div style="font-size:10px; color:var(--text-muted);"></div>
+        <div style="font-size:10px; font-weight:600; color:var(--text-muted); text-align:center; letter-spacing:0.06em;">Veeva</div>
+        <div style="font-size:10px; font-weight:600; color:var(--text-muted); text-align:center; letter-spacing:0.06em;">MasterControl</div>
+        <div style="font-size:10px; font-weight:600; color:var(--text-muted); text-align:center; letter-spacing:0.06em;">TrackWise</div>
+        <div style="font-size:10px; font-weight:700; color:var(--teal); text-align:center; letter-spacing:0.06em;">Vent</div>
+      </div>
+
+      <!-- Feature rows -->
+      <div style="display:flex; flex-direction:column; gap:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; flex:1;">
+
+        <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; padding:10px 12px; border-bottom:1px solid var(--border); background:rgba(166,61,47,0.03);">
+          <div style="font-size:12px; font-weight:600; color:var(--text);">Anonymous floor reporting</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; padding:10px 12px; border-bottom:1px solid var(--border); background:rgba(166,61,47,0.03);">
+          <div style="font-size:12px; font-weight:600; color:var(--text);">AI SOP analysis (RAG pipeline)</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; padding:10px 12px; border-bottom:1px solid var(--border); background:rgba(166,61,47,0.03);">
+          <div style="font-size:12px; font-weight:600; color:var(--text);">Auto-generated CAPA packages</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; padding:10px 12px; border-bottom:1px solid var(--border); background:rgba(166,61,47,0.03);">
+          <div style="font-size:12px; font-weight:600; color:var(--text);">Operator-first floor UX</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; padding:10px 12px; border-bottom:1px solid var(--border);">
+          <div style="font-size:12px; color:var(--text-dim);">Deviation &amp; CAPA management</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; padding:10px 12px; border-bottom:1px solid var(--border);">
+          <div style="font-size:12px; color:var(--text-dim);">Document control</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; padding:10px 12px; border-bottom:1px solid var(--border);">
+          <div style="font-size:12px; color:var(--text-dim);">Training LMS (same platform)</div>
+          <div style="text-align:center; font-size:11px; color:var(--text-muted);">add-on</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; padding:10px 12px; border-bottom:1px solid var(--border);">
+          <div style="font-size:12px; color:var(--text-dim);">Flat site-based pricing</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--red);">✗</div>
+          <div style="text-align:center; font-size:14px; color:var(--green);">✓</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 80px 90px 80px 80px; padding:10px 12px; background:rgba(196,93,44,0.04); border-top:1px solid rgba(196,93,44,0.15);">
+          <div style="font-size:11px; font-weight:700; color:var(--text);">Typical annual cost per site</div>
+          <div style="text-align:center; font-size:11px; font-weight:700; color:var(--red);">€60–240K</div>
+          <div style="text-align:center; font-size:11px; font-weight:700; color:var(--red);">€50–300K</div>
+          <div style="text-align:center; font-size:11px; font-weight:700; color:var(--red);">€60–480K</div>
+          <div style="text-align:center; font-size:11px; font-weight:700; color:var(--teal);">€35–60K</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">13 / 17</div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 14 , BUSINESS MODEL
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide pad">
+  <div class="glow-tl"></div>
+
+  <div class="label">Business Model</div>
+  <div class="h2 mb-8">Site-based SaaS. Simple to land, <span class="teal">strong to expand.</span></div>
+  <p class="body mb-32" style="max-width:640px;">Annual per-site licences, with natural expansion across departments and up the management stack. CDMOs operating multiple sites are the highest-value enterprise accounts.</p>
+
+  <div class="row" style="flex:1; gap:20px; align-items:stretch;">
+
+    <div class="card flex-1 col" style="padding:32px; position:relative;">
+      <div class="pill pill-teal mb-24" style="width:fit-content;">OPERATOR</div>
+      <div style="font-size:38px; font-weight:900; letter-spacing:-0.02em; margin-bottom:4px;">€15K</div>
+      <div style="font-size:13px; color:var(--text-dim); margin-bottom:24px;">per site / per year</div>
+      <div class="divider"></div>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>SOP Query (RAG-powered)</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>Anonymous observation submission</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>Document Builder</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>Notification system</div>
+      </div>
+      <div style="margin-top:auto; padding-top:20px; font-size:12px; color:var(--text-muted);">Entry point for floor teams</div>
+    </div>
+
+    <div class="card card-teal flex-1 col" style="padding:32px;">
+      <div class="pill pill-teal mb-24" style="width:fit-content;">QA + WORKFLOW</div>
+      <div style="font-size:38px; font-weight:900; letter-spacing:-0.02em; margin-bottom:4px; color:var(--teal);">€35K</div>
+      <div style="font-size:13px; color:var(--text-dim); margin-bottom:24px;">per site / per year</div>
+      <div class="divider"></div>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>Everything in Operator tier</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>QA Control Centre</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>CAPA tracking &amp; management</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>SOP change management + audit trail</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>Electronic signatures (21 CFR Part 11)</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>4-phase workflow routing</div>
+      </div>
+      <div style="margin-top:auto; padding-top:20px; font-size:12px; color:var(--text-muted);">Core product , where value is captured</div>
+    </div>
+
+    <div class="card card-blue flex-1 col" style="padding:32px;">
+      <div class="pill mb-24" style="width:fit-content; background:rgba(26,58,92,0.12); color:var(--blue); border:1px solid rgba(26,58,92,0.3);">ENTERPRISE</div>
+      <div style="font-size:38px; font-weight:900; letter-spacing:-0.02em; margin-bottom:4px; color:var(--blue);">€60K+</div>
+      <div style="font-size:13px; color:var(--text-dim); margin-bottom:24px;">per site / per year</div>
+      <div style="width:48px; height:3px; background:var(--blue); border-radius:2px; margin-bottom:16px;"></div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">✓</span>Everything in QA tier</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">✓</span>Multi-site analytics &amp; benchmarking</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">✓</span>Director intelligence dashboard</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">✓</span>API access + EDMS integration</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">✓</span>Custom SOP library ingestion</div>
+        <div style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">✓</span>Dedicated onboarding &amp; validation support</div>
+      </div>
+      <div style="margin-top:auto; padding-top:20px; font-size:12px; color:var(--text-muted);">CDMOs and multi-site operations</div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">14 / 17</div>
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 15 , TRACTION
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide pad">
+  <div class="glow-tr"></div>
+
+  <div class="label">Where We Are</div>
+  <div class="h2 mb-8">Pre-revenue. Post-prototype. <span class="teal">Honest picture.</span></div>
+  <p class="body mb-32" style="max-width:580px;">The product exists, it works end-to-end, and it was built by someone who lives the problem every day. No co-founder, no investment, no customers yet. Here is what is true.</p>
+
+  <div class="row" style="gap:24px; margin-bottom:24px;">
+    <div class="card card-teal flex-1" style="padding:24px;">
+      <div style="font-size:28px; font-weight:900; color:var(--teal); margin-bottom:6px;">Live</div>
+      <div style="font-size:13px; color:var(--text-dim);">Working product deployed on Railway. Full stack: submission → AI analysis → CAPA → QA workflow → director dashboard. You can demo it today.</div>
+    </div>
+    <div class="card flex-1" style="padding:24px;">
+      <div style="font-size:28px; font-weight:900; margin-bottom:6px;">Solo</div>
+      <div style="font-size:13px; color:var(--text-dim);">Designed, built, and deployed by a single founder, a practising bioprocess associate, in evenings and weekends while working full time on the manufacturing floor. Zero external funding.</div>
+    </div>
+    <div class="card flex-1" style="padding:24px; border-color:rgba(26,58,92,0.3); background:rgba(26,58,92,0.04);">
+      <div style="font-size:28px; font-weight:900; color:var(--blue); margin-bottom:6px;">Insider</div>
+      <div style="font-size:13px; color:var(--text-dim);">The problem is not theoretical. The founder observes the floor-to-QA information gap every working day. Built from daily lived experience, not user interviews.</div>
+    </div>
+    <div class="card flex-1" style="padding:24px; border-color:rgba(196,93,44,0.2); background:rgba(196,93,44,0.03);">
+      <div style="font-size:28px; font-weight:900; color:var(--teal); margin-bottom:6px;">Part 11</div>
+      <div style="font-size:13px; color:var(--text-dim);">21 CFR Part 11 compliant audit trail, e-signatures, and SHA-256 checksums built from day one. The compliance architecture passes inspection without further development.</div>
+    </div>
+  </div>
+
+  <div style="padding:28px 36px; background:var(--surface); border:1px solid var(--border); border-radius:12px; display:flex; gap:32px; align-items:center;">
+    <div class="col" style="gap:12px; flex:1;">
+      <div style="font-size:15px; font-weight:700; margin-bottom:4px;">What exists today</div>
+      <div style="display:flex; gap:8px; align-items:center; font-size:13px;"><span class="check">✓</span>End-to-end submission → AI analysis → CAPA workflow</div>
+      <div style="display:flex; gap:8px; align-items:center; font-size:13px;"><span class="check">✓</span>QA Control Centre with SOP cross-reference</div>
+      <div style="display:flex; gap:8px; align-items:center; font-size:13px;"><span class="check">✓</span>Document Builder with version control and AI Assist</div>
+      <div style="display:flex; gap:8px; align-items:center; font-size:13px;"><span class="check">✓</span>21 CFR Part 11 compliant audit trail and e-signatures</div>
+    </div>
+    <div style="width:1px; height:80px; background:var(--border);"></div>
+    <div class="col" style="gap:12px; flex:1;">
+      <div style="font-size:15px; font-weight:700; margin-bottom:4px;">What's next (with Dogpatch)</div>
+      <div style="display:flex; gap:8px; align-items:center; font-size:13px; color:var(--text-dim);">→ First paying pilot (CDMO or MNC, Ireland)</div>
+      <div style="display:flex; gap:8px; align-items:center; font-size:13px; color:var(--text-dim);">→ IQ/OQ/PQ validation package for GMP deployment</div>
+      <div style="display:flex; gap:8px; align-items:center; font-size:13px; color:var(--text-dim);">→ Visual SOP Engine (Phase 2)</div>
+      <div style="display:flex; gap:8px; align-items:center; font-size:13px; color:var(--text-dim);">→ Technical co-founder / first hire</div>
+    </div>
+  </div>
+
+  <div class="slide-num">15 / 17</div>
+  
+</div>
+
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 16 , TEAM
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide pad" style="justify-content:center;">
+  <div class="glow-tr"></div>
+
+  <div class="label">The Founder</div>
+  <div class="h2 mb-40">Domain expertise <span class="teal">is the moat.</span></div>
+
+  <div class="row" style="gap:48px; align-items:flex-start;">
+
+    <!-- Profile card -->
+    <div class="col" style="width:320px; gap:0; flex-shrink:0;">
+      <div style="width:88px; height:88px; border-radius:20px; background:var(--surface2); border:2px solid var(--teal); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+        <span style="font-size:32px; font-weight:800; color:var(--teal);">DD</span>
+      </div>
+      <div style="font-size:22px; font-weight:700; margin-bottom:4px;">Darren Doherty</div>
+      <div style="font-size:14px; color:var(--teal); margin-bottom:16px;">Founder, Vent</div>
+      <div style="font-size:13px; color:var(--text-dim); line-height:1.6; margin-bottom:20px;">Bioprocess Associate<br>WuXi Biologics</div>
+      <div style="font-size:13px; color:var(--text-dim); line-height:1.6;">BSc Immunology (Scholar)<br>Trinity College Dublin</div>
+    </div>
+
+    <!-- Why this person -->
+    <div class="col flex-1 gap-20">
+      <div style="padding:20px 24px; background:var(--surface2); border-left:3px solid var(--teal); border-radius:0 8px 8px 0;">
+        <p style="font-size:17px; font-style:italic; color:var(--text); line-height:1.5;">"I am not a software person who discovered pharma. I am a pharma person who built software to solve a problem I live every day."</p>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="card" style="padding:18px;">
+          <div style="font-size:12px; font-weight:600; color:var(--teal); margin-bottom:6px;">FLOOR EXPERTISE</div>
+          <p class="body-sm">Works directly with operators on fed-batch and perfusion upstream processes. Knows their problems intimately , not from research, from daily experience.</p>
+        </div>
+        <div class="card" style="padding:18px;">
+          <div style="font-size:12px; font-weight:600; color:var(--teal); margin-bottom:6px;">CROSS-FUNCTIONAL</div>
+          <p class="body-sm">Works across QA, Manufacturing Support, and Engineering in cross-functional teams. Understands every stakeholder's position from the inside.</p>
+        </div>
+        <div class="card" style="padding:18px;">
+          <div style="font-size:12px; font-weight:600; color:var(--teal); margin-bottom:6px;">REGULATORY LITERACY</div>
+          <p class="body-sm">Understands the IQ/OQ/PQ validation requirements and audit trail standards needed to deploy software in a GMP environment. Vent is built to pass inspection.</p>
+        </div>
+        <div class="card" style="padding:18px;">
+          <div style="font-size:12px; font-weight:600; color:var(--teal); margin-bottom:6px;">LOOKING FOR</div>
+          <p class="body-sm">Technical co-founder (software/AI background). Advisory board with pharma commercial and regulatory expertise. Senior operators as design partners.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">16 / 17</div>
+  
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 17 , THE ASK
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="justify-content:center; padding: 64px 96px;">
+  <div class="glow-tl"></div>
+  <div class="glow-br"></div>
+
+  <div class="label">The Ask</div>
+  <div class="h2 mb-8">What we're asking <span class="teal">for.</span></div>
+  <p class="body mb-40" style="max-width:600px;">The product exists. The problem is real. The market is here. What I need is the platform to build this properly , and the right people in the room.</p>
+
+  <div class="row" style="gap:24px; margin-bottom:32px;">
+
+    <div class="card card-teal flex-1" style="padding:28px;">
+      <div style="font-size:20px; margin-bottom:12px;">🏢</div>
+      <div class="h4 mb-8">A place to build</div>
+      <p class="body-sm">A desk in Dogpatch so I can work on Vent full time , without splitting focus between the manufacturing floor and the laptop. This is the most important thing.</p>
+    </div>
+
+    <div class="card flex-1" style="padding:28px;">
+      <div style="font-size:20px; margin-bottom:12px;">💶</div>
+      <div class="h4 mb-8">Early-stage funding</div>
+      <p class="body-sm">A small seed grant (€25–50K) to cover infrastructure costs (AI APIs, hosting, database), free myself from employment, and reach a first paying pilot , without burning runway on anything else.</p>
+    </div>
+
+    <div class="card flex-1" style="padding:28px;">
+      <div style="font-size:20px; margin-bottom:12px;">🤝</div>
+      <div class="h4 mb-8">Network &amp; mentorship</div>
+      <p class="body-sm">Access to Dogpatch's pharma and medtech connections in Ireland. Ireland is home to the world's densest biologics manufacturing cluster. An introduction to the right QA director or site head is worth months of cold outreach.</p>
+    </div>
+
+  </div>
+
+  <div style="padding:28px 36px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; display:flex; gap:32px; align-items:center;">
+    <div style="flex:1;">
+      <div style="font-size:16px; font-weight:700; margin-bottom:8px;">What you get</div>
+      <p class="body-sm" style="font-size:14px;">Early access to a founder who works inside the industry, knows every person on every floor, and has already built and deployed the product that solves a problem every GMP facility pays to manage badly. The moat is knowledge, and it compounds every day I stay on the floor.</p>
+    </div>
+    <div style="width:1px; height:80px; background:var(--border);"></div>
+    <div class="col" style="gap:10px; flex-shrink:0;">
+      <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>Live product you can demo today</div>
+      <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>Daily floor access to the exact problem being solved</div>
+      <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>Domain expertise no generalist founder can replicate</div>
+      <div style="font-size:13px; display:flex; gap:8px;"><span class="check">✓</span>A market that will only grow as AI enters regulated industries</div>
+    </div>
+  </div>
+
+
+  <div class="slide-num">17 / 17</div>
+</div>
+
+
+</body>
+</html>

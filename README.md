@@ -1,18 +1,94 @@
 # Vent
 
-**Anonymous Improvement Intelligence for Regulated Biologics Manufacturing**
+**AI-Powered Manufacturing Intelligence for Regulated Biologics**
 
-Vent is an AI-powered platform that lets manufacturing floor operators anonymously submit observations, deviations, and improvement ideas — and routes them through a structured, GMP-compliant workflow that connects the right people, the right SOPs, and the right corrective actions automatically.
+Vent is a full-stack platform for GMP biologics manufacturing — replacing paper batch records, disconnected quality systems, and tribal knowledge with an AI-native, operator-first digital facility. Built by one developer using Claude AI as a 5-agent parallel development team.
 
-Built for upstream perfusion biologics facilities. Designed for operators first.
+76 modules across 14 departments. 23 built. ~46 weeks to full facility coverage.
+
+---
+
+## How It's Built — One Developer, Five AI Agents
+
+Vent is built by a single developer (Darren Doherty) acting as project manager, with **Claude Code** as the engineering team. The development workflow uses a parallel multi-agent approach:
+
+### The 5-Agent Build Process
+
+Each build round launches **5 Claude Code agents simultaneously**, each working in an isolated git worktree on a separate module:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DARREN (Project Manager)                   │
+│                                                              │
+│  ┌─ Writes agent specs (DB schema, API, frontend, AI)       │
+│  ├─ Launches 5 agents in parallel git worktrees              │
+│  ├─ Reviews output, resolves merge conflicts                 │
+│  └─ Merges into main, updates tracking, pushes               │
+└──────────┬──────────┬──────────┬──────────┬──────────┬───────┘
+           │          │          │          │          │
+     ┌─────▼──┐ ┌─────▼──┐ ┌─────▼──┐ ┌─────▼──┐ ┌─────▼──┐
+     │Agent 1 │ │Agent 2 │ │Agent 3 │ │Agent 4 │ │Agent 5 │
+     │Worktree│ │Worktree│ │Worktree│ │Worktree│ │Worktree│
+     │        │ │        │ │        │ │        │ │        │
+     │Service │ │Service │ │Service │ │Service │ │Service │
+     │Routes  │ │Routes  │ │Routes  │ │Routes  │ │Routes  │
+     │Frontend│ │Frontend│ │Frontend│ │Frontend│ │Frontend│
+     └────────┘ └────────┘ └────────┘ └────────┘ └────────┘
+```
+
+**Per agent, each module produces 3 files:**
+1. `server/services/[module].service.js` — Business logic, AI methods, CRUD
+2. `server/routes/[module].js` — Express routes with auth guards
+3. `docs/[dept]/[module].html` — Full frontend page
+
+**Shared files are merged manually** after all agents complete:
+- `server/lib/ids.js` — Centralised ID generators
+- `server/routes/admin.js` — CREATE TABLE statements
+- `server/index.js` — Service wiring, PAGE_MAP, route mounting
+- `docs/shared/nav.js` — Role-based navigation rules
+
+### Round 1 Results (Complete)
+
+5 modules built in parallel, merged into main:
+
+| Agent | Module | Files |
+|-------|--------|-------|
+| 1 | **Deviation Manager** | `deviation-mgr.service.js` · `deviation-mgr.js` · `qa/deviations.html` |
+| 2 | **Equipment Logbook** | `equip-logbook.service.js` · `equip-logbook.js` · `operator/equipment.html` |
+| 3 | **Incubator Management** | `inoc-incubator.service.js` · `inoc-incubator.js` · `inoc/incubators.html` |
+| 4 | **Media & Buffer Prep** | `us-media-prep.service.js` · `us-media-prep.js` · `process/media-prep.html` |
+| 5 | **Training Matrix** | `training-matrix.service.js` · `training-matrix.js` · `training/matrix.html` |
+
+### Round 2 Results (Complete)
+
+5 more modules, completing Phase 1 (Quality Core) and most of Phase 2 (Daily Operations):
+
+| Agent | Module | Phase |
+|-------|--------|-------|
+| 1 | **CAPA Tracker UI** | Quality Core |
+| 2 | **Supplier Quality** | Quality Core |
+| 3 | **Shift Handover** | Daily Operations |
+| 4 | **Equipment Status Board** | Daily Operations |
+| 5 | **Cleaning Records** | Daily Operations |
+
+### Project Command Centre
+
+All build progress is tracked in `docs/project.html` — an interactive dashboard with:
+- **Gantt Chart** — 8-phase timeline with dependency mapping
+- **Phase Board** — Kanban columns by build phase
+- **Module Registry** — Searchable table of all 76 modules with specs
+- **Progress Dashboard** — Burndown chart and velocity tracking
+- **Build Rounds** — Agent specs for each parallel build round
+
+A floating progress bar (`docs/shared/dev-progress.js`) appears on every module page showing overall build status and quick navigation.
 
 ---
 
 ## The Problem
 
-In regulated manufacturing, the people closest to the process — the operators — are the ones who spot problems first. But the systems they're expected to use are slow, bureaucratic, and attached to their name. So observations go unreported, tacit knowledge stays locked in people's heads, and the same issues recur across shifts.
+In regulated manufacturing, the people closest to the process — the operators — spot problems first. But the systems they use are slow, bureaucratic, and attached to their name. Observations go unreported, tacit knowledge stays locked in people's heads, and the same issues recur across shifts.
 
-Meanwhile, SOPs sit in binders (or PDFs) that nobody reads proactively, deviations get filed weeks after they happen, and new starters are thrown onto the floor with a stack of text documents and a prayer.
+SOPs sit in binders that nobody reads proactively, deviations get filed weeks after they happen, and new starters are thrown onto the floor with a stack of text documents and a prayer.
 
 Vent fixes all of this.
 
@@ -20,153 +96,89 @@ Vent fixes all of this.
 
 ## What Vent Does
 
-### 1. Anonymous Observation Submission
+### Core Platform (13 Live Modules)
 
-Operators submit floor observations in plain language — no forms, no deviation numbers, no fear of blame. They describe what they saw, select the process area and shift, and hit submit.
+#### 1. Anonymous Observation Submission
+Operators submit floor observations in plain language — no forms, no deviation numbers, no fear of blame.
 
-**What happens next is where Vent earns its name.**
+#### 2. AI-Powered Analysis (RAG Pipeline)
+Every submission is analysed by Claude against the facility's actual SOPs:
+- **SOP Retrieval** — VoyageAI embeddings + Supabase pgvector similarity search
+- **Structured Analysis** — priority classification, SOP references, root cause hypothesis, corrective actions, contact routing, pattern detection, timeline
 
-### 2. AI-Powered Analysis (RAG Pipeline)
-
-Every submission is analysed by Claude against the facility's actual SOPs, using a retrieval-augmented generation pipeline:
-
-- **SOP Retrieval** — Operator observations are embedded via VoyageAI and matched against SOP chunks stored in Supabase (vector similarity search). The most relevant SOP sections are retrieved automatically.
-- **Structured Analysis** — Claude receives the observation alongside the retrieved SOP content, a contacts directory, and similar past submissions. It produces a structured JSON response containing:
-  - **Priority classification** (High / Medium / Low)
-  - **SOP references** with exact section numbers and gap/compliance flags
-  - **Scientific evaluation** — root cause hypothesis, risk level, affected parameters, regulatory flags
-  - **Corrective actions** with timing bands (immediate / short-term / long-term)
-  - **Contact routing** — real people from the facility directory, assigned to workflow phases
-  - **Pattern detection** — flags when similar observations have been submitted before
-  - **Timeline** — recommended sequence of actions with ownership
-
-### 3. Multi-Phase Workflow
-
+#### 3. Multi-Phase Workflow
 Submissions flow through a structured lifecycle with role-based access control:
 
-| Phase | Who | Timeframe | Actions |
-|---|---|---|---|
-| 1 — Immediate Response | Shift Leads, EHS | 0–4 hours | Acknowledge, floor response |
-| 2 — Document & Notify | QA Leads, QMS Lead | Same day | Review, document, notify |
-| 3 — Investigate & Act | MSAT, Engineering | 2–7 days | Root cause, corrective action |
-| 4 — Review & Close | Directors, QP | 1–4 weeks | Sign-off, closure, trend review |
+| Phase | Who | Timeframe |
+|---|---|---|
+| 1 — Immediate Response | Shift Leads, EHS | 0–4 hours |
+| 2 — Document & Notify | QA Leads, QMS Lead | Same day |
+| 3 — Investigate & Act | MSAT, Engineering | 2–7 days |
+| 4 — Review & Close | Directors, QP | 1–4 weeks |
 
-Status transitions requiring approval (QA sign-off, director sign-off, closure) enforce **electronic signatures** — user ID and reason are required and logged.
+#### 4. QA Control Centre
+Professional IDE-style workspace: submission queue, SOP cross-reference panel, change management, notes, audit trail.
 
-### 4. QA Control Centre
+#### 5. CAPA Tracking
+Auto-created corrective actions from AI analysis with assigned owners, due dates, evidence, QA sign-off, and full audit trail.
 
-A dedicated QA interface modelled on a professional IDE workspace:
+#### 6. Director Dashboard
+Analytics: submission volume/trends, breakdown by priority/status/area, open vs closed pipeline, CAPA metrics.
 
-- **Submission queue** with filtering by priority, status, and area
-- **SOP cross-reference panel** — click any SOP reference to view the exact section inline
-- **SOP change management** — draft, accept, or reject proposed SOP changes with annotations
-- **Notes panel** — persistent session notes for QA reviewers
-- **Audit trail viewer** — full history of every action on every submission
+#### 7. SOP Knowledge Search
+Plain-language queries against the SOP database — numbered procedural steps, parameter values, safety warnings, source citations.
 
-### 5. CAPA Tracking
+#### 8. Document Builder
+IDE-style authoring for controlled documents: SOPs, work instructions, batch record templates. Three-panel layout, version history, AI assist, electronic sign-off.
 
-Corrective actions from AI analysis are automatically created as CAPA records:
+#### 9. Charlie — Voice AI Assistant
+Hands-free voice interface: speech-to-text (ElevenLabs STT), text-to-speech responses, real-time translation (EN/ZH/ES), SOP-aware conversation with full RAG context.
 
-- Assigned to the most relevant contact based on workflow phase
-- Due dates calculated from timing bands
-- Status tracking (open → in progress → closed)
-- Evidence attachment and QA sign-off for closure
-- Full audit trail on every state change
+#### 10. GDP Check
+Camera-based Good Documentation Practice review: image preprocessing, blue ink detection, AI-powered finding detection (missing signatures, incorrect dates, correction fluid), finding management.
 
-### 6. Director Dashboard
+#### 11. Hub
+Central navigation and landing page for all modules, role-aware.
 
-Analytics view for facility leadership:
+#### 12. Feedback System
+Structured feedback collection with AI-powered batch analysis, theme identification, and prioritised recommendations.
 
-- Submission volume and trends (week-over-week)
-- Breakdown by priority, status, process area
-- Open vs. closed pipeline
-- CAPA metrics — open, overdue, closed
-- Recent submission and CAPA activity feeds
+#### 13. Internationalisation (i18n)
+Full multi-language support: English, Simplified Chinese, Spanish. Dynamic switching, persistent preference.
 
-### 7. SOP Knowledge Search
+### Round 1 Modules (Live)
 
-Operators can query the SOP database directly — ask a plain-language question and get a structured answer:
+#### 14. Deviation Manager
+Full deviation lifecycle: open → investigating → root cause → CAPA pending → closed. AI auto-classifies severity (critical/major/minor). 5-Why interactive investigation, Ishikawa diagram (6M), root cause suggestions from similar deviations + SOP context.
 
-- Numbered procedural steps extracted from actual SOPs
-- Parameter values with ranges and units
-- Safety warnings and critical flags
-- Source citations with exact section numbers
+#### 15. Equipment Logbook
+Per-equipment digital logbook replacing paper: usage records, cleaning events, maintenance, alarms, calibration. 21 CFR Part 11 compliant with immutable audit trail and e-signatures.
 
-### 8. Cross-Submission Pattern Detection
+#### 16. Incubator Management
+CO2 incubator unit tracking: temperature/CO2/humidity monitoring, log entries, alarm management, calibration records, maintenance scheduling. Real-time status dashboard.
 
-Every new submission is compared against historical submissions using keyword overlap and process area matching. Recurring patterns are flagged automatically, helping QA identify systemic issues before they become deviations.
+#### 17. Media & Buffer Prep
+Media and buffer preparation records: recipe management, preparation execution with step tracking, QC release, expiry management. Batch-linked with full traceability.
 
-### 9. Document Builder
+#### 18. Training Matrix
+Role-based training assignments mapped to SOPs. SOP revision triggers automatic retraining cascades. Compliance dashboard: who's current, who's overdue. AI-generated competency assessments.
 
-A full IDE-style document authoring environment for creating, editing, and versioning controlled workflow documents — SOPs, work instructions, batch record templates, and more.
+### Round 2 Modules (Live)
 
-- **Three-panel layout** — document list (left), document viewer (centre), and edit/AI/versions panel (right), with a resizable activity log at the bottom
-- **Drag-to-resize panels** — VS Code-style resizers between all panels for a customisable workspace
-- **Step-based document structure** — documents are composed of ordered steps with titles, detailed instructions, and collapsible sections
-- **Version history** — every save creates a timestamped snapshot; previous versions can be viewed at any time
-- **Grouped by process area** — documents are automatically organised by upstream area (Media Prep, Bioreactor Ops, Sampling, etc.)
-- **Status tracking** — Draft → In Review → Approved lifecycle with visual badges
-- **AI Assist** — Claude-powered document operations: rewrite, expand, safety review, formatting, step generation from SOP context, and GMP compliance checking
-- **Electronic sign-off** — 21 CFR Part 11 compliant sign-off with user authentication and reason capture
-- **Server-side persistence** — documents stored in Supabase with full CRUD, versioning, and audit trail
-- **Search and filter** — instant filtering across all documents by title or content
+#### 19. CAPA Tracker
+Full CAPA lifecycle with filtering, effectiveness verification (30/60/90-day follow-ups), overdue alerts, linked deviations and observations.
 
-The Document Builder gives operators and QA a structured tool to author the documents that drive manufacturing — living alongside the observation and SOP systems rather than sitting in separate, disconnected tools.
+#### 20. Supplier Quality
+Supplier management with qualification status, audit scheduling, material certifications, risk scoring, and performance trending.
 
-### 10. Notification System
+#### 21. Shift Handover
+Structured handover forms: open batches, pending samples, equipment holds, safety notes. Voice note recording. AI auto-summarises shift events.
 
-When a submission is created, all routed contacts receive notifications with:
+#### 22. Equipment Status Board
+Real-time grid of all equipment with status (available/in-use/cleaning/maintenance/hold). Click to open logbook. Filter by area, status, type.
 
-- Priority level and observation excerpt
-- Their assigned workflow phase
-- Why they specifically were routed (contextual reason from AI analysis)
-
-### 11. GDP Check
-
-Camera-based document review for Good Documentation Practice compliance. Operators photograph paper batch records and logbook entries directly from the manufacturing floor:
-
-- **Image preprocessing** — automatic contrast normalisation and sharpening for consistent AI analysis
-- **Blue ink detection** — pixel-grid flood-fill algorithm identifies handwritten entries and annotations, generating bounding regions for Claude's visual inspection
-- **AI-powered finding detection** — Claude vision analyses the document image against GDP rules: missing signatures, incorrect date formats, use of correction fluid, illegible entries, crossed-out text without countersignature
-- **Finding management** — each finding is categorised by severity, linked to a specific document region, and tracked through a correction workflow
-- **Document persistence** — GDP review documents are stored in Supabase with status tracking (draft → reviewed → corrected → closed)
-
-### 12. Charlie — Voice AI Assistant
-
-A conversational voice interface that lets operators interact with Vent hands-free:
-
-- **Speech-to-text** — operators dictate questions or observations using ElevenLabs STT
-- **Text-to-speech** — AI responses are spoken back for hands-free operation on the manufacturing floor
-- **Real-time translation** — instant translation between English, Chinese, and Spanish
-- **SOP-aware conversation** — `/charlie/ask` provides a Claude-backed conversational interface with full RAG context, so operators can ask SOP questions by voice and get spoken answers grounded in actual procedures
-
-### 13. Chat System
-
-Persistent chat sessions with Claude, backed by the full SOP RAG pipeline:
-
-- **Session management** — create, resume, and search across conversation threads
-- **SOP-grounded responses** — every answer is informed by relevant SOP context retrieved via vector search
-- **Analysis export** — conversation analysis can be exported directly to the Document Builder as a new document
-- **Personal todo list** — lightweight task tracking within the chat interface
-- **Conversation search** — full-text search across all chat sessions
-
-### 14. Feedback System
-
-Structured feedback collection from operators about their Vent experience:
-
-- **Categorised submissions** — feedback tagged by type (bug, feature request, usability, praise)
-- **AI-powered batch analysis** — Claude analyses groups of feedback entries, identifies themes and patterns, generates prioritised recommendations
-- **Prompt generation** — analysis results can be used to generate improvement prompts for product development
-- **Role-scoped access** — operators, QA, directors, and admins can all submit feedback; analysis tools are available to QA and above
-
-### 15. Internationalisation (i18n)
-
-Full multi-language support across the entire interface:
-
-- **Three languages** — English, Simplified Chinese (简体中文), and Spanish (Español)
-- **Comprehensive coverage** — all navigation labels, role names, form placeholders, status badges, and UI text are translated
-- **Persistent preference** — language selection stored in localStorage and applied on every page load
-- **Dynamic switching** — language can be changed at any time without page reload
+#### 23. Cleaning Records
+Manual and CIP cleaning execution records. Detergent lot, rinse conductivity, visual inspection sign-off. Hold time tracking with auto-alerts.
 
 ---
 
@@ -175,30 +187,43 @@ Full multi-language support across the entire interface:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Frontend (docs/)                          │
-│  shared/styles.css · shared/nav.js · i18n.js                    │
+│  shared/styles.css · shared/nav.js · shared/i18n.js             │
+│  shared/dev-progress.js (build tracking bar)                     │
 │                                                                  │
-│  index.html · query.html · qa.html · workflow.html               │
-│  dashboard.html · submissions.html · builder.html                │
-│  feedback.html · login.html                                      │
+│  Core:   index.html · query.html · qa.html · workflow.html       │
+│          dashboard.html · submissions.html · builder.html        │
+│          feedback.html · login.html · hub.html                   │
 │                                                                  │
-│  Static HTML/CSS/JS — served by Express                          │
+│  QA:     qa/deviations.html                                      │
+│  Ops:    operator/equipment.html                                 │
+│  Inoc:   inoc/incubators.html                                    │
+│  Process: process/media-prep.html                                │
+│  Training: training/matrix.html                                  │
+│                                                                  │
+│  Planning: project.html · dev.html                               │
+│                                                                  │
+│  Static HTML/CSS/JS — no framework, intentionally lightweight    │
 └─────────────────────────┬───────────────────────────────────────┘
                           │ REST API
 ┌─────────────────────────▼───────────────────────────────────────┐
 │                     Server (server/)                              │
-│  Express.js · Auth (HMAC tokens) · Role-based access             │
+│  Express 5.x · HMAC Auth · Role-based access · Audit logging     │
 │                                                                  │
-│  lib/                          routes/                           │
-│    auth.js    (JWT, RBAC)        auth.js      (login, register)  │
-│    audit.js   (audit log)        admin.js     (setup, bootstrap) │
-│    rag.js     (embeddings)       submit.js    (observations)     │
-│    gdp-image.js (vision)         sop.js       (SOP search/CRUD) │
-│                                  capa.js      (CAPAs, analytics) │
-│                                  gdp.js       (GDP check)        │
-│                                  builder.js   (doc builder)      │
-│                                  chat.js      (chat sessions)    │
-│                                  voice.js     (STT/TTS/Charlie)  │
-│                                  feedback.js  (feedback loop)    │
+│  lib/                            services/                       │
+│    auth.js    (JWT, RBAC)          submission.service.js          │
+│    audit.js   (audit log)          sop.service.js                │
+│    rag.js     (embeddings)         capa.service.js               │
+│    ids.js     (ID generation)      chat.service.js               │
+│    gdp-image.js (vision)           voice.service.js              │
+│                                    deviation-mgr.service.js      │
+│  agents/                           equip-logbook.service.js      │
+│    analyst.js · classifier.js      inoc-incubator.service.js     │
+│    router.js · charlie.js          us-media-prep.service.js      │
+│    capa-writer.js                  training-matrix.service.js    │
+│    builder.js · sop-query.js                                     │
+│                                                                  │
+│  graphs/                                                         │
+│    submission-pipeline.js  (LangGraph multi-agent pipeline)      │
 └──────┬──────────────┬──────────────┬──────────────┬─────────────┘
        │              │              │              │
 ┌──────▼──────┐ ┌─────▼──────┐ ┌─────▼──────┐ ┌────▼────────┐
@@ -207,21 +232,10 @@ Full multi-language support across the entire interface:
 │             │ │ + pgvector │ │ voyage-3-  │ │             │
 │  Analysis,  │ │ + Storage  │ │ lite       │ │  Voice I/O  │
 │  routing,   │ │            │ │            │ │  for Charlie │
-│  knowledge, │ │ Tables:    │ │ SOP chunks │ │  and floor   │
-│  GDP check, │ │ submissions│ │ & queries  │ │  operators   │
-│  chat,      │ │ sop_chunks │ │ embedded   │ │             │
-│  doc assist │ │ audit_log  │ │ for vector │ └─────────────┘
-│             │ │ users      │ │ similarity │
-│             │ │ qa_notes   │ │ search     │
-│             │ │ sop_changes│ │            │
-│             │ │ sop_annot… │ └────────────┘
-│             │ │ notific…   │
-│             │ │ capas      │
-│             │ │ documents  │
-│             │ │ gdp_docs   │
-│             │ │ chat_sess… │
-│             │ │ feedback_… │
-└─────────────┘ └────────────┘
+│  knowledge, │ │  25+ tables│ │ SOP chunks │ │  and floor   │
+│  GDP check, │ │            │ │ embedded   │ │  operators   │
+│  agents     │ │            │ │            │ │             │
+└─────────────┘ └────────────┘ └────────────┘ └─────────────┘
 ```
 
 ### Tech Stack
@@ -229,45 +243,81 @@ Full multi-language support across the entire interface:
 | Layer | Technology |
 |---|---|
 | Frontend | Static HTML/CSS/JS (no framework — intentionally lightweight) |
-| Shared Frontend | `shared/styles.css` (CSS variables, title bar, nav) + `shared/nav.js` (auth, role filtering) |
-| i18n | Custom `i18n.js` (English, Chinese, Spanish) |
 | Server | Node.js + Express 5 |
 | AI | Claude (Anthropic) via `@anthropic-ai/sdk` |
-| Embeddings | VoyageAI (`voyage-3-lite` model) |
-| Vision / Image | `sharp` (preprocessing, blue ink detection for GDP Check) |
-| Voice | ElevenLabs (speech-to-text, text-to-speech) |
-| Database | Supabase (PostgreSQL + pgvector + Row Level Security) |
-| Auth | Custom HMAC-signed JWT tokens with PBKDF2 password hashing |
-| Hosting | Railway |
+| AI Agents | LangGraph-style multi-agent pipeline (7 specialised agents) |
+| Embeddings | VoyageAI (`voyage-3-lite`) |
+| Voice | ElevenLabs (STT/TTS) |
+| Database | Supabase (PostgreSQL + pgvector + RLS) |
+| Auth | Custom HMAC-signed JWT with PBKDF2 hashing |
+| Hosting | Render |
+| Dev Workflow | Claude Code with parallel 5-agent git worktree builds |
 
 ### Roles
 
-| Role | Nav Access |
+| Role | Access |
 |---|---|
-| `operator` | Query SOPs, Doc Builder, Feedback |
-| `qa` | Submit, Query SOPs, Submissions, Doc Builder, QA Control, Feedback |
-| `director` | Submit, Query SOPs, Submissions, Doc Builder, QA Control, Dashboard, Feedback |
+| `operator` | Query SOPs, Doc Builder, Feedback, Equipment |
+| `qa` | + Submit, Submissions, QA Control, Training |
+| `director` | + Dashboard |
 | `msat` | Submit, Query SOPs, Submissions, Doc Builder |
-| `engineering` | Submit, Query SOPs, Submissions, Doc Builder |
-| `admin` | Full access — Submit, Query SOPs, Submissions, Doc Builder, QA Control, Workflow, Dashboard, Feedback |
+| `engineering` | Submit, Query SOPs, Submissions, Doc Builder, Equipment |
+| `admin` | Full access to all modules |
+
+---
+
+## Build Phases (8 Phases, ~46 Weeks)
+
+```
+Phase                          Wk1   5    10   15   20   25   30   35   40   45
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Quality Core      (7 mods)  ██████████████
+2. Daily Operations  (4 mods)              ████████
+3. QC Lab            (4 mods)                      ████████████
+4. Batch / MES       (7 mods)                              ████████████████████
+5. Inoculation Suite (10 mods)                                         ████████████
+6. Process Ops       (14 mods)                                                 ████████████████████
+7. Support Functions (12 mods)                                                                 ████████████████
+8. Analytics         (5 mods)                                                                              ████████
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Current Progress
+
+| Status | Count | Modules |
+|--------|-------|---------|
+| **Live** | 23 | Hub, Charlie AI, Voice, Observations, My Activity, QA Centre, QA Workflow, GDP Check, Analytics, Doc Builder, Feedback, Login, Demo, Deviation Manager, Equipment Logbook, Incubator Mgmt, Media Prep, Training Matrix, CAPA Tracker, Supplier Quality, Shift Handover, Equipment Status, Cleaning Records |
+| **Planned** | 53 | Change Control, Doc Control, Batch Disposition, Complaints, QC Lab, OOS Investigation, Environmental Monitoring, Stability Program, Batch Execution (MES), and 44 more |
+
+Full module registry and interactive Gantt chart: see `docs/project.html`
+
+---
+
+## AI Architecture — 7 Layers
+
+| Layer | What It Does | Status |
+|-------|-------------|--------|
+| **1. Charlie AI** | Contextual AI panel on every module. RAG-backed, SOP-aware conversation | Live |
+| **2. Classification Engine** | Auto-classify deviations, observations, complaints, change controls on creation | Live |
+| **3. Investigation Assistant** | 5-Why chains, Ishikawa diagrams, root cause suggestions from similar events + SOPs | Live (deviations) |
+| **4. Predictive Engine** | Predict deviations from process trends, equipment failures, batch outcomes | Planned |
+| **5. Review by Exception** | AI pre-screens batch records, EM data, QC results — humans review exceptions only | Planned |
+| **6. Document Intelligence** | Auto-generate SOPs, training assessments, APQR narratives from cross-module data | Planned |
+| **7. Cross-Module Intelligence** | Connect deviation patterns → equipment history → EM excursions → training gaps | Planned |
 
 ---
 
 ## Compliance
 
-Vent is built for GMP-regulated environments and implements:
-
-- **21 CFR Part 11 / EU Annex 11** — electronic signatures with user ID + reason for approval transitions
-- **Immutable audit trail** — every action (submission, status change, SOP change, CAPA update, GDP review, document sign-off, login) is logged with SHA-256 checksums, timestamps, IP addresses, and user agents
-- **ALCOA+ principles** — data is Attributable, Legible, Contemporaneous, Original, and Accurate
-- **Role-based access control** — sensitive operations (status transitions, SOP changes, CAPA management, document sign-off) are restricted by role
-- **Row Level Security** — database-level access control via Supabase RLS policies
+- **21 CFR Part 11 / EU Annex 11** — electronic signatures with user ID + reason
+- **Immutable audit trail** — SHA-256 checksummed, timestamped, IP-logged
+- **ALCOA+ principles** — Attributable, Legible, Contemporaneous, Original, Accurate
+- **Role-based access control** — sensitive operations restricted by role
+- **Row Level Security** — database-level access via Supabase RLS
 
 ---
 
 ## SOP Database
-
-Vent ships with upstream processing SOPs that are ingested, chunked by section, embedded, and stored in Supabase for vector similarity search:
 
 | Document | Title |
 |---|---|
@@ -278,55 +328,6 @@ Vent ships with upstream processing SOPs that are ingested, chunked by section, 
 | WX-SOP-1005-03 | Equipment Cleaning, Sterilisation and Changeover |
 | WX-BPR-2001-03 | Batch Production Record — Upstream Perfusion |
 
-The ingestion pipeline (`/ingest` or `npm run ingest`) parses each markdown SOP by heading, embeds each chunk via VoyageAI, and stores it in the `sop_chunks` table with its vector for semantic search.
-
----
-
-## Planned Feature: Visual SOP Engine
-
-> *Full proposal: [server/docs/FEATURE-VISUAL-SOP-ENGINE.md](server/docs/FEATURE-VISUAL-SOP-ENGINE.md)*
-
-This is the next major evolution of Vent — turning operators from passive SOP readers into active contributors who build living, visual documentation as a by-product of their daily work.
-
-### The Concept
-
-Operators already perform every SOP step, every shift. Vent gives them a way to capture what they do — photos, short videos, annotated clips — directly from the manufacturing floor. The AI engine then maps that media to specific SOP steps and automatically assembles rich visual walkthroughs that new starters can watch and learn from.
-
-### How It Works
-
-**Capture** — Operators record during normal operations using a mobile-friendly interface. A photo of the sample port, a 30-second video of aseptic technique, a screenshot of the cell counter reading. Total extra effort: ~2 minutes per operation.
-
-**Map** — Vent uses its existing embedding infrastructure (VoyageAI + Supabase vectors) and Claude to automatically align each photo or video to the exact SOP step it belongs to. Media uploaded during a "Daily Sampling" workflow maps to WX-SOP-1003-03 §5.2–5.5 without the operator needing to specify.
-
-**Build** — With enough mapped media, Vent generates visual SOP walkthroughs: the original SOP text at each step, with embedded photos, video clips, and operator tips alongside it. It also builds searchable media libraries and training playlists — curated sequences covering end-to-end processes.
-
-**Profile** — Each operator builds a personal expertise record within Vent. Every contribution is tracked — which procedures they've documented, how much their content is used by trainees. Senior operators get recognised for sharing knowledge. New operators get clear visual training paths with completion tracking.
-
-### Why This Changes Everything
-
-| Before | After |
-|---|---|
-| New starters read 300-line text SOPs cold | They watch the best operators perform each step on video |
-| Tacit knowledge walks out the door when people leave | It's captured in a permanent, searchable media library |
-| Training quality depends on who's on shift | Every new starter gets the same standardised visual walkthrough |
-| Operators passively follow procedures | They actively build the facility's training library |
-| QA has paper sign-off sheets for training evidence | There's visual competency records tied to SOP steps |
-
-### Rollout Phases
-
-1. **Capture & Store (MVP)** — Mobile upload tied to workflows, basic step tagging, gallery view
-2. **AI Mapping & Visual SOPs** — Automatic step alignment, visual walkthrough renderer, searchable media via AI chat
-3. **Profiles & Training Pathways** — Operator profiles, competency mapping, auto-generated training playlists
-4. **Continuous Improvement** — AI identifies coverage gaps, prompts operators to fill them, version-tracks media against SOP revisions
-
-### GMP Safeguards
-
-- All uploads pass through QA approval before entering training materials
-- Written SOPs remain the controlled documents — visual content is supplementary
-- Full audit trail on every upload, approval, and edit
-- Uploaded media is checksummed and immutable once approved (ALCOA+)
-- Role-based access controls who can upload, approve, and view
-
 ---
 
 ## Getting Started
@@ -334,10 +335,10 @@ Operators already perform every SOP step, every shift. Vent gives them a way to 
 ### Prerequisites
 
 - Node.js 18+
-- Supabase project with pgvector extension enabled
-- Anthropic API key (Claude access)
+- Supabase project with pgvector extension
+- Anthropic API key
 - VoyageAI API key
-- ElevenLabs API key (optional — for voice features)
+- ElevenLabs API key (optional — voice features)
 
 ### Environment Variables
 
@@ -353,40 +354,26 @@ ELEVENLABS_API_KEY=your-elevenlabs-key
 ### Setup
 
 ```bash
-# Install dependencies
 cd server
 npm install
 
-# Get the database setup SQL
-# Visit GET /admin/setup after starting the server, then run the SQL in Supabase SQL Editor
-
-# Ingest SOPs into the vector database
-npm run ingest
-
-# Start the server
+# Start the server (port 3001)
 npm start
+
+# Run DB setup SQL from GET /admin/setup in Supabase SQL Editor
+# Ingest SOPs into vector database
+npm run ingest
 ```
 
-The server runs on port 3001 by default. The frontend is served as static files from the `docs/` directory.
+### Database Tables
 
-### Database Setup
+Start the server and visit `GET /admin/setup` for the full SQL schema. Creates 25+ tables including:
 
-Start the server and visit `GET /admin/setup` to get the full SQL schema. Run it in your Supabase SQL Editor. This creates all required tables:
+**Core:** `submissions`, `sop_chunks`, `audit_log`, `users`, `qa_notes`, `sop_changes`, `sop_annotations`, `notifications`, `capas`, `documents`, `gdp_documents`, `chat_sessions`, `feedback_entries`, `feedback_analysis`
 
-- `submissions` — operator observations with AI analysis
-- `sop_chunks` — embedded SOP sections for vector search
-- `audit_log` — immutable audit trail
-- `users` — authentication with hashed passwords
-- `qa_notes` — QA session notes
-- `sop_changes` — SOP change tracking
-- `sop_annotations` — annotations on SOP changes
-- `notifications` — user notification queue
-- `capas` — corrective action tracking
-- `documents` — Document Builder documents with versioning
-- `gdp_documents` — GDP Check review documents and findings
-- `chat_sessions` — persistent chat conversation history
-- `feedback_entries` — operator feedback submissions
-- `feedback_analysis` — AI-generated feedback analysis results
+**Round 1:** `deviations`, `equipment`, `equipment_log_entries`, `incubator_units`, `incubator_logs`, `incubator_alarms`, `incubator_calibrations`, `incubator_maintenance`, `media_buffer_records`, `training_assignments`, `training_completions`
+
+**Round 2:** `suppliers`, `supplier_audits`, `supplier_materials`, `shift_handovers`, `equipment_status_log`, `cleaning_records`
 
 ---
 
@@ -396,51 +383,80 @@ Start the server and visit `GET /admin/setup` to get the full SQL schema. Run it
 vent/
 ├── docs/                              # Frontend (static HTML/CSS/JS)
 │   ├── shared/
-│   │   ├── styles.css                 # Shared CSS variables, title bar, nav
-│   │   └── nav.js                     # Auth helpers, guard, role filtering
-│   ├── i18n.js                        # Internationalisation (EN, ZH, ES)
-│   ├── index.html                     # Observation submission
-│   ├── query.html                     # SOP knowledge search
-│   ├── builder.html                   # Document Builder (IDE-style)
-│   ├── qa.html                        # QA Control Centre
-│   ├── workflow.html                  # Observation workflow
-│   ├── dashboard.html                 # Director analytics
-│   ├── submissions.html               # Floor submissions
-│   ├── feedback.html                  # Operator feedback
-│   └── login.html                     # Authentication
+│   │   ├── styles.css                 # Design system (CSS variables, layout)
+│   │   ├── nav.js                     # Auth helpers, guard, role filtering
+│   │   ├── i18n.js                    # Internationalisation (EN, ZH, ES)
+│   │   └── dev-progress.js            # Floating build progress bar
+│   │
+│   ├── hub/hub.html                   # Hub (landing page)
+│   ├── auth/login.html                # Authentication
+│   ├── operator/                      # Operator pages
+│   │   ├── query.html                 # SOP knowledge search
+│   │   ├── equipment.html             # Equipment Logbook (Round 1)
+│   │   ├── feedback.html              # Feedback
+│   │   └── index.html                 # Observation submission
+│   ├── qa/                            # Quality Assurance
+│   │   ├── qa.html                    # QA Control Centre
+│   │   ├── workflow.html              # QA Workflow
+│   │   ├── submissions.html           # Floor submissions
+│   │   └── deviations.html            # Deviation Manager (Round 1)
+│   ├── management/                    # Leadership
+│   │   └── dashboard.html             # Director Dashboard
+│   ├── admin/                         # Admin
+│   │   └── builder.html               # Document Builder
+│   ├── inoc/                          # Inoculation
+│   │   └── incubators.html            # Incubator Management (Round 1)
+│   ├── process/                       # Process Operations
+│   │   └── media-prep.html            # Media & Buffer Prep (Round 1)
+│   ├── training/                      # Training
+│   │   └── matrix.html                # Training Matrix (Round 1)
+│   │
+│   ├── project.html                   # Project Command Centre (Gantt, registry)
+│   └── dev.html                       # Dev board (kanban)
 │
-└── server/                            # Backend
-    ├── index.js                       # Express app — middleware, mounts, listen (~140 lines)
-    ├── package.json
-    ├── lib/
-    │   ├── auth.js                    # JWT tokens, password hashing, RBAC middleware
-    │   ├── audit.js                   # SHA-256 checksummed immutable audit log
-    │   ├── rag.js                     # VoyageAI embeddings, SOP context building
-    │   └── gdp-image.js              # Image preprocessing, blue ink detection
-    ├── routes/
-    │   ├── auth.js                    # Register, login, /me, change-password
-    │   ├── admin.js                   # DB setup, bootstrap, audit queries
-    │   ├── submit.js                  # Observation submission + AI analysis
-    │   ├── sop.js                     # SOP search, query, ingest, annotations
-    │   ├── capa.js                    # Notifications, CAPAs, analytics
-    │   ├── gdp.js                     # GDP Check + visual query + persistence
-    │   ├── builder.js                 # Doc Builder AI + sign-off
-    │   ├── chat.js                    # Chat sessions, todos, analysis
-    │   ├── voice.js                   # STT, TTS, translate, Charlie voice
-    │   └── feedback.js                # Feedback collection + AI analysis
-    ├── data/
-    │   └── contacts.js                # Facility contacts directory
-    ├── docs/
-    │   ├── FEATURE-VISUAL-SOP-ENGINE.md  # Visual SOP Engine proposal
-    │   └── sops/                      # Source SOP documents (Markdown)
-    │       ├── WX-SOP-1001-03.md
-    │       ├── WX-SOP-1002-03.md
-    │       ├── WX-SOP-1003-03.md
-    │       ├── WX-SOP-1004-03.md
-    │       ├── WX-SOP-1005-03.md
-    │       └── WX-BPR-2001-03.md
-    └── scripts/
-        └── ingest-sops.js             # SOP ingestion pipeline
+├── server/                            # Backend
+│   ├── index.js                       # Express app — middleware, mounts, listen
+│   ├── lib/
+│   │   ├── auth.js                    # JWT tokens, password hashing, RBAC
+│   │   ├── audit.js                   # SHA-256 checksummed immutable audit log
+│   │   ├── rag.js                     # VoyageAI embeddings, SOP context building
+│   │   ├── ids.js                     # Centralised ID generation (VNT-, DEV-, EQ-, etc.)
+│   │   └── gdp-image.js              # Image preprocessing, blue ink detection
+│   ├── agents/                        # LangGraph AI agents
+│   │   ├── analyst.js                 # Submission analysis
+│   │   ├── classifier.js             # Priority/category classification
+│   │   ├── router.js                  # Contact routing
+│   │   ├── charlie.js                 # Conversational AI
+│   │   ├── capa-writer.js            # CAPA generation
+│   │   ├── builder.js                 # Document AI assist
+│   │   └── sop-query.js              # SOP knowledge search
+│   ├── graphs/
+│   │   └── submission-pipeline.js     # Multi-agent pipeline orchestration
+│   ├── services/                      # Business logic (service factory pattern)
+│   │   ├── submission.service.js
+│   │   ├── sop.service.js
+│   │   ├── capa.service.js
+│   │   ├── chat.service.js
+│   │   ├── voice.service.js
+│   │   ├── deviation-mgr.service.js   # Round 1
+│   │   ├── equip-logbook.service.js   # Round 1
+│   │   ├── inoc-incubator.service.js  # Round 1
+│   │   ├── us-media-prep.service.js   # Round 1
+│   │   └── training-matrix.service.js # Round 1
+│   ├── routes/                        # Express route handlers
+│   │   ├── auth.js · admin.js · submit.js · sop.js
+│   │   ├── capa.js · gdp.js · builder.js · chat.js
+│   │   ├── voice.js · feedback.js
+│   │   ├── deviation-mgr.js           # Round 1
+│   │   ├── equip-logbook.js           # Round 1
+│   │   ├── inoc-incubator.js          # Round 1
+│   │   ├── us-media-prep.js           # Round 1
+│   │   └── training-matrix.js         # Round 1
+│   ├── data/contacts.js               # Facility contacts directory
+│   └── docs/sops/                     # Source SOP documents (Markdown)
+│
+└── project/                           # Deployment config
+    └── render.yaml
 ```
 
 ---
@@ -449,6 +465,10 @@ vent/
 
 Vent exists because the best ideas for improving a manufacturing process come from the people running it — and those ideas should never be lost to fear, bureaucracy, or forgetting.
 
-Every observation an operator submits makes the facility smarter. Every document they review for GDP compliance raises the bar. Every pattern the AI detects makes quality stronger. Every voice question asked on the floor makes SOPs more accessible. The knowledge compounds.
+Every observation an operator submits makes the facility smarter. Every document they review raises the bar. Every pattern the AI detects makes quality stronger. Every voice question asked on the floor makes SOPs more accessible.
 
 The operators aren't just following procedures. They're building the most complete, living quality intelligence system in biologics manufacturing — and they're doing it anonymously, safely, and as part of their normal work.
+
+---
+
+*Built by Darren Doherty with Claude AI. Last updated: March 2026.*
