@@ -1,1 +1,7 @@
 project/LOGINS.md
+.env
+.env.*
+node_modules/
+.DS_Store
+server/.DS_Store
+package-lock.json
