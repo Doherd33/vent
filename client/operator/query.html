@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · SOP Query</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/styles.css?v=3">
+<link rel="stylesheet" href="query/query.css?v=3">
+<script>
+// Apply saved theme immediately to prevent flash of default blue
+(function(){
+  var h = localStorage.getItem('vent_theme_hue');
+  if(h) document.documentElement.style.setProperty('--hue', h);
+  var g = localStorage.getItem('vent_menu_config');
+  if(g){ try { var c=JSON.parse(g); if(c.glowIntensity!==undefined) document.documentElement.style.setProperty('--glow-mult',c.glowIntensity); } catch(e){} }
+})();
+</script>
+<script src="/shared/i18n.js?v=3"></script>
+<script src="/shared/nav.js?v=3"></script>
+</head>
+<body>
+
+
+<!-- Profile & Settings Panel -->
+<div class="profile-panel" id="profilePanel">
+  <div class="profile-panel-inner">
+    <button class="profile-close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <!-- Profile Info -->
+    <div class="profile-section">
+      <div class="profile-section-title">PROFILE</div>
+      <div class="profile-info-row">
+        <span class="profile-label">Name</span>
+        <span class="profile-value" id="profName"></span>
+      </div>
+      <div class="profile-info-row">
+        <span class="profile-label">Role</span>
+        <span class="profile-value" id="profRole"></span>
+      </div>
+    </div>
+
+    <!-- Accent Theme -->
+    <div class="profile-section">
+      <div class="profile-section-title">ACCENT THEME</div>
+      <div class="profile-palette-grid" id="paletteGrid"></div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Custom hue</label>
+        <input type="range" class="profile-slider" id="hueSlider" min="0" max="360" value="210">
+        <span class="profile-slider-val" id="hueVal">210</span>
+      </div>
+    </div>
+
+    <!-- Audio & Voice -->
+    <div class="profile-section">
+      <div class="voice-section-header">
+        <div class="profile-section-title" style="margin-bottom:0">AUDIO &amp; VOICE</div>
+        <button class="voice-reset-btn" id="voiceResetBtn" title="Reset to defaults">RESET</button>
+      </div>
+      <div class="voice-picker-grid" id="voicePickerGrid"></div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Charlie volume</label>
+        <input type="range" class="profile-slider" id="voiceVolumeSlider" min="0" max="100" value="100">
+        <span class="profile-slider-val" id="voiceVolumeVal">100%</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Speed</label>
+        <input type="range" class="profile-slider" id="voiceSpeedSlider" min="50" max="200" value="100">
+        <span class="profile-slider-val" id="voiceSpeedVal">1.0×</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Stability</label>
+        <input type="range" class="profile-slider" id="voiceStabilitySlider" min="0" max="100" value="50">
+        <span class="profile-slider-val" id="voiceStabilityVal">50</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Clarity</label>
+        <input type="range" class="profile-slider" id="voiceClaritySlider" min="0" max="100" value="75">
+        <span class="profile-slider-val" id="voiceClarityVal">75</span>
+      </div>
+      <div class="profile-slider-row">
+        <label class="profile-slider-label">Style</label>
+        <input type="range" class="profile-slider" id="voiceStyleSlider" min="0" max="100" value="30">
+        <span class="profile-slider-val" id="voiceStyleVal">30</span>
+      </div>
+      <div class="voice-toggle-row">
+        <span class="voice-toggle-label">Speaker boost</span>
+        <input type="checkbox" class="voice-toggle" id="voiceBoostToggle">
+      </div>
+
+      <div class="voice-subsection">Preferences</div>
+      <div class="voice-toggle-row">
+        <span class="voice-toggle-label">Mute all voice</span>
+        <input type="checkbox" class="voice-toggle" id="voiceMuteToggle">
+      </div>
+
+      <div class="voice-save-row">
+        <button class="voice-test-btn" id="voiceTestBtn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Test voice
+        </button>
+        <button class="voice-save-btn" id="voiceSaveBtn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save settings
+        </button>
+      </div>
+    </div>
+
+    <!-- Presets -->
+    <div class="profile-section">
+      <div class="profile-section-title">PRESETS</div>
+      <div class="profile-preset-grid" id="presetGrid"></div>
+      <div class="profile-preset-save-row">
+        <input type="text" class="profile-preset-input" id="presetNameInput" placeholder="Preset name..." maxlength="20">
+        <button class="profile-preset-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="/hub/hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="/operator/query.html"       class="nav-tab active" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="/qa/submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
+      <a href="/qa/builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="/qa/qa.html"          class="nav-tab" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="/management/dashboard.html"   class="nav-tab" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
+      <a href="/operator/feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <button class="sop-search-btn" onclick="toggleSopSidebar()" title="Search SOPs" aria-label="Search SOPs">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="startNewChat()" title="Start a new conversation" data-i18n="query.newChat">New chat</button>
+    <button class="sign-out-btn" onclick="if(window.toggleProfilePanel)window.toggleProfilePanel()" title="Settings" aria-label="Settings">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- HISTORY TOGGLE (floating below title bar) -->
+<button class="history-toggle" onclick="toggleHistorySidebar()" title="Chat history">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="13" y1="8" x2="18" y2="8"/><line x1="13" y1="12" x2="18" y2="12"/></svg>
+</button>
+
+<!-- HISTORY SIDEBAR BACKDROP -->
+<div class="history-backdrop" id="historyBackdrop" onclick="closeHistorySidebar()"></div>
+
+<!-- HISTORY SIDEBAR -->
+<div class="history-sidebar" id="historySidebar">
+  <div class="hs-head">
+    <div class="hs-head-row">
+      <div style="display:flex;align-items:center">
+        <span class="hs-title">Conversations</span>
+        <span class="hs-count" id="hsCount">0</span>
+      </div>
+      <div class="hs-head-actions">
+        <button class="hs-icon-btn" onclick="analyseChats()" title="Analyse trends">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+          <span class="hs-tooltip">Trends</span>
+        </button>
+        <button class="hs-icon-btn danger" onclick="clearAllSessions()" title="Clear all">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          <span class="hs-tooltip">Clear all</span>
+        </button>
+        <button class="hs-icon-btn" onclick="closeHistorySidebar()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span class="hs-tooltip">Close</span>
+        </button>
+      </div>
+    </div>
+    <button class="hs-new-btn" onclick="startNewChat(); closeHistorySidebar();">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New conversation
+      <span class="hs-new-kbd">&#8984;N</span>
+    </button>
+    <div class="hs-search-row">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="hs-search-input" id="hsSearchInput" placeholder="Search conversations…" oninput="filterSessions()" onkeydown="if(event.key==='Enter'){event.preventDefault();aiSearchSessions();}">
+      <div class="hs-search-spinner" id="hsSearchSpinner"></div>
+      <span class="hs-search-hint" id="hsSearchHint">&#9166; AI search</span>
+    </div>
+  </div>
+  <div class="hs-list" id="hsList">
+    <div class="hs-empty">No conversations yet.<br>Start asking questions and they'll appear here.</div>
+  </div>
+</div>
+
+<!-- ANALYSIS MODAL -->
+<div class="analysis-overlay" id="analysisOverlay" onclick="if(event.target===this)closeAnalysisModal()">
+  <div class="analysis-modal">
+    <div class="analysis-modal-head">
+      <div class="analysis-modal-title">Chat Usage Analysis</div>
+      <button class="analysis-modal-close" onclick="closeAnalysisModal()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="analysis-modal-body" id="analysisBody">
+      <div class="analysis-loading">Analysing chat history...</div>
+    </div>
+  </div>
+</div>
+
+<!-- GDP CHECK MODAL -->
+<div class="gdp-overlay" id="gdpOverlay" onclick="if(event.target===this)closeGdpModal()">
+  <div class="gdp-modal">
+    <div class="gdp-modal-head">
+      <div class="gdp-modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+        GDP Review
+      </div>
+      <div class="gdp-head-stats" id="gdpHeadStats" style="display:none"></div>
+      <button class="gdp-history-btn" onclick="toggleGdpHistory()" id="gdpHistoryBtn">History</button>
+      <button class="gdp-modal-close" onclick="closeGdpModal()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="gdp-modal-body" id="gdpModalBody">
+      <!-- Upload zone (shown initially) -->
+      <div id="gdpUploadSection" style="display:flex;flex-direction:column;flex:1;">
+        <div class="gdp-upload-zone" id="gdpDropZone" onclick="document.getElementById('gdpFileInput').click()">
+          <div class="gdp-upload-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="M9 15l3-3 3 3"/></svg>
+          </div>
+          <div class="gdp-upload-title">Upload or photograph PBR pages</div>
+          <div class="gdp-upload-sub">
+            Upload images of your batch record pages or take a photo directly.<br>
+            AI will scan for <strong>EE</strong>, <strong>LE</strong>, <strong>IE</strong>, <strong>CE</strong>, blank spaces,
+            missing signatures, and other GDP issues.
+          </div>
+          <div class="gdp-upload-actions">
+            <button class="gdp-upload-action-btn" onclick="event.stopPropagation();document.getElementById('gdpFileInput').click()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Choose Files
+            </button>
+            <button class="gdp-upload-action-btn camera" onclick="event.stopPropagation();gdpOpenCamera()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Take Photo
+            </button>
+          </div>
+        </div>
+        <input type="file" id="gdpFileInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
+        <input type="file" id="gdpCameraInput" accept="image/*" capture="environment" style="display:none">
+        <!-- Camera viewfinder (hidden until activated) -->
+        <div class="gdp-camera-view" id="gdpCameraView" style="display:none">
+          <video id="gdpCameraVideo" autoplay playsinline></video>
+          <div class="gdp-camera-controls">
+            <button class="gdp-camera-cancel" onclick="gdpCloseCamera()">Cancel</button>
+            <button class="gdp-camera-shutter" onclick="gdpCapturePhoto()">
+              <span class="gdp-shutter-ring"></span>
+            </button>
+            <button class="gdp-camera-switch" onclick="gdpSwitchCamera()" id="gdpCamSwitch" style="display:none">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="gdp-photos" id="gdpPhotos"></div>
+      </div>
+      <!-- Loading state -->
+      <div class="gdp-loading" id="gdpLoading" style="display:none">
+        <div class="gdp-loading-spinner"></div>
+        <div class="gdp-loading-text">Analysing batch record for GDP errors…</div>
+        <div class="gdp-loading-page" id="gdpLoadingPage">Page 1 of 1</div>
+      </div>
+      <!-- Results: split view -->
+      <div class="gdp-review-split" id="gdpReviewSplit" style="display:none">
+        <!-- Page tabs -->
+        <div style="display:flex;flex-direction:column;flex:1;min-width:0;">
+          <div class="gdp-page-tabs" id="gdpPageTabs"></div>
+          <!-- Image viewer with annotations -->
+          <div class="gdp-viewer" id="gdpViewer">
+            <div class="gdp-viewer-canvas" id="gdpCanvas"></div>
+            <div class="gdp-zoom-controls">
+              <button class="gdp-zoom-btn" onclick="gdpZoom(-1)">−</button>
+              <span class="gdp-zoom-level" id="gdpZoomLevel">100%</span>
+              <button class="gdp-zoom-btn" onclick="gdpZoom(1)">+</button>
+              <button class="gdp-zoom-btn" onclick="gdpZoomFit()" title="Fit to view">⊡</button>
+            </div>
+          </div>
+        </div>
+        <!-- Findings sidebar -->
+        <div class="gdp-findings">
+          <div class="gdp-findings-head">
+            <span class="gdp-findings-title">Findings</span>
+            <span class="gdp-findings-count" id="gdpFindingsCount"></span>
+          </div>
+          <div class="gdp-tour-nav">
+            <button class="gdp-tour-btn" onclick="gdpTourPrev()" id="gdpTourPrev">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <span class="gdp-tour-label" id="gdpTourLabel">0 / 0</span>
+            <button class="gdp-tour-btn" onclick="gdpTourNext()" id="gdpTourNext">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+            </button>
+            <button class="gdp-tour-auto" id="gdpTourAuto" onclick="gdpTourToggleAuto()">Auto</button>
+          </div>
+          <div class="gdp-findings-list" id="gdpFindingsList"></div>
+          <div class="gdp-recs" id="gdpRecs" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Action bar -->
+    <div class="gdp-action-bar" id="gdpActionBar">
+      <div class="gdp-photo-count" id="gdpPhotoCount">0 pages</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="gdp-add-more" onclick="document.getElementById('gdpFileInput').click()">+ Add more</button>
+        <button class="gdp-run-btn" id="gdpRunBtn" onclick="runGdpCheck()" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 15l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          Run GDP Check
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- SOP SEARCH BACKDROP -->
+<div class="sop-backdrop" id="sopBackdrop" onclick="closeSopSidebar()"></div>
+
+<!-- SOP SEARCH SIDEBAR -->
+<div class="sop-sidebar" id="sopSidebar">
+  <div class="sop-head">
+    <span class="sop-head-title">SOPs</span>
+    <button class="sop-close" onclick="closeSopSidebar()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- AI Discovery Section -->
+  <div class="sop-discover">
+    <div class="sop-discover-header" onclick="toggleDiscoverPanel()">
+      <div class="sop-discover-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <span class="sop-discover-label">Not sure which SOP? Describe what you're working on</span>
+      <svg class="sop-discover-chevron" id="discoverChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="sop-discover-body" id="discoverBody">
+      <div class="sop-discover-response" id="discoverResponse"></div>
+      <div class="sop-discover-input-row">
+        <input class="sop-discover-input" id="discoverInput" type="text" placeholder="e.g. I'm calibrating the pH and DO probes before a run..." onkeydown="if(event.key==='Enter')discoverSops()">
+        <button class="sop-discover-send" id="discoverBtn" onclick="discoverSops()" title="Find SOPs">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyword Search -->
+  <div class="sop-search-row">
+    <input class="sop-search-input" id="sopSearchInput" type="text" placeholder="Search by keyword..." onkeydown="if(event.key==='Enter')searchSops()">
+    <button class="sop-search-go" id="sopSearchBtn" onclick="searchSops()">Search</button>
+  </div>
+  <div class="sop-results" id="sopResults">
+    <div class="sop-empty">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin-bottom:8px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><br>
+      Search by keyword above, or describe what you're working on to find the right SOP.
+    </div>
+  </div>
+</div>
+
+<!-- SOP VIEWER PANEL (floating window) -->
+<div class="sop-viewer" id="sopViewer">
+  <div class="sv-tabs" id="svTabs"></div>
+  <div class="sv-body" id="svBody">
+    <div class="sv-empty">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Open an SOP from the search panel to view it here.
+    </div>
+  </div>
+</div>
+
+<!-- BOOKMARKS PANEL -->
+<div class="bookmarks-panel" id="bookmarksPanel" style="display:none">
+  <div class="bookmarks-bar">
+    <div class="bookmarks-header" onclick="toggleBookmarksPanel()">
+      <svg class="bookmarks-header-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <span class="bookmarks-header-label">PINNED ANSWERS</span>
+      <span class="bookmarks-header-count" id="bookmarksCount">0</span>
+      <svg class="bookmarks-header-chevron" id="bookmarksChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="bookmarks-list" id="bookmarksList"></div>
+  </div>
+</div>
+
+<!-- CHAT AREA -->
+<div class="chat-area" id="chatArea">
+  <div class="chat-inner" id="chatInner">
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <div class="empty-title">Ask the <em>procedures.</em></div>
+      <div class="empty-sub">Search the facility SOPs in plain language. Get step-by-step instructions, exact parameter values, and a direct link to the source section so you can verify the answer yourself.</div>
+      <div class="sug-label">Try asking</div>
+      <div class="sug-chips">
+        <div class="sug-chip" onclick="fillAndSend('What is the target pH range and how is it controlled?')">pH control</div>
+        <div class="sug-chip" onclick="fillAndSend('How do I calibrate the pH probe before a run?')">pH probe calibration</div>
+        <div class="sug-chip" onclick="fillAndSend('What are the acceptance criteria for cell viability at inoculation?')">Inoculation criteria</div>
+        <div class="sug-chip" onclick="fillAndSend('What is the DO setpoint and cascade control order?')">DO control cascade</div>
+        <div class="sug-chip" onclick="fillAndSend('How long must the DO probe polarise before calibration?')">DO probe polarisation</div>
+        <div class="sug-chip" onclick="fillAndSend('What are the media volumes for each bioreactor size?')">Media volumes</div>
+        <div class="sug-chip" onclick="fillAndSend('What are the pressure hold test requirements?')">Pressure hold test</div>
+        <div class="sug-chip" onclick="fillAndSend('How do I calculate the inoculation volume?')">Inoculation volume</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SCROLL TO BOTTOM -->
+<button class="scroll-bottom-btn" id="scrollBottomBtn" onclick="scrollToBottom()">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  Scroll to latest
+</button>
+
+<!-- INPUT BAR -->
+<div class="input-bar">
+  <div class="input-inner">
+    <textarea id="qInput" class="q-textarea" placeholder="Ask a question about any SOP procedure, parameter, or step…" rows="1"></textarea>
+    <div class="cam-preview" id="camPreview">
+      <img id="camPreviewImg" src="" alt="Preview">
+      <div class="cam-preview-info">
+        <span id="camPreviewName">image.jpg</span>
+        <button class="cam-preview-remove" onclick="clearCamImage()" title="Remove">×</button>
+      </div>
+      <input type="text" class="cam-context" id="camContext" placeholder="Optional: describe what you're looking at…">
+    </div>
+    <div class="input-footer">
+      <select id="areaSelect" class="area-select">
+        <option value="Upstream">Upstream Bioreactor</option>
+        <option value="Media Prep">Media Prep</option>
+        <option value="Harvest">Harvest / TFF</option>
+        <option value="CIP">CIP / SIP</option>
+        <option value="QC">QC / In-process</option>
+        <option value="General">General</option>
+      </select>
+      <button class="cam-btn" id="camBtn" onclick="triggerCamUpload()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Photo
+      </button>
+      <input type="file" id="camFileInput" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" style="display:none">
+      <button class="gdp-btn" id="gdpBtn" onclick="openGdpModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+        GDP Check
+      </button>
+      <span class="input-hint">Cmd+Enter to send</span>
+      <button id="sendBtn" class="send-btn" onclick="runQuery()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MY SUBMISSIONS BACKDROP ── -->
+<div class="subs-backdrop" id="subsBackdrop" onclick="closeSubsDrawer()"></div>
+
+<!-- ── MY SUBMISSIONS DRAWER ── -->
+<div class="subs-drawer" id="subsDrawer">
+
+  <div class="sd-head">
+    <div class="sd-head-top">
+      <div class="sd-title">My Activity</div>
+      <button class="sd-close" onclick="closeSubsDrawer()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sd-tabs">
+      <button class="sd-tab on" onclick="switchSubsTab('subs',this)">My Submissions</button>
+      <button class="sd-tab"    onclick="switchSubsTab('progress',this)">Change Progress</button>
+    </div>
+  </div>
+
+  <div class="sd-scroll" id="sdScroll">
+    <div id="sdPanelSubs"><!-- rendered by renderSubsDrawer() --></div>
+    <div id="sdPanelProg" style="display:none"><!-- rendered by renderProgressTab() --></div>
+  </div>
+
+</div>
+
+<!-- ── VENT BACKDROP ── -->
+<div class="vent-backdrop" id="ventBackdrop" onclick="closeVentPanel()"></div>
+
+<!-- ── VENT PANEL ── -->
+<div class="vent-panel" id="ventPanel">
+
+  <div class="vp-head">
+    <div>
+      <div class="vp-title">Raise an observation</div>
+      <div class="vp-sub">Anonymous &middot; routed to QA &amp; MSAT</div>
+    </div>
+    <button class="vp-close" onclick="closeVentPanel()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="vp-body" id="vpBody">
+    <label class="vp-label">Observation</label>
+    <div class="vp-textarea-wrap">
+      <div class="vp-rec-overlay" id="vpRecOverlay">
+        <div class="vp-rec-rings">
+          <div class="vp-rec-ring"></div>
+          <div class="vp-rec-ring"></div>
+          <div class="vp-rec-ring"></div>
+          <div class="vp-rec-mic-center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+        </div>
+        <div class="vp-rec-timer" id="vpRecTimer">0:00</div>
+        <div class="vp-rec-bars" id="vpRecBars"></div>
+        <div class="vp-rec-hint">Tap mic to stop</div>
+      </div>
+      <div class="vp-rec-transcribing" id="vpRecTranscribing">
+        <div class="vp-rec-spinner"></div>
+        <div class="vp-rec-transcribe-text">Transcribing...</div>
+      </div>
+      <textarea class="vent-textarea" id="ventText" placeholder="What did you observe? Any deviation, concern, or SOP gap?"></textarea>
+      <button class="vp-mic-btn" id="vpMicBtn" onclick="toggleVpRecording()" title="Voice input">
+        <svg class="vp-mic-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <svg class="vp-mic-stop" style="display:none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+    </div>
+
+    <div class="vp-row2">
+      <select class="vp-area-sel" id="ventArea">
+        <option value="Upstream">Upstream Bioreactor</option>
+        <option value="Media Prep">Media Prep</option>
+        <option value="Harvest">Harvest / TFF</option>
+        <option value="CIP">CIP / SIP</option>
+        <option value="QC">QC / In-process</option>
+        <option value="General">General</option>
+      </select>
+      <div class="vp-pri">
+        <button class="vp-pri-btn" data-p="low"    onclick="setPri(this)">Low</button>
+        <button class="vp-pri-btn on" data-p="medium" onclick="setPri(this)">Med</button>
+        <button class="vp-pri-btn" data-p="high"   onclick="setPri(this)">High</button>
+      </div>
+    </div>
+
+    <div class="vp-anon">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Anonymous by design. Your identity is never recorded.
+    </div>
+
+    <div class="vp-attach">
+      <label class="vp-label">Photos or video <span style="font-size:10px;color:var(--dim);font-weight:300;text-transform:none;letter-spacing:0">— optional</span></label>
+      <div class="vp-drop" id="vpDrop"
+           onclick="document.getElementById('vpFileInput').click()"
+           ondragover="onVpDragOver(event)"
+           ondragleave="onVpDragLeave(event)"
+           ondrop="onVpDrop(event)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--dim);flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <div>
+          <div class="vp-drop-main">Add photos or video</div>
+          <div class="vp-drop-sub">Drag &amp; drop or click &middot; up to 5 files</div>
+        </div>
+      </div>
+      <input type="file" id="vpFileInput" accept="image/*,video/*" multiple style="display:none" onchange="handleVentFiles(this.files)">
+      <div class="vp-previews" id="vpPreviews"></div>
+    </div>
+
+    <button class="vp-submit-btn" id="ventSubmitBtn" onclick="submitVent()">
+      Submit observation
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+  </div>
+
+  <div class="vp-success" id="vpSuccess" style="display:none">
+    <div class="vps-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="vps-title">Observation logged</div>
+    <div class="vps-ref" id="vpsRef"></div>
+    <button class="vps-again" onclick="resetVentPanel()">Submit another</button>
+  </div>
+
+</div>
+
+
+<div class="charlie-panel" id="charliePanel">
+  <button class="charlie-close" onclick="closeCharlie()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div class="charlie-title">CHARLIE</div>
+  <div class="charlie-viz">
+    <svg class="charlie-rings" viewBox="0 0 180 180">
+      <circle cx="90" cy="90" r="64" class="charlie-ring charlie-ring-1"/>
+      <circle cx="90" cy="90" r="74" class="charlie-ring charlie-ring-2"/>
+      <circle cx="90" cy="90" r="82" class="charlie-ring charlie-ring-3"/>
+    </svg>
+    <div id="charlieBars"></div>
+    <div class="charlie-orb" id="charlieOrb"></div>
+  </div>
+  <div class="charlie-status" id="charlieStatus"></div>
+  <div class="charlie-answer" id="charlieAnswer"></div>
+</div>
+
+<script src="/shared/audio.js"></script>
+<script type="module" src="/operator/query/main.js"></script>
+</body>
+</html>

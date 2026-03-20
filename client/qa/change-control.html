@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Change Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 300px 4px 1fr;
+  overflow: hidden;
+}
+
+/* ── RESIZE ── */
+.resizer { background: #3c3c3c; z-index: 10; cursor: col-resize; }
+.resizer:hover, .resizer.dragging { background: #007acc; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  background: #252526; border-right: 1px solid #3c3c3c;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-header {
+  padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: #8e8e8e; border-bottom: 1px solid #3c3c3c;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-badge { background: #007acc; color: #fff; border-radius: 8px; padding: 1px 7px; font-size: 10px; }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: flex; gap: 6px; padding: 6px 10px; border-bottom: 1px solid #3c3c3c;
+  flex-wrap: wrap;
+}
+.stat-chip {
+  background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 4px;
+  padding: 3px 8px; font-size: 10px; color: #b0b0b0; cursor: pointer;
+  transition: background .15s;
+}
+.stat-chip:hover { background: #2a2a2e; }
+.stat-chip .stat-val { color: #e0e0e0; font-weight: 600; margin-left: 3px; }
+
+/* ── FILTERS ── */
+.filter-bar {
+  display: flex; gap: 4px; padding: 6px 10px; border-bottom: 1px solid #3c3c3c;
+  flex-wrap: wrap;
+}
+.filter-bar select, .filter-bar input {
+  background: #1e1e1e; border: 1px solid #3c3c3c; color: #d4d4d4;
+  border-radius: 4px; padding: 3px 6px; font-size: 11px; font-family: inherit;
+}
+.filter-bar input { flex: 1; min-width: 80px; }
+
+/* ── LIST ── */
+.cc-list { flex: 1; overflow-y: auto; }
+.cc-item {
+  padding: 8px 10px; border-bottom: 1px solid #2a2a2e; cursor: pointer;
+  transition: background .1s; position: relative;
+}
+.cc-item:hover { background: #2a2d2e; }
+.cc-item.selected { background: #37373d; border-left: 3px solid #007acc; }
+.cc-item.emergency { border-left: 3px solid #f44; animation: pulse-border 2s infinite; }
+.cc-item.urgent { border-left: 3px solid #f0a030; }
+.cc-item.overdue { border-right: 3px solid #f44; }
+@keyframes pulse-border { 0%,100%{border-left-color:#f44} 50%{border-left-color:#f88} }
+.cc-title { font-size: 12px; font-weight: 500; color: #e0e0e0; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-meta { font-size: 10px; color: #8e8e8e; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.cc-id { font-family: 'JetBrains Mono', monospace; color: #569cd6; }
+
+/* ── BADGES ── */
+.badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.badge-draft { background: #3c3c3c; color: #b0b0b0; }
+.badge-submitted { background: #1a3a5c; color: #6cb6ff; }
+.badge-under-review { background: #3d2e00; color: #f0a030; }
+.badge-approved { background: #1a3c1a; color: #4ec94e; }
+.badge-implementing { background: #2a1a3c; color: #b08cff; }
+.badge-closed { background: #1a3a2a; color: #40c080; }
+.badge-rejected { background: #3c1a1a; color: #f06060; }
+.badge-minor { background: #1a3a2a; color: #40c080; }
+.badge-moderate { background: #3d2e00; color: #f0a030; }
+.badge-major { background: #3c2a00; color: #f08030; }
+.badge-critical { background: #3c1a1a; color: #f06060; }
+.badge-low { background: #1a3a2a; color: #4ec94e; }
+.badge-medium { background: #3d2e00; color: #f0c030; }
+.badge-high { background: #3c2a00; color: #f08030; }
+.badge-planned { background: #1a3a5c; color: #6cb6ff; }
+.badge-urgent { background: #3c2a00; color: #f0a030; }
+.badge-emergency { background: #3c1a1a; color: #f06060; }
+.rpn-badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.rpn-low { background: #1a3a2a; color: #40c080; }
+.rpn-medium { background: #3d2e00; color: #f0a030; }
+.rpn-high { background: #3c1a1a; color: #f06060; }
+
+/* ── RIGHT PANEL ── */
+.right-panel {
+  background: #1e1e1e; overflow-y: auto; padding: 0;
+}
+.detail-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: #5a5a5a; font-size: 13px;
+}
+.detail-content { padding: 16px 20px; }
+.detail-header {
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.detail-header h2 { font-size: 16px; font-weight: 600; color: #e0e0e0; margin: 0; flex: 1; }
+
+/* ── WORKFLOW PROGRESS ── */
+.workflow-bar {
+  display: flex; gap: 2px; margin-bottom: 16px; background: #252526; border-radius: 6px; padding: 8px; overflow-x: auto;
+}
+.wf-step {
+  flex: 1; text-align: center; padding: 6px 4px; font-size: 10px; color: #5a5a5a;
+  border-radius: 4px; min-width: 70px; position: relative;
+}
+.wf-step.active { background: #007acc33; color: #6cb6ff; font-weight: 600; }
+.wf-step.done { background: #1a3a2a; color: #40c080; }
+.wf-step.rejected { background: #3c1a1a; color: #f06060; }
+
+/* ── EMERGENCY BANNER ── */
+.emergency-banner {
+  background: #3c1a1a; border: 1px solid #f44; border-radius: 6px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #faa;
+}
+.emergency-banner strong { color: #f66; }
+
+/* ── SECTIONS ── */
+.section { margin-bottom: 16px; }
+.section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #8e8e8e; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+}
+.section-body { background: #252526; border-radius: 6px; padding: 12px; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.field label { font-size: 10px; color: #8e8e8e; display: block; margin-bottom: 2px; }
+.field .val { font-size: 12px; color: #d4d4d4; }
+.field textarea, .field input, .field select {
+  width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; color: #d4d4d4;
+  border-radius: 4px; padding: 6px 8px; font-size: 12px; font-family: inherit;
+}
+.field textarea { min-height: 60px; resize: vertical; }
+.field-full { grid-column: 1 / -1; }
+
+/* ── RISK FMEA ── */
+.risk-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; }
+.risk-slider { display: flex; flex-direction: column; gap: 2px; }
+.risk-slider label { font-size: 10px; color: #8e8e8e; }
+.risk-slider input[type=range] { width: 100%; accent-color: #007acc; }
+.risk-val { font-size: 14px; font-weight: 700; font-family: 'JetBrains Mono', monospace; text-align: center; }
+
+/* ── IMPACT TABLE ── */
+.impact-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.impact-table th { text-align: left; padding: 4px 8px; color: #8e8e8e; border-bottom: 1px solid #3c3c3c; font-weight: 600; }
+.impact-table td { padding: 4px 8px; color: #d4d4d4; border-bottom: 1px solid #2a2a2e; }
+.impact-table tr.overdue td { color: #f66; }
+
+/* ── APPROVAL TABLE ── */
+.approval-group { margin-bottom: 10px; }
+.approval-group-title { font-size: 10px; color: #8e8e8e; margin-bottom: 4px; font-weight: 600; }
+.approval-entry { display: flex; gap: 8px; align-items: center; padding: 4px 0; font-size: 11px; }
+.approval-entry .name { color: #d4d4d4; font-weight: 500; }
+.approval-entry .decision { font-weight: 600; }
+.approval-entry .ts { color: #5a5a5a; font-size: 10px; }
+
+/* ── TASK LIST ── */
+.task-progress { height: 6px; background: #3c3c3c; border-radius: 3px; margin-bottom: 8px; }
+.task-progress-fill { height: 100%; background: #007acc; border-radius: 3px; transition: width .3s; }
+.task-item {
+  display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid #2a2a2e; align-items: center; font-size: 11px;
+}
+.task-status-icon { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #5a5a5a; }
+.task-status-icon.completed { background: #4ec94e; border-color: #4ec94e; }
+.task-status-icon.in-progress { background: #007acc; border-color: #007acc; }
+.task-status-icon.blocked { background: #f44; border-color: #f44; }
+.task-title { color: #d4d4d4; }
+.task-role { color: #8e8e8e; font-size: 10px; }
+.task-actions button { font-size: 10px; }
+
+/* ── SIMILAR CHANGES ── */
+.similar-item {
+  padding: 8px; border-bottom: 1px solid #2a2a2e; font-size: 11px;
+}
+.similar-score { font-family: 'JetBrains Mono', monospace; color: #007acc; font-weight: 600; }
+
+/* ── AI PANEL ── */
+.ai-panel { background: #1a2a3a; border: 1px solid #2a4a6a; border-radius: 6px; padding: 12px; margin-bottom: 8px; }
+.ai-panel-title { font-size: 11px; font-weight: 700; color: #6cb6ff; margin-bottom: 6px; }
+.ai-panel p { font-size: 12px; color: #c0d0e0; margin: 4px 0; line-height: 1.5; }
+
+/* ── AUDIT TRAIL ── */
+.audit-entry { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid #2a2a2e; font-size: 11px; }
+.audit-ts { color: #5a5a5a; font-family: 'JetBrains Mono', monospace; font-size: 10px; min-width: 130px; }
+.audit-user { color: #569cd6; min-width: 80px; }
+.audit-action { color: #d4d4d4; }
+
+/* ── BUTTONS ── */
+.btn { padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; border: none; transition: background .15s; font-family: inherit; }
+.btn-primary { background: #007acc; color: #fff; }
+.btn-primary:hover { background: #0098ff; }
+.btn-ai { background: #2a1a3c; color: #b08cff; border: 1px solid #4a2a6a; }
+.btn-ai:hover { background: #3a2a4c; }
+.btn-danger { background: #3c1a1a; color: #f06060; border: 1px solid #5c2a2a; }
+.btn-danger:hover { background: #4c2a2a; }
+.btn-success { background: #1a3a1a; color: #4ec94e; border: 1px solid #2a5a2a; }
+.btn-success:hover { background: #2a4a2a; }
+.btn-sm { padding: 3px 8px; font-size: 10px; }
+.btn-group { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
+  display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: #252526; border: 1px solid #3c3c3c; border-radius: 8px;
+  width: 560px; max-height: 85vh; overflow-y: auto; padding: 20px;
+}
+.modal h3 { font-size: 14px; color: #e0e0e0; margin: 0 0 12px; }
+.modal .field { margin-bottom: 10px; }
+.modal .field label { font-size: 11px; color: #8e8e8e; display: block; margin-bottom: 3px; }
+.modal .field input, .modal .field select, .modal .field textarea {
+  width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; color: #d4d4d4;
+  border-radius: 4px; padding: 6px 8px; font-size: 12px; font-family: inherit; box-sizing: border-box;
+}
+.modal .field textarea { min-height: 60px; resize: vertical; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+
+/* ── SLA INDICATOR ── */
+.sla-green { color: #4ec94e; }
+.sla-amber { color: #f0a030; }
+.sla-red { color: #f44; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: #007acc; font-size: 11px; color: #fff;
+  padding: 2px 10px; display: flex; align-items: center; gap: 12px;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div id="nav-bar"></div>
+
+<!-- WORKBENCH -->
+<div class="workbench">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="panel-header">
+      Change Controls <span class="panel-badge" id="totalCount">0</span>
+      <button class="btn btn-primary btn-sm" onclick="openCreateModal()">+ New</button>
+    </div>
+
+    <div class="stats-bar" id="statsBar"></div>
+
+    <div class="filter-bar">
+      <select id="fStatus"><option value="">All Status</option><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="under-review">Under Review</option><option value="approved">Approved</option><option value="implementing">Implementing</option><option value="closed">Closed</option><option value="rejected">Rejected</option></select>
+      <select id="fType"><option value="">All Types</option><option value="process">Process</option><option value="equipment">Equipment</option><option value="material">Material</option><option value="facility">Facility</option><option value="documentation">Documentation</option><option value="system">System</option><option value="analytical">Analytical</option></select>
+      <select id="fPriority"><option value="">All Priority</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select>
+      <input type="text" id="fSearch" placeholder="Search CC ID, title...">
+    </div>
+
+    <div class="cc-list" id="ccList"></div>
+  </div>
+
+  <!-- RESIZER -->
+  <div class="resizer" id="resizer"></div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel" id="rightPanel">
+    <div class="detail-empty">Select a change control to view details</div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>Change Control</span>
+  <span id="statusMsg"></span>
+</div>
+
+<!-- CREATE MODAL -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <h3>New Change Control</h3>
+    <div class="field"><label>Title *</label><input type="text" id="mTitle"></div>
+    <div class="field"><label>Description *</label><textarea id="mDesc"></textarea></div>
+    <div class="field"><label>Justification</label><textarea id="mJustification"></textarea></div>
+    <div class="field"><label>Proposed Change</label><textarea id="mProposed"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="field">
+        <label>Change Type</label>
+        <select id="mType" onchange="updateSubCategories()">
+          <option value="process">Process</option><option value="equipment">Equipment</option>
+          <option value="material">Material</option><option value="facility">Facility</option>
+          <option value="documentation">Documentation</option><option value="system">System</option>
+          <option value="analytical">Analytical</option>
+        </select>
+      </div>
+      <div class="field"><label>Sub-Category</label><select id="mSubCat"></select></div>
+      <div class="field">
+        <label>Category</label>
+        <select id="mCategory">
+          <option value="minor">Minor — No quality impact</option><option value="moderate">Moderate — Indirect quality impact</option>
+          <option value="major">Major — Cross-functional, CCB required</option><option value="critical">Critical — Site Director + CCB</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Priority</label>
+        <select id="mPriority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select>
+      </div>
+      <div class="field">
+        <label>Urgency</label>
+        <select id="mUrgency" onchange="toggleEmergencyWarning()">
+          <option value="planned">Planned</option><option value="urgent">Urgent (48h SLAs)</option><option value="emergency">Emergency</option>
+        </select>
+      </div>
+      <div class="field"><label>Target Completion</label><input type="date" id="mTarget"></div>
+      <div class="field"><label>Linked Deviation ID</label><input type="text" id="mDevId" placeholder="DEV-XXXX"></div>
+      <div class="field"><label>Linked CAPA ID</label><input type="text" id="mCapaId" placeholder="CAPA-XXXX"></div>
+    </div>
+    <div class="field"><label>Linked Audit Finding</label><input type="text" id="mAuditFinding" placeholder="Optional"></div>
+    <div id="emergencyWarn" style="display:none;background:#3c1a1a;border:1px solid #f44;border-radius:4px;padding:8px;margin:8px 0;font-size:11px;color:#faa;">
+      <strong>Emergency changes</strong> require retrospective documentation within 24 hours. Immediate implementation is permitted.
+    </div>
+    <div class="btn-group" style="margin:10px 0;">
+      <button class="btn btn-ai btn-sm" onclick="aiFromCreate('impact')">Assess Impact</button>
+      <button class="btn btn-ai btn-sm" onclick="aiFromCreate('classify')">Classify Regulatory</button>
+      <button class="btn btn-ai btn-sm" onclick="aiFromCreate('risk')">Score Risk</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" style="background:#3c3c3c;color:#d4d4d4" onclick="closeModal('createModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createCC()">Create Change Control</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPACT MODAL -->
+<div class="modal-overlay" id="impactModal">
+  <div class="modal">
+    <h3>Add Impact Assessment</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="field">
+        <label>Department</label>
+        <select id="imDept"><option value="qa">QA</option><option value="qc">QC</option><option value="regulatory">Regulatory</option><option value="production">Production</option><option value="engineering">Engineering</option><option value="msat">MSAT</option><option value="validation">Validation</option><option value="facilities">Facilities</option><option value="supply-chain">Supply Chain</option><option value="ehs">EHS</option><option value="it-automation">IT/Automation</option></select>
+      </div>
+      <div class="field">
+        <label>Impact Level</label>
+        <select id="imLevel"><option value="none">None</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Impact Details</label><textarea id="imDetails"></textarea></div>
+    <div class="field"><label>Mitigation Steps</label><textarea id="imMitigation"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="field">
+        <label><input type="checkbox" id="imValRequired"> Validation Required</label>
+      </div>
+      <div class="field" id="imValTypeWrap" style="display:none;">
+        <label>Validation Type</label>
+        <select id="imValType"><option value="iq">IQ</option><option value="oq">OQ</option><option value="pq">PQ</option><option value="process-validation">Process Validation</option><option value="cleaning-validation">Cleaning Validation</option><option value="method-validation">Method Validation</option><option value="csv">CSV</option></select>
+      </div>
+    </div>
+    <div class="field"><label><input type="checkbox" id="imRegImpact"> Regulatory Impact</label></div>
+    <div class="field"><label>Cascade Impacts</label><textarea id="imCascade" placeholder="Second-order effects..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" style="background:#3c3c3c;color:#d4d4d4" onclick="closeModal('impactModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitImpact()">Save Assessment</button>
+    </div>
+  </div>
+</div>
+
+<!-- APPROVAL MODAL -->
+<div class="modal-overlay" id="approvalModal">
+  <div class="modal">
+    <h3>Record Approval Decision</h3>
+    <div class="field">
+      <label>Decision</label>
+      <select id="apDecision" onchange="toggleApprovalComments()">
+        <option value="approved">Approve</option><option value="rejected">Reject</option><option value="request-info">Request More Information</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Signature Meaning (21 CFR Part 11.10(k))</label>
+      <select id="apSigMeaning"><option value="approval">Approval</option><option value="review">Review</option><option value="responsibility">Responsibility</option></select>
+    </div>
+    <div class="field">
+      <label>Approval Tier</label>
+      <select id="apTier"><option value="1">Tier 1 — Departmental</option><option value="2">Tier 2 — Cross-Functional</option><option value="3">Tier 3 — CCB / Site Director</option></select>
+    </div>
+    <div class="field"><label>Comments <span id="apCommentsReq" style="display:none;color:#f66;">(required)</span></label><textarea id="apComments"></textarea></div>
+    <div style="font-size:11px;color:#8e8e8e;margin-bottom:8px;">
+      Printed Name: <span id="apPrintedName" style="color:#d4d4d4"></span> | Timestamp: <span id="apTimestamp" style="color:#d4d4d4"></span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" style="background:#3c3c3c;color:#d4d4d4" onclick="closeModal('approvalModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitApproval()">Submit Decision</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <h3>Add Implementation Task</h3>
+    <div class="field"><label>Title</label><input type="text" id="tkTitle"></div>
+    <div class="field"><label>Description</label><textarea id="tkDesc"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="field"><label>Assigned Role</label><input type="text" id="tkRole" placeholder="e.g. qa, engineering"></div>
+      <div class="field"><label>Task Order</label><input type="number" id="tkOrder" value="0" min="0"></div>
+      <div class="field"><label>Effort Estimate</label><input type="text" id="tkEffort" placeholder="e.g. 2 hours, 1 day"></div>
+      <div class="field"><label>Due Date</label><input type="date" id="tkDue"></div>
+    </div>
+    <div class="field"><label><input type="checkbox" id="tkVerify"> QA Verification Required</label></div>
+    <div class="modal-actions">
+      <button class="btn" style="background:#3c3c3c;color:#d4d4d4" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOSE MODAL -->
+<div class="modal-overlay" id="closeModal">
+  <div class="modal">
+    <h3>Close Change Control</h3>
+    <div class="field">
+      <label>Effectiveness Result</label>
+      <select id="clResult"><option value="effective">Effective</option><option value="partially-effective">Partially Effective</option><option value="not-effective">Not Effective</option></select>
+    </div>
+    <div class="field"><label>Effectiveness Check Notes</label><textarea id="clCheck"></textarea></div>
+    <div class="field"><label>Closure Notes</label><textarea id="clNotes"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" style="background:#3c3c3c;color:#d4d4d4" onclick="closeModal('closeModal')">Cancel</button>
+      <button class="btn btn-success" onclick="submitClose()">Close Change Control</button>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/nav.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/dev-progress.js"></script>
+<script>
+'use strict';
+
+const SUB_CATS = {
+  process: ['parameter','ipc','batch-size','hold-time','step-change','cleaning','sterilisation'],
+  equipment: ['like-for-like','upgrade','new','relocation','software-update'],
+  material: ['supplier-change','grade-change','specification','new-material'],
+  facility: ['hvac','utilities','layout','classification'],
+  documentation: ['sop','batch-record','specification','label'],
+  system: ['software','hardware','network','automation'],
+  analytical: ['method','specification','reference-standard','instrument'],
+};
+
+const WORKFLOW = ['draft','submitted','under-review','approved','implementing','closed'];
+
+let allCCs = [];
+let selectedCC = null;
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  updateSubCategories();
+  loadStats();
+  loadList();
+  setupResizer();
+  document.getElementById('imValRequired').addEventListener('change', e => {
+    document.getElementById('imValTypeWrap').style.display = e.target.checked ? '' : 'none';
+  });
+  document.getElementById('fStatus').addEventListener('change', loadList);
+  document.getElementById('fType').addEventListener('change', loadList);
+  document.getElementById('fPriority').addEventListener('change', loadList);
+  document.getElementById('fSearch').addEventListener('input', renderList);
+});
+
+function updateSubCategories() {
+  const type = document.getElementById('mType').value;
+  const sel = document.getElementById('mSubCat');
+  sel.innerHTML = '<option value="">None</option>' + (SUB_CATS[type] || []).map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function toggleEmergencyWarning() {
+  document.getElementById('emergencyWarn').style.display = document.getElementById('mUrgency').value === 'emergency' ? '' : 'none';
+}
+
+function toggleApprovalComments() {
+  const d = document.getElementById('apDecision').value;
+  document.getElementById('apCommentsReq').style.display = (d === 'rejected' || d === 'request-info') ? '' : 'none';
+}
+
+// ── API helpers ──
+async function api(url, opts) {
+  try {
+    const r = await authFetch(url, opts);
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || r.statusText); }
+    return r.json();
+  } catch (err) {
+    setStatus(err.message, true);
+    throw err;
+  }
+}
+
+function setStatus(msg, isError) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.style.color = isError ? '#faa' : '#fff';
+  if (!isError) setTimeout(() => el.textContent = '', 3000);
+}
+
+// ── Stats ──
+async function loadStats() {
+  try {
+    const s = await api('/change-controls/stats');
+    const bar = document.getElementById('statsBar');
+    bar.innerHTML = `
+      <div class="stat-chip" onclick="filterByStatus('')">Total<span class="stat-val">${s.total || 0}</span></div>
+      <div class="stat-chip" onclick="filterByStatus('')">Open<span class="stat-val">${s.open || 0}</span></div>
+      <div class="stat-chip" style="border-color:#f44">Overdue<span class="stat-val" style="color:#f66">${s.overdue || 0}</span></div>
+      <div class="stat-chip">Avg Cycle<span class="stat-val">${s.avgCycleTimeDays != null ? s.avgCycleTimeDays + 'd' : '—'}</span></div>
+      <div class="stat-chip">SLA<span class="stat-val">${s.slaComplianceRate || 100}%</span></div>
+      <div class="stat-chip" style="border-color:#f44">Eff. Overdue<span class="stat-val" style="color:#f66">${s.overdueEffectiveness || 0}</span></div>
+    `;
+  } catch (e) { /* ignore */ }
+}
+
+function filterByStatus(s) {
+  document.getElementById('fStatus').value = s;
+  loadList();
+}
+
+// ── List ──
+async function loadList() {
+  const params = new URLSearchParams();
+  const fs = document.getElementById('fStatus').value;
+  const ft = document.getElementById('fType').value;
+  const fp = document.getElementById('fPriority').value;
+  if (fs) params.set('status', fs);
+  if (ft) params.set('change_type', ft);
+  if (fp) params.set('priority', fp);
+
+  try {
+    allCCs = await api('/change-controls?' + params);
+    document.getElementById('totalCount').textContent = allCCs.length;
+    renderList();
+  } catch (e) { /* ignore */ }
+}
+
+function renderList() {
+  const search = document.getElementById('fSearch').value.toLowerCase();
+  const filtered = search
+    ? allCCs.filter(cc => cc.cc_id.toLowerCase().includes(search) || cc.title.toLowerCase().includes(search) || (cc.originator || '').toLowerCase().includes(search))
+    : allCCs;
+
+  const list = document.getElementById('ccList');
+  const now = new Date();
+  list.innerHTML = filtered.map(cc => {
+    const isOverdue = cc.status !== 'closed' && cc.status !== 'rejected' && cc.target_completion && new Date(cc.target_completion) < now;
+    const cls = [
+      'cc-item',
+      selectedCC && selectedCC.cc_id === cc.cc_id ? 'selected' : '',
+      cc.urgency === 'emergency' ? 'emergency' : cc.urgency === 'urgent' ? 'urgent' : '',
+      isOverdue ? 'overdue' : '',
+    ].filter(Boolean).join(' ');
+
+    return `<div class="${cls}" onclick="selectCC('${cc.cc_id}')">
+      <div class="cc-title">${esc(cc.title)}</div>
+      <div class="cc-meta">
+        <span class="cc-id">${cc.cc_id}</span>
+        <span class="badge badge-${cc.status}">${cc.status}</span>
+        <span class="badge badge-${cc.priority}">${cc.priority}</span>
+        <span class="badge badge-${cc.category}">${cc.category}</span>
+        ${cc.risk_rpn > 0 ? `<span class="rpn-badge ${cc.risk_rpn < 30 ? 'rpn-low' : cc.risk_rpn <= 60 ? 'rpn-medium' : 'rpn-high'}">RPN ${cc.risk_rpn}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Detail ──
+async function selectCC(ccId) {
+  try {
+    selectedCC = await api(`/change-controls/${ccId}`);
+    renderDetail();
+    renderList();
+  } catch (e) { /* ignore */ }
+}
+
+function renderDetail() {
+  const cc = selectedCC;
+  if (!cc) return;
+  const p = document.getElementById('rightPanel');
+  const now = new Date();
+
+  // Workflow bar
+  const statusIdx = WORKFLOW.indexOf(cc.status);
+  const wfHtml = WORKFLOW.map((s, i) => {
+    let cls = 'wf-step';
+    if (cc.status === 'rejected') { cls += i === statusIdx ? ' rejected' : ''; }
+    else if (i < statusIdx) cls += ' done';
+    else if (i === statusIdx) cls += ' active';
+    return `<div class="${cls}">${s.replace('-', ' ')}</div>`;
+  }).join('');
+
+  // Emergency banner
+  const emergencyHtml = cc.urgency === 'emergency' ? `<div class="emergency-banner"><strong>EMERGENCY CHANGE</strong> — Immediate implementation permitted. All assessment and approval documentation must be completed retrospectively within 24 hours. Auto-escalated to QA Manager and Site Director.</div>` : '';
+
+  // Impact table
+  const impacts = cc.impacts || [];
+  const impactRows = impacts.map(ia => {
+    const od = ia.due_date && new Date(ia.due_date) < now && ia.status !== 'completed' ? ' class="overdue"' : '';
+    return `<tr${od}><td>${ia.department}</td><td><span class="badge badge-${ia.impact_level}">${ia.impact_level}</span></td><td>${esc(ia.assessor)}</td><td><span class="badge badge-${ia.status === 'completed' ? 'closed' : 'draft'}">${ia.status}</span></td><td>${ia.due_date || '—'}</td><td>${esc(ia.impact_details || '').slice(0, 60)}</td></tr>`;
+  }).join('');
+
+  // Approvals
+  const approvals = cc.approvals || [];
+  const tiers = [1, 2, 3];
+  const approvalHtml = tiers.map(t => {
+    const tier = approvals.filter(a => a.approval_tier === t);
+    if (tier.length === 0) return '';
+    const tierName = t === 1 ? 'Departmental' : t === 2 ? 'Cross-Functional' : 'CCB / Site Director';
+    return `<div class="approval-group"><div class="approval-group-title">Tier ${t} — ${tierName}</div>${tier.map(a =>
+      `<div class="approval-entry"><span class="name">${esc(a.approver)}</span><span class="badge badge-${a.decision === 'approved' ? 'approved' : a.decision === 'rejected' ? 'rejected' : 'draft'}">${a.decision}</span><span class="ts">${a.decided_at ? new Date(a.decided_at).toLocaleString() : '—'}</span><span style="color:#5a5a5a;font-size:10px">${a.signature_meaning || ''}</span></div>`
+    ).join('')}</div>`;
+  }).join('');
+
+  // Tasks
+  const tasks = cc.tasks || [];
+  const completedTasks = tasks.filter(t => t.status === 'completed').length;
+  const taskPct = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+  const taskHtml = tasks.map(t => `
+    <div class="task-item">
+      <div class="task-status-icon ${t.status}"></div>
+      <div><div class="task-title">${esc(t.title)}</div><div class="task-role">${t.assigned_role || ''} ${t.effort_estimate ? '· ' + t.effort_estimate : ''}</div></div>
+      <div>
+        ${t.status !== 'completed' ? `<button class="btn btn-sm btn-primary" onclick="updateTaskStatus('${t.task_id}','in-progress')">Start</button> <button class="btn btn-sm btn-success" onclick="updateTaskStatus('${t.task_id}','completed')">Done</button>` : ''}
+        ${t.status === 'completed' && t.verification_required && !t.verified_by ? `<button class="btn btn-sm btn-ai" onclick="verifyTaskAction('${t.task_id}')">Verify</button>` : ''}
+        ${t.verified_by ? '<span style="color:#4ec94e;font-size:10px">Verified</span>' : ''}
+      </div>
+      <div style="font-size:10px;color:#5a5a5a">${t.due_date || ''}</div>
+    </div>
+  `).join('');
+
+  // Similar changes
+  const similar = cc.ai_similar_changes || [];
+  const similarHtml = similar.map(s => `<div class="similar-item"><span class="similar-score">${Math.round(s.similarity_score * 100)}%</span> <span class="cc-id">${s.cc_id}</span> — ${esc(s.title)} <span class="badge badge-${s.status}">${s.status}</span></div>`).join('');
+
+  // AI panels
+  const aiImpactHtml = cc.ai_impact_summary ? `<div class="ai-panel"><div class="ai-panel-title">AI Impact Summary</div><p>${esc(cc.ai_impact_summary)}</p></div>` : '';
+  let aiRegHtml = '';
+  if (cc.ai_reg_classification) {
+    try {
+      const reg = typeof cc.ai_reg_classification === 'string' ? JSON.parse(cc.ai_reg_classification) : cc.ai_reg_classification;
+      aiRegHtml = `<div class="ai-panel"><div class="ai-panel-title">AI Regulatory Classification (Confidence: ${reg.confidence || '?'}%)</div><p><strong>EU:</strong> ${reg.eu_classification || '—'} — ${esc(reg.eu_reasoning || '')}</p><p><strong>FDA SUPAC:</strong> Level ${reg.fda_supac_level || '—'} — ${esc(reg.fda_reasoning || '')}</p><p><strong>Filing:</strong> ${reg.regulatory_filing_type || '—'}</p></div>`;
+    } catch (e) { /* ignore */ }
+  }
+  const aiSopsHtml = (cc.ai_affected_sops || []).length > 0
+    ? `<div class="ai-panel"><div class="ai-panel-title">AI Affected SOPs</div>${(cc.ai_affected_sops || []).map(s => `<p>${s.sop_id} — ${esc(s.title)} (${Math.round(s.relevance_score * 100)}%) — ${esc(s.reason || '')}</p>`).join('')}</div>` : '';
+  const aiRiskHtml = cc.ai_risk_score && cc.ai_risk_score.rpn
+    ? `<div class="ai-panel"><div class="ai-panel-title">AI Risk Assessment (RPN: ${cc.ai_risk_score.rpn})</div><p><strong>Severity ${cc.ai_risk_score.severity}:</strong> ${esc(cc.ai_risk_score.severity_reasoning || '')}</p><p><strong>Probability ${cc.ai_risk_score.probability}:</strong> ${esc(cc.ai_risk_score.probability_reasoning || '')}</p><p><strong>Detectability ${cc.ai_risk_score.detectability}:</strong> ${esc(cc.ai_risk_score.detectability_reasoning || '')}</p></div>` : '';
+  const aiEffHtml = cc.ai_effectiveness_criteria ? `<div class="ai-panel"><div class="ai-panel-title">AI Effectiveness Criteria</div><p>${esc(cc.ai_effectiveness_criteria)}</p></div>` : '';
+
+  // RPN display
+  const rpnColor = cc.risk_rpn < 30 ? 'rpn-low' : cc.risk_rpn <= 60 ? 'rpn-medium' : 'rpn-high';
+
+  // SLA indicators
+  const slaAssess = cc.sla_assessment_due ? slaIndicator(cc.sla_assessment_due, cc.status === 'submitted') : '';
+  const slaApproval = cc.sla_approval_due ? slaIndicator(cc.sla_approval_due, cc.status === 'under-review') : '';
+
+  // Workflow action buttons
+  let actionBtns = '';
+  if (cc.status === 'draft') actionBtns = `<button class="btn btn-primary" onclick="doAction('submit')">Submit for Assessment</button>`;
+  else if (cc.status === 'submitted') actionBtns = `<button class="btn btn-primary" onclick="doAction('review')">Move to Review</button>`;
+  else if (cc.status === 'under-review') actionBtns = `<button class="btn btn-primary" onclick="openApprovalModal()">Record Approval</button>`;
+  else if (cc.status === 'approved') actionBtns = `<button class="btn btn-primary" onclick="doAction('implement')">Start Implementation</button>`;
+  else if (cc.status === 'implementing') actionBtns = `<button class="btn btn-success" onclick="openCloseModal()">Close Change Control</button>`;
+
+  p.innerHTML = `<div class="detail-content">
+    <!-- HEADER -->
+    <div class="detail-header">
+      <h2><span class="cc-id">${cc.cc_id}</span> ${esc(cc.title)}</h2>
+      <span class="badge badge-${cc.status}">${cc.status}</span>
+      <span class="badge badge-${cc.priority}">${cc.priority}</span>
+      <span class="badge badge-${cc.urgency}">${cc.urgency}</span>
+      ${cc.regulatory_class && cc.regulatory_class !== 'none' ? `<span class="badge badge-submitted">${cc.regulatory_class}</span>` : ''}
+      ${cc.risk_rpn > 0 ? `<span class="rpn-badge ${rpnColor}">RPN ${cc.risk_rpn}</span>` : ''}
+    </div>
+
+    ${emergencyHtml}
+
+    <!-- WORKFLOW -->
+    <div class="workflow-bar">${wfHtml}</div>
+    ${slaAssess || slaApproval ? `<div style="font-size:10px;margin-bottom:12px;">${slaAssess ? `Assessment SLA: ${slaAssess} ` : ''}${slaApproval ? `Approval SLA: ${slaApproval}` : ''}</div>` : ''}
+
+    <!-- ACTIONS -->
+    <div class="btn-group" style="margin-bottom:16px;">
+      ${actionBtns}
+    </div>
+
+    <!-- DESCRIPTION -->
+    <div class="section">
+      <div class="section-title">Details</div>
+      <div class="section-body field-grid">
+        <div class="field"><label>Change Type</label><div class="val">${cc.change_type}${cc.sub_category ? ' / ' + cc.sub_category : ''}</div></div>
+        <div class="field"><label>Category</label><div class="val"><span class="badge badge-${cc.category}">${cc.category}</span> ${cc.ccb_required ? '<span style="color:#f0a030;font-size:10px">CCB Required</span>' : ''}</div></div>
+        <div class="field"><label>Originator</label><div class="val">${esc(cc.originator)} ${cc.originator_dept ? '(' + cc.originator_dept + ')' : ''}</div></div>
+        <div class="field"><label>Target Completion</label><div class="val">${cc.target_completion || '—'}</div></div>
+        <div class="field field-full"><label>Description</label><div class="val">${esc(cc.description)}</div></div>
+        <div class="field field-full"><label>Justification</label><div class="val">${esc(cc.justification || '—')}</div></div>
+        <div class="field field-full"><label>Proposed Change</label><div class="val">${esc(cc.proposed_change || '—')}</div></div>
+        ${cc.linked_deviation_id ? `<div class="field"><label>Linked Deviation</label><div class="val"><a href="/deviations.html" style="color:#569cd6">${cc.linked_deviation_id}</a></div></div>` : ''}
+        ${cc.linked_capa_id ? `<div class="field"><label>Linked CAPA</label><div class="val"><a href="/capas.html" style="color:#569cd6">${cc.linked_capa_id}</a></div></div>` : ''}
+        ${cc.linked_audit_finding ? `<div class="field"><label>Audit Finding</label><div class="val">${esc(cc.linked_audit_finding)}</div></div>` : ''}
+      </div>
+    </div>
+
+    <!-- RISK ASSESSMENT -->
+    <div class="section">
+      <div class="section-title">Risk Assessment (FMEA / ICH Q9) <button class="btn btn-ai btn-sm" onclick="runAI('risk')">Suggest Risk Scores</button></div>
+      <div class="section-body">
+        ${cc.risk_assessment ? `<p style="font-size:12px;color:#d4d4d4;margin-bottom:8px">${esc(cc.risk_assessment)}</p>` : ''}
+        <div class="risk-grid">
+          <div class="risk-slider"><label>Severity</label><input type="range" min="0" max="5" value="${cc.risk_severity || 0}" onchange="updateRisk(this,'severity')"><div class="risk-val" id="rvSeverity">${cc.risk_severity || 0}</div></div>
+          <div class="risk-slider"><label>Probability</label><input type="range" min="0" max="5" value="${cc.risk_probability || 0}" onchange="updateRisk(this,'probability')"><div class="risk-val" id="rvProbability">${cc.risk_probability || 0}</div></div>
+          <div class="risk-slider"><label>Detectability</label><input type="range" min="0" max="5" value="${cc.risk_detectability || 0}" onchange="updateRisk(this,'detectability')"><div class="risk-val" id="rvDetectability">${cc.risk_detectability || 0}</div></div>
+          <div style="text-align:center"><label style="font-size:10px;color:#8e8e8e">RPN</label><div class="rpn-badge ${rpnColor}" id="rvRPN" style="font-size:18px">${cc.risk_rpn || 0}</div></div>
+        </div>
+        ${aiRiskHtml}
+      </div>
+    </div>
+
+    <!-- IMPACT ASSESSMENTS -->
+    <div class="section">
+      <div class="section-title">Impact Assessments <div class="btn-group"><button class="btn btn-ai btn-sm" onclick="runAI('impact')">Auto-Assess All</button> <button class="btn btn-primary btn-sm" onclick="openImpactModal()">+ Add</button></div></div>
+      <div class="section-body">
+        ${impacts.length > 0 ? `<table class="impact-table"><tr><th>Dept</th><th>Impact</th><th>Assessor</th><th>Status</th><th>Due</th><th>Details</th></tr>${impactRows}</table>` : '<p style="color:#5a5a5a;font-size:12px">No impact assessments yet</p>'}
+        ${aiImpactHtml}
+      </div>
+    </div>
+
+    <!-- APPROVALS -->
+    <div class="section">
+      <div class="section-title">Approvals ${cc.ccb_required ? '<span style="color:#f0a030;font-size:10px;margin-left:8px">CCB REQUIRED</span>' : ''} ${cc.status === 'under-review' ? `<button class="btn btn-primary btn-sm" onclick="openApprovalModal()">Record Decision</button>` : ''}</div>
+      <div class="section-body">
+        ${approvalHtml || '<p style="color:#5a5a5a;font-size:12px">No approval decisions recorded</p>'}
+      </div>
+    </div>
+
+    <!-- IMPLEMENTATION TASKS -->
+    <div class="section">
+      <div class="section-title">Implementation Tasks <div class="btn-group"><button class="btn btn-ai btn-sm" onclick="runAI('checklist')">Generate Checklist</button> <button class="btn btn-primary btn-sm" onclick="openTaskModal()">+ Add Task</button></div></div>
+      <div class="section-body">
+        ${tasks.length > 0 ? `<div class="task-progress"><div class="task-progress-fill" style="width:${taskPct}%"></div></div><div style="font-size:10px;color:#8e8e8e;margin-bottom:8px">${completedTasks}/${tasks.length} tasks complete (${taskPct}%)</div>${taskHtml}` : '<p style="color:#5a5a5a;font-size:12px">No implementation tasks yet</p>'}
+      </div>
+    </div>
+
+    <!-- EFFECTIVENESS REVIEW -->
+    ${cc.status === 'implementing' || cc.status === 'closed' ? `
+    <div class="section">
+      <div class="section-title">Effectiveness Review <button class="btn btn-ai btn-sm" onclick="runAI('effectiveness')">Suggest Criteria</button></div>
+      <div class="section-body field-grid">
+        <div class="field"><label>Criteria</label><div class="val">${esc(cc.effectiveness_criteria || '—')}</div></div>
+        <div class="field"><label>Due Date</label><div class="val">${cc.effectiveness_due_date || '—'}</div></div>
+        <div class="field"><label>Result</label><div class="val">${cc.effectiveness_result ? `<span class="badge badge-${cc.effectiveness_result === 'effective' ? 'approved' : cc.effectiveness_result === 'not-effective' ? 'rejected' : 'under-review'}">${cc.effectiveness_result}</span>` : '—'}</div></div>
+        <div class="field"><label>Review Date</label><div class="val">${cc.effectiveness_date || '—'}</div></div>
+        <div class="field field-full"><label>Check Notes</label><div class="val">${esc(cc.effectiveness_check || '—')}</div></div>
+        ${aiEffHtml}
+      </div>
+    </div>` : ''}
+
+    <!-- AI: SIMILAR CHANGES -->
+    <div class="section">
+      <div class="section-title">Similar Changes <button class="btn btn-ai btn-sm" onclick="runAI('similar')">Find Similar</button></div>
+      <div class="section-body">
+        ${similar.length > 0 ? similarHtml : '<p style="color:#5a5a5a;font-size:12px">No similar changes found yet</p>'}
+      </div>
+    </div>
+
+    <!-- AI: AFFECTED SOPs -->
+    <div class="section">
+      <div class="section-title">Affected SOPs <button class="btn btn-ai btn-sm" onclick="runAI('sops')">Identify SOPs</button></div>
+      <div class="section-body">${aiSopsHtml || '<p style="color:#5a5a5a;font-size:12px">Run AI to identify affected SOPs</p>'}</div>
+    </div>
+
+    <!-- AI: REGULATORY -->
+    <div class="section">
+      <div class="section-title">Regulatory Classification <button class="btn btn-ai btn-sm" onclick="runAI('classify')">Classify</button></div>
+      <div class="section-body">
+        ${cc.regulatory_class && cc.regulatory_class !== 'none' ? `<p style="font-size:12px;color:#d4d4d4"><strong>Current:</strong> ${cc.regulatory_class} ${cc.regulatory_filing_type ? '(' + cc.regulatory_filing_type + ')' : ''}</p>` : ''}
+        ${aiRegHtml || '<p style="color:#5a5a5a;font-size:12px">Run AI to suggest regulatory classification</p>'}
+      </div>
+    </div>
+
+    <!-- AUDIT TRAIL -->
+    <div class="section">
+      <div class="section-title">Audit Trail</div>
+      <div class="section-body" id="auditTrail"><p style="color:#5a5a5a;font-size:12px">Loading...</p></div>
+    </div>
+  </div>`;
+
+  loadAuditTrail(cc.cc_id);
+}
+
+function slaIndicator(dateStr, isActive) {
+  if (!isActive) return `<span class="sla-green">${dateStr}</span>`;
+  const diff = (new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24);
+  if (diff < 0) return `<span class="sla-red">${dateStr} (OVERDUE)</span>`;
+  if (diff < 1) return `<span class="sla-amber">${dateStr} (due today)</span>`;
+  return `<span class="sla-green">${dateStr}</span>`;
+}
+
+async function loadAuditTrail(ccId) {
+  try {
+    const entries = await api(`/audit/${ccId}`);
+    const el = document.getElementById('auditTrail');
+    if (!entries.length) { el.innerHTML = '<p style="color:#5a5a5a;font-size:12px">No audit entries</p>'; return; }
+    el.innerHTML = entries.map(e => `<div class="audit-entry"><span class="audit-ts">${new Date(e.timestamp).toLocaleString()}</span><span class="audit-user">${esc(e.user_id)}</span><span class="audit-action">${esc(e.reason || e.action)}</span></div>`).join('');
+  } catch (e) { /* ignore */ }
+}
+
+// ── Create ──
+async function createCC() {
+  const body = {
+    title: document.getElementById('mTitle').value,
+    description: document.getElementById('mDesc').value,
+    justification: document.getElementById('mJustification').value,
+    proposedChange: document.getElementById('mProposed').value,
+    changeType: document.getElementById('mType').value,
+    subCategory: document.getElementById('mSubCat').value,
+    category: document.getElementById('mCategory').value,
+    priority: document.getElementById('mPriority').value,
+    urgency: document.getElementById('mUrgency').value,
+    targetCompletion: document.getElementById('mTarget').value || undefined,
+    linkedDeviationId: document.getElementById('mDevId').value,
+    linkedCapaId: document.getElementById('mCapaId').value,
+    linkedAuditFinding: document.getElementById('mAuditFinding').value,
+  };
+  if (!body.title) { setStatus('Title is required', true); return; }
+  try {
+    const result = await api('/change-controls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    setStatus(`Created ${result.ccId}`);
+    closeModal('createModal');
+    loadList();
+    loadStats();
+    selectCC(result.ccId);
+  } catch (e) { /* handled */ }
+}
+
+// ── Workflow actions ──
+async function doAction(action) {
+  if (!selectedCC) return;
+  try {
+    const result = await api(`/change-controls/${selectedCC.cc_id}/${action}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    setStatus(`${selectedCC.cc_id} → ${result.newStatus}`);
+    selectCC(selectedCC.cc_id);
+    loadList();
+    loadStats();
+  } catch (e) { /* handled */ }
+}
+
+// ── Risk sliders ──
+async function updateRisk(el, field) {
+  const val = parseInt(el.value);
+  document.getElementById('rv' + field.charAt(0).toUpperCase() + field.slice(1)).textContent = val;
+  const sev = parseInt(document.querySelector('[onchange*="severity"]')?.value) || 0;
+  const prob = parseInt(document.querySelector('[onchange*="probability"]')?.value) || 0;
+  const det = parseInt(document.querySelector('[onchange*="detectability"]')?.value) || 0;
+  const rpn = sev * prob * det;
+  const rpnEl = document.getElementById('rvRPN');
+  rpnEl.textContent = rpn;
+  rpnEl.className = 'rpn-badge ' + (rpn < 30 ? 'rpn-low' : rpn <= 60 ? 'rpn-medium' : 'rpn-high');
+
+  try {
+    await api(`/change-controls/${selectedCC.cc_id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ['risk_' + field]: val }),
+    });
+  } catch (e) { /* ignore */ }
+}
+
+// ── Impact ──
+function openImpactModal() { document.getElementById('impactModal').classList.add('active'); }
+async function submitImpact() {
+  if (!selectedCC) return;
+  const body = {
+    department: document.getElementById('imDept').value,
+    impactLevel: document.getElementById('imLevel').value,
+    impactDetails: document.getElementById('imDetails').value,
+    mitigation: document.getElementById('imMitigation').value,
+    validationRequired: document.getElementById('imValRequired').checked,
+    validationType: document.getElementById('imValRequired').checked ? document.getElementById('imValType').value : '',
+    regulatoryImpact: document.getElementById('imRegImpact').checked,
+    cascadeImpacts: document.getElementById('imCascade').value,
+  };
+  try {
+    await api(`/change-controls/${selectedCC.cc_id}/impact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    setStatus('Impact assessment saved');
+    closeModal('impactModal');
+    selectCC(selectedCC.cc_id);
+  } catch (e) { /* handled */ }
+}
+
+// ── Approval ──
+function openApprovalModal() {
+  const u = window.__user;
+  document.getElementById('apPrintedName').textContent = u ? u.name : '—';
+  document.getElementById('apTimestamp').textContent = new Date().toLocaleString();
+  document.getElementById('approvalModal').classList.add('active');
+}
+async function submitApproval() {
+  if (!selectedCC) return;
+  const body = {
+    decision: document.getElementById('apDecision').value,
+    signatureMeaning: document.getElementById('apSigMeaning').value,
+    approvalTier: parseInt(document.getElementById('apTier').value),
+    comments: document.getElementById('apComments').value,
+  };
+  if ((body.decision === 'rejected' || body.decision === 'request-info') && !body.comments) {
+    setStatus('Comments required for reject/request-info', true); return;
+  }
+  try {
+    await api(`/change-controls/${selectedCC.cc_id}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    setStatus(`Decision: ${body.decision}`);
+    closeModal('approvalModal');
+    selectCC(selectedCC.cc_id);
+    loadList();
+    loadStats();
+  } catch (e) { /* handled */ }
+}
+
+// ── Tasks ──
+function openTaskModal() { document.getElementById('taskModal').classList.add('active'); }
+async function submitTask() {
+  if (!selectedCC) return;
+  const body = {
+    title: document.getElementById('tkTitle').value,
+    description: document.getElementById('tkDesc').value,
+    assignedRole: document.getElementById('tkRole').value,
+    taskOrder: parseInt(document.getElementById('tkOrder').value) || 0,
+    effortEstimate: document.getElementById('tkEffort').value,
+    dueDate: document.getElementById('tkDue').value || undefined,
+    verificationRequired: document.getElementById('tkVerify').checked,
+  };
+  if (!body.title) { setStatus('Task title required', true); return; }
+  try {
+    await api(`/change-controls/${selectedCC.cc_id}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    setStatus('Task added');
+    closeModal('taskModal');
+    selectCC(selectedCC.cc_id);
+  } catch (e) { /* handled */ }
+}
+
+async function updateTaskStatus(taskId, status) {
+  try {
+    await api(`/change-controls/${selectedCC.cc_id}/tasks/${taskId}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    setStatus(`Task → ${status}`);
+    selectCC(selectedCC.cc_id);
+  } catch (e) { /* handled */ }
+}
+
+async function verifyTaskAction(taskId) {
+  try {
+    await api(`/change-controls/${selectedCC.cc_id}/tasks/${taskId}/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    setStatus('Task verified');
+    selectCC(selectedCC.cc_id);
+  } catch (e) { /* handled */ }
+}
+
+// ── Close ──
+function openCloseModal() { document.getElementById('closeModal').classList.add('active'); }
+async function submitClose() {
+  if (!selectedCC) return;
+  const body = {
+    effectivenessResult: document.getElementById('clResult').value,
+    effectivenessCheck: document.getElementById('clCheck').value,
+    closureNotes: document.getElementById('clNotes').value,
+  };
+  try {
+    await api(`/change-controls/${selectedCC.cc_id}/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    setStatus('Change control closed');
+    closeModal('closeModal');
+    selectCC(selectedCC.cc_id);
+    loadList();
+    loadStats();
+  } catch (e) { /* handled */ }
+}
+
+// ── AI ──
+async function runAI(mode) {
+  if (!selectedCC) return;
+  setStatus(`Running AI ${mode}...`);
+  try {
+    await api(`/change-controls/${selectedCC.cc_id}/ai/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    setStatus(`AI ${mode} complete`);
+    selectCC(selectedCC.cc_id);
+  } catch (e) { /* handled */ }
+}
+
+async function aiFromCreate(mode) {
+  setStatus('Create the change control first, then use AI features from the detail view', true);
+}
+
+// ── Modals ──
+function openCreateModal() { document.getElementById('createModal').classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// ── Resizer ──
+function setupResizer() {
+  const resizer = document.getElementById('resizer');
+  const left = document.querySelector('.left-panel');
+  let startX, startW;
+  resizer.addEventListener('mousedown', e => {
+    startX = e.clientX; startW = left.offsetWidth;
+    resizer.classList.add('dragging');
+    const onMove = e2 => { left.style.width = Math.max(200, startW + e2.clientX - startX) + 'px'; };
+    const onUp = () => { resizer.classList.remove('dragging'); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ── Escape HTML ──
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+</script>
+</body>
+</html>

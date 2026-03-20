@@ -1,0 +1,41 @@
+[
+  {
+    "id": "sop-001",
+    "name": "Viability monitoring frequency",
+    "input": {
+      "query": "How often should I check cell viability during perfusion?",
+      "area": "Upstream"
+    },
+    "expected": {
+      "mustMentionDocIds": ["WX-SOP-1001-03"],
+      "mustMentionTerms": ["viability", "monitor"],
+      "minSources": 1
+    }
+  },
+  {
+    "id": "sop-002",
+    "name": "CO2 alarm procedure",
+    "input": {
+      "query": "What should I do if the CO2 alarm keeps going off on my incubator?",
+      "area": "Cell Culture"
+    },
+    "expected": {
+      "mustMentionDocIds": ["WX-SOP-1004-03"],
+      "mustMentionTerms": ["alarm", "CO2"],
+      "minSources": 1
+    }
+  },
+  {
+    "id": "sop-003",
+    "name": "Cleanroom pressure requirements",
+    "input": {
+      "query": "What is the minimum differential pressure for a Grade B cleanroom?",
+      "area": "Cleanroom"
+    },
+    "expected": {
+      "mustMentionDocIds": ["WX-SOP-1005-03"],
+      "mustMentionTerms": ["pressure", "Pa"],
+      "minSources": 1
+    }
+  }
+]

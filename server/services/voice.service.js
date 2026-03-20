@@ -152,7 +152,7 @@ function makeVoiceService({ anthropic, rag, elevenLabsApiKey }) {
    * @param {Array}  [params.history]
    * @returns {{ answer: string, action: string, params: object }}
    */
-  async function askCharlie({ question, context, lang, history }) {
+  async function askCharlie({ question, context, lang, history, mode }) {
     // Optionally enrich with SOP context for grounded answers
     let sopContext;
     if (sopQuery) {
@@ -168,7 +168,7 @@ function makeVoiceService({ anthropic, rag, elevenLabsApiKey }) {
       }
     }
 
-    return charlie.invoke({ question, context, lang, history, sopContext });
+    return charlie.invoke({ question, context, lang, history, sopContext, mode });
   }
 
   return { transcribe, synthesise, translate, askCharlie };

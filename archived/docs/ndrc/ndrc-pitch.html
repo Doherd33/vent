@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vent — NDRC Pre-Accelerator 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f0eb;
+  --surface: #ffffff;
+  --surface2: #ede8e2;
+  --border: #d4ccc3;
+  --teal: #c45d2c;
+  --teal-dim: rgba(196,93,44,0.10);
+  --blue: #1a3a5c;
+  --amber: #b8860b;
+  --red: #a63d2f;
+  --green: #3a7d52;
+  --text: #1c1c1c;
+  --text-dim: #5a554f;
+  --text-muted: #9a928a;
+  --dark: #1e1e2e;
+  --dark-surface: #2a2a3c;
+  --dark-border: #3a3a4c;
+}
+
+body {
+  background: #e8e2db;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  padding: 24px;
+}
+
+.slide {
+  width: 1280px;
+  height: 720px;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto 32px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+}
+
+.slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(196,93,44,0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.slide-num {
+  position: absolute;
+  bottom: 28px;
+  right: 36px;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  font-weight: 500;
+}
+
+.italic { font-family: 'Playfair Display', serif; font-style: italic; color: var(--teal); }
+
+.glow-tl {
+  position: absolute; top: -120px; left: -80px; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(196,93,44,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+.glow-br {
+  position: absolute; bottom: -120px; right: -80px; width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(26,58,92,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+@media print {
+  body { background: #f5f0eb; padding: 0; }
+  .slide {
+    margin: 0; page-break-after: always; break-after: page;
+    box-shadow: none; border-radius: 0; width: 100%; height: 100vh;
+  }
+  @page { size: A4 landscape; margin: 0; }
+}
+</style>
+</head>
+<body>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 1 — WHO I AM (~20 seconds)
+     ═══════════════════════════════════════════════════════
+
+     SCRIPT:
+     "Hi everyone, I'm Darren Doherty. I work as a Bioprocess
+     Associate at a large biopharmaceutical CDMO in Ireland.
+
+     I studied Immunology at Trinity. I understand the science
+     and I understand the manufacturing — because I do it
+     every day.
+
+     I haven't stopped building since."
+
+     NOTES:
+     - Keep this short. 20 seconds max. You're just
+       establishing who you are.
+     - Don't name your employer.
+     - Don't say how many hours you work.
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="justify-content:center; padding:0 72px;">
+  <div class="glow-tl"></div>
+  <div class="glow-br"></div>
+
+  <div style="max-width:1120px; position:relative; z-index:1;">
+
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:36px;">
+      <div style="width:44px; height:44px; border-radius:10px; background:var(--teal-dim); border:1px solid rgba(196,93,44,0.3); display:flex; align-items:center; justify-content:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <span style="font-size:24px; font-weight:800; letter-spacing:-0.01em;">Vent</span>
+    </div>
+
+    <!-- Headline -->
+    <div style="font-size:46px; font-weight:900; line-height:1.08; letter-spacing:-0.03em; margin-bottom:40px;">
+      I work on a pharma floor.<br>
+      I see the problem <span class="italic" style="font-size:50px;">every shift.</span><br>
+      <span style="color:var(--teal);">So I started building.</span>
+    </div>
+
+    <!-- Credentials -->
+    <div style="display:flex; gap:20px; margin-bottom:28px;">
+
+      <div style="flex:1; padding:20px 24px; background:var(--surface); border:1px solid var(--border); border-radius:12px;">
+        <div style="font-size:10px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--blue); margin-bottom:6px;">Domain</div>
+        <div style="font-size:15px; font-weight:600;">Bioprocess Associate</div>
+        <div style="font-size:13px; color:var(--text-dim); margin-top:4px;">Large biopharmaceutical CDMO in Ireland. I work on the manufacturing floor daily.</div>
+      </div>
+
+      <div style="flex:1; padding:20px 24px; background:var(--surface); border:1px solid var(--border); border-radius:12px;">
+        <div style="font-size:10px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--teal); margin-bottom:6px;">Education</div>
+        <div style="font-size:15px; font-weight:600;">BSc Immunology, Trinity College Dublin</div>
+        <div style="font-size:13px; color:var(--text-dim); margin-top:4px;">I understand the science, the regulation, and the manufacturing.</div>
+      </div>
+
+      <div style="flex:1; padding:20px 24px; background:var(--surface); border:1px solid var(--border); border-radius:12px;">
+        <div style="font-size:10px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--red); margin-bottom:6px;">The Prototype</div>
+        <div style="font-size:15px; font-weight:600;">Built solo. A few weeks. Evenings &amp; weekends.</div>
+        <div style="font-size:13px; color:var(--text-dim); margin-top:4px;">Working prototype built with AI tools while still on the floor full-time.</div>
+      </div>
+
+    </div>
+
+    <!-- Name -->
+    <div style="display:flex; align-items:center; gap:28px;">
+      <div>
+        <div style="font-size:17px; font-weight:700;">Darren Doherty</div>
+        <div style="font-size:13px; color:var(--text-dim);">doherd33@gmail.com</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">1 / 7</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 2 — THE REAL PROBLEM: A PBR STEP (~40 seconds)
+     ═══════════════════════════════════════════════════════
+
+     SCRIPT:
+     "Let me show you a real example from the floor.
+
+     This is a step from a Process Batch Record — a PBR.
+     It's the document operators follow for every batch.
+
+     This step says: flush the ATF filter with 100 litres
+     of WFI. But anyone who's actually done it knows 100
+     litres isn't enough for the tubing length on that skid.
+     The SOP says 150 litres.
+
+     That ATF filter costs around fifty thousand euro. If
+     the flush is wrong, you risk damaging it — or worse,
+     contaminating the batch. And a batch failure in
+     biologics is one to five million euro.
+
+     The documentation doesn't match the process. And the
+     operator on the floor can see it. This happens more
+     than you'd think."
+
+     NOTES:
+     - This is your 'show don't tell' moment. Point at the
+       PBR table on screen. Point at the 100L. Say "but the
+       SOP says 150."
+     - Don't rush the ATF filter cost. Let €50K land.
+     - The batch failure number (€1-5M) is the stakes.
+     - You LIVE this. Speak from experience.
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding:48px 64px;">
+  <div class="glow-br"></div>
+
+  <div style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--teal); margin-bottom:10px;">The Problem — A Real Example</div>
+
+  <div style="font-size:38px; font-weight:900; line-height:1.08; letter-spacing:-0.03em; margin-bottom:28px;">
+    The documentation says one thing.<br>
+    <span style="color:var(--red);">The floor knows another.</span>
+  </div>
+
+  <div style="display:flex; gap:24px; flex:1;">
+
+    <!-- PBR Table mockup -->
+    <div style="flex:1.3; display:flex; flex-direction:column;">
+      <div style="background:var(--dark); border-radius:12px; overflow:hidden; flex:1; display:flex; flex-direction:column;">
+        <!-- Title bar -->
+        <div style="background:#16162a; padding:10px 16px; display:flex; align-items:center; gap:8px;">
+          <div style="width:10px; height:10px; border-radius:50%; background:#ff5f57;"></div>
+          <div style="width:10px; height:10px; border-radius:50%; background:#febc2e;"></div>
+          <div style="width:10px; height:10px; border-radius:50%; background:#28c840;"></div>
+          <span class="mono" style="font-size:11px; color:#8888aa; margin-left:8px;">Process Batch Record — ATF Filtration</span>
+        </div>
+        <!-- PBR Table -->
+        <div style="padding:16px; flex:1;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;" class="mono">
+            <tr style="background:#2a2a3c;">
+              <th style="padding:10px 12px; text-align:left; color:#8888aa; font-weight:600; border-bottom:1px solid #3a3a4c; width:60px;">Step</th>
+              <th style="padding:10px 12px; text-align:left; color:#8888aa; font-weight:600; border-bottom:1px solid #3a3a4c;">Action</th>
+              <th style="padding:10px 12px; text-align:left; color:#8888aa; font-weight:600; border-bottom:1px solid #3a3a4c; width:140px;">Parameter</th>
+              <th style="padding:10px 12px; text-align:left; color:#8888aa; font-weight:600; border-bottom:1px solid #3a3a4c; width:90px;">Sign/Date</th>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px; color:#ccc; border-bottom:1px solid #2a2a3c;">5.1</td>
+              <td style="padding:10px 12px; color:#ccc; border-bottom:1px solid #2a2a3c;">Verify ATF filter integrity test PASS</td>
+              <td style="padding:10px 12px; color:#ccc; border-bottom:1px solid #2a2a3c;">Result: ___</td>
+              <td style="padding:10px 12px; color:#555; border-bottom:1px solid #2a2a3c;">___/___</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px; color:#ccc; border-bottom:1px solid #2a2a3c;">5.2</td>
+              <td style="padding:10px 12px; color:#ccc; border-bottom:1px solid #2a2a3c;">Connect WFI supply to filter inlet</td>
+              <td style="padding:10px 12px; color:#ccc; border-bottom:1px solid #2a2a3c;">Confirm: ___</td>
+              <td style="padding:10px 12px; color:#555; border-bottom:1px solid #2a2a3c;">___/___</td>
+            </tr>
+            <!-- THE PROBLEM ROW -->
+            <tr style="background:rgba(166,61,47,0.15);">
+              <td style="padding:10px 12px; color:#ff6b6b; font-weight:700; border-bottom:1px solid #2a2a3c;">5.3</td>
+              <td style="padding:10px 12px; color:#ff6b6b; font-weight:600; border-bottom:1px solid #2a2a3c;">Flush ATF filter with WFI</td>
+              <td style="padding:10px 12px; border-bottom:1px solid #2a2a3c;">
+                <span style="color:#ff6b6b; font-weight:700; background:rgba(255,107,107,0.15); padding:2px 6px; border-radius:4px;">Volume: 100L</span>
+              </td>
+              <td style="padding:10px 12px; color:#555; border-bottom:1px solid #2a2a3c;">___/___</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px; color:#ccc; border-bottom:1px solid #2a2a3c;">5.4</td>
+              <td style="padding:10px 12px; color:#ccc; border-bottom:1px solid #2a2a3c;">Record flush time and flow rate</td>
+              <td style="padding:10px 12px; color:#ccc; border-bottom:1px solid #2a2a3c;">Time: ___</td>
+              <td style="padding:10px 12px; color:#555; border-bottom:1px solid #2a2a3c;">___/___</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px; color:#ccc;">5.5</td>
+              <td style="padding:10px 12px; color:#ccc;">Verify filter post-use integrity test</td>
+              <td style="padding:10px 12px; color:#ccc;">Result: ___</td>
+              <td style="padding:10px 12px; color:#555;">___/___</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right side: The mismatch + stakes -->
+    <div style="flex:0.7; display:flex; flex-direction:column; gap:16px;">
+
+      <!-- Mismatch callout -->
+      <div style="background:var(--surface); border:2px solid var(--red); border-radius:14px; padding:24px; flex:1;">
+        <div style="font-size:10px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--red); margin-bottom:14px;">The Mismatch</div>
+
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+          <div style="flex:1; padding:14px; background:rgba(166,61,47,0.06); border:1.5px solid rgba(166,61,47,0.3); border-radius:8px; text-align:center;">
+            <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">PBR says</div>
+            <div style="font-size:28px; font-weight:900; color:var(--red);">100L</div>
+          </div>
+          <div style="font-size:20px; color:var(--text-muted);">vs</div>
+          <div style="flex:1; padding:14px; background:rgba(58,125,82,0.06); border:1.5px solid rgba(58,125,82,0.3); border-radius:8px; text-align:center;">
+            <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">SOP says</div>
+            <div style="font-size:28px; font-weight:900; color:var(--green);">150L</div>
+          </div>
+        </div>
+
+        <div style="font-size:14px; color:var(--text-dim); line-height:1.55;">
+          The operator on the floor knows 100L isn't enough for the tubing length on that skid. <strong style="color:var(--text);">The SOP confirms it.</strong> But the PBR hasn't been updated.
+        </div>
+      </div>
+
+      <!-- Stakes -->
+      <div style="display:flex; gap:12px;">
+        <div style="flex:1; padding:20px; background:rgba(166,61,47,0.06); border:1.5px solid rgba(166,61,47,0.25); border-radius:12px; text-align:center;">
+          <div style="font-size:32px; font-weight:900; color:var(--red); line-height:1;">~€50K</div>
+          <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">per ATF filter</div>
+        </div>
+        <div style="flex:1; padding:20px; background:rgba(166,61,47,0.06); border:1.5px solid rgba(166,61,47,0.25); border-radius:12px; text-align:center;">
+          <div style="font-size:32px; font-weight:900; color:var(--red); line-height:1;">€1–5M</div>
+          <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">per batch failure</div>
+        </div>
+      </div>
+
+      <!-- The kicker -->
+      <div style="padding:16px 20px; background:var(--surface2); border-left:4px solid var(--amber); border-radius:0 10px 10px 0;">
+        <div style="font-size:14px; color:var(--text); font-weight:600; line-height:1.5;">The operator can see this. But reporting it? That's where it falls apart.</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="slide-num">2 / 7</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 3 — HOW IT WORKS TODAY (~30 seconds)
+     ═══════════════════════════════════════════════════════
+
+     SCRIPT:
+     "So what happens when an operator sees this mismatch?
+     Here's the current process.
+
+     You tell your supervisor. Your supervisor tells their
+     manager. The manager raises it with the site lead. It
+     goes into an Excel sheet. And then... it waits. Until
+     the end-of-batch review. Maybe weeks later.
+
+     Sometimes the change gets made. Sometimes it gets lost.
+     And the next operator runs the same wrong step.
+
+     This isn't unusual. This is how it works on most pharma
+     floors. The systems for catching this stuff exist —
+     but they're so painful that people work around them."
+
+     NOTES:
+     - Walk through the chain on screen left to right.
+     - The 'LOST' label at the end is your punchline.
+     - Don't say "anonymity" — say "it's too much friction."
+     - Keep it tight. 30 seconds.
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding:56px 72px;">
+  <div class="glow-tl"></div>
+
+  <div style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--red); margin-bottom:10px;">What Happens Today</div>
+
+  <div style="font-size:42px; font-weight:900; line-height:1.08; letter-spacing:-0.03em; margin-bottom:12px;">
+    The operator sees it. <span style="color:var(--red);">Then what?</span>
+  </div>
+  <div style="font-size:16px; color:var(--text-dim); margin-bottom:40px;">Current process for raising a documentation issue on a pharma manufacturing floor.</div>
+
+  <!-- The chain -->
+  <div style="display:flex; align-items:center; gap:0; margin-bottom:36px;">
+
+    <!-- Step 1: You -->
+    <div style="flex:1; padding:24px 16px; background:var(--surface); border:1.5px solid var(--border); border-radius:14px 0 0 14px; text-align:center;">
+      <div style="font-size:32px; margin-bottom:8px;">&#128104;&#8205;&#128300;</div>
+      <div style="font-size:14px; font-weight:700; color:var(--text);">You</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">notice the mismatch</div>
+    </div>
+
+    <div style="color:var(--text-muted); font-size:18px; padding:0 2px;">&#8594;</div>
+
+    <!-- Step 2: Supervisor -->
+    <div style="flex:1; padding:24px 16px; background:var(--surface); border:1.5px solid var(--border); text-align:center;">
+      <div style="font-size:32px; margin-bottom:8px;">&#128101;</div>
+      <div style="font-size:14px; font-weight:700; color:var(--text);">Supervisor</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">verbal handoff</div>
+    </div>
+
+    <div style="color:var(--text-muted); font-size:18px; padding:0 2px;">&#8594;</div>
+
+    <!-- Step 3: Manager -->
+    <div style="flex:1; padding:24px 16px; background:var(--surface); border:1.5px solid var(--border); text-align:center;">
+      <div style="font-size:32px; margin-bottom:8px;">&#128188;</div>
+      <div style="font-size:14px; font-weight:700; color:var(--text);">Manager</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">raises it upward</div>
+    </div>
+
+    <div style="color:var(--text-muted); font-size:18px; padding:0 2px;">&#8594;</div>
+
+    <!-- Step 4: Site Lead -->
+    <div style="flex:1; padding:24px 16px; background:var(--surface); border:1.5px solid var(--border); text-align:center;">
+      <div style="font-size:32px; margin-bottom:8px;">&#128200;</div>
+      <div style="font-size:14px; font-weight:700; color:var(--text);">Site Lead</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">adds to tracker</div>
+    </div>
+
+    <div style="color:var(--text-muted); font-size:18px; padding:0 2px;">&#8594;</div>
+
+    <!-- Step 5: Excel -->
+    <div style="flex:1; padding:24px 16px; background:rgba(184,134,11,0.06); border:1.5px solid rgba(184,134,11,0.3); text-align:center;">
+      <div style="font-size:32px; margin-bottom:8px;">&#128196;</div>
+      <div style="font-size:14px; font-weight:700; color:var(--amber);">Excel Sheet</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">waits...</div>
+    </div>
+
+    <div style="color:var(--text-muted); font-size:18px; padding:0 2px;">&#8594;</div>
+
+    <!-- Step 6: End of batch review -->
+    <div style="flex:1.2; padding:24px 16px; background:rgba(166,61,47,0.06); border:2px solid var(--red); border-radius:0 14px 14px 0; text-align:center;">
+      <div style="font-size:32px; margin-bottom:8px;">&#9200;</div>
+      <div style="font-size:14px; font-weight:700; color:var(--red);">Batch Review</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">weeks later... maybe</div>
+    </div>
+
+  </div>
+
+  <!-- Bottom callouts -->
+  <div style="display:flex; gap:20px;">
+
+    <div style="flex:1; padding:24px; background:var(--surface); border:1.5px solid rgba(166,61,47,0.25); border-radius:14px;">
+      <div style="font-size:48px; font-weight:900; color:var(--red); line-height:1; margin-bottom:8px;">40–60</div>
+      <div style="font-size:14px; color:var(--text-dim);">man-hours of documentation per CAPA investigation</div>
+    </div>
+
+    <div style="flex:1; padding:24px; background:var(--surface); border:1.5px solid rgba(184,134,11,0.25); border-radius:14px;">
+      <div style="font-size:48px; font-weight:900; color:var(--amber); line-height:1; margin-bottom:8px;">90 days</div>
+      <div style="font-size:14px; color:var(--text-dim);">average deviation-to-closure cycle time</div>
+    </div>
+
+    <div style="flex:1.4; padding:24px; background:rgba(166,61,47,0.06); border:2px solid var(--red); border-radius:14px;">
+      <div style="font-size:18px; font-weight:800; color:var(--red); margin-bottom:6px;">Changes get lost.</div>
+      <div style="font-size:14px; color:var(--text-dim); line-height:1.5;">The next operator runs the same wrong step. The same problem happens three shifts in a row before anyone connects the dots.</div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">3 / 7</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 4 — VENT SOP SEARCH: FINDING THE MISMATCH (~30s)
+     ═══════════════════════════════════════════════════════
+
+     SCRIPT:
+     "Now let me show you what this looks like with Vent.
+
+     Same situation. You're on the floor. You notice the
+     PBR says 100 litres for the filter flush. Something
+     feels wrong.
+
+     You open Vent. You search in plain language: 'What
+     WFI volume is needed for ATF filter flush?'
+
+     In seconds, it pulls up the relevant SOP section —
+     and shows you the answer: 150 litres. The mismatch
+     is flagged automatically.
+
+     This feature works today. I've tested it with real
+     operators. One lad on the buffer team searched for a
+     process step in plain language, got exactly what he
+     needed, and couldn't believe it was that simple."
+
+     NOTES:
+     - Point at the search bar. Point at the result.
+     - Point at the red "MISMATCH DETECTED" tag.
+     - This is your strongest feature. It WORKS.
+     - Don't oversell it. Just show it and let it land.
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding:48px 64px;">
+  <div class="glow-tl"></div>
+
+  <div style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--green); margin-bottom:10px;">Vent — SOP Search</div>
+
+  <div style="font-size:36px; font-weight:900; line-height:1.08; letter-spacing:-0.03em; margin-bottom:24px;">
+    Search your SOPs in plain language. <span style="color:var(--green);">Find the mismatch.</span>
+  </div>
+
+  <!-- Mockup window -->
+  <div style="background:var(--dark); border-radius:14px; overflow:hidden; flex:1; display:flex; flex-direction:column;">
+    <!-- Title bar -->
+    <div style="background:#16162a; padding:10px 16px; display:flex; align-items:center; gap:8px;">
+      <div style="width:10px; height:10px; border-radius:50%; background:#ff5f57;"></div>
+      <div style="width:10px; height:10px; border-radius:50%; background:#febc2e;"></div>
+      <div style="width:10px; height:10px; border-radius:50%; background:#28c840;"></div>
+      <span class="mono" style="font-size:11px; color:#8888aa; margin-left:8px;">Vent — SOP Search</span>
+      <span style="margin-left:auto; padding:3px 10px; background:rgba(58,125,82,0.2); color:#4ade80; border-radius:4px; font-size:10px; font-weight:600;">WORKS TODAY</span>
+    </div>
+
+    <div style="padding:20px 24px; flex:1; display:flex; flex-direction:column; gap:16px;">
+
+      <!-- Search bar -->
+      <div style="display:flex; align-items:center; gap:12px; padding:14px 18px; background:#2a2a3c; border:1.5px solid #4a4a5c; border-radius:10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8888aa" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="mono" style="font-size:14px; color:#e0e0e0;">What WFI volume is needed for ATF filter flush?</span>
+        <span style="margin-left:auto; padding:4px 12px; background:var(--teal); color:#fff; border-radius:6px; font-size:12px; font-weight:600;">Search</span>
+      </div>
+
+      <!-- Result -->
+      <div style="display:flex; gap:16px; flex:1;">
+
+        <!-- Main result -->
+        <div style="flex:1; background:#2a2a3c; border:1.5px solid #3a3a4c; border-radius:10px; padding:18px 20px; display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <span style="padding:3px 8px; background:rgba(58,125,82,0.2); color:#4ade80; border-radius:4px; font-size:10px; font-weight:700;">MATCH FOUND</span>
+            <span class="mono" style="font-size:11px; color:#8888aa;">SOP-ATF-2024-003 &middot; Section 4.2.1</span>
+          </div>
+
+          <div class="mono" style="font-size:13px; color:#ccc; line-height:1.7; flex:1;">
+            <div style="color:#8888aa; margin-bottom:8px;">4.2 Filter Preparation &amp; Flushing</div>
+            <div style="margin-bottom:4px;">4.2.1 Pre-use flush requirements:</div>
+            <div style="padding-left:20px; margin-bottom:4px;">- Flush ATF filter assembly with WFI</div>
+            <div style="padding-left:20px; margin-bottom:4px;">- <strong style="color:#4ade80; background:rgba(74,222,128,0.1); padding:1px 4px; border-radius:3px;">Minimum volume: 150L</strong></div>
+            <div style="padding-left:20px; margin-bottom:4px;">- Flow rate: 50-80 L/min</div>
+            <div style="padding-left:20px;">- Account for total tubing dead volume (approx. 12L)</div>
+          </div>
+
+          <div style="padding:10px 14px; background:rgba(166,61,47,0.15); border:1px solid rgba(255,107,107,0.3); border-radius:8px; margin-top:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:14px;">&#9888;&#65039;</span>
+              <span style="font-size:12px; font-weight:700; color:#ff6b6b;">MISMATCH DETECTED</span>
+            </div>
+            <div class="mono" style="font-size:12px; color:#ccc; margin-top:6px; line-height:1.5;">
+              PBR Step 5.3 specifies <span style="color:#ff6b6b; font-weight:600;">100L</span>. SOP-ATF-2024-003 requires <span style="color:#4ade80; font-weight:600;">150L</span>.
+              <span style="color:#8888aa;">Difference: 50L (33% below SOP requirement).</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Side panel: context -->
+        <div style="width:280px; display:flex; flex-direction:column; gap:12px;">
+          <div style="background:#2a2a3c; border:1px solid #3a3a4c; border-radius:10px; padding:16px;">
+            <div style="font-size:10px; font-weight:600; color:#8888aa; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">Related Documents</div>
+            <div class="mono" style="font-size:11px; color:#ccc; line-height:1.8;">
+              <div>&#128196; SOP-ATF-2024-003</div>
+              <div>&#128196; PBR-2024-BR-047</div>
+              <div>&#128196; EQ-ATF-MAINT-001</div>
+            </div>
+          </div>
+
+          <div style="background:#2a2a3c; border:1px solid #3a3a4c; border-radius:10px; padding:16px; flex:1;">
+            <div style="font-size:10px; font-weight:600; color:#8888aa; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">Risk Context</div>
+            <div style="font-size:12px; color:#ccc; line-height:1.6;">
+              <div style="margin-bottom:8px;">&#128308; ATF filter: <strong style="color:#ff6b6b;">~€50,000</strong></div>
+              <div style="margin-bottom:8px;">&#128308; Insufficient flush may cause membrane fouling</div>
+              <div>&#128308; Batch impact: <strong style="color:#ff6b6b;">€1-5M</strong></div>
+            </div>
+          </div>
+
+          <div style="padding:12px 14px; background:rgba(58,125,82,0.1); border:1px solid rgba(58,125,82,0.25); border-radius:8px; text-align:center;">
+            <span style="font-size:12px; font-weight:600; color:#4ade80;">&#10003; Raise a Concern &rarr;</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="slide-num">4 / 7</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 5 — RAISE A CONCERN + QA VIEW (~30 seconds)
+     ═══════════════════════════════════════════════════════
+
+     SCRIPT:
+     "Now the operator clicks 'Raise a Concern.' They
+     describe what they found in plain language. 30 seconds.
+     Done. They're back to work.
+
+     On the other side, QA Document Control sees this.
+     They get a clear diff — the PBR says 100L, the SOP
+     says 150L — with the supporting documentation already
+     pulled. They can review it, approve the change, and
+     push it into the next PBR revision.
+
+     What used to take weeks of verbal handoffs now takes
+     minutes. The operator's input goes straight to the
+     people who can action it."
+
+     NOTES:
+     - Walk through the left side (operator form) then the
+       right side (QA view).
+     - Point at the diff view. That's the visual money shot.
+     - This feature is EARLY — the concept works but it's
+       not production-ready. Be honest if they ask.
+     - Say "the concept is proven" not "it's finished."
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding:48px 56px;">
+  <div class="glow-br"></div>
+
+  <div style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--teal); margin-bottom:10px;">Vent — From Floor to Action</div>
+
+  <div style="font-size:32px; font-weight:900; line-height:1.08; letter-spacing:-0.03em; margin-bottom:24px;">
+    Operator raises it in 30 seconds. <span style="color:var(--blue);">QA sees the diff.</span>
+  </div>
+
+  <div style="display:flex; gap:20px; flex:1;">
+
+    <!-- LEFT: Operator form -->
+    <div style="flex:1; display:flex; flex-direction:column;">
+      <div style="background:var(--dark); border-radius:14px; overflow:hidden; flex:1; display:flex; flex-direction:column;">
+        <div style="background:#16162a; padding:10px 16px; display:flex; align-items:center; gap:8px;">
+          <div style="width:10px; height:10px; border-radius:50%; background:#ff5f57;"></div>
+          <div style="width:10px; height:10px; border-radius:50%; background:#febc2e;"></div>
+          <div style="width:10px; height:10px; border-radius:50%; background:#28c840;"></div>
+          <span class="mono" style="font-size:11px; color:#8888aa; margin-left:8px;">Vent — Raise a Concern</span>
+          <span style="margin-left:auto; padding:3px 10px; background:rgba(184,134,11,0.2); color:#fbbf24; border-radius:4px; font-size:10px; font-weight:600;">EARLY</span>
+        </div>
+
+        <div style="padding:20px; flex:1; display:flex; flex-direction:column; gap:14px;">
+
+          <!-- Area selector -->
+          <div>
+            <div style="font-size:10px; font-weight:600; color:#8888aa; margin-bottom:6px; letter-spacing:0.08em;">AREA</div>
+            <div style="display:flex; gap:6px;">
+              <span style="padding:6px 14px; background:var(--teal); color:#fff; border-radius:6px; font-size:12px; font-weight:600;">Downstream</span>
+              <span style="padding:6px 14px; background:#2a2a3c; color:#888; border-radius:6px; font-size:12px;">Upstream</span>
+              <span style="padding:6px 14px; background:#2a2a3c; color:#888; border-radius:6px; font-size:12px;">Buffer</span>
+            </div>
+          </div>
+
+          <!-- Type -->
+          <div>
+            <div style="font-size:10px; font-weight:600; color:#8888aa; margin-bottom:6px; letter-spacing:0.08em;">TYPE</div>
+            <div style="display:flex; gap:6px;">
+              <span style="padding:6px 14px; background:rgba(166,61,47,0.2); color:#ff6b6b; border:1px solid rgba(255,107,107,0.3); border-radius:6px; font-size:12px; font-weight:600;">Doc Mismatch</span>
+              <span style="padding:6px 14px; background:#2a2a3c; color:#888; border-radius:6px; font-size:12px;">Process</span>
+              <span style="padding:6px 14px; background:#2a2a3c; color:#888; border-radius:6px; font-size:12px;">Equipment</span>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div style="flex:1;">
+            <div style="font-size:10px; font-weight:600; color:#8888aa; margin-bottom:6px; letter-spacing:0.08em;">WHAT DID YOU SEE?</div>
+            <div class="mono" style="padding:12px 14px; background:#2a2a3c; border:1px solid #3a3a4c; border-radius:8px; font-size:12px; color:#e0e0e0; line-height:1.6; height:100%;">
+              PBR step 5.3 says flush ATF filter with 100L WFI. But the SOP says 150L. 100L doesn't cover the tubing dead volume on this skid. We've been doing 150L on the floor anyway but the PBR needs updating.
+            </div>
+          </div>
+
+          <!-- Auto-linked docs -->
+          <div style="padding:10px 14px; background:rgba(58,125,82,0.08); border:1px solid rgba(58,125,82,0.2); border-radius:8px;">
+            <div style="font-size:10px; font-weight:600; color:#4ade80; margin-bottom:4px;">AUTO-LINKED DOCUMENTS</div>
+            <div class="mono" style="font-size:11px; color:#ccc;">SOP-ATF-2024-003 &middot; PBR-2024-BR-047</div>
+          </div>
+
+          <!-- Submit -->
+          <div style="padding:12px; background:var(--teal); border-radius:8px; text-align:center;">
+            <span style="font-size:13px; font-weight:700; color:#fff;">Submit Concern &rarr;</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow between -->
+    <div style="display:flex; align-items:center; flex-direction:column; justify-content:center; gap:6px;">
+      <div style="font-size:11px; color:var(--text-muted); font-weight:600; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:0.08em;">30 SECONDS</div>
+      <div style="width:2px; height:40px; background:var(--teal);"></div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--teal)"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+    </div>
+
+    <!-- RIGHT: QA Document Control view -->
+    <div style="flex:1; display:flex; flex-direction:column;">
+      <div style="background:var(--dark); border-radius:14px; overflow:hidden; flex:1; display:flex; flex-direction:column;">
+        <div style="background:#16162a; padding:10px 16px; display:flex; align-items:center; gap:8px;">
+          <div style="width:10px; height:10px; border-radius:50%; background:#ff5f57;"></div>
+          <div style="width:10px; height:10px; border-radius:50%; background:#febc2e;"></div>
+          <div style="width:10px; height:10px; border-radius:50%; background:#28c840;"></div>
+          <span class="mono" style="font-size:11px; color:#8888aa; margin-left:8px;">Vent — QA Document Control</span>
+        </div>
+
+        <div style="padding:20px; flex:1; display:flex; flex-direction:column; gap:14px;">
+
+          <!-- Concern header -->
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="padding:4px 10px; background:rgba(166,61,47,0.2); color:#ff6b6b; border-radius:5px; font-size:11px; font-weight:700;">DOC MISMATCH</span>
+            <span style="padding:4px 10px; background:rgba(184,134,11,0.2); color:#fbbf24; border-radius:5px; font-size:11px; font-weight:700;">MEDIUM RISK</span>
+            <span class="mono" style="font-size:11px; color:#8888aa; margin-left:auto;">VENT-2024-0847</span>
+          </div>
+
+          <div class="mono" style="font-size:12px; color:#ccc; line-height:1.5; padding:10px 14px; background:#2a2a3c; border-radius:8px;">
+            Raised by: Downstream Operator &middot; ATF Filtration &middot; 2 hours ago
+          </div>
+
+          <!-- DIFF VIEW -->
+          <div style="flex:1; background:#2a2a3c; border:1.5px solid #3a3a4c; border-radius:10px; overflow:hidden;">
+            <div style="padding:10px 16px; background:#1e1e2e; border-bottom:1px solid #3a3a4c;">
+              <span style="font-size:11px; font-weight:700; color:#e0e0e0;">Document Diff — PBR Step 5.3 vs SOP-ATF-2024-003</span>
+            </div>
+            <div class="mono" style="padding:14px 18px; font-size:12px; line-height:2;">
+              <div style="display:flex;">
+                <span style="width:24px; color:#555; flex-shrink:0;">-</span>
+                <span style="background:rgba(255,107,107,0.12); color:#ff6b6b; padding:2px 6px; border-radius:3px; text-decoration:line-through;">Flush ATF filter with <strong>100L</strong> WFI</span>
+              </div>
+              <div style="display:flex;">
+                <span style="width:24px; color:#555; flex-shrink:0;">+</span>
+                <span style="background:rgba(74,222,128,0.12); color:#4ade80; padding:2px 6px; border-radius:3px;">Flush ATF filter with <strong>150L</strong> WFI</span>
+              </div>
+              <div style="display:flex; margin-top:6px;">
+                <span style="width:24px; color:#555; flex-shrink:0;">+</span>
+                <span style="background:rgba(74,222,128,0.12); color:#4ade80; padding:2px 6px; border-radius:3px;">(per SOP-ATF-2024-003, s.4.2.1 — incl. tubing dead vol.)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1; padding:10px; background:rgba(58,125,82,0.15); border:1px solid rgba(58,125,82,0.3); border-radius:8px; text-align:center;">
+              <span style="font-size:12px; font-weight:700; color:#4ade80;">&#10003; Approve Change</span>
+            </div>
+            <div style="flex:1; padding:10px; background:#2a2a3c; border:1px solid #3a3a4c; border-radius:8px; text-align:center;">
+              <span style="font-size:12px; font-weight:600; color:#ccc;">Request Info</span>
+            </div>
+            <div style="flex:0.6; padding:10px; background:#2a2a3c; border:1px solid #3a3a4c; border-radius:8px; text-align:center;">
+              <span style="font-size:12px; font-weight:600; color:#888;">Escalate</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">5 / 7</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 6 — EARLY FEEDBACK + MARKET (~35 seconds)
+     ═══════════════════════════════════════════════════════
+
+     SCRIPT:
+     "I've been showing this to people on the floor.
+
+     The training lead said it would bring their department
+     into the 21st century. A buffer operator searched for
+     a process step and couldn't believe how easy it was.
+     An operator with dyslexia found the GDP checker
+     genuinely useful — that was a need I hadn't planned for.
+
+     The pharma QMS market is 3 billion dollars. The current
+     tools cost hundreds of thousands a year. They're built
+     for compliance managers, not for operators. Vent is the
+     layer underneath — capturing what's actually happening
+     before it reaches the system."
+
+     NOTES:
+     - This is condensed. Hit the three stories fast.
+     - The training lead quote is your strongest — lean in.
+     - On market: move fast. Don't dwell on numbers. If they
+       want more detail, that's what Q&A is for.
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding:48px 64px;">
+  <div class="glow-tl"></div>
+
+  <div style="display:flex; gap:40px; flex:1;">
+
+    <!-- Left: Feedback -->
+    <div style="flex:1; display:flex; flex-direction:column;">
+      <div style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--teal); margin-bottom:10px;">Early Feedback</div>
+      <div style="font-size:36px; font-weight:900; line-height:1.08; letter-spacing:-0.03em; margin-bottom:24px;">
+        People on the floor <span class="italic" style="font-size:40px;">want this.</span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:14px; flex:1;">
+
+        <!-- Training Lead -->
+        <div style="flex:1; padding:20px 22px; background:var(--surface); border:1.5px solid rgba(196,93,44,0.3); border-radius:12px; display:flex; flex-direction:column;">
+          <div style="font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--teal); margin-bottom:6px;">Training Lead</div>
+          <div style="font-size:15px; color:var(--text); line-height:1.5; flex:1; font-style:italic;">"It would bring our training department into the 21st century."</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">Wants video SOPs + operator feedback tracking</div>
+        </div>
+
+        <!-- Buffer Operator -->
+        <div style="flex:1; padding:20px 22px; background:var(--surface); border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column;">
+          <div style="font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--blue); margin-bottom:6px;">Floor Operator</div>
+          <div style="font-size:15px; color:var(--text); line-height:1.5; flex:1; font-style:italic;">"Couldn't believe how much easier it was than the current system."</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">Buffer team — tested SOP search live</div>
+        </div>
+
+        <!-- GDP / Accessibility -->
+        <div style="flex:1; padding:20px 22px; background:var(--surface); border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column;">
+          <div style="font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--green); margin-bottom:6px;">Operator — Accessibility</div>
+          <div style="font-size:15px; color:var(--text); line-height:1.5; flex:1; font-style:italic;">"GDP checker — genuinely useful." An operator with dyslexia. A need I hadn't planned for.</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">The floor told me it mattered</div>
+        </div>
+
+      </div>
+
+      <div style="margin-top:14px; padding:12px 18px; background:var(--surface2); border-left:3px solid var(--amber); border-radius:0 8px 8px 0;">
+        <span style="font-size:13px; color:var(--text-dim);">Feedback from colleagues, not paying customers. Getting to customers is why I'm here.</span>
+      </div>
+    </div>
+
+    <!-- Right: Market -->
+    <div style="width:380px; flex-shrink:0; display:flex; flex-direction:column; gap:14px;">
+      <div style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--blue); margin-bottom:-4px;">Market &amp; Opportunity</div>
+
+      <!-- Market size -->
+      <div style="background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:28px; text-align:center;">
+        <div style="font-size:13px; color:var(--text-dim); margin-bottom:4px;">Pharma QMS market</div>
+        <div style="font-size:48px; font-weight:900; color:var(--blue); line-height:1;">$3B</div>
+        <div style="font-size:14px; color:var(--text-muted); margin-top:4px;">13.3% CAGR</div>
+      </div>
+
+      <!-- Incumbent gap -->
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; flex:1;">
+        <div style="font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--red); margin-bottom:12px;">Current Tools</div>
+        <div style="font-size:14px; color:var(--text); line-height:1.6; margin-bottom:12px;">
+          Veeva, TrackWise, MasterControl<br>
+          <strong style="color:var(--red);">€60K–€480K / site / year</strong>
+        </div>
+        <div style="font-size:14px; color:var(--text-dim); line-height:1.5;">
+          Built for compliance managers.<br>Not for operators on the floor.
+        </div>
+      </div>
+
+      <!-- Vent positioning -->
+      <div style="padding:20px; background:rgba(196,93,44,0.06); border:1.5px solid rgba(196,93,44,0.3); border-radius:14px;">
+        <div style="font-size:15px; font-weight:700; color:var(--teal); margin-bottom:6px;">Vent is the layer underneath</div>
+        <div style="font-size:13px; color:var(--text-dim); line-height:1.5;">Capturing what's actually happening on the floor before it reaches the QMS.</div>
+      </div>
+
+      <!-- Ireland -->
+      <div style="padding:16px; background:var(--surface2); border-radius:10px; text-align:center;">
+        <span style="font-size:14px; font-weight:600; color:var(--text);">9 of top 10 pharma companies manufacture in Ireland</span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="slide-num">6 / 7</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 7 — THE ASK (~25 seconds)
+     ═══════════════════════════════════════════════════════
+
+     SCRIPT:
+     "I need to take this from a prototype to a real pilot.
+
+     First — a pharma site in Ireland. I work inside the
+     industry. Pfizer, Lilly, MSD, Regeneron are all within
+     two hours. These are doors I can get into.
+
+     Second — I need help navigating the GMP validation
+     pathway. A regulated facility won't use software
+     without formal documentation.
+
+     Third — eventually, a technical co-founder. Someone
+     who's scaled enterprise SaaS. I can build the
+     prototype. I need someone who knows how to scale it.
+
+     (PAUSE)
+
+     The people on the floor are already telling me they
+     want this. I just need the time to make it happen."
+
+     NOTES:
+     - Be direct. Don't oversell.
+     - "I just need the time to make it happen" — last line.
+       Let it sit. Don't ramble after it.
+     ═══════════════════════════════════════════════════════ -->
+<div class="slide" style="padding:72px 96px; justify-content:center;">
+  <div class="glow-tl"></div>
+  <div class="glow-br"></div>
+
+  <div style="max-width:900px; position:relative; z-index:1;">
+
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--teal); margin-bottom:14px;">The Ask</div>
+
+    <div style="font-size:52px; font-weight:900; line-height:1.06; letter-spacing:-0.03em; margin-bottom:48px;">
+      From prototype<br>
+      <span class="italic" style="font-size:56px;">to pilot.</span>
+    </div>
+
+    <div style="display:flex; gap:20px; margin-bottom:44px;">
+
+      <div style="flex:1; padding:28px; background:var(--surface); border:1px solid var(--border); border-radius:14px;">
+        <div style="font-size:28px; font-weight:900; color:var(--teal); margin-bottom:10px;">First pilot</div>
+        <div style="font-size:15px; color:var(--text-dim); line-height:1.5;">A pharma site in Ireland. I work inside the industry. Pfizer, Lilly, MSD, Regeneron — all within 2 hours. These are doors I can get into.</div>
+      </div>
+
+      <div style="flex:1; padding:28px; background:var(--surface); border:1px solid var(--border); border-radius:14px;">
+        <div style="font-size:28px; font-weight:900; color:var(--blue); margin-bottom:10px;">GMP pathway</div>
+        <div style="font-size:15px; color:var(--text-dim); line-height:1.5;">Formal validation documentation. A regulated facility won't use software without it. I need help navigating this.</div>
+      </div>
+
+      <div style="flex:1; padding:28px; background:var(--surface); border:1px solid var(--border); border-radius:14px;">
+        <div style="font-size:28px; font-weight:900; color:var(--amber); margin-bottom:10px;">Technical co-founder</div>
+        <div style="font-size:15px; color:var(--text-dim); line-height:1.5;">Someone who's scaled enterprise SaaS. I can build the prototype. I need someone who knows how to scale it.</div>
+      </div>
+
+    </div>
+
+    <div style="padding:28px 36px; background:var(--surface2); border:1.5px solid var(--border); border-radius:14px;">
+      <div style="display:flex; align-items:center; gap:36px;">
+        <div style="flex:1;">
+          <p style="font-size:20px; color:var(--text); line-height:1.45; margin:0; font-weight:600;">
+            The people on the floor are already telling me they want this.<br>
+            <span style="color:var(--text-dim); font-weight:400;">I just need the time to make it happen.</span>
+          </p>
+        </div>
+        <div style="width:1.5px; height:56px; background:var(--border); flex-shrink:0;"></div>
+        <div style="flex-shrink:0; text-align:right;">
+          <div style="font-size:17px; font-weight:700; margin-bottom:4px;">Darren Doherty</div>
+          <div style="font-size:13px; color:var(--text-dim);">doherd33@gmail.com</div>
+          <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">BSc Immunology &middot; Trinity College Dublin</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">7 / 7</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     PRESENTATION MODE
+     Press F or Enter to start. Arrow keys / Space to navigate.
+     Press Escape to exit. Works over Zoom screenshare.
+     ═══════════════════════════════════════════════════════ -->
+<div id="present-hint" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.75); color:#fff; padding:10px 24px; border-radius:8px; font-size:13px; font-family:'Inter',sans-serif; z-index:9999; pointer-events:none;">
+  Press <strong>F</strong> or <strong>Enter</strong> to start presentation
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  let presenting = false;
+  const hint = document.getElementById('present-hint');
+
+  function enterPresentation() {
+    presenting = true;
+    hint.style.display = 'none';
+    document.body.style.overflow = 'hidden';
+    document.body.style.background = '#000';
+    document.body.style.padding = '0';
+    document.body.style.margin = '0';
+    document.body.style.display = 'flex';
+    document.body.style.alignItems = 'center';
+    document.body.style.justifyContent = 'center';
+    document.body.style.height = '100vh';
+    document.body.style.width = '100vw';
+
+    slides.forEach(s => {
+      s.style.display = 'none';
+      s.style.margin = '0';
+      s.style.borderRadius = '0';
+      s.style.boxShadow = 'none';
+      s.style.flexShrink = '0';
+    });
+
+    showSlide(0);
+
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      document.documentElement.webkitRequestFullscreen();
+    }
+  }
+
+  function exitPresentation() {
+    presenting = false;
+    document.body.style.overflow = '';
+    document.body.style.background = '';
+    document.body.style.padding = '';
+    document.body.style.margin = '';
+    document.body.style.display = '';
+    document.body.style.alignItems = '';
+    document.body.style.justifyContent = '';
+    document.body.style.height = '';
+    document.body.style.width = '';
+    hint.style.display = '';
+
+    slides.forEach(s => {
+      s.style.display = '';
+      s.style.margin = '';
+      s.style.borderRadius = '';
+      s.style.boxShadow = '';
+      s.style.flexShrink = '';
+      s.style.transform = '';
+    });
+
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    }
+  }
+
+  function showSlide(n) {
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides.forEach(s => s.style.display = 'none');
+    const s = slides[current];
+    s.style.display = 'flex';
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const scale = Math.min(vw / 1280, vh / 720);
+    s.style.transform = 'scale(' + scale + ')';
+    s.style.transformOrigin = 'center center';
+  }
+
+  window.addEventListener('resize', function() {
+    if (presenting) showSlide(current);
+  });
+
+  document.addEventListener('fullscreenchange', function() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && presenting) {
+      exitPresentation();
+    }
+  });
+  document.addEventListener('webkitfullscreenchange', function() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && presenting) {
+      exitPresentation();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (!presenting) {
+      if (e.key === 'f' || e.key === 'F' || e.key === 'Enter') {
+        e.preventDefault();
+        enterPresentation();
+      }
+      return;
+    }
+
+    switch(e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case ' ':
+      case 'PageDown':
+        e.preventDefault();
+        showSlide(current + 1);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'PageUp':
+        e.preventDefault();
+        showSlide(current - 1);
+        break;
+      case 'Escape':
+        exitPresentation();
+        break;
+      case 'Home':
+        e.preventDefault();
+        showSlide(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        showSlide(slides.length - 1);
+        break;
+    }
+  });
+
+  setTimeout(function() { if (!presenting) hint.style.opacity = '0'; hint.style.transition = 'opacity 1s'; }, 8000);
+})();
+</script>
+
+</body>
+</html>

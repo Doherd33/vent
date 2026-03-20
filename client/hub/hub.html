@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Command Centre</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="hub.css">
+<script>if(!localStorage.getItem('vent_token'))window.location.replace('/auth/login.html');</script>
+<!-- CSS removed — now in hub.css -->
+<script>
+(function(){
+  var h = localStorage.getItem('vent_theme_hue');
+  if(h) document.documentElement.style.setProperty('--hue', h);
+})();
+</script>
+<script src="/shared/nav.js"></script>
+</head>
+<body>
+
+<!-- ── TITLE BAR ── -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="/hub/hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav"></nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- ── HUD LAYOUT ── -->
+<div class="hud">
+
+  <!-- ── TOP STATUS BAR ── -->
+  <div class="hud-status">
+    <div class="hud-status-left">
+      <span class="live">/// SYSTEM ONLINE ///</span>
+      <span>SESSION: <span class="val" id="sessionId">—</span></span>
+    </div>
+    <div class="hud-status-right">
+      <span>ROLE: <span class="val" id="hudRole">—</span></span>
+      <span>USER: <span class="val" id="hudUser">—</span></span>
+      <span id="hudClock"></span>
+    </div>
+  </div>
+
+  <!-- ── LEFT: MISSION SELECT ── -->
+  <div class="hud-left" id="missionList">
+
+    <div class="hud-section" data-section="operator">
+      <div class="hud-section-label">Operator</div>
+      <a href="/operator/query.html" class="hud-mission" data-hub-key="charlie" onclick="if(window.toggleHubCharlie){event.preventDefault();toggleHubCharlie()}">
+        <span class="mission-dot"></span>
+        <span class="mission-name">Charlie AI</span>
+        <span class="mission-key">F1</span>
+      </a>
+      <a href="/operator/query.html?openVent=1" class="hud-mission" data-hub-key="observe">
+        <span class="mission-dot"></span>
+        <span class="mission-name">Raise Observation</span>
+        <span class="mission-key">F2</span>
+      </a>
+      <a href="/qa/submissions.html" class="hud-mission" data-hub-key="activity">
+        <span class="mission-dot"></span>
+        <span class="mission-name">My Activity</span>
+        <span class="mission-key">F3</span>
+      </a>
+      <a href="/operator/query.html?gdp=1" class="hud-mission" data-hub-key="gdp">
+        <span class="mission-dot"></span>
+        <span class="mission-name">GDP Check</span>
+        <span class="mission-key">F4</span>
+      </a>
+      <a href="/operator/feedback.html" class="hud-mission" data-hub-key="feedback">
+        <span class="mission-dot"></span>
+        <span class="mission-name">Feedback</span>
+        <span class="mission-key">F5</span>
+      </a>
+    </div>
+
+    <div class="hud-section" data-section="qa">
+      <div class="hud-section-label">QA</div>
+      <a href="/qa/qa.html" class="hud-mission" data-hub-key="qa">
+        <span class="mission-dot"></span>
+        <span class="mission-name">QA Centre</span>
+        <span class="mission-key">F6</span>
+      </a>
+      <a href="/qa/deviations.html" class="hud-mission" data-hub-key="deviations">
+        <span class="mission-dot"></span>
+        <span class="mission-name">Deviations</span>
+        <span class="mission-key">F7</span>
+      </a>
+      <a href="/qa/capas.html" class="hud-mission" data-hub-key="capas">
+        <span class="mission-dot"></span>
+        <span class="mission-name">CAPAs</span>
+        <span class="mission-key">F8</span>
+      </a>
+      <a href="/qa/change-control.html" class="hud-mission" data-hub-key="change">
+        <span class="mission-dot"></span>
+        <span class="mission-name">Change Control</span>
+        <span class="mission-key">F9</span>
+      </a>
+    </div>
+
+    <div class="hud-section" data-section="docs">
+      <div class="hud-section-label">Documentation</div>
+      <a href="/qa/documents.html" class="hud-mission" data-hub-key="doccontrol">
+        <span class="mission-dot"></span>
+        <span class="mission-name">Doc Control</span>
+        <span class="mission-key">F10</span>
+      </a>
+      <a href="/qa/builder.html" class="hud-mission" data-hub-key="builder">
+        <span class="mission-dot"></span>
+        <span class="mission-name">Doc Builder</span>
+        <span class="mission-key">F11</span>
+      </a>
+    </div>
+
+    <div class="hud-section" data-section="management">
+      <div class="hud-section-label">Management</div>
+      <a href="/management/dashboard.html" class="hud-mission" data-hub-key="analytics">
+        <span class="mission-dot"></span>
+        <span class="mission-name">Analytics</span>
+        <span class="mission-key">F12</span>
+      </a>
+    </div>
+
+  </div>
+
+  <!-- ── CENTRE: BRAND + 3D VIEWPORT ── -->
+  <div class="hud-centre">
+    <div class="hud-brand">
+      <span class="hud-brand-name">Vent</span>
+      <span class="hud-brand-pip"></span>
+    </div>
+    <div class="hud-brand-ver">v1.0.0</div>
+    <div class="hud-greeting" id="hubGreeting">Welcome back.</div>
+    <div class="hud-tagline">Manufacturing Intelligence Platform</div>
+
+    <div class="hud-viewport" id="viewport3d">
+      <div class="viewport-label" id="vpLabel"></div>
+      <div class="facility-nav" id="facilityNav">
+        <button class="facility-nav-btn active" data-view="overview"><span class="facility-nav-pip"></span>OVERVIEW</button>
+        <button class="facility-nav-btn" data-view="mfg61"><span class="facility-nav-pip"></span>MFG 6.1</button>
+        <button class="facility-nav-btn" data-view="mfg62"><span class="facility-nav-pip"></span>MFG 6.2</button>
+        <button class="facility-nav-btn" data-view="upstream62"><span class="facility-nav-pip"></span>USP 6.2</button>
+        <button class="facility-nav-btn" data-view="seed62"><span class="facility-nav-pip"></span>SEED 6.2</button>
+        <button class="facility-nav-btn" data-view="dsp62"><span class="facility-nav-pip"></span>DSP 6.2</button>
+        <button class="facility-nav-btn" data-view="shared"><span class="facility-nav-pip"></span>SHARED</button>
+        <button class="facility-nav-btn" data-view="media"><span class="facility-nav-pip"></span>MEDIA</button>
+        <div class="facility-nav-divider"></div>
+        <button class="facility-nav-btn heatmap-btn" id="heatmapToggle"><span class="facility-nav-pip"></span>TRAINING MAP [H]</button>
+      </div>
+      <!-- Heatmap legend overlay -->
+      <div class="heatmap-legend" id="heatmapLegend">
+        <div class="hm-legend-title">TRAINING COVERAGE</div>
+        <div class="hm-legend-row"><span class="hm-legend-dot green"></span><span>Full coverage</span></div>
+        <div class="hm-legend-row"><span class="hm-legend-dot amber"></span><span>Minimum coverage</span></div>
+        <div class="hm-legend-row"><span class="hm-legend-dot red"></span><span>No coverage</span></div>
+        <div class="hm-legend-row"><span class="hm-legend-dot dim"></span><span>No training data</span></div>
+        <div class="hm-legend-shift">Shift: <span id="heatmapShiftLabel">—</span></div>
+      </div>
+      <div class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · CLICK EQUIPMENT FOR DETAILS</div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: INTEL PANEL ── -->
+  <div class="hud-right">
+
+    <!-- Default intel (hidden when equipment selected) -->
+    <div id="intelDefault">
+      <div class="intel-block">
+        <div class="intel-label">Session</div>
+        <div class="intel-row"><span>User</span><span class="val" id="intelUser">—</span></div>
+        <div class="intel-row"><span>Role</span><span class="val green" id="intelRole">—</span></div>
+        <div class="intel-row"><span>Uptime</span><span class="val" id="intelUptime">00:00:00</span></div>
+      </div>
+
+      <div class="intel-block">
+        <div class="intel-label">Build Status</div>
+        <div class="intel-row"><span>Modules</span><span class="val" id="intelModules">—</span></div>
+        <div class="intel-row"><span>MVP Visible</span><span class="val green" id="intelVisible">—</span></div>
+        <div class="intel-row"><span>Hidden</span><span class="val amber" id="intelHidden">—</span></div>
+        <div class="intel-divider"></div>
+        <div class="intel-row"><span>Auth</span><span class="val green">ONLINE</span></div>
+        <div class="intel-row"><span>Supabase</span><span class="val green">CONNECTED</span></div>
+      </div>
+
+      <div class="intel-block">
+        <div class="intel-label">Keyboard</div>
+        <div class="intel-row"><span>F1–F12</span><span class="val">Navigate</span></div>
+        <div class="intel-row"><span>ESC</span><span class="val">Sign out</span></div>
+      </div>
+
+      <div class="intel-block" style="margin-top:auto">
+        <div class="intel-label">Facility</div>
+        <div class="intel-row"><span>Hint</span><span class="val">Click equipment</span></div>
+      </div>
+    </div>
+
+    <!-- Equipment detail (shown on click) -->
+    <div class="equip-detail" id="equipDetail"></div>
+
+    <!-- Heatmap panel (shown when training overlay active) -->
+    <div class="equip-detail" id="heatmapPanel"></div>
+
+  </div>
+
+  <!-- ── BOTTOM BAR ── -->
+  <div class="hud-bottom">
+    <div class="hud-bottom-left">
+      <span>VENT COMMAND CENTRE</span>
+      <span>BUILD: MVP</span>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <button id="exportGltfBtn" class="facility-nav-btn" style="font-size:9px;padding:4px 10px">EXPORT GLTF</button>
+      <span>READY<span class="cursor"></span></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var name = localStorage.getItem('vent_name') || localStorage.getItem('vent_first_name') || '';
+  var role = localStorage.getItem('vent_role') || 'operator';
+  var userId = localStorage.getItem('vent_user_id') || '';
+
+  // ── Greeting ──
+  var greetEl = document.getElementById('hubGreeting');
+  if (name) {
+    greetEl.innerHTML = 'Welcome back, <em>' + name + '</em>.';
+  }
+
+  // ── Status bar + Intel panel ──
+  document.getElementById('hudRole').textContent = role.toUpperCase();
+  document.getElementById('hudUser').textContent = name || 'UNKNOWN';
+  document.getElementById('sessionId').textContent = userId.slice(0, 8).toUpperCase() || '—';
+  document.getElementById('intelUser').textContent = name || '—';
+  document.getElementById('intelRole').textContent = role;
+
+  // ── Clock ──
+  function updateClock() {
+    var now = new Date();
+    var h = String(now.getHours()).padStart(2, '0');
+    var m = String(now.getMinutes()).padStart(2, '0');
+    var s = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('hudClock').textContent = h + ':' + m + ':' + s;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── Uptime counter ──
+  var startTime = Date.now();
+  function updateUptime() {
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    var hh = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+    var mm = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+    var ss = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('intelUptime').textContent = hh + ':' + mm + ':' + ss;
+  }
+  setInterval(updateUptime, 1000);
+
+  // ── Role-filter missions ──
+  // All 12 modules — admin sees everything, other roles see a subset
+  var ALL = ['charlie', 'observe', 'activity', 'gdp', 'feedback', 'qa', 'deviations', 'capas', 'change', 'doccontrol', 'builder', 'analytics'];
+  var cardRules = {
+    operator:    ['charlie', 'observe', 'activity', 'gdp', 'feedback'],
+    training:    ['charlie', 'observe', 'activity', 'builder', 'feedback'],
+    qa:          ['charlie', 'observe', 'activity', 'qa', 'deviations', 'capas', 'change', 'doccontrol', 'builder', 'gdp', 'feedback'],
+    director:    ALL,
+    msat:        ['charlie', 'observe', 'activity', 'builder'],
+    engineering: ['charlie', 'observe', 'activity', 'builder'],
+    admin:       ALL
+  };
+  var allowed = cardRules[role] || cardRules.operator;
+  var totalModules = 12;
+  var visibleCount = 0;
+
+  document.querySelectorAll('.hud-mission').forEach(function(mission) {
+    var key = mission.dataset.hubKey;
+    if (allowed.indexOf(key) === -1) {
+      mission.style.display = 'none';
+    } else {
+      visibleCount++;
+    }
+  });
+
+  // Hide empty sections
+  document.querySelectorAll('.hud-section').forEach(function(section) {
+    var visible = section.querySelectorAll('.hud-mission:not([style*="display: none"])');
+    if (visible.length === 0) section.style.display = 'none';
+  });
+
+  // ── Intel: module counts ──
+  document.getElementById('intelModules').textContent = totalModules;
+  document.getElementById('intelVisible').textContent = visibleCount;
+  document.getElementById('intelHidden').textContent = totalModules - visibleCount;
+
+  // ── Stagger animation on missions ──
+  document.querySelectorAll('.hud-mission:not([style*="display: none"])').forEach(function(el, i) {
+    el.style.animationDelay = (i * 0.04) + 's';
+  });
+
+  // ── Keyboard shortcuts (F1–F12 navigate, ESC sign out) ──
+  var missions = Array.from(document.querySelectorAll('.hud-mission:not([style*="display: none"])'));
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      ventSignOut();
+      return;
+    }
+    var fKey = e.key.match(/^F(\d+)$/);
+    if (!fKey) return;
+    e.preventDefault();
+    var idx = parseInt(fKey[1]) - 1;
+    // F1 → toggle Charlie in-hub instead of navigating away
+    if (idx === 0 && window.toggleHubCharlie) { window.toggleHubCharlie(); return; }
+    if (missions[idx]) window.location.href = missions[idx].href;
+  });
+
+})();
+</script>
+
+<!-- ── FLOATING SOP VIEWER ── -->
+<div class="hub-sop-viewer" id="hubSopViewer">
+  <div class="hsv-tabs" id="hsvTabs"></div>
+  <div class="hsv-body" id="hsvBody">
+    <div class="hsv-empty">Open a document from the equipment panel to view it here.</div>
+  </div>
+</div>
+
+
+<!-- VentAudio (shared IIFE — needed by Charlie AI) -->
+<script src="/shared/audio.js"></script>
+<!-- THREE.JS PERFUSION FACILITY -->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

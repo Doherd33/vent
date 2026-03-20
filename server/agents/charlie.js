@@ -15,6 +15,7 @@
 
 const { loadPrompt } = require('../prompts/loader');
 const SYSTEM_BASE = loadPrompt('charlie');
+const SYSTEM_HUB  = loadPrompt('charlie-hub');
 
 const LANG_NAMES = { en: 'English', zh: 'Chinese (Mandarin)', es: 'Spanish' };
 
@@ -28,11 +29,11 @@ function makeCharlieAgent(anthropic) {
    * @param {string} [params.sopContext]        Retrieved SOP context (optional — from sop-query agent)
    * @returns {{ answer: string, action: string, params: object }}
    */
-  async function invoke({ question, context, lang, history, sopContext }) {
+  async function invoke({ question, context, lang, history, sopContext, mode }) {
     const targetLang = LANG_NAMES[lang] || 'English';
 
     // Build a system prompt with optional context and SOP grounding
-    let system = SYSTEM_BASE;
+    let system = mode === 'hub' ? SYSTEM_HUB : SYSTEM_BASE;
     if (context) {
       system += `\nThe user is currently viewing: ${context}`;
     }

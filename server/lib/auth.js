@@ -47,14 +47,9 @@ function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7);
-    // Demo mode: bypass JWT verification, inject admin user
-    if (token === 'demo') {
-      req.user = { id: 'demo-user', email: 'demo@vent.app', name: 'Demo Admin', role: 'admin' };
-    } else {
-      const user = verifyToken(token);
-      if (user) {
-        req.user = user;
-      }
+    const user = verifyToken(token);
+    if (user) {
+      req.user = user;
     }
   }
   next();

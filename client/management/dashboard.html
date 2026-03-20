@@ -1,0 +1,486 @@
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/styles.css">
+<style>
+html, body { height: 100%; }
+body {
+  font-weight: 400;
+  display: flex; flex-direction: column; min-height: 100vh;
+  overflow-x: hidden;
+}
+
+@keyframes fadeUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* ── DASHBOARD ── */
+.dash { max-width: 1100px; margin: 0 auto; padding: 32px 28px; width: 100%; }
+.dash-title {
+  font-family: 'Instrument Serif', serif; font-size: 28px;
+  margin-bottom: 4px;
+}
+.dash-sub { font-size: 13px; color: var(--dim); margin-bottom: 28px; }
+
+/* ── STAT CARDS ── */
+.stat-row {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px; margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 8px;
+  padding: 18px 20px; display: flex; flex-direction: column; gap: 6px;
+  animation: fadeUp 0.3s ease both;
+}
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); }
+.stat-value { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 500; color: var(--text); }
+.stat-note { font-size: 11px; color: var(--mid); }
+.stat-value.high   { color: var(--red); }
+.stat-value.green  { color: var(--green); }
+.stat-value.gold   { color: var(--gold); }
+.stat-value.accent { color: var(--accent); }
+
+/* ── SECTION ── */
+.section { margin-bottom: 32px; }
+.section-title {
+  font-size: 14px; font-weight: 500; color: var(--text);
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.section-title .badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── CHARTS ── */
+.chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+.chart-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 8px;
+  padding: 20px; min-height: 200px;
+}
+.chart-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--dim); margin-bottom: 14px; }
+
+/* Bar chart */
+.bar-chart { display: flex; flex-direction: column; gap: 8px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-label { font-size: 11px; color: var(--mid); width: 100px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; height: 22px; background: var(--s2); border-radius: 3px; overflow: hidden; position: relative; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 8px; }
+.bar-fill span { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: #fff; }
+.bar-fill.high   { background: var(--red2);   border-left: 3px solid var(--red); }
+.bar-fill.medium { background: var(--gold2);  border-left: 3px solid var(--gold); }
+.bar-fill.low    { background: var(--green2); border-left: 3px solid var(--green); }
+.bar-fill.area   { background: var(--accent2); border-left: 3px solid var(--accent); }
+
+/* Donut chart (CSS) */
+.donut-wrap { display: flex; align-items: center; gap: 24px; }
+.donut { width: 120px; height: 120px; border-radius: 50%; position: relative; }
+.donut-center { position: absolute; inset: 25px; border-radius: 50%; background: var(--s1); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.donut-center .num { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500; }
+.donut-center .lbl { font-size: 9px; text-transform: uppercase; color: var(--dim); }
+.donut-legend { display: flex; flex-direction: column; gap: 6px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--mid); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── TABLES ── */
+.dash-table { width: 100%; border-collapse: collapse; }
+.dash-table th {
+  text-align: left; font-size: 10px; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--dim); padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.dash-table td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid var(--s2); color: var(--mid); }
+.dash-table tr:hover td { background: var(--s2); }
+.ref-link { color: var(--accent); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.ref-link:hover { text-decoration: underline; }
+
+/* Priority pills */
+.pp { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 3px; text-transform: uppercase; letter-spacing: .03em; }
+.pp-high   { background: var(--red2);   color: var(--red); border-left: 2px solid var(--red); }
+.pp-medium { background: var(--gold2);  color: var(--gold); border-left: 2px solid var(--gold); }
+.pp-low    { background: var(--green2); color: var(--green); border-left: 2px solid var(--green); }
+
+/* Status pills */
+.sp { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 3px; text-transform: uppercase; letter-spacing: .03em; }
+.sp-open   { background: var(--accent2); color: var(--accent); border-left: 2px solid var(--accent); }
+.sp-closed { background: var(--green2);  color: var(--green); border-left: 2px solid var(--green); }
+.sp-overdue { background: var(--red2);   color: var(--red); border-left: 2px solid var(--red); }
+
+/* ── TREND INDICATOR ── */
+.trend { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; }
+.trend.up   { color: var(--red); }
+.trend.down { color: var(--green); }
+.trend.flat { color: var(--dim); }
+
+/* ── LOADING ── */
+.loading { text-align: center; padding: 60px 20px; color: var(--dim); font-size: 13px; }
+
+/* ── HAMBURGER ── */
+.hamburger { display: none; background: none; border: 1px solid var(--border); color: var(--mid); cursor: pointer; padding: 6px; border-radius: 7px; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+.hamburger:hover { color: var(--text); background: var(--s3); }
+.hamburger svg { display: block; }
+
+@media (max-width: 768px) {
+  .hamburger { display: flex; align-items: center; justify-content: center; }
+  .app-nav { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--s1); border-bottom: 1px solid var(--border); flex-direction: column; padding: 8px 12px; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,.3); z-index: 200; }
+  .app-nav.open { display: flex; }
+  .topbar { position: relative; padding: 0 12px; gap: 8px; }
+  .nav-item { padding: 12px 16px; font-size: 14px; width: 100%; border-radius: 8px; }
+  /* Hide role badge and username on mobile to free up space */
+  .title-bar-right .role-badge,
+  .title-bar-right .user-name { display: none; }
+  .sign-out-btn { font-size: 12px; padding: 6px 12px; }
+  .chart-row { grid-template-columns: 1fr; }
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .dash { padding: 20px 16px; }
+  .dash-title { font-size: 24px; }
+  .dash-sub { font-size: 13px; margin-bottom: 20px; }
+  .stat-card { padding: 16px 18px; }
+  .stat-value { font-size: 24px; }
+  .stat-label { font-size: 11px; }
+  .stat-note { font-size: 11px; }
+  .chart-card { padding: 18px; min-height: 160px; }
+  .donut-wrap { flex-direction: column; align-items: center; gap: 16px; }
+  .donut { width: 110px; height: 110px; }
+  .donut-center { inset: 22px; }
+  .donut-center .num { font-size: 18px; }
+  .bar-label { width: 80px; font-size: 11px; }
+  .bar-track { height: 26px; }
+  .section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .dash-table { min-width: 500px; }
+  .dash-table th { font-size: 10px; padding: 8px 10px; }
+  .dash-table td { font-size: 12px; padding: 8px 10px; }
+  .section-title { font-size: 14px; }
+}
+/* Small phones */
+@media (max-width: 400px) {
+  .stat-row { grid-template-columns: 1fr; }
+  .dash { padding: 16px 12px; }
+}
+</style>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/nav.js"></script>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="/hub/hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav">
+      <a href="/operator/query.html"       class="nav-tab" data-nav-key="Charlie AI" data-i18n="nav.charlie">Charlie AI</a>
+      <a href="/qa/submissions.html" class="nav-tab" data-nav-key="My Activity" data-i18n="nav.activity">My Activity</a>
+      <a href="/qa/builder.html"     class="nav-tab" data-nav-key="Doc Builder" data-i18n="nav.docBuilder">Doc Builder</a>
+      <a href="/qa/qa.html"          class="nav-tab" data-nav-key="QA Centre" data-i18n="nav.qaCentre">QA Centre</a>
+      <a href="/management/dashboard.html"   class="nav-tab active" data-nav-key="Analytics" data-i18n="nav.analytics">Analytics</a>
+      <a href="/operator/feedback.html"    class="nav-tab" data-nav-key="Feedback" data-i18n="nav.feedback">Feedback</a>
+    </nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- DASHBOARD CONTENT -->
+<div class="dash" id="dashContent">
+  <div class="loading" id="dashLoading">Loading analytics&hellip;</div>
+</div>
+
+<script>
+var DEMO_ANALYTICS = {
+  total: 47,
+  byPriority: { High: 12, Medium: 22, Low: 13 },
+  byStatus: { new: 5, acknowledged: 4, under_review: 7, corrective_action: 3, qa_approved: 6, closed: 18, rejected: 4 },
+  byArea: { 'Upstream Bioreactor': 14, 'Downstream Chromatography': 11, 'Utilities WFI': 8, 'Cleanroom Ops': 7, 'Quality Control Lab': 7 },
+  openCount: 19, closedCount: 22, inReview: 6,
+  capas: { total: 15, open: 6, overdue: 2, closed: 9 },
+  trend: { thisWeek: 8, lastWeek: 6, percentChange: 33 },
+  recentSubmissions: [
+    { ref: 'VENT-2026-0047', area: 'Upstream Bioreactor', priority: 'High', status: 'under_review', date: '2026-03-04' },
+    { ref: 'VENT-2026-0046', area: 'Utilities WFI', priority: 'Medium', status: 'acknowledged', date: '2026-03-03' },
+    { ref: 'VENT-2026-0045', area: 'Downstream Chromatography', priority: 'High', status: 'corrective_action', date: '2026-03-03' },
+    { ref: 'VENT-2026-0044', area: 'Cleanroom Ops', priority: 'Low', status: 'new', date: '2026-03-02' },
+    { ref: 'VENT-2026-0043', area: 'Quality Control Lab', priority: 'Medium', status: 'closed', date: '2026-03-01' },
+    { ref: 'VENT-2026-0042', area: 'Upstream Bioreactor', priority: 'Medium', status: 'closed', date: '2026-02-28' }
+  ],
+  recentCapas: [
+    { capa_id: 'CAPA-015', submission_ref: 'VENT-2026-0047', title: 'Bioreactor pH excursion corrective action', owner: 'Dr. Robert Kim', due_date: '2026-03-10', status: 'open' },
+    { capa_id: 'CAPA-014', submission_ref: 'VENT-2026-0045', title: 'Column integrity test failure investigation', owner: 'Aoife Brennan', due_date: '2026-03-01', status: 'open' },
+    { capa_id: 'CAPA-013', submission_ref: 'VENT-2026-0041', title: 'WFI conductivity drift root cause analysis', owner: 'Brian Gallagher', due_date: '2026-03-15', status: 'in_progress' },
+    { capa_id: 'CAPA-012', submission_ref: 'VENT-2026-0038', title: 'Cleanroom gown breach documentation update', owner: 'Sinéad Kelly', due_date: '2026-02-20', status: 'closed' }
+  ]
+};
+
+async function loadDashboard() {
+  // Demo mode: use pre-populated analytics
+  if (localStorage.getItem('vent_token') === 'demo') {
+    renderDashboard(DEMO_ANALYTICS);
+    return;
+  }
+  try {
+    const res = await authFetch(SERVER + '/analytics');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    renderDashboard(d);
+  } catch (err) {
+    document.getElementById('dashLoading').innerHTML =
+      '<span style="color:var(--red)">Failed to load analytics: ' + err.message + '</span>';
+  }
+}
+
+function renderDashboard(d) {
+  const trendIcon = d.trend.percentChange > 0 ? '&#9650;' : d.trend.percentChange < 0 ? '&#9660;' : '&#8226;';
+  const trendClass = d.trend.percentChange > 0 ? 'up' : d.trend.percentChange < 0 ? 'down' : 'flat';
+  const trendText = d.trend.percentChange !== 0 ? Math.abs(d.trend.percentChange) + '% vs last week' : 'No change';
+
+  // Priority bar chart
+  const maxPri = Math.max(d.byPriority.High || 1, d.byPriority.Medium || 1, d.byPriority.Low || 1);
+  const priBars = ['High', 'Medium', 'Low'].map(p => {
+    const val = d.byPriority[p] || 0;
+    const pct = Math.round((val / maxPri) * 100);
+    return `<div class="bar-row">
+      <div class="bar-label">${p}</div>
+      <div class="bar-track"><div class="bar-fill ${p.toLowerCase()}" style="width:${pct}%"><span>${val}</span></div></div>
+    </div>`;
+  }).join('');
+
+  // Area bar chart
+  const areas = Object.entries(d.byArea).sort((a, b) => b[1] - a[1]);
+  const maxArea = areas.length ? areas[0][1] : 1;
+  const areaBars = areas.map(([area, count]) => {
+    const pct = Math.round((count / maxArea) * 100);
+    return `<div class="bar-row">
+      <div class="bar-label">${area}</div>
+      <div class="bar-track"><div class="bar-fill area" style="width:${pct}%"><span>${count}</span></div></div>
+    </div>`;
+  }).join('');
+
+  // Status donut
+  const open = d.openCount, closed = d.closedCount, review = d.inReview;
+  const total = open + closed + review || 1;
+  const openDeg = (open / total) * 360;
+  const reviewDeg = (review / total) * 360;
+  const closedDeg = (closed / total) * 360;
+  const donutGrad = `conic-gradient(var(--accent) 0deg ${openDeg}deg, var(--gold) ${openDeg}deg ${openDeg + reviewDeg}deg, var(--green) ${openDeg + reviewDeg}deg 360deg)`;
+
+  // Recent submissions table
+  const subRows = (d.recentSubmissions || []).map(s => {
+    const pCls = s.priority === 'High' ? 'pp-high' : s.priority === 'Medium' ? 'pp-medium' : 'pp-low';
+    const date = new Date(s.date);
+    const dateStr = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    return `<tr>
+      <td><a class="ref-link" href="/qa/qa.html">${s.ref}</a></td>
+      <td>${s.area}</td>
+      <td><span class="pp ${pCls}">${s.priority}</span></td>
+      <td>${(s.status || 'new').replace(/_/g, ' ')}</td>
+      <td>${dateStr}</td>
+    </tr>`;
+  }).join('');
+
+  // CAPA table
+  const capaRows = (d.recentCapas || []).map(c => {
+    const isOverdue = c.status !== 'closed' && c.due_date && new Date(c.due_date) < new Date();
+    const stCls = c.status === 'closed' ? 'sp-closed' : isOverdue ? 'sp-overdue' : 'sp-open';
+    const stLabel = isOverdue ? 'Overdue' : c.status.replace(/_/g, ' ');
+    const due = c.due_date ? new Date(c.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—';
+    return `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent)">${c.capa_id}</td>
+      <td><a class="ref-link" href="/qa/qa.html">${c.submission_ref}</a></td>
+      <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.title}</td>
+      <td>${c.owner}</td>
+      <td>${due}</td>
+      <td><span class="sp ${stCls}">${stLabel}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('dashContent').innerHTML = `
+    <div class="dash-title">Intelligence Dashboard</div>
+    <div class="dash-sub">Real-time analytics across all submissions, CAPAs, and observations</div>
+
+    <!-- STAT CARDS -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Submissions</div>
+        <div class="stat-value accent">${d.total}</div>
+        <div class="stat-note">
+          <span class="trend ${trendClass}">${trendIcon} ${trendText}</span>
+          &nbsp;&middot;&nbsp; ${d.trend.thisWeek} this week
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">High Priority</div>
+        <div class="stat-value high">${d.byPriority.High || 0}</div>
+        <div class="stat-note">${Math.round(((d.byPriority.High || 0) / (d.total || 1)) * 100)}% of total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Open CAPAs</div>
+        <div class="stat-value gold">${d.capas.open}</div>
+        <div class="stat-note">${d.capas.overdue} overdue &middot; ${d.capas.closed} closed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Resolved</div>
+        <div class="stat-value green">${d.closedCount}</div>
+        <div class="stat-note">${d.total ? Math.round((d.closedCount / d.total) * 100) : 0}% closure rate</div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-title">By Priority</div>
+        <div class="bar-chart">${priBars}</div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Submission Status</div>
+        <div class="donut-wrap">
+          <div class="donut" style="background:${donutGrad}">
+            <div class="donut-center">
+              <div class="num">${d.total}</div>
+              <div class="lbl">Total</div>
+            </div>
+          </div>
+          <div class="donut-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Open (${open})</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>In Review (${review})</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Closed (${closed})</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-title">By Process Area</div>
+        <div class="bar-chart">${areaBars || '<div style="color:var(--dim);font-size:12px">No data yet</div>'}</div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">CAPA Summary</div>
+        <div style="display:flex;gap:20px;margin-top:8px">
+          <div style="text-align:center">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:var(--accent)">${d.capas.total}</div>
+            <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Total</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:var(--gold)">${d.capas.open}</div>
+            <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Open</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:var(--red)">${d.capas.overdue}</div>
+            <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Overdue</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:var(--green)">${d.capas.closed}</div>
+            <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Closed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT SUBMISSIONS -->
+    <div class="section">
+      <div class="section-title">Recent Submissions <span class="badge" style="background:var(--accent2);color:var(--accent)">${d.total}</span></div>
+      <table class="dash-table">
+        <thead><tr><th>Ref</th><th>Area</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>${subRows || '<tr><td colspan="5" style="text-align:center;color:var(--dim)">No submissions yet</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <!-- CAPA TABLE -->
+    <div class="section">
+      <div class="section-title">CAPAs <span class="badge" style="background:${d.capas.overdue ? 'var(--red2)' : 'var(--green2)'};color:${d.capas.overdue ? 'var(--red)' : 'var(--green)'}">${d.capas.overdue} overdue</span></div>
+      <table class="dash-table">
+        <thead><tr><th>CAPA</th><th>Submission</th><th>Title</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead>
+        <tbody>${capaRows || '<tr><td colspan="6" style="text-align:center;color:var(--dim)">No CAPAs yet</td></tr>'}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+loadDashboard();
+
+// ── Demo Tour: highlight key dashboard sections ──
+(function(){
+  var demoSignal = sessionStorage.getItem('vent_demo_dashboard');
+  if(demoSignal !== '1') return;
+  sessionStorage.removeItem('vent_demo_dashboard');
+
+  var tourIdx = 0;
+  var overlay, highlight, card;
+
+  var steps = [
+    { selector: '.stat-row', title: 'Live Metrics', desc: 'Real-time submission counts, priority breakdown, CAPA status, and closure rates — all updated automatically.', pos: 'bottom' },
+    { selector: '.chart-row', title: 'Visual Analytics', desc: 'Charts show priority distribution and open/closed status across all observations. Directors and QA leads use this to spot trends.', pos: 'bottom' },
+    { selector: '.section', title: 'Activity Feed', desc: 'Recent submissions and CAPAs with direct links to the QA Centre for review. Everything is audit-trailed.', pos: 'top' }
+  ];
+
+  function buildOverlay(){
+    overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.65);transition:opacity .3s;';
+    document.body.appendChild(overlay);
+  }
+
+  function showStep(){
+    if(tourIdx >= steps.length){
+      cleanup();
+      // Demo complete — return to hub
+      sessionStorage.setItem('vent_demo_complete', '1');
+      window.location.href = '/hub.html';
+      return;
+    }
+    var step = steps[tourIdx];
+    var el = document.querySelector(step.selector);
+    if(!el){ tourIdx++; showStep(); return; }
+
+    // Highlight target
+    if(highlight) highlight.remove();
+    var rect = el.getBoundingClientRect();
+    highlight = document.createElement('div');
+    highlight.style.cssText = 'position:fixed;z-index:9999;border:2px solid var(--accent);border-radius:12px;pointer-events:none;box-shadow:0 0 30px hsla(var(--hue),100%,40%,.3);transition:all .3s;';
+    highlight.style.top = (rect.top - 6) + 'px';
+    highlight.style.left = (rect.left - 6) + 'px';
+    highlight.style.width = (rect.width + 12) + 'px';
+    highlight.style.height = (rect.height + 12) + 'px';
+    document.body.appendChild(highlight);
+
+    // Info card
+    if(card) card.remove();
+    card = document.createElement('div');
+    card.style.cssText = 'position:fixed;z-index:10000;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.5);';
+
+    var top = step.pos === 'top' ? (rect.top - 140) : (rect.bottom + 16);
+    card.style.top = Math.max(10, top) + 'px';
+    card.style.left = Math.max(10, rect.left) + 'px';
+
+    card.innerHTML = '<div style="font-family:\'Instrument Serif\',serif;font-size:18px;color:var(--text);margin-bottom:6px">' + step.title + '</div>' +
+      '<div style="font-size:13px;color:var(--mid);line-height:1.6;margin-bottom:14px">' + step.desc + '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+        '<span style="font-size:11px;color:var(--dim);font-family:\'JetBrains Mono\',monospace;align-self:center">' + (tourIdx + 1) + '/' + steps.length + '</span>' +
+        '<button onclick="window._dashTourNext()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 18px;font-family:\'DM Sans\',sans-serif;font-size:12px;cursor:pointer">' + (tourIdx === steps.length - 1 ? 'Finish Tour' : 'Next') + '</button>' +
+      '</div>';
+    document.body.appendChild(card);
+  }
+
+  function cleanup(){
+    if(overlay){ overlay.remove(); overlay = null; }
+    if(highlight){ highlight.remove(); highlight = null; }
+    if(card){ card.remove(); card = null; }
+  }
+
+  window._dashTourNext = function(){ tourIdx++; showStep(); };
+
+  // Wait for dashboard to render, then start tour
+  setTimeout(function(){
+    buildOverlay();
+    showStep();
+  }, 800);
+})();
+</script>
+</body>
+</html>

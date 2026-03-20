@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent — Customer Discovery Map</title>
+<style>
+  :root {
+    --bg: #1a1d21;
+    --sidebar: #19171d;
+    --surface: #222529;
+    --surface2: #2c2f33;
+    --surface3: #36393f;
+    --border: #35383e;
+    --text: #e8e8e8;
+    --text-secondary: #b9bbbe;
+    --text-muted: #72767d;
+    --accent: #4ec9b0;
+    --accent-hover: #5fd9c0;
+    --accent-dim: rgba(78, 201, 176, 0.12);
+    --accent-bg: rgba(78, 201, 176, 0.06);
+    --gold: #f0b232;
+    --gold-dim: rgba(240, 178, 50, 0.12);
+    --red: #ed4245;
+    --green: #57f287;
+    --blue: #5865f2;
+    --radius: 8px;
+    --radius-sm: 4px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ═══ SIDEBAR ═══ */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--sidebar);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .sidebar-header {
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .sidebar-header h1 {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-header h1 .logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--sidebar);
+  }
+
+  .sidebar-header .tagline {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    padding-left: 36px;
+  }
+
+  .sidebar-section {
+    padding: 16px 10px 4px;
+  }
+
+  .sidebar-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 6px 8px;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+    margin-bottom: 1px;
+  }
+
+  .sidebar-item:hover {
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+  }
+
+  .sidebar-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .sidebar-item .icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    opacity: 0.7;
+  }
+
+  .sidebar-item.active .icon { opacity: 1; }
+
+  .sidebar-item .badge {
+    margin-left: auto;
+    background: var(--accent);
+    color: var(--sidebar);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+
+  .sidebar-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 8px 16px;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sidebar-footer .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sidebar);
+  }
+
+  .sidebar-footer .user-info .user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .sidebar-footer .user-info .user-role {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ═══ MAIN CONTENT ═══ */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .main-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+  }
+
+  .main-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .main-header .header-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-left: 8px;
+    padding-left: 12px;
+    border-left: 1px solid var(--border);
+  }
+
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .main-content::-webkit-scrollbar { width: 8px; }
+  .main-content::-webkit-scrollbar-track { background: transparent; }
+  .main-content::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+  /* ═══ VIEWS ═══ */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ═══ ORG CHART ═══ */
+
+  /* --- hierarchy tree --- */
+  .org-tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 28px;
+  }
+
+  .org-connector {
+    width: 2px;
+    height: 20px;
+    background: var(--border);
+  }
+
+  .org-branch {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+  }
+
+  .org-branch::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    height: 2px;
+    background: var(--border);
+  }
+
+  .org-branch-2::before { left: 25%; right: 25%; }
+  .org-branch-3::before { left: 16.7%; right: 16.7%; }
+
+  .org-branch-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+
+  .org-branch-col .org-connector { height: 16px; }
+
+  .org-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 20px;
+    text-align: center;
+    min-width: 140px;
+    transition: border-color 0.15s;
+  }
+
+  .org-node.highlight {
+    border-color: var(--gold);
+  }
+
+  .org-node.muted {
+    opacity: 0.5;
+  }
+
+  .org-node .org-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .org-node .org-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .org-node .org-dept {
+    font-size: 10px;
+    color: var(--accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-top: 4px;
+  }
+
+  .org-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin: 20px 0 10px;
+    text-align: center;
+  }
+
+  /* --- shift cards (below hierarchy) --- */
+  .shifts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .shift-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .shift-card.highlight { border-color: var(--gold); }
+
+  .shift-card-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+
+  .shift-card.highlight .shift-card-header {
+    background: var(--gold-dim);
+    color: var(--gold);
+  }
+
+  /* --- featured shift (your shift) --- */
+  .shift-featured {
+    background: var(--surface);
+    border: 2px solid var(--gold);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .shift-featured .shift-card-header {
+    background: var(--gold-dim);
+    color: var(--gold);
+    font-size: 12px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .shift-featured .shift-card-header .header-hint {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-muted);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .shift-featured .shift-body {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0;
+  }
+
+  .shift-featured .shift-lead-panel {
+    padding: 20px 24px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 140px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .shift-featured .shift-lead-panel:hover { background: rgba(255,255,255,0.03); }
+
+  .shift-featured .shift-lead-panel .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sidebar);
+  }
+
+  .shift-featured .shift-lead-panel .sl-name {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .shift-featured .shift-lead-panel .sl-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .shift-featured .shift-lead-panel .sl-link {
+    font-size: 10px;
+    color: var(--accent);
+    margin-top: 4px;
+  }
+
+  .shift-featured .team-list {
+    padding: 12px 0;
+  }
+
+  .shift-featured .team-member {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 20px;
+    transition: background 0.15s;
+    font-size: 13px;
+  }
+
+  .shift-featured .team-member:hover { background: rgba(255,255,255,0.03); }
+
+  .shift-featured .team-member .tm-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .shift-featured .team-member.clickable { cursor: pointer; }
+  .shift-featured .team-member.clickable .tm-avatar { background: var(--accent); color: var(--sidebar); }
+  .shift-featured .team-member.clickable .tm-name { color: var(--text); }
+
+  .shift-featured .team-member.you .tm-avatar { background: var(--gold); color: var(--sidebar); }
+  .shift-featured .team-member.you .tm-name { color: var(--gold); font-weight: 600; }
+
+  .shift-featured .team-member .tm-info { flex: 1; }
+
+  .shift-featured .team-member .tm-name {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .shift-featured .team-member .tm-qual {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .shift-featured .team-member .tm-action {
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(78,205,196,0.1);
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* --- other shifts (smaller, below) --- */
+  .other-shifts-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  /* --- interview insights --- */
+  .interview-section {
+    margin-top: 28px;
+  }
+
+  .interview-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .interview-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .interview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .interview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .interview-card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .interview-card-header .ic-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--sidebar);
+    flex-shrink: 0;
+  }
+
+  .interview-card-header .ic-info .ic-role {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .interview-card-header .ic-info .ic-context {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .interview-card-header .ic-badge {
+    margin-left: auto;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+    background: rgba(78,205,196,0.1);
+    padding: 3px 10px;
+    border-radius: 10px;
+  }
+
+  .interview-quotes {
+    padding: 14px 18px;
+  }
+
+  .interview-quote {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .interview-quote:last-child { border-bottom: none; }
+
+  .interview-quote .iq-text {
+    font-size: 13px;
+    color: var(--text);
+    font-style: italic;
+    line-height: 1.5;
+    border-left: 2px solid var(--gold);
+    padding-left: 12px;
+    margin-bottom: 6px;
+  }
+
+  .interview-quote .iq-signal {
+    font-size: 11px;
+    color: var(--accent);
+    padding-left: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .interview-quote .iq-signal::before {
+    content: '→';
+    color: var(--text-muted);
+  }
+
+  .interview-summary {
+    padding: 12px 18px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+  }
+
+  .interview-summary .is-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .interview-summary .is-text {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .shifts-grid .shift-card { opacity: 0.7; }
+  .shifts-grid .shift-card:hover { opacity: 1; }
+
+  .shift-lead {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .shift-lead:hover { background: rgba(255,255,255,0.03); }
+
+  .shift-lead .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sidebar);
+    flex-shrink: 0;
+  }
+
+  .shift-lead .info .name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .shift-lead .info .role {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .bpa-list { padding: 8px 0; }
+
+  .bpa-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 16px;
+    cursor: default;
+    transition: background 0.15s;
+    font-size: 13px;
+  }
+
+  .bpa-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+
+  .bpa-item .bpa-name { flex: 1; }
+
+  .bpa-item .bpa-qual {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* ═══ PERSONAS ═══ */
+  .personas-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .persona-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .persona-card:hover {
+    border-color: var(--accent);
+    background: var(--surface2);
+  }
+
+  .persona-card .archetype-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gold);
+    background: var(--gold-dim);
+    padding: 3px 10px;
+    border-radius: 10px;
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+
+  .persona-card .p-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--sidebar);
+    margin-bottom: 12px;
+  }
+
+  .persona-card .p-name {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .persona-card .p-role {
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+
+  .persona-card .p-dept {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  .persona-card .p-quote {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    border-left: 3px solid var(--accent);
+    padding-left: 12px;
+    margin-bottom: 14px;
+    font-style: italic;
+  }
+
+  .persona-card .p-frustrations {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .frust-tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-muted);
+  }
+
+  /* ═══ MARKET ═══ */
+  .market-section { margin-bottom: 32px; }
+
+  .market-section h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .segment-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .segment-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .segment-card.primary { border-color: var(--gold); }
+
+  .segment-card .seg-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .segment-card.primary .seg-label { color: var(--gold); }
+
+  .segment-card .seg-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .segment-card .seg-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+
+  .meta-row .label { color: var(--text-muted); }
+  .meta-row .value { color: var(--accent); font-weight: 600; }
+
+  /* TAM */
+  .tam-visual {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .tam-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    text-align: center;
+  }
+
+  .tam-block .tam-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .tam-block .tam-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .tam-block .tam-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .tam-bar-container {
+    width: 100%;
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 3px;
+    margin: 10px 0;
+    overflow: hidden;
+  }
+
+  .tam-bar {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  }
+
+  /* Competition */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .comp-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comp-table td {
+    padding: 10px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .comp-table .vent-row td { color: var(--accent); font-weight: 600; }
+
+  /* GTM */
+  .gtm-timeline {
+    position: relative;
+    padding-left: 24px;
+  }
+
+  .gtm-timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .gtm-phase {
+    position: relative;
+    margin-bottom: 16px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .gtm-phase::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 20px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+  }
+
+  .gtm-phase.current::before {
+    background: var(--gold);
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(240, 178, 50, 0.4);
+  }
+
+  .gtm-phase .phase-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .gtm-phase .phase-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .gtm-phase .phase-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ═══ IRELAND ═══ */
+  .ireland-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-card .stat-value {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .stat-card .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .ireland-regions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .region-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .region-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    padding: 14px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .region-card .company {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .region-card .company:last-child { border: none; }
+  .region-card .company .c-name { color: var(--text); font-weight: 500; }
+  .region-card .company .c-location { color: var(--text-muted); font-size: 12px; }
+
+  /* ═══ MODAL ═══ */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 48px 24px;
+    overflow-y: auto;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    max-width: 780px;
+    width: 100%;
+    padding: 24px;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .modal-close:hover { background: var(--surface3); color: var(--text); }
+
+  .modal h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .modal .modal-role {
+    font-size: 14px;
+    color: var(--accent);
+  }
+
+  .modal .modal-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .modal-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin: 20px 0 20px;
+  }
+
+  .modal-tab {
+    padding: 8px 16px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .modal-tab:hover { color: var(--text); }
+  .modal-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .modal-content { display: none; }
+  .modal-content.active { display: block; }
+
+  .detail-section { margin-bottom: 20px; }
+
+  .detail-section h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .detail-section p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .detail-section ul { list-style: none; }
+
+  .detail-section li {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    padding: 4px 0 4px 16px;
+    position: relative;
+  }
+
+  .detail-section li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.4;
+  }
+
+  .empathy-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .empathy-cell {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .empathy-cell h4 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .empathy-cell li {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .vent-solves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .solve-pain, .solve-gain {
+    padding: 10px 14px;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+    line-height: 1.5;
+  }
+
+  .solve-pain {
+    background: rgba(237, 66, 69, 0.08);
+    border-left: 3px solid var(--red);
+    color: #f5a5a7;
+  }
+
+  .solve-gain {
+    background: var(--accent-dim);
+    border-left: 3px solid var(--accent);
+    color: var(--accent-hover);
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 1100px) {
+    .shifts-grid { grid-template-columns: repeat(2, 1fr); }
+    .shift-featured .shift-body { grid-template-columns: 1fr; }
+    .shift-featured .shift-lead-panel { border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; gap: 12px; padding: 14px 20px; }
+    .personas-grid { grid-template-columns: repeat(2, 1fr); }
+    .org-node { min-width: 100px; padding: 8px 12px; }
+    .org-node .org-title { font-size: 12px; }
+  }
+
+  @media (max-width: 800px) {
+    .sidebar { display: none; }
+    .interview-grid { grid-template-columns: 1fr; }
+    .segment-cards { grid-template-columns: 1fr; }
+    .tam-visual { grid-template-columns: 1fr; }
+    .ireland-stats { grid-template-columns: repeat(2, 1fr); }
+    .ireland-regions { grid-template-columns: 1fr; }
+    .empathy-grid { grid-template-columns: 1fr; }
+    .org-branch { flex-direction: column; align-items: center; }
+    .org-branch::before { display: none; }
+    .org-node { min-width: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>
+      <span class="logo">V</span>
+      Vent
+    </h1>
+    <div class="tagline">Customer Discovery Map</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Views</div>
+    <div class="sidebar-item active" data-view="org">
+      <span class="icon">#</span> Org Chart
+    </div>
+    <div class="sidebar-item" data-view="personas">
+      <span class="icon">#</span> Personas
+      <span class="badge">6</span>
+    </div>
+    <div class="sidebar-item" data-view="market">
+      <span class="icon">#</span> Market
+    </div>
+    <div class="sidebar-item" data-view="ireland">
+      <span class="icon">#</span> Ireland
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Personas</div>
+    <div class="sidebar-item" onclick="openPersona('ciaran')">
+      <span class="icon">C</span> Ciaran — Upstream
+    </div>
+    <div class="sidebar-item" onclick="openPersona('aoife')">
+      <span class="icon">A</span> Aoife — Downstream
+    </div>
+    <div class="sidebar-item" onclick="openPersona('tomasz')">
+      <span class="icon">T</span> Tomasz — Buffer
+    </div>
+    <div class="sidebar-item" onclick="openPersona('niamh')">
+      <span class="icon">N</span> Niamh — Inoc/Seed
+    </div>
+    <div class="sidebar-item" onclick="openPersona('darragh')">
+      <span class="icon">D</span> Darragh — Engineer
+    </div>
+    <div class="sidebar-item" onclick="openPersona('eoin')">
+      <span class="icon">E</span> Eoin — Shift Lead
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Programme</div>
+    <div class="sidebar-item">
+      <span class="icon">1</span> Week 1 — Discovery
+      <span class="badge" style="background:var(--green)">Done</span>
+    </div>
+    <div class="sidebar-item">
+      <span class="icon">2</span> Week 2 — Product
+    </div>
+    <div class="sidebar-item">
+      <span class="icon">3</span> Week 3 — GTM
+    </div>
+    <div class="sidebar-item">
+      <span class="icon">4</span> Week 4 — Financials
+    </div>
+    <div class="sidebar-item">
+      <span class="icon">5</span> Week 5 — Pitch
+    </div>
+    <div class="sidebar-item">
+      <span class="icon">6</span> Week 6 — Showcase
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-avatar">DD</div>
+    <div class="user-info">
+      <div class="user-name">Darren Doherty</div>
+      <div class="user-role">Founder — Vent</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+  <div class="main-header" id="main-header">
+    <h2># Org Chart</h2>
+    <span class="header-desc">Upstream Manufacturing — Biopharma CDMO, Ireland</span>
+  </div>
+
+  <div class="main-content">
+
+    <!-- ORG CHART -->
+    <div class="view active" id="view-org">
+
+      <!-- Management Hierarchy -->
+      <div class="org-tree">
+
+        <!-- Head of Manufacturing -->
+        <div class="org-node">
+          <div class="org-title">Head of Manufacturing</div>
+        </div>
+        <div class="org-connector"></div>
+
+        <!-- Senior Director -->
+        <div class="org-node">
+          <div class="org-title">Senior Director</div>
+          <div class="org-subtitle">Building 6.1 + 6.2</div>
+        </div>
+        <div class="org-connector"></div>
+
+        <!-- Two Directors -->
+        <div class="org-branch org-branch-2">
+          <div class="org-branch-col">
+            <div class="org-connector"></div>
+            <div class="org-node muted">
+              <div class="org-title">Director</div>
+              <div class="org-dept">Building 6.1</div>
+            </div>
+          </div>
+          <div class="org-branch-col">
+            <div class="org-connector"></div>
+            <div class="org-node highlight">
+              <div class="org-title">Director</div>
+              <div class="org-dept">Building 6.2</div>
+            </div>
+          </div>
+        </div>
+        <div class="org-connector"></div>
+
+        <!-- Three ADs under 6.2 -->
+        <div class="org-branch org-branch-3">
+          <div class="org-branch-col">
+            <div class="org-connector"></div>
+            <div class="org-node highlight">
+              <div class="org-title">Associate Director</div>
+              <div class="org-dept">Upstream</div>
+            </div>
+          </div>
+          <div class="org-branch-col">
+            <div class="org-connector"></div>
+            <div class="org-node">
+              <div class="org-title">Associate Director</div>
+              <div class="org-dept">Downstream</div>
+            </div>
+          </div>
+          <div class="org-branch-col">
+            <div class="org-connector"></div>
+            <div class="org-node">
+              <div class="org-title">Associate Director</div>
+              <div class="org-dept">Buffer & Inoc</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="org-section-label">Upstream — Shift Structure (Continental 2/2/4)</div>
+
+      <!-- YOUR SHIFT — Featured -->
+      <div class="shift-featured">
+        <div class="shift-card-header">
+          <span>Shift B — Your Shift</span>
+          <span class="header-hint">Click team members to view persona research</span>
+        </div>
+        <div class="shift-body">
+          <div class="shift-lead-panel" onclick="openPersona('eoin')">
+            <div class="avatar">SL</div>
+            <div class="sl-name">Shift Lead</div>
+            <div class="sl-meta">8 yrs exp</div>
+            <div class="sl-link">View persona</div>
+          </div>
+          <div class="team-list">
+            <div class="team-member you">
+              <div class="tm-avatar">DD</div>
+              <div class="tm-info">
+                <div class="tm-name">Darren (You)</div>
+                <div class="tm-qual">BPA — Senior | BR / ATF / Seed</div>
+              </div>
+            </div>
+            <div class="team-member clickable" onclick="openPersona('ciaran')">
+              <div class="tm-avatar">C</div>
+              <div class="tm-info">
+                <div class="tm-name">BPA — Senior</div>
+                <div class="tm-qual">BR / DS | 3 yrs exp</div>
+              </div>
+              <span class="tm-action">View persona</span>
+            </div>
+            <div class="team-member clickable" onclick="openPersona('aoife')">
+              <div class="tm-avatar">A</div>
+              <div class="tm-info">
+                <div class="tm-name">BPA — Senior</div>
+                <div class="tm-qual">DS / Purification | 5 yrs exp</div>
+              </div>
+              <span class="tm-action">View persona</span>
+            </div>
+            <div class="team-member clickable" onclick="openPersona('niamh')">
+              <div class="tm-avatar">N</div>
+              <div class="tm-info">
+                <div class="tm-name">BPA</div>
+                <div class="tm-qual">Seed / Inoc | 2 yrs exp</div>
+              </div>
+              <span class="tm-action">View persona</span>
+            </div>
+            <div class="team-member clickable" onclick="openPersona('tomasz')">
+              <div class="tm-avatar">T</div>
+              <div class="tm-info">
+                <div class="tm-name">BPA</div>
+                <div class="tm-qual">Buffer / Media | 18 months exp</div>
+              </div>
+              <span class="tm-action">View persona</span>
+            </div>
+            <div class="team-member">
+              <div class="tm-avatar">—</div>
+              <div class="tm-info">
+                <div class="tm-name">BPA — Junior</div>
+                <div class="tm-qual">Training</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other Shifts -->
+      <div class="other-shifts-label">Other Shifts</div>
+      <div class="shifts-grid">
+        <div class="shift-card">
+          <div class="shift-card-header">Shift A</div>
+          <div class="shift-lead" onclick="openPersona('eoin')">
+            <div class="avatar">SL</div>
+            <div class="info">
+              <div class="name">Shift Lead</div>
+              <div class="role">11 yrs exp</div>
+            </div>
+          </div>
+          <div class="bpa-list">
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Senior</span><span class="bpa-qual">BR / ATF / Seed</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Senior</span><span class="bpa-qual">BR / DS</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA</span><span class="bpa-qual">BR / Buffer</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA</span><span class="bpa-qual">Buffer / Media</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Junior</span><span class="bpa-qual">Training</span></div>
+          </div>
+        </div>
+
+        <div class="shift-card">
+          <div class="shift-card-header">Shift C</div>
+          <div class="shift-lead" onclick="openPersona('eoin')">
+            <div class="avatar">SL</div>
+            <div class="info">
+              <div class="name">Shift Lead</div>
+              <div class="role">6 yrs exp</div>
+            </div>
+          </div>
+          <div class="bpa-list">
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Senior</span><span class="bpa-qual">BR / ATF</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA</span><span class="bpa-qual">BR / Seed</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA</span><span class="bpa-qual">DS / Buffer</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA</span><span class="bpa-qual">Buffer / Media</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Junior</span><span class="bpa-qual">Training</span></div>
+          </div>
+        </div>
+
+        <div class="shift-card">
+          <div class="shift-card-header">Shift D</div>
+          <div class="shift-lead" onclick="openPersona('eoin')">
+            <div class="avatar">SL</div>
+            <div class="info">
+              <div class="name">Shift Lead</div>
+              <div class="role">9 yrs exp</div>
+            </div>
+          </div>
+          <div class="bpa-list">
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Senior</span><span class="bpa-qual">BR / ATF / DS</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Senior</span><span class="bpa-qual">BR / Seed</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA</span><span class="bpa-qual">BR / Buffer</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA</span><span class="bpa-qual">Media / Parts</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Junior</span><span class="bpa-qual">Training</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Junior</span><span class="bpa-qual">Training</span></div>
+            <div class="bpa-item"><div class="dot"></div><span class="bpa-name">BPA — Junior</span><span class="bpa-qual">Training</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interview Insights (Mom Test) -->
+      <div class="interview-section">
+        <div class="interview-section-label">Interview Insights — Mom Test</div>
+        <div class="interview-grid">
+
+          <!-- BPA Interview -->
+          <div class="interview-card">
+            <div class="interview-card-header">
+              <div class="ic-avatar">BP</div>
+              <div class="ic-info">
+                <div class="ic-role">BPA — Upstream Operations</div>
+                <div class="ic-context">2-3 yrs exp | 1000L perfusion bioreactors | Continental shifts</div>
+              </div>
+              <div class="ic-badge">Mom Test</div>
+            </div>
+            <div class="interview-quotes">
+              <div class="interview-quote">
+                <div class="iq-text">"Took maybe 10 minutes to find it. If you don't know the SOP number, that can take 20 minutes easy. Sometimes I just ask someone instead."</div>
+                <div class="iq-signal">Spatial search — tap equipment, get the SOP instantly</div>
+              </div>
+              <div class="interview-quote">
+                <div class="iq-text">"I'm literally transcribing from DeltaV to paper. I'm creating risk by doing the documentation that's supposed to reduce risk."</div>
+                <div class="iq-signal">Equipment nodes show process data; voice capture for observations</div>
+              </div>
+              <div class="interview-quote">
+                <div class="iq-text">"Sometimes you're standing there at 3am with a decision to make and no one to ask. You go with your gut and hope it's right."</div>
+                <div class="iq-signal">Charlie voice AI — grounded answers at any hour</div>
+              </div>
+              <div class="interview-quote">
+                <div class="iq-text">"The actual fix took 20 minutes. The paperwork took two hours."</div>
+                <div class="iq-signal">AI-assisted deviation pipeline — capture, then document</div>
+              </div>
+            </div>
+            <div class="interview-summary">
+              <div class="is-label">Key takeaway</div>
+              <div class="is-text">MasterControl is a compliance tool, not an operations tool. Nothing is connected to equipment. The system creates risk instead of reducing it.</div>
+            </div>
+          </div>
+
+          <!-- Shift Lead Interview -->
+          <div class="interview-card">
+            <div class="interview-card-header">
+              <div class="ic-avatar">SL</div>
+              <div class="ic-info">
+                <div class="ic-role">Shift Lead — Manufacturing Operations</div>
+                <div class="ic-context">11 yrs exp | 8-12 BPAs per shift | Upstream + Downstream</div>
+              </div>
+              <div class="ic-badge">Mom Test</div>
+            </div>
+            <div class="interview-quotes">
+              <div class="interview-quote">
+                <div class="iq-text">"There's no single place I can look and see the full picture of my shift."</div>
+                <div class="iq-signal">Spatial floor map — every process, every equipment, one screen</div>
+              </div>
+              <div class="interview-quote">
+                <div class="iq-text">"Probably 30-40% of my shift answering questions BPAs could answer themselves if they had access to the right information."</div>
+                <div class="iq-signal">Charlie AI gives BPAs instant answers — reduces dependency</div>
+              </div>
+              <div class="interview-quote">
+                <div class="iq-text">"Fifteen minutes to transfer 12 hours of context. I always forget something."</div>
+                <div class="iq-signal">Equipment nodes retain state — the floor IS the handover</div>
+              </div>
+              <div class="interview-quote">
+                <div class="iq-text">"Being the single point of failure. Everything runs through me. That shouldn't be how a €50 million facility operates."</div>
+                <div class="iq-signal">Vent distributes knowledge — the system backs up the shift lead</div>
+              </div>
+            </div>
+            <div class="interview-summary">
+              <div class="is-label">Key takeaway</div>
+              <div class="is-text">The shift lead's #1 ask is a single view of the floor — that's the hub. Word for word. His team isn't incompetent — they just can't find the information they need.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PERSONAS -->
+    <div class="view" id="view-personas">
+      <div class="personas-grid">
+        <div class="persona-card" onclick="openPersona('ciaran')">
+          <!-- archetype tag removed -->
+          <div class="p-avatar">C</div>
+          <div class="p-name">Ciaran</div>
+          <div class="p-role">Bioprocess Associate</div>
+          <div class="p-dept">Upstream — Cell Culture</div>
+          <div class="p-quote">"I know how to run the reactor. What I need is help when something I haven't seen before happens."</div>
+          <div class="p-frustrations">
+            <span class="frust-tag">Can't find SOPs</span>
+            <span class="frust-tag">Night shift</span>
+            <span class="frust-tag">Deviation black hole</span>
+          </div>
+        </div>
+        <div class="persona-card" onclick="openPersona('aoife')">
+          <!-- archetype tag removed -->
+          <div class="p-avatar">A</div>
+          <div class="p-name">Aoife</div>
+          <div class="p-role">Bioprocess Associate</div>
+          <div class="p-dept">Downstream — Purification</div>
+          <div class="p-quote">"By the time product reaches me, the company has already spent six figures growing it."</div>
+          <div class="p-frustrations">
+            <span class="frust-tag">No upstream visibility</span>
+            <span class="frust-tag">Column tracking</span>
+            <span class="frust-tag">Filter failures</span>
+          </div>
+        </div>
+        <div class="persona-card" onclick="openPersona('tomasz')">
+          <!-- archetype tag removed -->
+          <div class="p-avatar">T</div>
+          <div class="p-name">Tomasz</div>
+          <div class="p-role">Bioprocess Technician</div>
+          <div class="p-dept">Buffer Preparation</div>
+          <div class="p-quote">"Everyone thinks buffer prep is simple. It is — until you get it wrong."</div>
+          <div class="p-frustrations">
+            <span class="frust-tag">Zero margin</span>
+            <span class="frust-tag">Alone</span>
+            <span class="frust-tag">Manual expiry</span>
+          </div>
+        </div>
+        <div class="persona-card" onclick="openPersona('niamh')">
+          <!-- archetype tag removed -->
+          <div class="p-avatar">N</div>
+          <div class="p-name">Niamh</div>
+          <div class="p-role">Bioprocess Associate</div>
+          <div class="p-dept">Inoculation / Seed Train</div>
+          <div class="p-quote">"Everything starts with me. If my cells aren't right, nothing downstream matters."</div>
+          <div class="p-frustrations">
+            <span class="frust-tag">Aseptic + paper</span>
+            <span class="frust-tag">No cell bank data</span>
+            <span class="frust-tag">Growth curves</span>
+          </div>
+        </div>
+        <div class="persona-card" onclick="openPersona('darragh')">
+          <!-- archetype tag removed -->
+          <div class="p-avatar">D</div>
+          <div class="p-name">Darragh</div>
+          <div class="p-role">Associate Engineer</div>
+          <div class="p-dept">MS&T — Manufacturing Support</div>
+          <div class="p-quote">"I can tell you the history of every reactor — but only because it's in my head."</div>
+          <div class="p-frustrations">
+            <span class="frust-tag">80% paperwork</span>
+            <span class="frust-tag">Disconnected systems</span>
+            <span class="frust-tag">Repeat deviations</span>
+          </div>
+        </div>
+        <div class="persona-card" onclick="openPersona('eoin')">
+          <!-- archetype tag removed -->
+          <div class="p-avatar">E</div>
+          <div class="p-name">Eoin</div>
+          <div class="p-role">Shift Lead</div>
+          <div class="p-dept">Manufacturing Operations</div>
+          <div class="p-quote">"My job is to make sure nothing goes wrong on a shift where everything is trying to go wrong."</div>
+          <div class="p-frustrations">
+            <span class="frust-tag">No single view</span>
+            <span class="frust-tag">Bottleneck</span>
+            <span class="frust-tag">Handover</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MARKET -->
+    <div class="view" id="view-market">
+      <div class="market-section">
+        <h2>Target Segments</h2>
+        <div class="segment-cards">
+          <div class="segment-card primary">
+            <div class="seg-label">Primary — Start Here</div>
+            <div class="seg-title">CDMOs</div>
+            <div class="seg-desc">Multi-client, multi-product facilities. Highest complexity = highest pain. You work here.</div>
+            <div class="seg-meta">
+              <div class="meta-row"><span class="label">Examples</span><span class="value">WuXi, Lonza, Fujifilm</span></div>
+              <div class="meta-row"><span class="label">Sales cycle</span><span class="value">6-12 months</span></div>
+              <div class="meta-row"><span class="label">Deal size</span><span class="value">€50K-250K/site/yr</span></div>
+            </div>
+          </div>
+          <div class="segment-card">
+            <div class="seg-label">Secondary</div>
+            <div class="seg-title">Mid-Size Biopharma</div>
+            <div class="seg-desc">50-500 employees, 1-3 sites. Faster decisions, underserved by enterprise vendors.</div>
+            <div class="seg-meta">
+              <div class="meta-row"><span class="label">Examples</span><span class="value">Jazz, Alexion, Aerogen</span></div>
+              <div class="meta-row"><span class="label">Sales cycle</span><span class="value">3-6 months</span></div>
+              <div class="meta-row"><span class="label">Deal size</span><span class="value">€30K-150K/site/yr</span></div>
+            </div>
+          </div>
+          <div class="segment-card">
+            <div class="seg-label">Long-term</div>
+            <div class="seg-title">Large Pharma</div>
+            <div class="seg-desc">Enterprise scale. Long procurement. Need proven product first.</div>
+            <div class="seg-meta">
+              <div class="meta-row"><span class="label">Examples</span><span class="value">Pfizer, Lilly, Roche</span></div>
+              <div class="meta-row"><span class="label">Sales cycle</span><span class="value">12-18 months</span></div>
+              <div class="meta-row"><span class="label">Deal size</span><span class="value">€500K-2M+/yr</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="market-section">
+        <h2>Market Size</h2>
+        <div class="tam-visual">
+          <div class="tam-block">
+            <div class="tam-label">TAM</div>
+            <div class="tam-value">€12B</div>
+            <div class="tam-bar-container"><div class="tam-bar" style="width:100%"></div></div>
+            <div class="tam-desc">Global pharma manufacturing software</div>
+          </div>
+          <div class="tam-block">
+            <div class="tam-label">SAM</div>
+            <div class="tam-value">€2B</div>
+            <div class="tam-bar-container"><div class="tam-bar" style="width:17%"></div></div>
+            <div class="tam-desc">Biopharma, English-speaking markets</div>
+          </div>
+          <div class="tam-block">
+            <div class="tam-label">SOM (3yr)</div>
+            <div class="tam-value">€15M</div>
+            <div class="tam-bar-container"><div class="tam-bar" style="width:1.25%"></div></div>
+            <div class="tam-desc">Ireland + UK — 30 sites @ €50K</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="market-section">
+        <h2>Competition</h2>
+        <table class="comp-table">
+          <thead><tr><th>Platform</th><th>Category</th><th>Weakness</th></tr></thead>
+          <tbody>
+            <tr><td>MasterControl</td><td>QMS</td><td>Compliance tool, not operations. Operators hate it.</td></tr>
+            <tr><td>Veeva Vault</td><td>QMS</td><td>Enterprise-painful. Same operator problems.</td></tr>
+            <tr><td>TrackWise</td><td>QMS</td><td>Legacy. Clunky. Operators avoid it.</td></tr>
+            <tr><td>DeltaV / Syncade</td><td>MES</td><td>Room-by-room. No unified view.</td></tr>
+            <tr><td>Siemens / Aveva</td><td>Digital Twin</td><td>Top-down. €1M+ installs.</td></tr>
+            <tr><td>Tulip</td><td>Mfg Apps</td><td>No AI. No spatial interface.</td></tr>
+            <tr class="vent-row"><td>Vent</td><td>All connected</td><td>Spatial AI. Equipment-grounded. Operator-first.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="market-section">
+        <h2>Go-to-Market</h2>
+        <div class="gtm-timeline">
+          <div class="gtm-phase current">
+            <div class="phase-label">Phase 1 — Now</div>
+            <div class="phase-title">Prove It On the Floor</div>
+            <div class="phase-desc">Test with upstream team at a biopharma CDMO. One department, real operators, real feedback.</div>
+          </div>
+          <div class="gtm-phase">
+            <div class="phase-label">Phase 2 — 3-6 months</div>
+            <div class="phase-title">First Customers</div>
+            <div class="phase-desc">Expand at current site. Approach 2-3 other sites. €3-5K/month per department.</div>
+          </div>
+          <div class="gtm-phase">
+            <div class="phase-label">Phase 3 — 6-18 months</div>
+            <div class="phase-title">Scale Ireland</div>
+            <div class="phase-desc">Enterprise features. Large pharma. EI/NDRC introductions. 5-10 sites.</div>
+          </div>
+          <div class="gtm-phase">
+            <div class="phase-label">Phase 4 — 18+ months</div>
+            <div class="phase-title">Go Global</div>
+            <div class="phase-desc">EU + US expansion. Partner or replace MES/QMS vendors entirely.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IRELAND -->
+    <div class="view" id="view-ireland">
+      <div class="ireland-stats">
+        <div class="stat-card"><div class="stat-value">90+</div><div class="stat-label">Biopharma manufacturing sites</div></div>
+        <div class="stat-card"><div class="stat-value">8/10</div><div class="stat-label">Top 10 pharma present</div></div>
+        <div class="stat-card"><div class="stat-value">€80B</div><div class="stat-label">Annual pharma exports</div></div>
+        <div class="stat-card"><div class="stat-value">#1</div><div class="stat-label">Export sector in Ireland</div></div>
+      </div>
+      <div class="ireland-regions">
+        <div class="region-card">
+          <h3>Cork / Ringaskiddy</h3>
+          <div class="company"><span class="c-name">Pfizer</span><span class="c-location">Ringaskiddy</span></div>
+          <div class="company"><span class="c-name">MSD</span><span class="c-location">Brinny, Ballydine</span></div>
+          <div class="company"><span class="c-name">Eli Lilly</span><span class="c-location">Kinsale</span></div>
+          <div class="company"><span class="c-name">Hovione</span><span class="c-location">Cork</span></div>
+          <div class="company"><span class="c-name">Thermo Fisher</span><span class="c-location">Cork</span></div>
+        </div>
+        <div class="region-card">
+          <h3>Dublin / East Coast</h3>
+          <div class="company"><span class="c-name">Amgen</span><span class="c-location">Dun Laoghaire</span></div>
+          <div class="company"><span class="c-name">Jazz Pharmaceuticals</span><span class="c-location">Dublin</span></div>
+          <div class="company"><span class="c-name">Bristol-Myers Squibb</span><span class="c-location">Cruiserath</span></div>
+          <div class="company"><span class="c-name">Pfizer</span><span class="c-location">Grange Castle</span></div>
+          <div class="company"><span class="c-name">Takeda</span><span class="c-location">Dublin</span></div>
+        </div>
+        <div class="region-card">
+          <h3>West / Midwest</h3>
+          <div class="company"><span class="c-name">Regeneron</span><span class="c-location">Limerick</span></div>
+          <div class="company"><span class="c-name">Medtronic</span><span class="c-location">Galway</span></div>
+          <div class="company"><span class="c-name">Aerogen</span><span class="c-location">Galway</span></div>
+          <div class="company"><span class="c-name">Alexion</span><span class="c-location">Athlone</span></div>
+          <div class="company"><span class="c-name">BMS</span><span class="c-location">Shannon</span></div>
+        </div>
+        <div class="region-card">
+          <h3>North / Northeast</h3>
+          <div class="company"><span class="c-name">WuXi Biologics</span><span class="c-location">Dundalk</span></div>
+          <div class="company"><span class="c-name">WuXi Biologics</span><span class="c-location">Mullaghmonaghan</span></div>
+          <div class="company"><span class="c-name">Almac</span><span class="c-location">Craigavon (NI)</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-overlay" id="persona-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modal-header"></div>
+    <div class="modal-tabs" id="modal-tabs"></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const headerTitles = {
+  org: ['# Org Chart', 'Manufacturing Operations — Biopharma CDMO, Ireland'],
+  personas: ['# Personas', '6 operator personas across upstream, downstream, buffer, inoc, engineering, and shift lead'],
+  market: ['# Market', 'Customer segmentation, TAM/SAM/SOM, competition, and go-to-market'],
+  ireland: ['# Ireland', '90+ biopharma manufacturing sites — the densest pharma market in the world']
+};
+
+document.querySelectorAll('.sidebar-item[data-view]').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar-item[data-view]').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    item.classList.add('active');
+    const view = item.dataset.view;
+    document.getElementById('view-' + view).classList.add('active');
+    const [title, desc] = headerTitles[view];
+    document.getElementById('main-header').innerHTML = `<h2>${title}</h2><span class="header-desc">${desc}</span>`;
+  });
+});
+
+const personas = {
+  ciaran: {
+    name: 'Ciaran', role: 'Bioprocess Associate — Upstream', dept: 'Cell Culture',
+    meta: '3 yrs exp | Biopharma CDMO | Ireland',
+    archetype: 'The Craftsman',
+    quote: 'I know how to run the reactor. What I need is help when something I haven\'t seen before happens — and I need it in 30 seconds, not 30 minutes.',
+    frustrations: [
+      'Spends 15-20 minutes finding the right SOP section in MasterControl',
+      'Batch record gives no context — transcribing numbers from DeltaV to paper',
+      'Can\'t access previous batch history for the same equipment',
+      'Deviations raised go into a black hole — no feedback loop',
+      'Training is read-and-sign with no real competence building',
+      'Night shifts: alone with high-stakes decisions and no support'
+    ],
+    ventSolves: [
+      ['15 min searching for SOP', 'Tap equipment → get the SOP in seconds'],
+      ['Batch record gives no context', 'Equipment node connects batch to history and deviations'],
+      ['Knowledge in his head', 'Knowledge grounded to equipment, accessible to everyone'],
+      ['Deviations disappear', 'Full pipeline: observation → deviation → CAPA → SOP change'],
+      ['Night shift isolation', 'Charlie voice AI — grounded answers at 3am']
+    ],
+    empathy: {
+      thinks: ['"If this reactor alarms and I don\'t catch it, the batch is mine"', '"I know the answer is in the SOP somewhere but I\'ll be faster just doing what I remember"', '"Nobody reads these deviations anyway"'],
+      feels: ['Frustrated — by tools that slow him down', 'Isolated — on night shift with no support', 'Proud — of his craft and process knowledge', 'Resigned — stopped expecting systems to improve'],
+      says: ['"Grand, I\'ll sort it" — even when he\'s not sure how', '"Has anyone seen this before?" — to WhatsApp at 2am', '"The system is brutal" — about the QMS', '"It\'d be grand if we just had one place for everything"'],
+      does: ['Opens QMS, searches, gives up, asks someone', 'Takes photos of equipment settings on his phone as backup', 'Memorises SOPs rather than looking them up', 'Stays late after shift to finish paperwork']
+    }
+  },
+  aoife: {
+    name: 'Aoife', role: 'Bioprocess Associate — Downstream', dept: 'Purification',
+    meta: '5 yrs exp | Biopharma CDMO | Ireland',
+    archetype: 'The Guardian',
+    quote: 'By the time product reaches me, the company has already spent six figures growing it. I can\'t afford to guess — I need to know.',
+    frustrations: ['Every step is critical path — product worth €500K-€2M per batch', 'Column lifetime tracking in unreliable Excel spreadsheets', 'No visibility into what happened upstream before she starts', 'Filter integrity test failures at 2am with no support', 'SOP changes buried in 50-page documents'],
+    ventSolves: [['No upstream visibility', 'Knowledge graph connects upstream events to downstream'], ['Column tracking in Excel', 'Equipment nodes track cycles and lifetime automatically'], ['Filter failure at 2am', '"Charlie, show me last 5 integrity tests for FH-201"'], ['SOP version confusion', '"What changed in SOP-2034 rev 4?" — instant answer'], ['Cross-referencing 4 systems', 'One tap on the chrom skid — everything connected']],
+    empathy: {
+      thinks: ['"If I lose yield here, that\'s six weeks of upstream work gone"', '"How many cycles has this column done?"', '"The SOP changed last month — was it the load volume or the wash buffer?"'],
+      feels: ['Pressured — downstream is the bottleneck', 'Meticulous — takes pride in precision', 'Distrustful — of spreadsheets and handover notes', 'Tired — 12-hour shifts running complex purification'],
+      says: ['"What happened upstream?" — every single batch', '"Let me check the column log" — opens Excel, isn\'t confident', '"I\'d have caught it if I\'d had the data"', '"We need a better system"'],
+      does: ['Cross-references 3-4 systems before starting a run', 'Keeps personal notebook with column counts', 'Calls upstream operators directly before handover', 'Prints SOPs and highlights relevant sections']
+    }
+  },
+  tomasz: {
+    name: 'Tomasz', role: 'Bioprocess Technician — Buffer Prep', dept: 'Buffer Preparation',
+    meta: '18 months exp | Biopharma CDMO | Ireland',
+    archetype: 'The Apprentice',
+    quote: 'Everyone thinks buffer prep is simple. It is — until you get it wrong. Then it\'s the most expensive mistake in the building.',
+    frustrations: ['One decimal point wrong and the batch is gone', 'No context for what he\'s making the buffers for', 'SOP says one thing, batch record says another', 'Expiry tracking is manual — found expired materials on shelves', 'Alone in buffer prep, scared to ask questions'],
+    ventSolves: [['Zero margin, pen-and-paper', 'Equipment nodes — tap to see recipe, batch context, specs'], ['No context for his work', 'Knowledge graph connects buffer to downstream step and batch'], ['SOP/batch record mismatch', 'Single source of truth grounded to equipment'], ['Manual expiry tracking', 'Equipment nodes track lot numbers and expiry'], ['Alone and afraid to ask', 'Charlie: "Is pH 7.42 acceptable for CEX equilibration buffer?"']],
+    empathy: null
+  },
+  niamh: {
+    name: 'Niamh', role: 'Bioprocess Associate — Inoc/Seed', dept: 'Inoculation / Seed Train',
+    meta: '2 yrs exp | Biopharma CDMO | Ireland',
+    archetype: 'The Sentinel',
+    quote: 'Everything starts with me. If my cells aren\'t right, nothing downstream matters.',
+    frustrations: ['If she contaminates the seed, there is no batch', 'Doing aseptic work and writing on paper at the same time', 'No visibility into cell bank history', 'Growth curves exist only in experienced operators\' heads', 'EM results come back 3-5 days later — too late to act'],
+    ventSolves: [['Contamination anxiety', 'All seed train data grounded to equipment'], ['Writing during aseptic work', 'Charlie voice AI — dictate observations hands-free'], ['No cell bank visibility', 'Equipment node connects vial inventory and passage history'], ['Growth curves in heads', '"How does this seed compare to the last 10 runs?"'], ['EM results too late', 'Equipment nodes connect EM data to specific operation']],
+    empathy: null
+  },
+  darragh: {
+    name: 'Darragh', role: 'Associate Engineer — MS&T', dept: 'Manufacturing Support',
+    meta: '6 yrs exp | Biopharma CDMO | Ireland',
+    archetype: 'The Bridge',
+    quote: 'I can tell you the history of every reactor on this floor — but only because it\'s in my head. When I leave, that\'s gone.',
+    frustrations: ['80% documentation, 20% actual engineering', 'Investigations require pulling data from 4-5 disconnected systems', 'Same deviations keep happening — no pattern recognition', 'SOP revisions lose the context of why', 'Operators stop raising deviations because nothing happens'],
+    ventSolves: [['80% documentation', 'AI-powered pipeline: observation → deviation → CAPA → SOP change'], ['Can\'t connect dots', 'Single knowledge graph connecting everything'], ['No pattern recognition', 'Equipment nodes show deviation history and trends'], ['SOP changes lose context', 'Every revision traceable back to original observation'], ['Broken feedback loop', 'Operator sees full pipeline from observation to SOP change']],
+    empathy: null
+  },
+  eoin: {
+    name: 'Eoin', role: 'Shift Lead — Manufacturing Operations', dept: 'Operations',
+    meta: '11 yrs exp | Biopharma CDMO | Ireland',
+    archetype: 'The Commander',
+    quote: 'My job is to make sure nothing goes wrong on a shift where everything is trying to go wrong.',
+    frustrations: ['No single view of the entire shift', '30-40% of shift answering BPA questions', 'Shift handover drops critical context', 'Co-signing batch records he hasn\'t fully witnessed', 'Documentation vs action tradeoff', 'Can\'t develop his team — always firefighting', 'Night shifts: skeleton crew, no engineering support'],
+    ventSolves: [['No single view', 'Spatial floor map IS the shift overview — one screen'], ['Knowledge bottleneck', 'Charlie gives every BPA instant answers'], ['Handover drops context', 'Equipment nodes retain state between shifts'], ['Documentation vs action', 'Voice-first observation capture'], ['Can\'t develop team', 'BPAs with Vent learn the why, not just the what'], ['Night shift danger', 'Charlie + spatial hub = always-on support at 3am']],
+    empathy: {
+      thinks: ['"What am I not seeing right now?"', '"If I\'m in the seed room, who\'s watching the reactors?"', '"Why am I the only person who can answer that question?"', '"I need to be in three places at once"'],
+      feels: ['Burdened — weight of the entire shift on him', 'Stretched — too many responsibilities', 'Hypervigilant — always scanning, never relaxed', 'Underappreciated — management sees metrics, not the fires he put out'],
+      says: ['"Right, what have we got?" — start of every shift', '"Leave it with me" — taking on problems', '"Who\'s qualified on that?" — checking matrix in his head', '"We got away with that one" — after a near-miss'],
+      does: ['Walks the floor every 45 minutes', 'Keeps a personal notebook more reliable than any system', 'Triages alarms by instinct', 'Checks his phone on days off worrying about the floor']
+    }
+  }
+};
+
+function openPersona(key) {
+  const p = personas[key];
+  const modal = document.getElementById('persona-modal');
+  document.getElementById('modal-header').innerHTML = `<h2>${p.name}</h2><div class="modal-role">${p.role}</div><div class="modal-meta">${p.meta}</div>`;
+
+  let tabsHTML = '<div class="modal-tab active" data-mtab="overview">Overview</div><div class="modal-tab" data-mtab="frustrations">Frustrations</div><div class="modal-tab" data-mtab="vent">Vent Solves</div>';
+  if (p.empathy) tabsHTML += '<div class="modal-tab" data-mtab="empathy">Empathy Map</div>';
+  document.getElementById('modal-tabs').innerHTML = tabsHTML;
+
+  let bodyHTML = `
+    <div class="modal-content active" id="mtab-overview">
+      <div class="detail-section"><h3>Key Quote</h3><p style="font-style:italic;border-left:3px solid var(--accent);padding-left:12px;">"${p.quote}"</p></div>
+      <div class="detail-section"><h3>Department</h3><p>${p.dept}</p></div>
+      <div class="detail-section"><h3>Top Frustrations</h3><ul>${p.frustrations.slice(0,3).map(f=>`<li>${f}</li>`).join('')}</ul></div>
+    </div>
+    <div class="modal-content" id="mtab-frustrations"><div class="detail-section"><h3>All Frustrations</h3><ul>${p.frustrations.map(f=>`<li>${f}</li>`).join('')}</ul></div></div>
+    <div class="modal-content" id="mtab-vent"><div class="detail-section"><h3>Pain → Gain</h3><div class="vent-solves">${p.ventSolves.map(([pain,gain])=>`<div class="solve-pain">${pain}</div><div class="solve-gain">${gain}</div>`).join('')}</div></div></div>`;
+
+  if (p.empathy) {
+    bodyHTML += `<div class="modal-content" id="mtab-empathy"><div class="empathy-grid">
+      <div class="empathy-cell"><h4>Thinks</h4><ul>${p.empathy.thinks.map(t=>`<li>${t}</li>`).join('')}</ul></div>
+      <div class="empathy-cell"><h4>Feels</h4><ul>${p.empathy.feels.map(f=>`<li>${f}</li>`).join('')}</ul></div>
+      <div class="empathy-cell"><h4>Says</h4><ul>${p.empathy.says.map(s=>`<li>${s}</li>`).join('')}</ul></div>
+      <div class="empathy-cell"><h4>Does</h4><ul>${p.empathy.does.map(d=>`<li>${d}</li>`).join('')}</ul></div>
+    </div></div>`;
+  }
+
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  modal.classList.add('open');
+
+  document.getElementById('modal-tabs').querySelectorAll('.modal-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.getElementById('modal-tabs').querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('modal-body').querySelectorAll('.modal-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('mtab-' + tab.dataset.mtab).classList.add('active');
+    });
+  });
+}
+
+function closeModal() { document.getElementById('persona-modal').classList.remove('open'); }
+document.getElementById('persona-modal').addEventListener('click', e => { if (e.target.id === 'persona-modal') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 140">
+  <rect width="500" height="140" fill="#0e0e12" rx="8"/>
+  <!-- Shield/hexagon mark representing compliance & protection -->
+  <polygon points="55,20 85,8 115,20 115,60 85,75 55,60" fill="none" stroke="#6366f1" stroke-width="2.5"/>
+  <!-- Pulse/signal line inside - representing live intelligence -->
+  <polyline points="65,42 75,42 80,28 85,55 90,38 95,42 105,42" stroke="#8b5cf6" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Wordmark -->
+  <text x="145" y="58" font-family="system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="700" fill="#e2e2e8" letter-spacing="10">VENT</text>
+  <!-- Subtitle -->
+  <text x="148" y="80" font-family="system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="11" fill="#6366f1" letter-spacing="4" font-weight="400">MANUFACTURING INTELLIGENCE</text>
+</svg>

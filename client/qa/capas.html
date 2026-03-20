@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · CAPA Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 260px 4px 1fr;
+  grid-template-rows: 1fr 4px 140px;
+  overflow: hidden;
+}
+
+/* ── RESIZE HANDLES ── */
+.resizer { background: #3c3c3c; z-index: 10; transition: background 0.15s; position: relative; }
+.resizer:hover, .resizer.dragging { background: #007acc; }
+.resizer-v { cursor: col-resize; grid-row: 1; }
+.resizer-h { cursor: row-resize; grid-column: 1 / 4; grid-row: 2; }
+.resizer::after { content: ''; position: absolute; inset: 0; }
+.resizer-v::after  { left: -4px; right: -4px; }
+.resizer-h::after  { top: -4px; bottom: -4px; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  grid-column: 1; grid-row: 1 / 2;
+  background: #252526; border-right: 1px solid #3c3c3c;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-header {
+  padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: #8e8e8e; border-bottom: 1px solid #3c3c3c;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-badge {
+  background: #007acc; color: #fff; font-size: 10px; padding: 1px 6px;
+  border-radius: 8px; font-weight: 600;
+}
+.filter-bar {
+  display: flex; gap: 4px; padding: 6px 8px; border-bottom: 1px solid #2d2d30;
+}
+.filter-select {
+  background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #8e8e8e; font-size: 10px; padding: 2px 6px; cursor: pointer; outline: none;
+  font-family: inherit; flex: 1;
+}
+.filter-select:focus { border-color: #007acc; color: #ccc; }
+.submission-list { flex: 1; overflow-y: auto; }
+
+/* ── CAPA CARD ── */
+.capa-card {
+  padding: 8px 10px; border-radius: 2px; margin-bottom: 1px;
+  cursor: pointer; transition: background 0.1s; border-left: 2px solid transparent;
+}
+.capa-card:hover { background: #2a2d2e; }
+.capa-card.active { background: #094771; border-left-color: #007acc; }
+.capa-card.overdue-card { border-left-color: #f44747; }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.card-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #9cdcfe; }
+.card-title { font-size: 11px; color: #d4d4d4; line-height: 1.4; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { font-size: 10px; color: #5a5a5a; display: flex; align-items: center; gap: 6px; }
+
+/* ── STATUS BADGES ── */
+.status-badge { font-size: 9px; padding: 1px 6px; border-radius: 2px; text-transform: capitalize; }
+.capa-status-open               { background: rgba(0,122,204,0.18); color: #4fc1ff; }
+.capa-status-in_progress        { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.capa-status-pending_verification { background: rgba(206,145,255,0.15); color: #ce91ff; }
+.capa-status-closed             { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+
+/* ── TYPE BADGES ── */
+.type-badge { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 2px; text-transform: uppercase; letter-spacing: .03em; }
+.type-corrective { background: rgba(244,71,71,0.15); color: #f44747; border: 1px solid rgba(244,71,71,0.3); }
+.type-preventive { background: rgba(78,201,176,0.15); color: #4ec9b0; border: 1px solid rgba(78,201,176,0.3); }
+
+/* ── OVERDUE ── */
+.overdue-text { color: #f44747; font-weight: 600; }
+
+/* ── CENTER PANEL ── */
+.center-panel {
+  grid-column: 3; grid-row: 1 / 2;
+  background: var(--bg, #1e1e1e); display: flex; flex-direction: column; overflow: hidden;
+}
+.editor-tabs {
+  display: flex; gap: 0; background: #252526; border-bottom: 1px solid #3c3c3c;
+  min-height: 34px; align-items: flex-end; overflow-x: auto;
+}
+.editor-tab {
+  padding: 6px 14px; font-size: 11px; color: #8e8e8e; cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s;
+}
+.editor-tab:hover { color: #ccc; }
+.editor-tab.active { color: #fff; border-bottom-color: #007acc; }
+.center-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-state .ei { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.empty-state p { color: #5a5a5a; font-size: 12px; }
+
+/* ── DETAIL SECTIONS ── */
+.detail-section { margin-bottom: 20px; }
+.section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #8e8e8e; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #2d2d30;
+  display: flex; align-items: center; gap: 8px;
+}
+.obs-text { font-size: 12px; color: #b0b0b0; line-height: 1.6; white-space: pre-wrap; }
+.sop-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.sop-table td { padding: 4px 0; color: #cccccc; border-bottom: 1px solid #2d2d30; }
+.sop-highlight { background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; padding: 10px 12px; font-size: 12px; color: #cccccc; line-height: 1.5; }
+
+/* ── WORKFLOW BUTTONS ── */
+.wf-btn {
+  padding: 5px 14px; font-size: 11px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.wf-btn:hover { border-color: #5a5a5a; color: #fff; }
+.wf-primary { background: #007acc; border-color: #007acc; color: #fff; }
+.wf-primary:hover { background: #0098ff; }
+.wf-danger { background: rgba(244,71,71,0.15); border-color: rgba(244,71,71,0.4); color: #f44747; }
+.wf-danger:hover { background: rgba(244,71,71,0.25); }
+.action-btn {
+  padding: 4px 10px; font-size: 10px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.action-btn:hover { border-color: #5a5a5a; color: #fff; }
+.action-btn.primary { background: #007acc; border-color: #007acc; color: #fff; }
+.action-btn.primary:hover { background: #0098ff; }
+.why-input {
+  width: 100%; background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 11px; font-family: inherit; padding: 6px 8px; outline: none;
+}
+.why-input:focus { border-color: #007acc; }
+.why-ai-badge { font-size: 9px; background: rgba(0,122,204,0.15); color: #007acc; padding: 1px 6px; border-radius: 2px; margin-left: 6px; }
+
+/* ── STATS DASHBOARD ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: #252526; border: 1px solid #3c3c3c; border-radius: 4px; padding: 12px 16px; }
+.stat-value { font-size: 24px; font-weight: 700; color: #e0e0e0; font-family: 'JetBrains Mono', monospace; }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #8e8e8e; margin-top: 4px; }
+.stat-card.stat-overdue .stat-value { color: #f44747; }
+.stat-card.stat-effectiveness .stat-value { color: #4ec9b0; }
+
+/* ── EFFECTIVENESS ── */
+.eff-badge { font-size: 10px; padding: 2px 8px; border-radius: 2px; text-transform: capitalize; }
+.eff-pending              { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+.eff-verified_effective   { background: rgba(78,201,176,0.15); color: #4ec9b0; }
+.eff-verified_ineffective { background: rgba(244,71,71,0.15); color: #f44747; }
+.eff-not_applicable       { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+
+/* ── AI SUGGESTIONS ── */
+.ai-suggestion { background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; padding: 8px 12px; margin-bottom: 6px; font-size: 11px; }
+.ai-suggestion .ai-tag { font-size: 9px; background: rgba(0,122,204,0.15); color: #007acc; padding: 1px 6px; border-radius: 2px; margin-right: 6px; }
+
+/* ── BOTTOM PANEL ── */
+.bottom-panel { grid-column: 1 / 4; grid-row: 3; background: #252526; border-top: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; }
+.bottom-tabs { display: flex; gap: 0; border-bottom: 1px solid #2d2d30; }
+.bottom-tab { padding: 4px 12px; font-size: 10px; color: #8e8e8e; cursor: pointer; border-bottom: 2px solid transparent; }
+.bottom-tab.active { color: #ccc; border-bottom-color: #007acc; }
+.bottom-content { flex: 1; overflow-y: auto; padding: 6px 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.log-line { padding: 1px 0; color: #8e8e8e; }
+.log-time { color: #5a5a5a; margin-right: 8px; }
+.log-info { color: #4ec9b0; }
+.log-warn { color: #ffc64d; }
+.log-error { color: #f44747; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: #007acc; display: flex; align-items: center; padding: 0 10px;
+  font-size: 11px; color: #fff; gap: 6px;
+}
+.status-bar .s-sep { color: rgba(255,255,255,0.4); }
+.status-bar .s-right { margin-left: auto; }
+
+/* ── MODAL ── */
+.esig-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.esig-modal { background: #252526; border: 1px solid #3c3c3c; border-radius: 4px; width: 580px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+.esig-header { padding: 16px 20px; border-bottom: 1px solid #3c3c3c; }
+.esig-header h3 { font-size: 14px; color: #e0e0e0; margin: 0 0 4px 0; }
+.esig-header p { font-size: 11px; color: #8e8e8e; margin: 0; }
+.esig-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.esig-body label { font-size: 11px; color: #8e8e8e; display: flex; flex-direction: column; gap: 4px; }
+.esig-body input, .esig-body textarea, .esig-body select {
+  background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 2px;
+  color: #d4d4d4; font-size: 12px; font-family: inherit; padding: 6px 8px; outline: none;
+}
+.esig-body input:focus, .esig-body textarea:focus, .esig-body select:focus { border-color: #007acc; }
+.esig-footer { padding: 12px 20px; border-top: 1px solid #3c3c3c; display: flex; align-items: center; gap: 8px; }
+
+/* ── AUDIT TRAIL ── */
+.audit-list { display: flex; flex-direction: column; gap: 6px; }
+.audit-entry { background: #252526; border: 1px solid #3c3c3c; border-radius: 2px; padding: 8px 12px; font-size: 11px; }
+.audit-entry.ae-create { border-left: 3px solid #4ec9b0; }
+.audit-entry.ae-status { border-left: 3px solid #007acc; }
+.audit-entry.ae-esig   { border-left: 3px solid #ffc64d; }
+.audit-time { color: #5a5a5a; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+.audit-action { color: #ccc; font-weight: 600; margin: 2px 0; }
+.audit-user { color: #8e8e8e; }
+.audit-reason { color: #6c6c6c; font-style: italic; margin-top: 2px; }
+.audit-hash { color: #3c3c3c; font-family: 'JetBrains Mono', monospace; font-size: 9px; margin-top: 2px; }
+
+/* ── LOADING SPINNER ── */
+.ai-loading { text-align: center; padding: 20px; color: #8e8e8e; font-size: 11px; }
+.ai-loading::before { content: ''; display: inline-block; width: 14px; height: 14px; border: 2px solid #3c3c3c; border-top-color: #007acc; border-radius: 50%; animation: spin .8s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/nav.js"></script>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div class="title-bar">
+  <div class="title-bar-left">
+    <a href="/hub/hub.html" class="app-name">Vent<span class="pip"></span></a>
+    <button class="mobile-hamburger" onclick="document.querySelector('.title-nav').classList.toggle('open')" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    <nav class="title-nav" id="mainNav"></nav>
+  </div>
+  <div class="title-bar-right" id="titleBarRight">
+    <div id="langSwitcher"></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <span class="user-name" id="titleUser"></span>
+    <button class="sign-out-btn" onclick="ventSignOut()" data-i18n="nav.signOut">Sign out</button>
+  </div>
+</div>
+
+<!-- WORKBENCH -->
+<div class="workbench" id="workbench">
+
+  <!-- LEFT PANEL: CAPA List -->
+  <div class="left-panel">
+    <div class="panel-header">
+      CAPAs
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span class="panel-badge" id="capaCount">0</span>
+        <button class="action-btn primary" onclick="showCreateModal()" style="font-size:10px;padding:2px 8px;">+ New</button>
+      </span>
+    </div>
+    <div class="filter-bar">
+      <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+        <option value="">All Status</option>
+        <option value="open">Open</option>
+        <option value="in_progress">In Progress</option>
+        <option value="pending_verification">Pending Verification</option>
+        <option value="closed">Closed</option>
+      </select>
+      <select class="filter-select" id="typeFilter" onchange="applyFilters()">
+        <option value="">All Types</option>
+        <option value="corrective">Corrective</option>
+        <option value="preventive">Preventive</option>
+      </select>
+    </div>
+    <div style="padding:4px 8px;">
+      <input class="why-input" id="searchInput" placeholder="Search CAPAs..." oninput="applyFilters()" style="width:100%;box-sizing:border-box;">
+    </div>
+    <div class="submission-list" id="capaList"></div>
+  </div>
+
+  <!-- RESIZER -->
+  <div class="resizer resizer-v" id="resizerLC"></div>
+
+  <!-- CENTER PANEL: Detail / Stats -->
+  <div class="center-panel">
+    <div class="editor-tabs" id="editorTabs">
+      <div class="editor-tab active" data-tab="overview" onclick="switchTab('overview',this)">Overview</div>
+      <div class="editor-tab" data-tab="evidence" onclick="switchTab('evidence',this)">Evidence</div>
+      <div class="editor-tab" data-tab="effectiveness" onclick="switchTab('effectiveness',this)">Effectiveness</div>
+      <div class="editor-tab" data-tab="audit" onclick="switchTab('audit',this)">Audit Trail</div>
+    </div>
+    <div class="center-content" id="centerContent">
+      <div class="empty-state">
+        <div class="ei">&#9888;</div>
+        <p>Select a CAPA from the left panel or create a new one</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZER: horizontal -->
+  <div class="resizer resizer-h" id="resizerBottom"></div>
+
+  <!-- BOTTOM PANEL: Activity Log -->
+  <div class="bottom-panel">
+    <div class="bottom-tabs">
+      <div class="bottom-tab active">Activity Log</div>
+    </div>
+    <div class="bottom-content" id="bottomContent"></div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span>&#9888; CAPA Tracker</span>
+  <span class="s-sep">|</span>
+  <span id="statusCapas">Loading...</span>
+  <span class="s-sep">|</span>
+  <span id="statusSel">No selection</span>
+  <div class="s-right">
+    <span>Connected</span>
+  </div>
+</div>
+
+<!-- CREATE CAPA MODAL -->
+<div class="esig-overlay" id="createModal" style="display:none">
+  <div class="esig-modal">
+    <div class="esig-header">
+      <h3>Create CAPA</h3>
+      <p>Link to a deviation and define corrective or preventive actions.</p>
+    </div>
+    <div class="esig-body">
+      <label>Title <input id="newCapaTitle" placeholder="Brief CAPA title"></label>
+      <label>Description <textarea id="newCapaDesc" rows="3" placeholder="Describe the corrective or preventive action..."></textarea></label>
+      <label>Linked Deviation (Submission Ref) <input id="newCapaRef" placeholder="e.g. VNT-2026-0041, DEV-4201"></label>
+      <div style="display:flex;gap:8px;">
+        <label style="flex:1;">Type
+          <select id="newCapaType">
+            <option value="corrective">Corrective</option>
+            <option value="preventive">Preventive</option>
+          </select>
+        </label>
+        <label style="flex:1;">Root Cause Category
+          <select id="newCapaRootCause">
+            <option value="">Select...</option>
+            <option value="human_error">Human Error</option>
+            <option value="equipment_failure">Equipment Failure</option>
+            <option value="process_gap">Process Gap</option>
+            <option value="material_defect">Material Defect</option>
+            <option value="measurement_error">Measurement Error</option>
+            <option value="environmental">Environmental</option>
+          </select>
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <label style="flex:1;">Owner <input id="newCapaOwner" placeholder="e.g. Dr. S. Chen"></label>
+        <label style="flex:1;">Due Date <input id="newCapaDue" type="date"></label>
+      </div>
+      <div id="aiSuggestions"></div>
+    </div>
+    <div class="esig-footer">
+      <button class="action-btn" onclick="findSimilarCapas()" title="AI finds similar past CAPAs">AI: Find Similar</button>
+      <button class="action-btn" onclick="suggestPreventive()" title="AI suggests preventive actions">AI: Suggest Actions</button>
+      <span style="flex:1;"></span>
+      <button class="wf-btn" onclick="hideCreateModal()">Cancel</button>
+      <button class="wf-btn wf-primary" id="createBtn" onclick="createCapa()">Create CAPA</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   CAPA TRACKER — Client-side Application
+   ═══════════════════════════════════════════════════════════════ */
+
+var SERVER = window.VENT_SERVER || '';
+var capas = [];
+var selected = null;
+var currentTab = 'overview';
+var dashboardStats = null;
+
+// ── Demo data (used when token === 'demo') ──────────────────
+var DEMO_CAPAS = [
+  {
+    capa_id: 'CAPA-3001', submission_ref: 'VNT-2026-0041',
+    title: 'Update PBR revision control to link SOP changes',
+    description: 'Implement automated change control trigger when SOP revisions are published. The document management system must cross-reference all related PBRs and flag them for review when a linked SOP is updated.',
+    capa_type: 'corrective', root_cause_category: 'process_gap',
+    owner: 'Dr. S. Chen', owner_role: 'qa', due_date: '2026-03-25',
+    status: 'in_progress', evidence: null,
+    effectiveness_status: 'pending', effectiveness_check_date: null, effectiveness_notes: null,
+    created_at: '2026-03-02T12:00:00Z', updated_at: '2026-03-05T10:00:00Z',
+    closed_at: null, closed_by: null
+  },
+  {
+    capa_id: 'CAPA-3002', submission_ref: 'ALARM-CR02-0312',
+    title: 'Install redundant temperature monitoring in CR-02',
+    description: 'Deploy secondary temperature monitoring system with independent alerting to prevent single-point-of-failure in cold room temperature excursion detection.',
+    capa_type: 'preventive', root_cause_category: 'equipment_failure',
+    owner: 'M. Kelly', owner_role: 'engineering', due_date: '2026-04-15',
+    status: 'open', evidence: null,
+    effectiveness_status: 'pending', effectiveness_check_date: null, effectiveness_notes: null,
+    created_at: '2026-03-03T08:30:00Z', updated_at: '2026-03-03T08:30:00Z',
+    closed_at: null, closed_by: null
+  },
+  {
+    capa_id: 'CAPA-3003', submission_ref: 'VNT-2026-0038',
+    title: 'Retrain operators on logbook e-signature requirements',
+    description: 'Develop and deliver targeted training module covering 21 CFR Part 11 requirements for electronic signatures in batch logbooks. Include practical assessment.',
+    capa_type: 'corrective', root_cause_category: 'human_error',
+    owner: 'Dr. S. Chen', owner_role: 'qa', due_date: '2026-02-28',
+    status: 'closed', evidence: 'Training module TRN-2026-012 delivered to all upstream operators on 2026-02-20. 12/12 operators passed assessment. Records filed in TrainingMatrix.',
+    effectiveness_status: 'verified_effective', effectiveness_check_date: '2026-03-05',
+    effectiveness_notes: 'No further logbook signature omissions in the 30 days post-training. Verified via QA review of 45 batch records.',
+    created_at: '2026-02-10T14:00:00Z', updated_at: '2026-03-05T11:00:00Z',
+    closed_at: '2026-02-25T16:00:00Z', closed_by: 'Dr. S. Chen'
+  },
+  {
+    capa_id: 'CAPA-3004', submission_ref: 'DEV-4201',
+    title: 'Validate ATF filter flush volumes against current SOPs',
+    description: 'Conduct full reconciliation of all ATF filter flush parameters in PBRs against current SOP versions. Update any discrepancies and implement verification checkpoint.',
+    capa_type: 'corrective', root_cause_category: 'process_gap',
+    owner: 'O. Murphy', owner_role: 'operator', due_date: '2026-03-01',
+    status: 'pending_verification', evidence: 'All 8 affected PBRs updated on 2026-02-27. Cross-reference table created linking SOP sections to PBR steps.',
+    effectiveness_status: 'pending', effectiveness_check_date: null, effectiveness_notes: null,
+    created_at: '2026-02-15T09:00:00Z', updated_at: '2026-03-01T12:00:00Z',
+    closed_at: null, closed_by: null
+  }
+];
+
+// ── Detect server URL ───────────────────────────────────────
+(function() {
+  if (SERVER) return;
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    SERVER = 'http://localhost:' + (location.port || '3001');
+  } else {
+    SERVER = location.origin;
+  }
+})();
+
+// ── Load CAPAs ──────────────────────────────────────────────
+async function loadCapas() {
+  try {
+    var res = await authFetch(SERVER + '/capas');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    capas = await res.json();
+    if ((!capas || capas.length === 0) && localStorage.getItem('vent_token') === 'demo') {
+      capas = DEMO_CAPAS;
+    }
+    addLog(capas.length + ' CAPAs loaded', 'info');
+  } catch (err) {
+    addLog('Failed to load: ' + err.message + ' — using demo data', 'warn');
+    if (localStorage.getItem('vent_token') === 'demo') capas = DEMO_CAPAS;
+    else capas = [];
+  }
+  renderLeft();
+  document.getElementById('statusCapas').textContent = capas.length + ' CAPAs';
+}
+
+// ── Load stats ──────────────────────────────────────────────
+async function loadStats() {
+  try {
+    var res = await authFetch(SERVER + '/capas/stats');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    dashboardStats = await res.json();
+  } catch (err) {
+    // Compute from local data
+    var now = new Date();
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    dashboardStats = {
+      open: capas.filter(function(c) { return c.status === 'open'; }).length,
+      inProgress: capas.filter(function(c) { return c.status === 'in_progress'; }).length,
+      overdue: capas.filter(function(c) { return c.status !== 'closed' && c.due_date && new Date(c.due_date) < now; }).length,
+      closedThisMonth: capas.filter(function(c) { return c.status === 'closed' && c.closed_at && new Date(c.closed_at) >= monthStart; }).length,
+      effectivenessRate: null,
+      avgDaysToClose: null
+    };
+    var verified = capas.filter(function(c) { return c.effectiveness_status && c.effectiveness_status !== 'pending'; });
+    var effective = verified.filter(function(c) { return c.effectiveness_status === 'verified_effective'; }).length;
+    if (verified.length > 0) dashboardStats.effectivenessRate = Math.round((effective / verified.length) * 100);
+  }
+  if (!selected) renderDashboard();
+}
+
+// ── Render left panel ───────────────────────────────────────
+function renderLeft() {
+  var list = document.getElementById('capaList');
+  var filtered = getFilteredCapas();
+  document.getElementById('capaCount').textContent = filtered.length;
+
+  list.innerHTML = filtered.map(function(c) {
+    var isOverdue = c.status !== 'closed' && c.due_date && new Date(c.due_date) < new Date();
+    return '<div class="capa-card ' + (selected && selected.capa_id === c.capa_id ? 'active' : '') + (isOverdue ? ' overdue-card' : '') + '" onclick="selectCapa(\'' + escHtml(c.capa_id) + '\')">' +
+      '<div class="card-top">' +
+        '<span class="card-id">' + c.capa_id + '</span>' +
+        '<span class="type-badge type-' + (c.capa_type || 'corrective') + '">' + (c.capa_type || 'corrective') + '</span>' +
+      '</div>' +
+      '<div class="card-title">' + escHtml(c.title) + '</div>' +
+      '<div class="card-meta">' +
+        '<span class="status-badge capa-status-' + c.status + '">' + c.status.replace(/_/g, ' ') + '</span>' +
+        ' &middot; ' + (c.owner || 'Unassigned') +
+        (c.due_date ? ' &middot; ' + (isOverdue ? '<span class="overdue-text">Overdue</span>' : c.due_date) : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function getFilteredCapas() {
+  var statusF = document.getElementById('statusFilter').value;
+  var typeF = document.getElementById('typeFilter').value;
+  var searchF = (document.getElementById('searchInput').value || '').toLowerCase();
+
+  return capas.filter(function(c) {
+    if (statusF && c.status !== statusF) return false;
+    if (typeF && (c.capa_type || 'corrective') !== typeF) return false;
+    if (searchF) {
+      var hay = (c.capa_id + ' ' + c.title + ' ' + (c.description || '') + ' ' + (c.owner || '')).toLowerCase();
+      if (hay.indexOf(searchF) < 0) return false;
+    }
+    return true;
+  });
+}
+
+function applyFilters() { renderLeft(); }
+
+// ── Select CAPA ─────────────────────────────────────────────
+async function selectCapa(capaId) {
+  if (localStorage.getItem('vent_token') === 'demo') {
+    selected = capas.find(function(c) { return c.capa_id === capaId; }) || null;
+    renderLeft();
+    renderCenter();
+    document.getElementById('statusSel').textContent = capaId;
+    return;
+  }
+  try {
+    var res = await authFetch(SERVER + '/capas/' + capaId);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    selected = await res.json();
+    renderLeft();
+    renderCenter();
+    document.getElementById('statusSel').textContent = capaId;
+  } catch (err) {
+    addLog('Failed to load CAPA: ' + err.message, 'error');
+  }
+}
+
+// ── Render center panel ─────────────────────────────────────
+function renderCenter() {
+  if (!selected) { renderDashboard(); return; }
+  var content = document.getElementById('centerContent');
+  switch (currentTab) {
+    case 'overview':       content.innerHTML = renderOverviewTab(selected); break;
+    case 'evidence':       content.innerHTML = renderEvidenceTab(selected); break;
+    case 'effectiveness':  content.innerHTML = renderEffectivenessTab(selected); break;
+    case 'audit':          loadAuditTrail(selected.capa_id, content); break;
+  }
+}
+
+// ── Dashboard (no selection) ────────────────────────────────
+function renderDashboard() {
+  var s = dashboardStats || {};
+  document.getElementById('centerContent').innerHTML =
+    '<div class="detail-section"><div class="section-label">CAPA Dashboard</div></div>' +
+    '<div class="stats-grid">' +
+      statCard('Total Open', s.open != null ? s.open : '--') +
+      statCard('In Progress', s.inProgress != null ? s.inProgress : '--') +
+      statCard('Overdue', s.overdue != null ? s.overdue : '--', 'stat-overdue') +
+      statCard('Closed This Month', s.closedThisMonth != null ? s.closedThisMonth : '--') +
+      statCard('Effectiveness Rate', s.effectivenessRate != null ? s.effectivenessRate + '%' : '--', 'stat-effectiveness') +
+      statCard('Avg Days to Close', s.avgDaysToClose != null ? s.avgDaysToClose : '--') +
+    '</div>' +
+    '<div class="detail-section"><p style="color:#5a5a5a;font-size:12px;">Select a CAPA from the left panel or create a new one.</p></div>';
+}
+
+function statCard(label, value, cls) {
+  return '<div class="stat-card ' + (cls || '') + '"><div class="stat-value">' + value + '</div><div class="stat-label">' + label + '</div></div>';
+}
+
+// ── Overview tab ────────────────────────────────────────────
+function renderOverviewTab(capa) {
+  return '<div class="detail-section">' +
+    '<div class="section-label">CAPA ' + capa.capa_id + '</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+      '<span class="status-badge capa-status-' + capa.status + '">' + capa.status.replace(/_/g, ' ') + '</span>' +
+      '<span class="type-badge type-' + (capa.capa_type || 'corrective') + '">' + (capa.capa_type || 'corrective') + '</span>' +
+    '</div>' +
+    '<h3 style="color:#e0e0e0;font-size:14px;margin:0 0 12px 0;">' + escHtml(capa.title) + '</h3>' +
+    '<div class="obs-text">' + escHtml(capa.description) + '</div>' +
+  '</div>' +
+  '<div class="detail-section">' +
+    '<div class="section-label">Details</div>' +
+    '<table class="sop-table">' +
+      '<tr><td style="color:#6c6c6c;width:160px;">Linked Deviation</td><td>' + (capa.submission_ref || '--') + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Root Cause Category</td><td>' + ((capa.root_cause_category || '--').replace(/_/g, ' ')) + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Owner</td><td>' + (capa.owner || '--') + ' (' + (capa.owner_role || '--') + ')</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Due Date</td><td>' + dueCountdown(capa.due_date) + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Created</td><td>' + new Date(capa.created_at).toLocaleString() + '</td></tr>' +
+      (capa.closed_at ? '<tr><td style="color:#6c6c6c;">Closed</td><td>' + new Date(capa.closed_at).toLocaleString() + ' by ' + (capa.closed_by || '--') + '</td></tr>' : '') +
+    '</table>' +
+  '</div>' +
+  '<div class="detail-section" style="display:flex;gap:6px;flex-wrap:wrap;">' + renderWorkflowButtons(capa) + '</div>';
+}
+
+function dueCountdown(dueDateStr) {
+  if (!dueDateStr) return '--';
+  var diff = Math.ceil((new Date(dueDateStr) - new Date()) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return '<span class="overdue-text">' + Math.abs(diff) + ' days overdue</span>';
+  if (diff === 0) return '<span class="overdue-text">Due today</span>';
+  return diff + ' days remaining';
+}
+
+function renderWorkflowButtons(capa) {
+  var transitions = {
+    open: [{ label: 'Start Work', status: 'in_progress', cls: 'wf-primary' }],
+    in_progress: [{ label: 'Submit for Verification', status: 'pending_verification', cls: 'wf-primary' }],
+    pending_verification: [{ label: 'Close CAPA', status: 'closed', cls: 'wf-primary' }],
+    closed: []
+  };
+  var actions = transitions[capa.status] || [];
+  return actions.map(function(a) {
+    return '<button class="wf-btn ' + a.cls + '" onclick="advanceStatus(\'' + a.status + '\')">' + a.label + '</button>';
+  }).join('');
+}
+
+// ── Evidence tab ────────────────────────────────────────────
+function renderEvidenceTab(capa) {
+  return '<div class="detail-section">' +
+    '<div class="section-label">Evidence &amp; Documentation</div>' +
+    (capa.evidence
+      ? '<div class="sop-highlight">' + escHtml(capa.evidence) + '</div>'
+      : '<p style="color:#5a5a5a;font-size:12px;">No evidence recorded yet.</p>') +
+    '<div style="margin-top:12px;">' +
+      '<textarea id="evidenceInput" class="why-input" rows="4" placeholder="Add evidence, notes, or references...">' + escHtml(capa.evidence || '') + '</textarea>' +
+      '<button class="action-btn primary" onclick="saveEvidence()" style="margin-top:6px;">Save Evidence</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── Effectiveness tab ───────────────────────────────────────
+function renderEffectivenessTab(capa) {
+  var html = '<div class="detail-section">' +
+    '<div class="section-label">Effectiveness Verification</div>';
+
+  if (capa.status !== 'closed') {
+    html += '<p style="color:#5a5a5a;font-size:12px;">CAPA must be closed before effectiveness can be verified.</p>';
+  } else {
+    html += '<table class="sop-table">' +
+      '<tr><td style="color:#6c6c6c;width:160px;">Status</td><td><span class="eff-badge eff-' + (capa.effectiveness_status || 'pending') + '">' + (capa.effectiveness_status || 'pending').replace(/_/g, ' ') + '</span></td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Check Date</td><td>' + (capa.effectiveness_check_date || 'Not yet checked') + '</td></tr>' +
+      '<tr><td style="color:#6c6c6c;">Notes</td><td>' + escHtml(capa.effectiveness_notes || '--') + '</td></tr>' +
+    '</table>';
+
+    if (!capa.effectiveness_status || capa.effectiveness_status === 'pending') {
+      html += '<div style="margin-top:16px;padding:12px;background:#252526;border:1px solid #3c3c3c;border-radius:4px;">' +
+        '<div class="section-label">Verify Effectiveness</div>' +
+        '<label style="font-size:11px;color:#8e8e8e;display:flex;flex-direction:column;gap:4px;margin-bottom:8px;">Status' +
+          '<select id="effStatus" style="background:#1e1e1e;border:1px solid #3c3c3c;border-radius:2px;color:#d4d4d4;font-size:12px;padding:6px 8px;outline:none;">' +
+            '<option value="verified_effective">Verified Effective</option>' +
+            '<option value="verified_ineffective">Verified Ineffective</option>' +
+            '<option value="not_applicable">Not Applicable</option>' +
+          '</select>' +
+        '</label>' +
+        '<label style="font-size:11px;color:#8e8e8e;display:flex;flex-direction:column;gap:4px;margin-bottom:8px;">Notes' +
+          '<textarea id="effNotes" class="why-input" rows="3" placeholder="Effectiveness assessment notes..."></textarea>' +
+        '</label>' +
+        '<div style="display:flex;gap:6px;">' +
+          '<button class="wf-btn wf-primary" onclick="verifyEffectiveness()">Submit Verification</button>' +
+          '<button class="action-btn" onclick="predictEffectivenessAI()" title="AI predicts effectiveness">AI: Predict</button>' +
+        '</div>' +
+        '<div id="effPrediction"></div>' +
+      '</div>';
+    }
+  }
+
+  return html + '</div>';
+}
+
+// ── Audit trail tab ─────────────────────────────────────────
+async function loadAuditTrail(capaId, containerEl) {
+  containerEl.innerHTML = '<div class="ai-loading">Loading audit trail...</div>';
+  try {
+    var res = await authFetch(SERVER + '/audit/' + capaId);
+    var entries = await res.json();
+    if (!entries || entries.length === 0) {
+      containerEl.innerHTML = '<div class="detail-section"><div class="section-label">Audit Trail</div><p style="color:#5a5a5a;font-size:12px;">No audit entries found.</p></div>';
+      return;
+    }
+    containerEl.innerHTML = '<div class="detail-section">' +
+      '<div class="section-label">Audit Trail (' + entries.length + ' entries)</div>' +
+      '<div class="audit-list">' +
+        entries.map(function(e) {
+          var cls = e.action.indexOf('create') >= 0 ? 'ae-create' : (e.action.indexOf('status') >= 0 || e.action.indexOf('effectiveness') >= 0 ? 'ae-status' : 'ae-esig');
+          return '<div class="audit-entry ' + cls + '">' +
+            '<div class="audit-time">' + new Date(e.timestamp).toLocaleString() + '</div>' +
+            '<div class="audit-action">' + e.action.replace(/_/g, ' ') + '</div>' +
+            '<div class="audit-user">' + e.user_id + ' (' + e.user_role + ')</div>' +
+            (e.reason ? '<div class="audit-reason">' + escHtml(e.reason) + '</div>' : '') +
+            '<div class="audit-hash" title="Integrity checksum">' + (e.checksum || '').slice(0, 16) + '...</div>' +
+          '</div>';
+        }).join('') +
+      '</div></div>';
+  } catch (err) {
+    containerEl.innerHTML = '<p style="color:#5a5a5a;padding:20px;">Could not load audit trail.</p>';
+  }
+}
+
+// ── Create CAPA ─────────────────────────────────────────────
+async function createCapa() {
+  var title = document.getElementById('newCapaTitle').value.trim();
+  var description = document.getElementById('newCapaDesc').value.trim();
+  var submissionRef = document.getElementById('newCapaRef').value.trim();
+  var capaType = document.getElementById('newCapaType').value;
+  var rootCauseCategory = document.getElementById('newCapaRootCause').value;
+  var owner = document.getElementById('newCapaOwner').value.trim();
+  var dueDate = document.getElementById('newCapaDue').value;
+
+  if (!title) { alert('Title is required'); return; }
+  if (!submissionRef) { alert('Linked deviation reference is required'); return; }
+
+  var btn = document.getElementById('createBtn');
+  btn.disabled = true; btn.textContent = 'Creating...';
+
+  try {
+    var res = await authFetch(SERVER + '/capas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        submissionRef: submissionRef, title: title, description: description,
+        capaType: capaType, rootCauseCategory: rootCauseCategory || null,
+        owner: owner || 'Unassigned', ownerRole: (window.__user && window.__user.role) || '',
+        dueDate: dueDate || null
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    var result = await res.json();
+    addLog('CAPA ' + result.capaId + ' created', 'info');
+    hideCreateModal();
+    await loadCapas();
+    await loadStats();
+    selectCapa(result.capaId);
+  } catch (err) {
+    addLog('Create failed: ' + err.message, 'error');
+    alert('Create failed: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create CAPA';
+  }
+}
+
+// ── Advance status ──────────────────────────────────────────
+async function advanceStatus(newStatus) {
+  if (!selected) return;
+  if (!confirm('Advance CAPA to "' + newStatus.replace(/_/g, ' ') + '"?')) return;
+  try {
+    var res = await authFetch(SERVER + '/capas/' + selected.capa_id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: newStatus,
+        userId: (window.__user && window.__user.name) || 'unknown',
+        reason: 'Status advanced to ' + newStatus.replace(/_/g, ' ')
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    addLog(selected.capa_id + ' → ' + newStatus.replace(/_/g, ' '), 'info');
+    await loadCapas();
+    await loadStats();
+    await selectCapa(selected.capa_id);
+  } catch (err) {
+    addLog('Status update failed: ' + err.message, 'error');
+  }
+}
+
+// ── Save evidence ───────────────────────────────────────────
+async function saveEvidence() {
+  if (!selected) return;
+  var evidence = document.getElementById('evidenceInput').value.trim();
+  try {
+    var res = await authFetch(SERVER + '/capas/' + selected.capa_id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        evidence: evidence,
+        userId: (window.__user && window.__user.name) || 'unknown',
+        reason: 'Evidence updated'
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    addLog('Evidence saved for ' + selected.capa_id, 'info');
+    selected.evidence = evidence;
+    renderCenter();
+  } catch (err) {
+    addLog('Save evidence failed: ' + err.message, 'error');
+  }
+}
+
+// ── Verify effectiveness ────────────────────────────────────
+async function verifyEffectiveness() {
+  if (!selected) return;
+  var status = document.getElementById('effStatus').value;
+  var notes = document.getElementById('effNotes').value.trim();
+  if (!confirm('Submit effectiveness verification as "' + status.replace(/_/g, ' ') + '"?')) return;
+
+  try {
+    var res = await authFetch(SERVER + '/capas/' + selected.capa_id + '/verify-effectiveness', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: status, notes: notes }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'HTTP ' + res.status);
+    addLog('Effectiveness verified for ' + selected.capa_id + ': ' + status.replace(/_/g, ' '), 'info');
+    await loadCapas();
+    await loadStats();
+    await selectCapa(selected.capa_id);
+  } catch (err) {
+    addLog('Verify effectiveness failed: ' + err.message, 'error');
+  }
+}
+
+// ── AI: Find similar CAPAs ──────────────────────────────────
+async function findSimilarCapas() {
+  var title = document.getElementById('newCapaTitle').value.trim();
+  var description = document.getElementById('newCapaDesc').value.trim();
+  if (!title && !description) { alert('Enter a title or description first'); return; }
+
+  var el = document.getElementById('aiSuggestions');
+  el.innerHTML = '<div class="ai-loading">Searching for similar CAPAs...</div>';
+
+  try {
+    var res = await authFetch(SERVER + '/capas/suggest-similar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title, description: description }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var result = await res.json();
+    var matches = result.matches || [];
+    if (matches.length === 0) {
+      el.innerHTML = '<div class="ai-suggestion"><span class="ai-tag">AI</span> No similar CAPAs found.</div>';
+    } else {
+      el.innerHTML = matches.map(function(m) {
+        return '<div class="ai-suggestion"><span class="ai-tag">AI</span> <strong>' + escHtml(m.capa_id) + '</strong> — ' + escHtml(m.title) + '<br><span style="color:#8e8e8e;font-size:10px;">Similarity: ' + m.similarity + ' — ' + escHtml(m.reasoning) + '</span></div>';
+      }).join('');
+    }
+    addLog('AI found ' + matches.length + ' similar CAPAs', 'info');
+  } catch (err) {
+    el.innerHTML = '<div class="ai-suggestion"><span class="ai-tag">AI</span> Failed to search: ' + escHtml(err.message) + '</div>';
+    addLog('AI similar search failed: ' + err.message, 'error');
+  }
+}
+
+// ── AI: Suggest preventive actions ──────────────────────────
+async function suggestPreventive() {
+  var rootCause = document.getElementById('newCapaRootCause').value;
+  var description = document.getElementById('newCapaDesc').value.trim();
+  if (!rootCause && !description) { alert('Select a root cause category or add a description first'); return; }
+
+  var el = document.getElementById('aiSuggestions');
+  el.innerHTML = '<div class="ai-loading">Generating preventive actions...</div>';
+
+  try {
+    var res = await authFetch(SERVER + '/capas/' + (selected ? selected.capa_id : 'new') + '/suggest-preventive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rootCause: rootCause, description: description }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var result = await res.json();
+    var actions = result.actions || [];
+    if (actions.length === 0) {
+      el.innerHTML = '<div class="ai-suggestion"><span class="ai-tag">AI</span> No suggestions generated.</div>';
+    } else {
+      el.innerHTML = actions.map(function(a) {
+        return '<div class="ai-suggestion"><span class="ai-tag">AI</span> <strong>' + escHtml(a.action) + '</strong><br><span style="color:#8e8e8e;font-size:10px;">' + a.category + ' &middot; ' + a.priority + ' priority &middot; ' + a.timeline + '</span></div>';
+      }).join('');
+    }
+    addLog('AI generated ' + actions.length + ' preventive actions', 'info');
+  } catch (err) {
+    el.innerHTML = '<div class="ai-suggestion"><span class="ai-tag">AI</span> Failed: ' + escHtml(err.message) + '</div>';
+    addLog('AI preventive actions failed: ' + err.message, 'error');
+  }
+}
+
+// ── AI: Predict effectiveness ───────────────────────────────
+async function predictEffectivenessAI() {
+  if (!selected) return;
+  var el = document.getElementById('effPrediction');
+  el.innerHTML = '<div class="ai-loading">Predicting effectiveness...</div>';
+
+  try {
+    var res = await authFetch(SERVER + '/capas/' + selected.capa_id + '/predict-effectiveness', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var result = await res.json();
+    var predColor = result.prediction === 'likely_effective' ? '#4ec9b0' : (result.prediction === 'likely_ineffective' ? '#f44747' : '#ffc64d');
+    el.innerHTML = '<div class="ai-suggestion" style="margin-top:8px;">' +
+      '<span class="ai-tag">AI</span> Prediction: <strong style="color:' + predColor + ';">' + (result.prediction || '').replace(/_/g, ' ') + '</strong> (confidence: ' + Math.round((result.confidence || 0) * 100) + '%)<br>' +
+      '<span style="color:#8e8e8e;font-size:10px;">' + escHtml(result.reasoning || '') + '</span>' +
+      (result.recommendations && result.recommendations.length > 0
+        ? '<div style="margin-top:6px;color:#8e8e8e;font-size:10px;"><strong>Recommendations:</strong><ul style="margin:4px 0;padding-left:16px;">' + result.recommendations.map(function(r) { return '<li>' + escHtml(r) + '</li>'; }).join('') + '</ul></div>'
+        : '') +
+    '</div>';
+    addLog('AI effectiveness prediction: ' + result.prediction, 'info');
+  } catch (err) {
+    el.innerHTML = '<div class="ai-suggestion" style="margin-top:8px;"><span class="ai-tag">AI</span> Failed: ' + escHtml(err.message) + '</div>';
+    addLog('AI prediction failed: ' + err.message, 'error');
+  }
+}
+
+// ── Utility ─────────────────────────────────────────────────
+function addLog(msg, level) {
+  var el = document.getElementById('bottomContent');
+  var time = new Date().toLocaleTimeString();
+  el.innerHTML += '<div class="log-line"><span class="log-time">' + time + '</span><span class="log-' + (level || 'info') + '">' + escHtml(msg) + '</span></div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.editor-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  renderCenter();
+}
+
+function showCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
+function hideCreateModal() {
+  document.getElementById('createModal').style.display = 'none';
+  document.getElementById('newCapaTitle').value = '';
+  document.getElementById('newCapaDesc').value = '';
+  document.getElementById('newCapaRef').value = '';
+  document.getElementById('newCapaType').value = 'corrective';
+  document.getElementById('newCapaRootCause').value = '';
+  document.getElementById('newCapaOwner').value = '';
+  document.getElementById('newCapaDue').value = '';
+  document.getElementById('aiSuggestions').innerHTML = '';
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Resizer ─────────────────────────────────────────────────
+(function() {
+  var resizer = document.getElementById('resizerLC');
+  var wb = document.getElementById('workbench');
+  var dragging = false;
+  resizer.addEventListener('mousedown', function(e) {
+    dragging = true; resizer.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var x = Math.max(180, Math.min(e.clientX, 500));
+    wb.style.gridTemplateColumns = x + 'px 4px 1fr';
+  });
+  document.addEventListener('mouseup', function() {
+    dragging = false; resizer.classList.remove('dragging');
+  });
+
+  var resizerH = document.getElementById('resizerBottom');
+  var draggingH = false;
+  resizerH.addEventListener('mousedown', function(e) {
+    draggingH = true; resizerH.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!draggingH) return;
+    var bottomH = Math.max(60, Math.min(window.innerHeight - e.clientY - 64, 400));
+    wb.style.gridTemplateRows = '1fr 4px ' + bottomH + 'px';
+  });
+  document.addEventListener('mouseup', function() {
+    draggingH = false; resizerH.classList.remove('dragging');
+  });
+})();
+
+// ── Init ────────────────────────────────────────────────────
+loadCapas();
+loadStats();
+</script>
+<script src="/shared/dev-progress.js"></script>
+</body>
+</html>

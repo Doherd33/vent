@@ -447,8 +447,10 @@ vent/
 
 ## The Vision
 
-Vent exists because the best ideas for improving a manufacturing process come from the people running it — and those ideas should never be lost to fear, bureaucracy, or forgetting.
+Vent is becoming a **spatially-grounded manufacturing intelligence system** — a visual, interactive 3D representation of the manufacturing floor where every piece of equipment is a living node connected to the facility's entire knowledge graph.
 
-Every observation an operator submits makes the facility smarter. Every document they review for GDP compliance raises the bar. Every pattern the AI detects makes quality stronger. Every voice question asked on the floor makes SOPs more accessible. The knowledge compounds.
+The hub is the centrepiece. An operator walks up, sees the floor, taps a bioreactor, and instantly has access to its SOPs, batch records, deviation history, training requirements, maintenance logs, and real-time context. The LLM layer reasons across all of it — answering questions grounded in actual connected data, not generic responses.
 
-The operators aren't just following procedures. They're building the most complete, living quality intelligence system in biologics manufacturing — and they're doing it anonymously, safely, and as part of their normal work.
+No other platform connects QMS, CMMS, LMS, batch records, and process data through the equipment itself. Every module Vent has built — submissions, CAPAs, doc control, SOP query, GDP check, voice AI — becomes a detail view reachable from the spatial context. The hub is the front door to everything.
+
+The goal: the most powerful AI system in pharmaceutical manufacturing. Operators don't just follow procedures — they interact with a living, visual knowledge system that makes the entire facility smarter every day.

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="/auth/login.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════
+     LOGIN CARD
+     ════════════════════════════════════════════════════════ -->
+<div class="login-wrap" id="loginWrap">
+<div class="card">
+
+  <div class="brand">
+    <span class="brand-name">Vent</span>
+    <div class="pip"></div>
+  </div>
+
+  <div class="login-divider"></div>
+
+  <!-- ── SIGN IN PANE ── -->
+  <div class="login-pane show" id="loginPane">
+
+    <div class="heading" id="loginHeading">
+      <h1 id="loginTitle">Sign in</h1>
+      <p class="sub">Sign in with your email and password.</p>
+    </div>
+
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="email"
+             onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')doLogin()">
+        <button type="button" class="pw-toggle" onclick="togglePw('loginPass',this)" tabindex="-1" aria-label="Show password">
+          <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="eye-shut" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="err-msg" id="loginErr"></div>
+
+    <button class="continue-btn" onclick="doLogin()" id="loginBtn">
+      <span>Sign in</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+
+  </div><!-- /login-pane -->
+
+  <div class="login-footer">
+    <em>Anonymous by design. Intelligent by necessity.</em>
+  </div>
+
+</div><!-- /card -->
+</div><!-- /login-wrap -->
+
+<div class="login-orbs">
+  <div class="login-orb login-orb-1"></div>
+  <div class="login-orb login-orb-2"></div>
+  <div class="login-orb login-orb-3"></div>
+</div>
+
+<script src="/shared/login-auth.js?v=3"></script>
+</body>
+</html>

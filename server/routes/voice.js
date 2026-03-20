@@ -57,11 +57,11 @@ module.exports = function(app, { auth, voiceService }) {
 
   // ── Charlie Voice Assistant ───────────────────────────────────────────────
   app.post('/charlie/ask', requireAuth, async (req, res) => {
-    const { question, context, lang, history } = req.body;
+    const { question, context, lang, history, mode } = req.body;
     if (!question) return res.status(400).json({ error: 'question is required' });
 
     try {
-      const result = await voiceService.askCharlie({ question, context, lang, history });
+      const result = await voiceService.askCharlie({ question, context, lang, history, mode });
       res.json(result);
     } catch (err) {
       console.error('[CHARLIE/ASK] Error:', err.message);

@@ -1,0 +1,48 @@
+[
+  {
+    "id": "rtr-001",
+    "name": "High-priority upstream deviation",
+    "input": {
+      "observation": "Cell viability dropped to 72% after media exchange. pH was 6.82.",
+      "area": "Upstream",
+      "contactsContext": "Dr Sarah Chen — QA Lead, QA, Quality Assurance, qa, SC\nMike O'Brien — Shift Lead A, Operations, Production Floor, ops, MO\nDr James Walsh — MSAT Lead, MSAT, Manufacturing Science, msat, JW\nAoife Murphy — EHS Officer, EHS, Environment Health Safety, ehs, AM\nDr Ciara Brennan — Quality Director, QA, Quality Assurance, qa-dir, CB",
+      "classification": {
+        "priority": "High",
+        "riskLevel": "High",
+        "category": "process-deviation"
+      },
+      "analysis": {
+        "sopRefs": [{ "code": "WX-SOP-1001-03", "step": "8.6.1.4" }],
+        "correctiveActions": [{ "title": "Recalibrate pH probe", "timing": "immediate" }]
+      }
+    },
+    "expected": {
+      "contactCount": { "min": 3, "max": 5 },
+      "mustIncludeRoles": ["Shift Lead", "QA Lead"],
+      "workflowPhases": [1, 2, 3]
+    }
+  },
+  {
+    "id": "rtr-002",
+    "name": "Low-priority documentation gap",
+    "input": {
+      "observation": "Missed temperature logbook entry during night shift handover.",
+      "area": "Upstream",
+      "contactsContext": "Dr Sarah Chen — QA Lead, QA, Quality Assurance, qa, SC\nMike O'Brien — Shift Lead A, Operations, Production Floor, ops, MO\nDr Karen Doyle — QMS Lead, QA, Quality Management, qms, KD",
+      "classification": {
+        "priority": "Low",
+        "riskLevel": "Low",
+        "category": "documentation"
+      },
+      "analysis": {
+        "sopRefs": [{ "code": "WX-SOP-1003-03", "step": "6.2" }],
+        "correctiveActions": [{ "title": "Complete deviation note", "timing": "short" }]
+      }
+    },
+    "expected": {
+      "contactCount": { "min": 2, "max": 4 },
+      "mustIncludeRoles": ["Shift Lead"],
+      "workflowPhases": [1, 2]
+    }
+  }
+]

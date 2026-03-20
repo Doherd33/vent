@@ -1,0 +1,87 @@
+[
+  {
+    "id": "cls-001",
+    "name": "High-priority viability drop",
+    "input": {
+      "observation": "Cell viability dropped to 72% after the second media exchange today. This is well below our 85% threshold. The perfusion rate was normal but I noticed the pH was reading 6.82 before the exchange.",
+      "area": "Upstream",
+      "shift": "Day",
+      "sopContext": "WX-SOP-1001-03 Section 8.6.1.4: Monitor cell viability after each media exchange. If viability falls below 85%, immediately notify the Shift Lead and QA. Section 8.6.2: pH must be maintained between 7.0–7.4 during perfusion operations.",
+      "patternContext": "2 similar submissions in past 30 days: VNT-2041 (viability 78%, pH 6.9) and VNT-2033 (viability 80%, pH normal)."
+    },
+    "expected": {
+      "priority": "High",
+      "riskLevel": "High",
+      "regulatoryFlag": "No",
+      "category": "process-deviation"
+    }
+  },
+  {
+    "id": "cls-002",
+    "name": "Minor documentation gap",
+    "input": {
+      "observation": "The logbook entry for Bioreactor 3 temperature check was missed during the night shift handover. Temperature was within range when I checked this morning.",
+      "area": "Upstream",
+      "shift": "Day",
+      "sopContext": "WX-SOP-1003-03 Section 6.2: Temperature monitoring must be logged every 4 hours. Section 6.2.1: Any missed log entry must be documented with a deviation note.",
+      "patternContext": "No similar submissions found."
+    },
+    "expected": {
+      "priority": "Low",
+      "riskLevel": "Low",
+      "regulatoryFlag": "No",
+      "category": "documentation"
+    }
+  },
+  {
+    "id": "cls-003",
+    "name": "Equipment alarm — safety concern",
+    "input": {
+      "observation": "The CO2 alarm on Incubator 7 went off three times in the past hour. Each time it reset itself after about 2 minutes. The CO2 reading was fluctuating between 4.8% and 5.6% (target 5.0%). Nobody has checked the gas supply line yet.",
+      "area": "Cell Culture",
+      "shift": "Night",
+      "sopContext": "WX-SOP-1004-03 Section 9.1: CO2 levels must be maintained at 5.0% ± 0.2%. Section 9.1.3: CAUTION — repeated alarms may indicate a gas supply leak. Evacuate area if alarm persists >5 minutes. Section 9.2: Notify EHS immediately for any gas supply concern.",
+      "patternContext": "1 similar submission: VNT-1998 (CO2 alarm on Incubator 5, resolved — faulty sensor)."
+    },
+    "expected": {
+      "priority": "High",
+      "riskLevel": "High",
+      "regulatoryFlag": "No",
+      "category": "safety"
+    }
+  },
+  {
+    "id": "cls-004",
+    "name": "Medium-priority environmental excursion",
+    "input": {
+      "observation": "The cleanroom differential pressure in Suite B dropped to 12 Pa for about 15 minutes during the door replacement work. It's back to 15 Pa now. No product was exposed.",
+      "area": "Cleanroom",
+      "shift": "Day",
+      "sopContext": "WX-SOP-1005-03 Section 7.3: Differential pressure must be maintained ≥15 Pa during classified operations. Section 7.3.2: If pressure drops below 15 Pa, document the excursion and assess product impact. NOTE: Maintenance activities may require temporary deviations — pre-approve with QA.",
+      "patternContext": "No similar submissions found."
+    },
+    "expected": {
+      "priority": "Medium",
+      "riskLevel": "Medium",
+      "regulatoryFlag": "No",
+      "category": "environmental"
+    }
+  },
+  {
+    "id": "cls-005",
+    "name": "Regulatory-flagged contamination",
+    "input": {
+      "observation": "We found visible particles in the final filtrate sample from Batch 2024-B-089. The sample was taken after the 0.2μm filter step. QC has not confirmed the identity yet but it looks like fibre contamination.",
+      "area": "Downstream",
+      "shift": "Day",
+      "sopContext": "WX-SOP-1002-03 Section 10.1: All final filtrate must be visually inspected. Section 10.1.2: Any visible particulate in post-filtration samples constitutes a potential regulatory-reportable event under EU GMP Annex 1. Section 10.2: Quarantine batch immediately and notify QP within 2 hours.",
+      "patternContext": "No similar submissions found."
+    },
+    "expected": {
+      "priority": "High",
+      "riskLevel": "High",
+      "regulatoryFlag": "Yes",
+      "category": "process-deviation"
+    }
+  }
+]

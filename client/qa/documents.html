@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vent · Document Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/styles.css">
+<style>
+body {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 42px 1fr 22px;
+  overflow: hidden;
+}
+
+/* ── WORKBENCH ── */
+.workbench {
+  display: grid;
+  grid-template-columns: 280px 4px 1fr;
+  grid-template-rows: 1fr 4px 140px;
+  overflow: hidden;
+}
+
+/* ── RESIZE HANDLES ── */
+.resizer { background: #3c3c3c; z-index: 10; transition: background 0.15s; position: relative; }
+.resizer:hover, .resizer.dragging { background: #007acc; }
+.resizer-v { cursor: col-resize; grid-row: 1; }
+.resizer-h { cursor: row-resize; grid-column: 1 / 4; grid-row: 2; }
+.resizer::after { content: ''; position: absolute; inset: 0; }
+.resizer-v::after  { left: -4px; right: -4px; }
+.resizer-h::after  { top: -4px; bottom: -4px; }
+
+/* ── LEFT PANEL ── */
+.left-panel {
+  grid-column: 1; grid-row: 1 / 2;
+  background: #252526; border-right: 1px solid #3c3c3c;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-header {
+  padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: #8e8e8e; border-bottom: 1px solid #3c3c3c;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-badge {
+  background: #007acc; color: #fff; font-size: 10px; padding: 1px 6px;
+  border-radius: 8px; font-weight: 600;
+}
+.filter-bar {
+  display: flex; gap: 2px; padding: 6px 8px; border-bottom: 1px solid #2d2d30;
+  flex-wrap: wrap;
+}
+.filter-btn {
+  background: none; border: 1px solid #3c3c3c; color: #8e8e8e; font-size: 10px;
+  padding: 2px 8px; border-radius: 2px; cursor: pointer; transition: all .15s;
+}
+.filter-btn:hover { color: #ccc; border-color: #5a5a5a; }
+.filter-btn.active { background: #007acc; color: #fff; border-color: #007acc; }
+.search-input {
+  width: 100%; padding: 5px 8px; font-size: 11px; background: #1e1e1e;
+  border: 1px solid #3c3c3c; border-radius: 2px; color: #d4d4d4; outline: none;
+  margin: 0 8px 6px;
+}
+.search-input:focus { border-color: #007acc; }
+.doc-list { flex: 1; overflow-y: auto; }
+
+/* ── DOC CARD ── */
+.doc-card {
+  padding: 8px 10px; border-radius: 2px; margin-bottom: 1px;
+  cursor: pointer; transition: background 0.1s; border-left: 2px solid transparent;
+}
+.doc-card:hover { background: #2a2d2e; }
+.doc-card.active { background: #094771; border-left-color: #007acc; }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.card-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #9cdcfe; }
+.card-docnum { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #ce91ff; margin-left: 6px; }
+.card-title { font-size: 11px; color: #d4d4d4; line-height: 1.4; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { font-size: 10px; color: #5a5a5a; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* ── STATUS BADGES ── */
+.status-badge { font-size: 9px; padding: 1px 6px; border-radius: 2px; text-transform: capitalize; }
+.doc-status-draft      { background: rgba(100,100,100,0.18); color: #8e8e8e; }
+.doc-status-in-review  { background: rgba(0,122,204,0.18); color: #4fc1ff; }
+.doc-status-approved   { background: rgba(255,198,77,0.15); color: #ffc64d; }
+.doc-status-effective   { background: rgba(77,200,110,0.15); color: #4dc86e; }
+.doc-status-superseded { background: rgba(255,150,50,0.15); color: #ff9632; }
+.doc-status-retired    { background: rgba(244,71,71,0.15); color: #f44747; }
+.doc-status-archived   { background: rgba(100,100,100,0.18); color: #666; }
+
+/* ── TYPE BADGES ── */
+.type-badge { font-size: 9px; padding: 1px 5px; border-radius: 2px; text-transform: uppercase; letter-spacing: .03em; font-weight: 600; }
+.type-sop    { background: rgba(0,122,204,0.18); color: #4fc1ff; }
+.type-wi     { background: rgba(78,201,176,0.15); color: #4ec9b0; }
+.type-form   { background: rgba(206,145,255,0.12); color: #ce91ff; }
+.type-policy { background: rgba(255,198,77,0.12); color: #ffc64d; }
+.type-spec   { background: rgba(244,71,71,0.12); color: #f44747; }
+.type-protocol { background: rgba(86,156,214,0.15); color: #569cd6; }
+.type-report { background: rgba(100,100,100,0.18); color: #aaa; }
+.type-master-batch-record { background: rgba(255,150,50,0.15); color: #ff9632; }
+
+/* ── OVERDUE / LOCK INDICATORS ── */
+.overdue-dot { width: 6px; height: 6px; border-radius: 50%; background: #f44747; display: inline-block; flex-shrink: 0; }
+.due-soon-dot { width: 6px; height: 6px; border-radius: 50%; background: #ffc64d; display: inline-block; flex-shrink: 0; }
+.lock-icon { font-size: 10px; color: #ffc64d; }
+.version-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #569cd6; background: rgba(86,156,214,0.12); padding: 1px 5px; border-radius: 2px; }
+
+/* ── CENTER PANEL ── */
+.center-panel {
+  grid-column: 3; grid-row: 1 / 2;
+  background: var(--bg, #1e1e1e); display: flex; flex-direction: column; overflow: hidden;
+}
+.editor-tabs {
+  display: flex; gap: 0; background: #252526; border-bottom: 1px solid #3c3c3c;
+  min-height: 34px; align-items: flex-end; overflow-x: auto;
+}
+.editor-tab {
+  padding: 6px 14px; font-size: 11px; color: #8e8e8e; cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s;
+}
+.editor-tab:hover { color: #ccc; }
+.editor-tab.active { color: #fff; border-bottom-color: #007acc; }
+.center-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-state .ei { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.empty-state p { color: #5a5a5a; font-size: 12px; }
+
+/* ── DETAIL SECTIONS ── */
+.detail-section { margin-bottom: 20px; }
+.section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #8e8e8e; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #2d2d30;
+  display: flex; align-items: center; gap: 8px;
+}
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+.detail-field label { display: block; font-size: 10px; color: #5a5a5a; margin-bottom: 2px; text-transform: uppercase; letter-spacing: .04em; }
+.detail-field span { font-size: 12px; color: #ccc; }
+.detail-field .mono { font-family: 'JetBrains Mono', monospace; color: #9cdcfe; }
+
+/* ── CONTROLLED DOC BANNER ── */
+.controlled-banner {
+  background: rgba(0,122,204,0.08); border: 1px solid rgba(0,122,204,0.25); border-radius: 2px;
+  padding: 8px 12px; font-size: 11px; color: #4fc1ff; margin-bottom: 16px;
+}
+.superseded-banner {
+  background: rgba(244,71,71,0.08); border: 1px solid rgba(244,71,71,0.3); border-radius: 2px;
+  padding: 10px 12px; font-size: 12px; color: #f44747; margin-bottom: 16px; font-weight: 600;
+}
+.retired-banner {
+  background: rgba(255,150,50,0.08); border: 1px solid rgba(255,150,50,0.3); border-radius: 2px;
+  padding: 10px 12px; font-size: 12px; color: #ff9632; margin-bottom: 16px; font-weight: 600;
+}
+.overdue-banner {
+  background: rgba(244,71,71,0.1); border: 1px solid rgba(244,71,71,0.35); border-radius: 2px;
+  padding: 10px 12px; font-size: 12px; color: #f44747; margin-bottom: 16px; font-weight: 600;
+}
+
+/* ── WORKFLOW BAR ── */
+.workflow-bar {
+  display: flex; align-items: center; gap: 0; margin-bottom: 16px; padding: 10px 0;
+}
+.wf-step {
+  display: flex; align-items: center; gap: 4px; font-size: 10px; color: #5a5a5a;
+  padding: 4px 10px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: transparent; text-transform: capitalize;
+}
+.wf-step.active { background: #007acc; color: #fff; border-color: #007acc; }
+.wf-step.done { background: rgba(77,200,110,0.1); color: #4dc86e; border-color: rgba(77,200,110,0.3); }
+.wf-arrow { color: #3c3c3c; font-size: 14px; margin: 0 2px; }
+
+/* ── DATA TABLE ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.data-table th { text-align: left; font-size: 10px; color: #5a5a5a; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 6px 8px; border-bottom: 1px solid #3c3c3c; }
+.data-table td { padding: 6px 8px; color: #ccc; border-bottom: 1px solid #2d2d30; }
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ── PROGRESS BAR ── */
+.progress-bar { height: 6px; background: #2d2d30; border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.progress-green { background: #4dc86e; }
+.progress-amber { background: #ffc64d; }
+.progress-red { background: #f44747; }
+
+/* ── BUTTONS ── */
+.wf-btn {
+  padding: 5px 14px; font-size: 11px; border: 1px solid #3c3c3c; border-radius: 2px;
+  background: #2d2d30; color: #ccc; cursor: pointer; transition: all .15s;
+}
+.wf-btn:hover { border-color: #5a5a5a; color: #fff; }
+.wf-primary { background: #007acc; border-color: #007acc; color: #fff; }
+.wf-primary:hover { background: #0098ff; }
+.wf-danger { background: rgba(244,71,71,0.15); border-color: rgba(244,71,71,0.4); color: #f44747; }
+.wf-danger:hover { background: rgba(244,71,71,0.25); }
+.wf-ai { background: rgba(0,122,204,0.1); border-color: rgba(0,122,204,0.3); color: #4fc1ff; }
+.wf-ai:hover { background: rgba(0,122,204,0.2); }
+.action-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+/* ── AI PANEL ── */
+.ai-panel {
+  background: rgba(0,122,204,0.05); border: 1px solid rgba(0,122,204,0.15); border-radius: 2px;
+  padding: 12px; margin-top: 8px;
+}
+.ai-panel-title { font-size: 10px; font-weight: 700; color: #4fc1ff; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+.ai-tag { display: inline-block; font-size: 10px; background: rgba(0,122,204,0.12); color: #4fc1ff; padding: 2px 6px; border-radius: 2px; margin: 2px; }
+.confidence-bar { display: inline-block; width: 60px; height: 4px; background: #2d2d30; border-radius: 2px; vertical-align: middle; margin-left: 6px; }
+.confidence-fill { height: 100%; border-radius: 2px; background: #4dc86e; }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: flex; gap: 8px; padding: 8px; border-bottom: 1px solid #2d2d30;
+  flex-wrap: wrap;
+}
+.stat-chip {
+  background: #1e1e1e; border: 1px solid #2d2d30; border-radius: 2px;
+  padding: 4px 10px; font-size: 10px; color: #8e8e8e; cursor: pointer;
+  transition: all .15s;
+}
+.stat-chip:hover { border-color: #5a5a5a; color: #ccc; }
+.stat-chip .val { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: #d4d4d4; margin-right: 4px; }
+.stat-chip.alert .val { color: #f44747; }
+
+/* ── BOTTOM PANEL ── */
+.bottom-panel { grid-column: 1 / 4; grid-row: 3; background: #252526; border-top: 1px solid #3c3c3c; display: flex; flex-direction: column; overflow: hidden; }
+.bottom-tabs { display: flex; gap: 0; border-bottom: 1px solid #2d2d30; }
+.bottom-tab { padding: 4px 12px; font-size: 10px; color: #8e8e8e; cursor: pointer; border-bottom: 2px solid transparent; }
+.bottom-tab.active { color: #ccc; border-bottom-color: #007acc; }
+.bottom-content { flex: 1; overflow-y: auto; padding: 6px 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.log-line { padding: 1px 0; color: #8e8e8e; }
+.log-time { color: #5a5a5a; margin-right: 8px; }
+.log-info { color: #4ec9b0; }
+.log-warn { color: #ffc64d; }
+.log-error { color: #f44747; }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: #007acc; display: flex; align-items: center; padding: 0 10px;
+  font-size: 11px; color: #fff; gap: 6px;
+}
+.status-bar .s-sep { color: rgba(255,255,255,0.4); }
+.status-bar .s-right { margin-left: auto; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-overlay.hidden { display: none; }
+.modal {
+  background: #252526; border: 1px solid #3c3c3c; border-radius: 4px;
+  width: 560px; max-width: 90vw; max-height: 85vh; display: flex; flex-direction: column;
+}
+.modal-header { padding: 16px 20px; border-bottom: 1px solid #3c3c3c; }
+.modal-header h3 { font-size: 14px; color: #e0e0e0; margin: 0 0 4px 0; }
+.modal-header p { font-size: 11px; color: #8e8e8e; margin: 0; }
+.modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid #3c3c3c; display: flex; gap: 8px; justify-content: flex-end; }
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 11px; color: #8e8e8e; margin-bottom: 4px; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 6px 8px; background: #1e1e1e; border: 1px solid #3c3c3c;
+  border-radius: 2px; color: #d4d4d4; font-size: 11px; font-family: 'DM Sans', sans-serif; outline: none;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #007acc; }
+.form-group textarea { min-height: 60px; resize: vertical; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group .hint { font-size: 10px; color: #5a5a5a; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ── TITLE BAR ── -->
+<div class="title-bar" style="background:#252526; border-bottom:1px solid #3c3c3c; display:flex; align-items:center; padding:0 12px; font-size:12px; color:#8e8e8e;">
+  <span style="font-family:'Instrument Serif',serif; font-size:15px; color:#ccc; margin-right:12px;">Vent</span>
+  <span style="color:#5a5a5a; margin-right:8px;">|</span>
+  <span>Document Control</span>
+  <span style="margin-left:auto;"><button class="wf-btn wf-primary" onclick="openCreateModal()">+ New Document</button></span>
+</div>
+
+<!-- ── WORKBENCH ── -->
+<div class="workbench">
+
+  <!-- LEFT PANEL: Document List -->
+  <div class="left-panel">
+    <div class="panel-header">
+      <span>Documents</span>
+      <span class="panel-badge" id="docCount">0</span>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="stats-bar" id="statsBar"></div>
+
+    <!-- Filters -->
+    <div class="filter-bar" id="statusFilters">
+      <button class="filter-btn active" data-filter="active">Active</button>
+      <button class="filter-btn" data-filter="draft">Draft</button>
+      <button class="filter-btn" data-filter="in-review">Review</button>
+      <button class="filter-btn" data-filter="approved">Approved</button>
+      <button class="filter-btn" data-filter="all">All</button>
+    </div>
+    <div class="filter-bar" id="typeFilters">
+      <button class="filter-btn active" data-type="all">All Types</button>
+      <button class="filter-btn" data-type="sop">SOP</button>
+      <button class="filter-btn" data-type="wi">WI</button>
+      <button class="filter-btn" data-type="form">Form</button>
+      <button class="filter-btn" data-type="policy">Policy</button>
+      <button class="filter-btn" data-type="spec">Spec</button>
+      <button class="filter-btn" data-type="protocol">Protocol</button>
+      <button class="filter-btn" data-type="report">Report</button>
+      <button class="filter-btn" data-type="master-batch-record">MBR</button>
+    </div>
+
+    <input type="text" class="search-input" id="searchInput" placeholder="Search doc ID, number, title...">
+
+    <div class="doc-list" id="docList"></div>
+  </div>
+
+  <!-- RESIZER -->
+  <div class="resizer resizer-v" id="resizerV"></div>
+
+  <!-- CENTER PANEL: Detail -->
+  <div class="center-panel">
+    <div class="editor-tabs" id="editorTabs">
+      <div class="editor-tab active" data-tab="detail">Detail</div>
+      <div class="editor-tab" data-tab="versions">Versions</div>
+      <div class="editor-tab" data-tab="reviews">Reviews</div>
+      <div class="editor-tab" data-tab="distribution">Distribution</div>
+      <div class="editor-tab" data-tab="crossrefs">Cross-References</div>
+      <div class="editor-tab" data-tab="ai">AI Analysis</div>
+    </div>
+    <div class="center-content" id="centerContent">
+      <div class="empty-state">
+        <div class="ei">&#128196;</div>
+        <p>Select a document from the list or create a new one</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- HORIZONTAL RESIZER -->
+  <div class="resizer resizer-h" id="resizerH"></div>
+
+  <!-- BOTTOM PANEL: Audit Log -->
+  <div class="bottom-panel">
+    <div class="bottom-tabs">
+      <div class="bottom-tab active">Audit Log</div>
+    </div>
+    <div class="bottom-content" id="auditLog">
+      <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Document control module loaded</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STATUS BAR ── -->
+<div class="status-bar">
+  <span>Document Control</span>
+  <span class="s-sep">|</span>
+  <span id="statusText">Ready</span>
+  <span class="s-right" id="statusRight">--</span>
+</div>
+
+<!-- ── CREATE MODAL ── -->
+<div class="modal-overlay hidden" id="createModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Create Controlled Document</h3>
+      <p>Register a new document in the document control system</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Document Number *</label>
+          <input type="text" id="createDocNumber" placeholder="SOP-QA-001">
+          <div class="hint">Format: TYPE-DEPT-SEQ (e.g., SOP-QA-001)</div>
+        </div>
+        <div class="form-group">
+          <label>Document Type *</label>
+          <select id="createDocType" onchange="onDocTypeChange()">
+            <option value="sop">SOP - Standard Operating Procedure</option>
+            <option value="wi">WI - Work Instruction</option>
+            <option value="form">Form / Template</option>
+            <option value="policy">Policy</option>
+            <option value="spec">Specification</option>
+            <option value="protocol">Protocol</option>
+            <option value="report">Report</option>
+            <option value="master-batch-record">Master Batch Record</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Title *</label>
+        <input type="text" id="createTitle" placeholder="Document title">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="createDesc" placeholder="Brief description of the document scope and purpose"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Department *</label>
+          <select id="createDept">
+            <option value="qa">Quality Assurance</option>
+            <option value="qc">Quality Control</option>
+            <option value="production">Production</option>
+            <option value="engineering">Engineering</option>
+            <option value="regulatory">Regulatory Affairs</option>
+            <option value="validation">Validation</option>
+            <option value="msat">MSAT</option>
+            <option value="facilities">Facilities</option>
+            <option value="supply-chain">Supply Chain</option>
+            <option value="ehs">EHS</option>
+            <option value="it-automation">IT / Automation</option>
+            <option value="hr">Human Resources</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Classification</label>
+          <select id="createClassification">
+            <option value="controlled">Controlled (GMP)</option>
+            <option value="uncontrolled">Uncontrolled</option>
+            <option value="reference-only">Reference Only</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Owner</label>
+          <input type="text" id="createOwner" placeholder="Document owner (defaults to current user)">
+        </div>
+        <div class="form-group">
+          <label>Review Period (months)</label>
+          <input type="number" id="createReviewPeriod" value="24" min="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label><input type="checkbox" id="createTrainingReq" checked> Training Required</label>
+        </div>
+        <div class="form-group">
+          <label>Training Type</label>
+          <select id="createTrainingType">
+            <option value="read-understand">Read & Understand</option>
+            <option value="facilitated">Facilitated Training</option>
+            <option value="competency-assessment">Competency Assessment</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tags (comma-separated)</label>
+        <input type="text" id="createTags" placeholder="e.g., bioreactor, harvest, downstream">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Linked Change Control</label>
+          <input type="text" id="createCC" placeholder="CC-xxxx (optional)">
+        </div>
+        <div class="form-group">
+          <label>Linked Deviation</label>
+          <input type="text" id="createDev" placeholder="DEV-xxxx (optional)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Linked CAPA</label>
+        <input type="text" id="createCapa" placeholder="CAPA-xxxx (optional)">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeCreateModal()">Cancel</button>
+      <button class="wf-btn wf-ai" onclick="aiClassifyNew()">AI Auto-Classify</button>
+      <button class="wf-btn wf-primary" onclick="createDocument()">Create Document</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── VERSION MODAL ── -->
+<div class="modal-overlay hidden" id="versionModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Create New Version</h3>
+      <p id="versionModalSub">Create a new version of this document</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Revision Type *</label>
+        <select id="verRevType" onchange="onRevTypeChange()">
+          <option value="major">Major (Substantive Change)</option>
+          <option value="minor">Minor (Editorial Correction)</option>
+        </select>
+      </div>
+      <div class="form-group" id="verCCGroup">
+        <label>Change Control ID *</label>
+        <input type="text" id="verCC" placeholder="CC-xxxx (required for major revisions)">
+      </div>
+      <div class="form-group">
+        <label>Reason Category *</label>
+        <select id="verReasonCat">
+          <option value="change-control">Change Control</option>
+          <option value="capa">CAPA</option>
+          <option value="deviation">Deviation</option>
+          <option value="periodic-review">Periodic Review</option>
+          <option value="regulatory-update">Regulatory Update</option>
+          <option value="process-improvement">Process Improvement</option>
+          <option value="editorial-correction">Editorial Correction</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Reason for Change *</label>
+        <textarea id="verReason" placeholder="Describe why this revision is needed"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Summary of Changes</label>
+        <textarea id="verSummary" placeholder="Section-by-section description of changes"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeVersionModal()">Cancel</button>
+      <button class="wf-btn wf-ai" onclick="aiGenerateChangeSummary()">AI Generate Summary</button>
+      <button class="wf-btn wf-primary" onclick="createVersion()">Create Version</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── REVIEW MODAL ── -->
+<div class="modal-overlay hidden" id="reviewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Submit Review</h3>
+      <p>Record your review decision for this document</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Decision *</label>
+        <select id="revDecision">
+          <option value="approved">Approved</option>
+          <option value="approved-with-comments">Approved with Comments</option>
+          <option value="rejected">Rejected</option>
+          <option value="returned-for-revision">Returned for Revision</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Signature Meaning *</label>
+        <select id="revSigMeaning">
+          <option value="review">Review</option>
+          <option value="approval">Approval</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Comments</label>
+        <textarea id="revComments" placeholder="Required for rejected / returned-for-revision decisions"></textarea>
+      </div>
+      <div class="detail-field" style="margin-top:12px; padding:8px; background:#1e1e1e; border-radius:2px;">
+        <label style="font-size:10px; color:#5a5a5a;">E-SIGNATURE</label>
+        <span style="font-size:11px; color:#ccc;" id="revSignerInfo">Loading...</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeReviewModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="submitReviewDecision()">Sign & Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PERIODIC REVIEW MODAL ── -->
+<div class="modal-overlay hidden" id="periodicModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Complete Periodic Review</h3>
+      <p id="periodicModalSub">Assess the current version of this document</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Outcome *</label>
+        <select id="prOutcome">
+          <option value="current">Current - No changes needed</option>
+          <option value="needs-revision">Needs Revision - Initiate change control</option>
+          <option value="needs-minor-update">Needs Minor Update - Editorial corrections</option>
+          <option value="retire">Retire - Document no longer needed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Comments *</label>
+        <textarea id="prComments" placeholder="Document your assessment and rationale"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closePeriodicModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="completePeriodicReview()">Complete Review</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DISTRIBUTE MODAL ── -->
+<div class="modal-overlay hidden" id="distributeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Distribute Document</h3>
+      <p>Send document for acknowledgement and/or training</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Users (one per line, format: userId, name, department, role)</label>
+        <textarea id="distUsers" rows="6" placeholder="jsmith, John Smith, production, operator&#10;mjones, Mary Jones, qa, analyst"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label><input type="checkbox" id="distTraining" checked> Training Required</label>
+        </div>
+        <div class="form-group">
+          <label>Due Date</label>
+          <input type="date" id="distDueDate">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="wf-btn" onclick="closeDistributeModal()">Cancel</button>
+      <button class="wf-btn wf-primary" onclick="distributeDocument()">Distribute</button>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/i18n.js"></script>
+<script src="/shared/nav.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Document Control — Page Logic
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const API = '/documents';
+let docs = [];
+let selectedDoc = null;
+let activeTab = 'detail';
+let activeStatusFilter = 'active';
+let activeTypeFilter = 'all';
+
+// ── Review period defaults ──────────────────────────────────────────────
+const REVIEW_DEFAULTS = { sop:24, wi:24, form:30, policy:36, spec:18, protocol:0, report:36, 'master-batch-record':18 };
+const TRAINING_DEFAULTS = { sop:true, wi:true, form:false, policy:false, spec:true, protocol:false, report:false, 'master-batch-record':true };
+
+// ── Init ────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadDocuments();
+  loadStats();
+  setupFilters();
+  setupTabs();
+  setupResizers();
+});
+
+// ── Data Loading ────────────────────────────────────────────────────────
+async function loadDocuments() {
+  try {
+    const params = new URLSearchParams();
+    if (activeStatusFilter === 'all') params.set('showAll', 'true');
+    else if (activeStatusFilter === 'active') { /* default - no superseded/retired */ }
+    else params.set('status', activeStatusFilter);
+    if (activeTypeFilter !== 'all') params.set('doc_type', activeTypeFilter);
+    const q = document.getElementById('searchInput').value.trim();
+    if (q) params.set('search', q);
+
+    const res = await authFetch(`${API}?${params}`);
+    docs = await res.json();
+    if (!Array.isArray(docs)) docs = [];
+    renderDocList();
+    document.getElementById('docCount').textContent = docs.length;
+    document.getElementById('statusRight').textContent = `${docs.length} documents`;
+  } catch (e) {
+    log('error', `Load failed: ${e.message}`);
+  }
+}
+
+async function loadStats() {
+  try {
+    const res = await authFetch(`${API}/stats`);
+    const stats = await res.json();
+    renderStats(stats);
+  } catch (e) { /* silent */ }
+}
+
+async function loadDocDetail(docId) {
+  try {
+    document.getElementById('statusText').textContent = `Loading ${docId}...`;
+    const res = await authFetch(`${API}/${docId}`);
+    selectedDoc = await res.json();
+    renderDetail();
+    document.getElementById('statusText').textContent = `${selectedDoc.doc_number} v${selectedDoc.version_display}`;
+
+    // Highlight in list
+    document.querySelectorAll('.doc-card').forEach(c => c.classList.toggle('active', c.dataset.id === docId));
+  } catch (e) {
+    log('error', `Load detail failed: ${e.message}`);
+  }
+}
+
+// ── Render Functions ────────────────────────────────────────────────────
+
+function renderStats(stats) {
+  const bar = document.getElementById('statsBar');
+  const s = stats.byStatus || {};
+  const overdueReviews = stats.overdueReviews || 0;
+  bar.innerHTML = `
+    <div class="stat-chip" onclick="filterByStatus('effective')"><span class="val">${s.effective||0}</span>Effective</div>
+    <div class="stat-chip" onclick="filterByStatus('draft')"><span class="val">${s.draft||0}</span>Draft</div>
+    <div class="stat-chip" onclick="filterByStatus('in-review')"><span class="val">${s['in-review']||0}</span>Review</div>
+    <div class="stat-chip ${overdueReviews > 0 ? 'alert' : ''}" title="Overdue periodic reviews"><span class="val">${overdueReviews}</span>Overdue</div>
+    <div class="stat-chip"><span class="val">${stats.total||0}</span>Total</div>
+  `;
+}
+
+function renderDocList() {
+  const list = document.getElementById('docList');
+  if (docs.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#5a5a5a;font-size:11px;">No documents found</div>';
+    return;
+  }
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const in30 = new Date(now); in30.setDate(in30.getDate() + 30);
+  const in30str = in30.toISOString().split('T')[0];
+
+  list.innerHTML = docs.map(d => {
+    const isOverdue = d.next_review_date && d.status === 'effective' && d.next_review_date < today;
+    const isDueSoon = d.next_review_date && d.status === 'effective' && d.next_review_date >= today && d.next_review_date <= in30str;
+    const isActive = selectedDoc && selectedDoc.doc_id === d.doc_id;
+    const lockHtml = d.checked_out_by ? `<span class="lock-icon" title="Checked out by ${esc(d.checked_out_by)}">&#128274;</span>` : '';
+    return `<div class="doc-card ${isActive ? 'active' : ''}" data-id="${d.doc_id}" onclick="loadDocDetail('${d.doc_id}')">
+      <div class="card-top">
+        <span><span class="card-id">${esc(d.doc_id)}</span><span class="card-docnum">${esc(d.doc_number)}</span></span>
+        <span class="status-badge doc-status-${d.status}">${esc(d.status)}</span>
+      </div>
+      <div class="card-title">${esc(d.title)}</div>
+      <div class="card-meta">
+        <span class="type-badge type-${d.doc_type}">${esc(d.doc_type)}</span>
+        <span class="version-badge">v${esc(d.version_display)}</span>
+        <span>${esc(d.department)}</span>
+        ${isOverdue ? '<span class="overdue-dot" title="Periodic review overdue"></span>' : ''}
+        ${isDueSoon ? '<span class="due-soon-dot" title="Review due within 30 days"></span>' : ''}
+        ${lockHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDetail() {
+  if (!selectedDoc) return;
+  const content = document.getElementById('centerContent');
+
+  switch (activeTab) {
+    case 'detail': content.innerHTML = renderDetailTab(); break;
+    case 'versions': content.innerHTML = renderVersionsTab(); break;
+    case 'reviews': content.innerHTML = renderReviewsTab(); break;
+    case 'distribution': content.innerHTML = renderDistributionTab(); break;
+    case 'crossrefs': content.innerHTML = renderCrossRefsTab(); break;
+    case 'ai': content.innerHTML = renderAITab(); break;
+    default: content.innerHTML = renderDetailTab();
+  }
+}
+
+function renderDetailTab() {
+  const d = selectedDoc;
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  let bannerHtml = '';
+
+  // Controlled document banner
+  if (d.classification === 'controlled') {
+    bannerHtml += `<div class="controlled-banner">This is a controlled electronic document. Printed copies are uncontrolled.</div>`;
+  }
+  if (d.status === 'superseded') {
+    bannerHtml += `<div class="superseded-banner">SUPERSEDED -- NOT FOR ACTIVE USE.${d.superseded_by_doc_id ? ` Superseded by ${esc(d.superseded_by_doc_id)}` : ''}</div>`;
+  }
+  if (d.status === 'retired') {
+    bannerHtml += `<div class="retired-banner">RETIRED -- FOR REFERENCE ONLY. Retained per regulatory requirements.</div>`;
+  }
+  if (d.status === 'effective' && d.next_review_date && d.next_review_date < today) {
+    const overdueDays = Math.floor((now - new Date(d.next_review_date)) / (1000*60*60*24));
+    bannerHtml += `<div class="overdue-banner">PERIODIC REVIEW OVERDUE -- Due ${d.next_review_date}, ${overdueDays} days overdue.</div>`;
+  }
+
+  // Workflow bar
+  const stages = ['draft', 'in-review', 'approved', 'effective'];
+  const stageIdx = stages.indexOf(d.status);
+  const workflowHtml = stages.map((s, i) => {
+    let cls = '';
+    if (i < stageIdx) cls = 'done';
+    else if (i === stageIdx) cls = 'active';
+    return `<div class="wf-step ${cls}">${s}</div>`;
+  }).join('<span class="wf-arrow">&#8594;</span>');
+
+  // Review countdown
+  let reviewCountdown = '';
+  if (d.next_review_date && d.status === 'effective') {
+    const daysUntil = Math.floor((new Date(d.next_review_date) - now) / (1000*60*60*24));
+    if (daysUntil < 0) {
+      reviewCountdown = `<span style="color:#f44747;font-weight:600;">Overdue by ${Math.abs(daysUntil)} days</span>`;
+    } else if (daysUntil <= 30) {
+      reviewCountdown = `<span style="color:#ffc64d;">Due in ${daysUntil} days</span>`;
+    } else {
+      reviewCountdown = `<span style="color:#4dc86e;">Due in ${daysUntil} days</span>`;
+    }
+  }
+
+  // Actions
+  let actionsHtml = '<div class="action-row">';
+  if (d.status === 'draft') {
+    if (d.checked_out_by) {
+      actionsHtml += `<button class="wf-btn" onclick="docCheckin()">Check In</button>`;
+    } else {
+      actionsHtml += `<button class="wf-btn" onclick="docCheckout()">Check Out</button>`;
+    }
+    actionsHtml += `<button class="wf-btn wf-primary" onclick="docSubmit()">Submit for Review</button>`;
+    actionsHtml += `<button class="wf-btn" onclick="openVersionModal()">New Version</button>`;
+  }
+  if (d.status === 'in-review') {
+    actionsHtml += `<button class="wf-btn" onclick="openReviewModal()">Submit Review</button>`;
+    actionsHtml += `<button class="wf-btn wf-primary" onclick="docApprove()">Approve</button>`;
+  }
+  if (d.status === 'approved') {
+    actionsHtml += `<button class="wf-btn wf-primary" onclick="docMakeEffective()">Make Effective</button>`;
+  }
+  if (d.status === 'effective') {
+    actionsHtml += `<button class="wf-btn" onclick="openPeriodicReviewModal()">Initiate Periodic Review</button>`;
+    actionsHtml += `<button class="wf-btn" onclick="openDistributeModal()">Distribute</button>`;
+    actionsHtml += `<button class="wf-btn" onclick="openVersionModal()">New Version</button>`;
+    actionsHtml += `<button class="wf-btn wf-danger" onclick="docRetire()">Retire</button>`;
+  }
+  actionsHtml += '</div>';
+
+  // Linked records
+  let linksHtml = '';
+  if (d.change_control_id || d.linked_deviation_id || d.linked_capa_id) {
+    linksHtml = `<div class="detail-section">
+      <div class="section-label">Linked Records</div>
+      <div class="detail-grid">
+        ${d.change_control_id ? `<div class="detail-field"><label>Change Control</label><span class="mono">${esc(d.change_control_id)}</span></div>` : ''}
+        ${d.linked_deviation_id ? `<div class="detail-field"><label>Deviation</label><span class="mono">${esc(d.linked_deviation_id)}</span></div>` : ''}
+        ${d.linked_capa_id ? `<div class="detail-field"><label>CAPA</label><span class="mono">${esc(d.linked_capa_id)}</span></div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Tags
+  const tagsHtml = (d.tags && d.tags.length > 0) ? d.tags.map(t => `<span class="ai-tag">${esc(t)}</span>`).join('') : '<span style="color:#5a5a5a;font-size:11px;">No tags</span>';
+
+  return `${bannerHtml}
+    <div class="workflow-bar">${workflowHtml}</div>
+
+    <div class="detail-section">
+      <div class="section-label">Document Information</div>
+      <div class="detail-grid">
+        <div class="detail-field"><label>Doc ID</label><span class="mono">${esc(d.doc_id)}</span></div>
+        <div class="detail-field"><label>Doc Number</label><span class="mono">${esc(d.doc_number)}</span></div>
+        <div class="detail-field"><label>Title</label><span>${esc(d.title)}</span></div>
+        <div class="detail-field"><label>Version</label><span class="mono">${esc(d.version_display)}</span></div>
+        <div class="detail-field"><label>Type</label><span><span class="type-badge type-${d.doc_type}">${esc(d.doc_type)}</span></span></div>
+        <div class="detail-field"><label>Department</label><span>${esc(d.department)}</span></div>
+        <div class="detail-field"><label>Classification</label><span>${esc(d.classification)}</span></div>
+        <div class="detail-field"><label>Status</label><span><span class="status-badge doc-status-${d.status}">${esc(d.status)}</span></span></div>
+        <div class="detail-field"><label>Author</label><span>${esc(d.author)}</span></div>
+        <div class="detail-field"><label>Owner</label><span>${esc(d.owner)}</span></div>
+        <div class="detail-field"><label>Effective Date</label><span>${d.effective_date || '--'}</span></div>
+        <div class="detail-field"><label>Next Review</label><span>${d.next_review_date || '--'} ${reviewCountdown}</span></div>
+        <div class="detail-field"><label>Review Period</label><span>${d.review_period_months} months</span></div>
+        <div class="detail-field"><label>Retention</label><span>${d.retention_years} years</span></div>
+        <div class="detail-field"><label>Training Required</label><span>${d.training_required ? 'Yes' : 'No'}${d.training_type ? ` (${d.training_type})` : ''}</span></div>
+        <div class="detail-field"><label>Checked Out By</label><span>${d.checked_out_by || '--'}</span></div>
+      </div>
+    </div>
+
+    ${d.description ? `<div class="detail-section">
+      <div class="section-label">Description</div>
+      <div style="font-size:12px;color:#b0b0b0;line-height:1.6;white-space:pre-wrap;">${esc(d.description)}</div>
+    </div>` : ''}
+
+    ${d.reason_for_change ? `<div class="detail-section">
+      <div class="section-label">Reason for Change</div>
+      <div style="font-size:12px;color:#b0b0b0;line-height:1.6;">${d.reason_category ? `<span class="type-badge type-form">${esc(d.reason_category)}</span> ` : ''}${esc(d.reason_for_change)}</div>
+    </div>` : ''}
+
+    ${d.summary_of_changes ? `<div class="detail-section">
+      <div class="section-label">Summary of Changes</div>
+      <div style="font-size:12px;color:#b0b0b0;line-height:1.6;white-space:pre-wrap;">${esc(d.summary_of_changes)}</div>
+    </div>` : ''}
+
+    <div class="detail-section">
+      <div class="section-label">Tags</div>
+      ${tagsHtml}
+    </div>
+
+    ${linksHtml}
+    ${actionsHtml}`;
+}
+
+function renderVersionsTab() {
+  const d = selectedDoc;
+  const versions = d.versions || [];
+
+  let actionsHtml = '';
+  if (d.status === 'draft' || d.status === 'effective') {
+    actionsHtml = `<div class="action-row" style="margin-bottom:12px;">
+      <button class="wf-btn" onclick="openVersionModal()">New Version</button>
+      <button class="wf-btn wf-ai" onclick="aiChangeSummary()">AI Change Summary</button>
+    </div>`;
+  }
+
+  if (versions.length === 0) {
+    return `${actionsHtml}<div style="color:#5a5a5a;font-size:12px;text-align:center;padding:30px;">No version records found</div>`;
+  }
+
+  return `${actionsHtml}
+    <table class="data-table">
+      <thead><tr>
+        <th>Version</th><th>Status</th><th>Created By</th><th>Approved By</th><th>Effective</th><th>Change Summary</th>
+      </tr></thead>
+      <tbody>${versions.map(v => `<tr style="${v.status === 'effective' ? 'background:rgba(77,200,110,0.05);' : ''}">
+        <td><span class="version-badge">v${esc(v.version_display)}</span></td>
+        <td><span class="status-badge doc-status-${v.status}">${esc(v.status)}</span></td>
+        <td>${esc(v.created_by)}</td>
+        <td>${v.approved_by || '--'}</td>
+        <td>${v.effective_date || '--'}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(v.change_summary || '')}">${esc(v.change_summary || '--')}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+function renderReviewsTab() {
+  const d = selectedDoc;
+  const reviews = d.reviews || [];
+
+  let actionsHtml = '';
+  if (d.status === 'in-review') {
+    actionsHtml = `<div class="action-row" style="margin-bottom:12px;">
+      <button class="wf-btn" onclick="openReviewModal()">Submit Review</button>
+      <button class="wf-btn wf-primary" onclick="docApprove()">Approve</button>
+      <button class="wf-btn wf-ai" onclick="aiSuggestReviewers()">AI Suggest Reviewers</button>
+    </div>`;
+  }
+  if (d.status === 'effective') {
+    actionsHtml = `<div class="action-row" style="margin-bottom:12px;">
+      <button class="wf-btn" onclick="openPeriodicReviewModal()">Initiate Periodic Review</button>
+    </div>`;
+  }
+
+  if (reviews.length === 0) {
+    return `${actionsHtml}<div style="color:#5a5a5a;font-size:12px;text-align:center;padding:30px;">No review records</div>`;
+  }
+
+  return `${actionsHtml}
+    <table class="data-table">
+      <thead><tr>
+        <th>ID</th><th>Type</th><th>Reviewer</th><th>Decision/Outcome</th><th>Sig. Meaning</th><th>Status</th><th>Date</th><th>Comments</th>
+      </tr></thead>
+      <tbody>${reviews.map(r => `<tr>
+        <td><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#9cdcfe;">${esc(r.review_id)}</span></td>
+        <td>${esc(r.review_type)}</td>
+        <td>${esc(r.reviewer)}</td>
+        <td>${esc(r.decision || r.outcome || '--')}</td>
+        <td>${esc(r.signature_meaning || '--')}</td>
+        <td><span class="status-badge doc-status-${r.status === 'completed' ? 'effective' : r.status === 'pending' ? 'draft' : r.status}">${esc(r.status)}</span></td>
+        <td>${r.completed_at ? new Date(r.completed_at).toLocaleDateString() : (r.due_date || '--')}</td>
+        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.comments || '')}">${esc(r.comments || '--')}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+function renderDistributionTab() {
+  const d = selectedDoc;
+  const dist = d.distribution || [];
+
+  let actionsHtml = `<div class="action-row" style="margin-bottom:12px;">
+    <button class="wf-btn" onclick="openDistributeModal()">Distribute</button>
+    <button class="wf-btn wf-primary" onclick="docAcknowledge()">Acknowledge</button>
+  </div>`;
+
+  if (dist.length === 0) {
+    return `${actionsHtml}<div style="color:#5a5a5a;font-size:12px;text-align:center;padding:30px;">No distribution records</div>`;
+  }
+
+  const total = dist.length;
+  const acked = dist.filter(r => r.acknowledged).length;
+  const trained = dist.filter(r => r.training_completed).length;
+  const trainingReq = dist.filter(r => r.training_required).length;
+  const ackPct = total > 0 ? Math.round(acked/total*100) : 0;
+  const trainPct = trainingReq > 0 ? Math.round(trained/trainingReq*100) : 0;
+  const ackColor = ackPct >= 90 ? 'green' : ackPct >= 50 ? 'amber' : 'red';
+  const trainColor = trainPct >= 90 ? 'green' : trainPct >= 50 ? 'amber' : 'red';
+
+  return `${actionsHtml}
+    <div style="display:flex;gap:16px;margin-bottom:16px;">
+      <div style="flex:1;">
+        <div style="font-size:10px;color:#5a5a5a;margin-bottom:4px;">ACKNOWLEDGEMENT: ${acked}/${total} (${ackPct}%)</div>
+        <div class="progress-bar"><div class="progress-fill progress-${ackColor}" style="width:${ackPct}%"></div></div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:10px;color:#5a5a5a;margin-bottom:4px;">TRAINING: ${trained}/${trainingReq} (${trainPct}%)</div>
+        <div class="progress-bar"><div class="progress-fill progress-${trainColor}" style="width:${trainPct}%"></div></div>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead><tr>
+        <th>User</th><th>Department</th><th>Role</th><th>Acknowledged</th><th>Training</th><th>Due Date</th>
+      </tr></thead>
+      <tbody>${dist.map(r => `<tr>
+        <td>${esc(r.user_name || r.user_id)}</td>
+        <td>${esc(r.department || '--')}</td>
+        <td>${esc(r.role || '--')}</td>
+        <td>${r.acknowledged ? `<span style="color:#4dc86e;">Yes</span> <span style="font-size:9px;color:#5a5a5a;">${new Date(r.acknowledged_at).toLocaleDateString()}</span>` : '<span style="color:#ffc64d;">Pending</span>'}</td>
+        <td>${!r.training_required ? '--' : r.training_completed ? `<span style="color:#4dc86e;">Complete</span>` : '<span style="color:#ffc64d;">Pending</span>'}</td>
+        <td>${r.due_date || '--'}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+function renderCrossRefsTab() {
+  const d = selectedDoc;
+  const refs = d.cross_references || [];
+
+  let actionsHtml = `<div class="action-row" style="margin-bottom:12px;">
+    <button class="wf-btn wf-ai" onclick="aiCheckReferences()">AI Validate References</button>
+    <button class="wf-btn wf-ai" onclick="aiImpact()">AI Impact Assessment</button>
+  </div>`;
+
+  const refsHtml = refs.length > 0
+    ? `<div class="detail-section">
+        <div class="section-label">References (this document references)</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">${refs.map(r => `<span class="ai-tag">${esc(r)}</span>`).join('')}</div>
+      </div>`
+    : '<div style="color:#5a5a5a;font-size:12px;margin-bottom:16px;">No cross-references recorded.</div>';
+
+  const regRefsHtml = (d.regulatory_references && d.regulatory_references.length > 0)
+    ? `<div class="detail-section">
+        <div class="section-label">Regulatory References</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">${d.regulatory_references.map(r => `<span class="ai-tag" style="background:rgba(255,198,77,0.1);color:#ffc64d;">${esc(r)}</span>`).join('')}</div>
+      </div>`
+    : '';
+
+  // AI results if available
+  let aiHtml = '';
+  if (d.ai_review_priority && d.ai_review_priority.cross_ref_health) {
+    const crh = d.ai_review_priority.cross_ref_health;
+    aiHtml = `<div class="ai-panel">
+      <div class="ai-panel-title">Cross-Reference Health Report</div>
+      <div style="font-size:11px;color:#ccc;margin-bottom:8px;">Health Score: <strong style="color:${crh.health_score >= 80 ? '#4dc86e' : crh.health_score >= 50 ? '#ffc64d' : '#f44747'}">${crh.health_score}%</strong></div>
+      <div style="font-size:10px;color:#8e8e8e;">Current: ${crh.current || 0} | Superseded: ${crh.superseded || 0} | Retired: ${crh.retired || 0} | Not Found: ${crh.not_found || 0}</div>
+      ${crh.recommendations ? `<div style="margin-top:8px;font-size:11px;color:#b0b0b0;">${crh.recommendations.map(r => `<div>- ${esc(r)}</div>`).join('')}</div>` : ''}
+    </div>`;
+  }
+
+  if (d.ai_impact_assessment && Object.keys(d.ai_impact_assessment).length > 0) {
+    const ia = d.ai_impact_assessment;
+    aiHtml += `<div class="ai-panel" style="margin-top:8px;">
+      <div class="ai-panel-title">Impact Assessment</div>
+      <div style="font-size:11px;color:#ccc;margin-bottom:4px;">Risk Level: <strong style="color:${ia.risk_level === 'high' ? '#f44747' : ia.risk_level === 'medium' ? '#ffc64d' : '#4dc86e'}">${esc(ia.risk_level || 'unknown')}</strong></div>
+      ${ia.affected_documents ? `<div style="font-size:10px;color:#8e8e8e;">Affected documents: ${ia.affected_documents.length}</div>` : ''}
+      ${ia.training_impact ? `<div style="font-size:10px;color:#8e8e8e;">Training impact: ${ia.training_impact.total_personnel || 0} personnel, ~${ia.training_impact.estimated_hours || 0}h</div>` : ''}
+      ${ia.recommendations ? `<div style="margin-top:8px;font-size:11px;color:#b0b0b0;">${ia.recommendations.map(r => `<div>- ${esc(r)}</div>`).join('')}</div>` : ''}
+    </div>`;
+  }
+
+  return `${actionsHtml}${refsHtml}${regRefsHtml}${aiHtml}`;
+}
+
+function renderAITab() {
+  const d = selectedDoc;
+
+  let classifyHtml = '';
+  if (d.ai_classification && Object.keys(d.ai_classification).length > 0) {
+    const c = d.ai_classification;
+    classifyHtml = `<div class="ai-panel">
+      <div class="ai-panel-title">AI Classification</div>
+      <div class="detail-grid" style="margin-bottom:8px;">
+        <div class="detail-field"><label>Suggested Type</label><span><span class="type-badge type-${c.doc_type || 'sop'}">${esc(c.doc_type || '--')}</span></span></div>
+        <div class="detail-field"><label>Confidence</label><span>${c.confidence || 0}% <span class="confidence-bar"><span class="confidence-fill" style="width:${c.confidence || 0}%"></span></span></span></div>
+        <div class="detail-field"><label>Department</label><span>${esc(c.department || '--')}</span></div>
+        <div class="detail-field"><label>Training Type</label><span>${esc(c.training_type || '--')}</span></div>
+      </div>
+      ${c.tags ? `<div style="margin-bottom:6px;">${c.tags.map(t => `<span class="ai-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+      ${c.reasoning ? `<div style="font-size:11px;color:#8e8e8e;">${esc(c.reasoning)}</div>` : ''}
+      <div class="action-row">
+        <button class="wf-btn wf-primary" onclick="applyClassification()">Apply Classification</button>
+      </div>
+    </div>`;
+  }
+
+  let changeSummaryHtml = '';
+  if (d.ai_change_summary) {
+    changeSummaryHtml = `<div class="ai-panel" style="margin-top:12px;">
+      <div class="ai-panel-title">AI Change Summary</div>
+      <div style="font-size:12px;color:#b0b0b0;line-height:1.6;white-space:pre-wrap;">${esc(d.ai_change_summary)}</div>
+    </div>`;
+  }
+
+  return `<div class="detail-section">
+    <div class="section-label">AI Analysis Tools</div>
+    <div class="action-row" style="margin-bottom:12px;">
+      <button class="wf-btn wf-ai" onclick="aiClassify()">Auto-Classify</button>
+      <button class="wf-btn wf-ai" onclick="aiChangeSummary()">Change Summary</button>
+      <button class="wf-btn wf-ai" onclick="aiCheckReferences()">Validate References</button>
+      <button class="wf-btn wf-ai" onclick="aiImpact()">Impact Assessment</button>
+      <button class="wf-btn wf-ai" onclick="aiSuggestReviewers()">Suggest Reviewers</button>
+      <button class="wf-btn wf-ai" onclick="aiReviewPriorities()">Review Priorities</button>
+    </div>
+  </div>
+  ${classifyHtml}
+  ${changeSummaryHtml}`;
+}
+
+// ── Filter & Tab Setup ──────────────────────────────────────────────────
+
+function setupFilters() {
+  document.querySelectorAll('#statusFilters .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#statusFilters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeStatusFilter = btn.dataset.filter;
+      loadDocuments();
+    });
+  });
+  document.querySelectorAll('#typeFilters .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#typeFilters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeTypeFilter = btn.dataset.type;
+      loadDocuments();
+    });
+  });
+  document.getElementById('searchInput').addEventListener('input', debounce(() => loadDocuments(), 300));
+}
+
+function filterByStatus(status) {
+  activeStatusFilter = status;
+  document.querySelectorAll('#statusFilters .filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === status);
+  });
+  loadDocuments();
+}
+
+function setupTabs() {
+  document.querySelectorAll('.editor-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeTab = tab.dataset.tab;
+      if (selectedDoc) renderDetail();
+    });
+  });
+}
+
+// ── Resizers ────────────────────────────────────────────────────────────
+
+function setupResizers() {
+  const workbench = document.querySelector('.workbench');
+  const rV = document.getElementById('resizerV');
+  const rH = document.getElementById('resizerH');
+
+  let startX, startY, startW, startH;
+
+  rV.addEventListener('mousedown', e => {
+    e.preventDefault();
+    startX = e.clientX;
+    startW = document.querySelector('.left-panel').offsetWidth;
+    rV.classList.add('dragging');
+    function onMove(ev) { workbench.style.gridTemplateColumns = `${startW + ev.clientX - startX}px 4px 1fr`; }
+    function onUp() { rV.classList.remove('dragging'); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+
+  rH.addEventListener('mousedown', e => {
+    e.preventDefault();
+    startY = e.clientY;
+    startH = document.querySelector('.bottom-panel').offsetHeight;
+    rH.classList.add('dragging');
+    function onMove(ev) {
+      const newH = startH - (ev.clientY - startY);
+      workbench.style.gridTemplateRows = `1fr 4px ${Math.max(60, newH)}px`;
+    }
+    function onUp() { rH.classList.remove('dragging'); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+}
+
+// ── CRUD Actions ────────────────────────────────────────────────────────
+
+function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); }
+function closeCreateModal() { document.getElementById('createModal').classList.add('hidden'); }
+
+function onDocTypeChange() {
+  const t = document.getElementById('createDocType').value;
+  document.getElementById('createReviewPeriod').value = REVIEW_DEFAULTS[t] || 24;
+  document.getElementById('createTrainingReq').checked = TRAINING_DEFAULTS[t] !== undefined ? TRAINING_DEFAULTS[t] : true;
+}
+
+async function createDocument() {
+  const tags = document.getElementById('createTags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const body = {
+    docNumber: document.getElementById('createDocNumber').value.trim(),
+    title: document.getElementById('createTitle').value.trim(),
+    description: document.getElementById('createDesc').value.trim(),
+    docType: document.getElementById('createDocType').value,
+    department: document.getElementById('createDept').value,
+    classification: document.getElementById('createClassification').value,
+    owner: document.getElementById('createOwner').value.trim() || undefined,
+    reviewPeriodMonths: parseInt(document.getElementById('createReviewPeriod').value) || 24,
+    trainingRequired: document.getElementById('createTrainingReq').checked,
+    trainingType: document.getElementById('createTrainingType').value,
+    tags,
+    changeControlId: document.getElementById('createCC').value.trim() || undefined,
+    linkedDeviationId: document.getElementById('createDev').value.trim() || undefined,
+    linkedCapaId: document.getElementById('createCapa').value.trim() || undefined,
+  };
+
+  if (!body.docNumber || !body.title) {
+    alert('Document number and title are required');
+    return;
+  }
+
+  try {
+    const res = await authFetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `Document created: ${data.docId} (${body.docNumber})`);
+      closeCreateModal();
+      await loadDocuments();
+      loadDocDetail(data.docId);
+    } else {
+      alert(data.error || 'Failed to create document');
+    }
+  } catch (e) {
+    log('error', `Create failed: ${e.message}`);
+    alert('Error: ' + e.message);
+  }
+}
+
+// ── Version Actions ─────────────────────────────────────────────────────
+
+function openVersionModal() {
+  if (!selectedDoc) return;
+  document.getElementById('versionModalSub').textContent = `${selectedDoc.doc_number} v${selectedDoc.version_display}`;
+  document.getElementById('versionModal').classList.remove('hidden');
+}
+function closeVersionModal() { document.getElementById('versionModal').classList.add('hidden'); }
+
+function onRevTypeChange() {
+  const isMajor = document.getElementById('verRevType').value === 'major';
+  document.getElementById('verCCGroup').style.display = isMajor ? 'block' : 'none';
+}
+
+async function createVersion() {
+  if (!selectedDoc) return;
+  const body = {
+    revisionType: document.getElementById('verRevType').value,
+    changeControlId: document.getElementById('verCC').value.trim() || undefined,
+    reasonCategory: document.getElementById('verReasonCat').value,
+    reasonForChange: document.getElementById('verReason').value.trim(),
+    summaryOfChanges: document.getElementById('verSummary').value.trim(),
+  };
+
+  if (!body.reasonForChange) { alert('Reason for change is required'); return; }
+  if (body.revisionType === 'major' && !body.changeControlId) { alert('Change control ID required for major revisions'); return; }
+
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/versions`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `Version ${data.versionDisplay} created for ${selectedDoc.doc_number}`);
+      closeVersionModal();
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else {
+      alert(data.error || 'Failed to create version');
+    }
+  } catch (e) {
+    log('error', `Version create failed: ${e.message}`);
+  }
+}
+
+// ── Workflow Actions ────────────────────────────────────────────────────
+
+async function docSubmit() {
+  if (!selectedDoc) return;
+  if (!confirm(`Submit ${selectedDoc.doc_number} for review?`)) return;
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/submit`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `${selectedDoc.doc_number} submitted for review`);
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+function openReviewModal() {
+  if (!selectedDoc) return;
+  const user = window.__user || {};
+  document.getElementById('revSignerInfo').textContent = `${user.name || user.id || 'Unknown'} | ${new Date().toLocaleString()} | Review`;
+  document.getElementById('reviewModal').classList.remove('hidden');
+}
+function closeReviewModal() { document.getElementById('reviewModal').classList.add('hidden'); }
+
+async function submitReviewDecision() {
+  if (!selectedDoc) return;
+  const body = {
+    decision: document.getElementById('revDecision').value,
+    signatureMeaning: document.getElementById('revSigMeaning').value,
+    comments: document.getElementById('revComments').value.trim(),
+    reviewType: 'version-review',
+  };
+
+  if ((body.decision === 'rejected' || body.decision === 'returned-for-revision') && !body.comments) {
+    alert('Comments are required for rejected or returned-for-revision decisions');
+    return;
+  }
+
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/review`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `Review submitted: ${body.decision}`);
+      closeReviewModal();
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+async function docApprove() {
+  if (!selectedDoc) return;
+  if (!confirm(`Approve ${selectedDoc.doc_number} v${selectedDoc.version_display}?`)) return;
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ signatureMeaning:'approval' }) });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `${selectedDoc.doc_number} approved`);
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+async function docMakeEffective() {
+  if (!selectedDoc) return;
+  const effDate = prompt('Effective date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+  if (!effDate) return;
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/make-effective`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ effectiveDate: effDate }) });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `${selectedDoc.doc_number} effective from ${effDate}`);
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+async function docRetire() {
+  if (!selectedDoc) return;
+  const reason = prompt('Reason for retirement:');
+  if (!reason) return;
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/retire`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ reason }) });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `${selectedDoc.doc_number} retired`);
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+async function docCheckout() {
+  if (!selectedDoc) return;
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/checkout`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `${selectedDoc.doc_number} checked out`);
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+async function docCheckin() {
+  if (!selectedDoc) return;
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/checkin`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `${selectedDoc.doc_number} checked in`);
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+// ── Periodic Review Actions ─────────────────────────────────────────────
+
+function openPeriodicReviewModal() {
+  if (!selectedDoc) return;
+  document.getElementById('periodicModalSub').textContent = `${selectedDoc.doc_number} v${selectedDoc.version_display}`;
+  document.getElementById('periodicModal').classList.remove('hidden');
+}
+function closePeriodicModal() { document.getElementById('periodicModal').classList.add('hidden'); }
+
+async function initiatePeriodicReview() {
+  if (!selectedDoc) return;
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/periodic-review`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `Periodic review initiated for ${selectedDoc.doc_number}`);
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+async function completePeriodicReview() {
+  if (!selectedDoc) return;
+  const body = {
+    outcome: document.getElementById('prOutcome').value,
+    comments: document.getElementById('prComments').value.trim(),
+  };
+  if (!body.comments) { alert('Comments are required'); return; }
+
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/periodic-review/complete`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `Periodic review completed: ${body.outcome}`);
+      closePeriodicModal();
+      await loadDocuments();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+// ── Distribution Actions ────────────────────────────────────────────────
+
+function openDistributeModal() {
+  if (!selectedDoc) return;
+  document.getElementById('distTraining').checked = selectedDoc.training_required;
+  document.getElementById('distributeModal').classList.remove('hidden');
+}
+function closeDistributeModal() { document.getElementById('distributeModal').classList.add('hidden'); }
+
+async function distributeDocument() {
+  if (!selectedDoc) return;
+  const lines = document.getElementById('distUsers').value.trim().split('\n').filter(Boolean);
+  const users = lines.map(l => {
+    const parts = l.split(',').map(s => s.trim());
+    return { userId: parts[0], name: parts[1] || parts[0], department: parts[2] || '', role: parts[3] || '' };
+  });
+  if (users.length === 0) { alert('At least one user is required'); return; }
+
+  const body = {
+    users,
+    trainingRequired: document.getElementById('distTraining').checked,
+    dueDate: document.getElementById('distDueDate').value || undefined,
+  };
+
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/distribute`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `Distributed to ${data.distributedTo} users`);
+      closeDistributeModal();
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+async function docAcknowledge() {
+  if (!selectedDoc) return;
+  if (!confirm('Acknowledge receipt and understanding of this document?')) return;
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/acknowledge`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `Acknowledged ${selectedDoc.doc_number}`);
+      loadDocDetail(selectedDoc.doc_id);
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+// ── AI Actions ──────────────────────────────────────────────────────────
+
+async function aiClassify() {
+  if (!selectedDoc) return;
+  log('info', 'Running AI classification...');
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/ai/classify`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `AI classified as ${data.classification.doc_type} (${data.classification.confidence}% confidence)`);
+      loadDocDetail(selectedDoc.doc_id);
+    } else {
+      log('warn', `AI classify failed: ${data.error}`);
+    }
+  } catch (e) { log('error', e.message); }
+}
+
+async function aiClassifyNew() {
+  // Classify from create modal
+  const title = document.getElementById('createTitle').value.trim();
+  const desc = document.getElementById('createDesc').value.trim();
+  if (!title) { alert('Enter a title first'); return; }
+
+  log('info', 'Running AI classification on new document...');
+  // We cannot call the AI classify endpoint without a doc_id, so just inform the user
+  alert('AI classification is available after creating the document. Create first, then use AI Auto-Classify from the AI tab.');
+}
+
+async function aiChangeSummary() {
+  if (!selectedDoc) return;
+  log('info', 'Generating AI change summary...');
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/ai/change-summary`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', 'AI change summary generated');
+      loadDocDetail(selectedDoc.doc_id);
+    } else {
+      log('warn', `AI change summary failed: ${data.error}`);
+    }
+  } catch (e) { log('error', e.message); }
+}
+
+async function aiGenerateChangeSummary() {
+  if (!selectedDoc) return;
+  log('info', 'Generating change summary for version modal...');
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/ai/change-summary`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok && data.changeSummary) {
+      document.getElementById('verSummary').value = data.changeSummary.summary || '';
+      log('info', 'AI change summary applied to version form');
+    } else {
+      log('warn', `AI change summary failed: ${data.error || 'No data'}`);
+    }
+  } catch (e) { log('error', e.message); }
+}
+
+async function aiCheckReferences() {
+  if (!selectedDoc) return;
+  log('info', 'Validating cross-references...');
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/ai/check-references`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `Reference health: ${data.referenceReport.health_score}%`);
+      loadDocDetail(selectedDoc.doc_id);
+    } else {
+      log('warn', `AI reference check failed: ${data.error}`);
+    }
+  } catch (e) { log('error', e.message); }
+}
+
+async function aiImpact() {
+  if (!selectedDoc) return;
+  log('info', 'Assessing document revision impact...');
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/ai/impact`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', `Impact: ${data.impactReport.risk_level} risk, ${(data.impactReport.affected_documents||[]).length} affected docs`);
+      loadDocDetail(selectedDoc.doc_id);
+    } else {
+      log('warn', `AI impact failed: ${data.error}`);
+    }
+  } catch (e) { log('error', e.message); }
+}
+
+async function aiSuggestReviewers() {
+  if (!selectedDoc) return;
+  log('info', 'AI suggesting reviewers...');
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}/ai/suggest-reviewers`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok && data.reviewers) {
+      let msg = 'Suggested Reviewers:\n\n';
+      data.reviewers.forEach(r => { msg += `${r.role} (${r.department}) - ${r.rationale}\n`; });
+      alert(msg);
+      log('info', `AI suggested ${data.reviewers.length} reviewers`);
+    } else {
+      log('warn', `AI suggest reviewers failed: ${data.error}`);
+    }
+  } catch (e) { log('error', e.message); }
+}
+
+async function aiReviewPriorities() {
+  log('info', 'Generating AI review priorities...');
+  try {
+    const res = await authFetch(`${API}/ai/review-priorities`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const data = await res.json();
+    if (data.ok) {
+      const priorities = data.priorities || [];
+      if (priorities.length === 0) {
+        alert('No documents due for review in the next 90 days.');
+      } else {
+        let msg = `Review Priorities (${priorities.length} documents):\n\n`;
+        priorities.forEach(p => {
+          msg += `[${p.priority.toUpperCase()}] ${p.doc_number} - ${p.title}\n  Score: ${p.score}, Due: ${p.days_until_due}d\n  ${p.recommendation}\n\n`;
+        });
+        alert(msg);
+      }
+      log('info', `AI priorities: ${data.summary?.critical || 0} critical, ${data.summary?.high || 0} high, ${data.summary?.routine || 0} routine`);
+    } else {
+      log('warn', `AI priorities failed: ${data.error}`);
+    }
+  } catch (e) { log('error', e.message); }
+}
+
+async function applyClassification() {
+  if (!selectedDoc || !selectedDoc.ai_classification) return;
+  const c = selectedDoc.ai_classification;
+  const body = {
+    doc_type: c.doc_type,
+    department: c.department,
+    tags: c.tags,
+    training_type: c.training_type,
+    training_required: c.training_required,
+  };
+
+  try {
+    const res = await authFetch(`${API}/${selectedDoc.doc_id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    if (data.ok) {
+      log('info', 'AI classification applied');
+      loadDocDetail(selectedDoc.doc_id);
+      loadDocuments();
+    } else alert(data.error);
+  } catch (e) { log('error', e.message); }
+}
+
+// ── Utilities ───────────────────────────────────────────────────────────
+
+function esc(str) {
+  if (str == null) return '';
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+}
+
+function log(level, msg) {
+  const el = document.getElementById('auditLog');
+  const time = new Date().toLocaleTimeString();
+  el.innerHTML += `<div class="log-line"><span class="log-time">${time}</span><span class="log-${level}">${esc(msg)}</span></div>`;
+  el.scrollTop = el.scrollHeight;
+}
+</script>
+<script src="/shared/dev-progress.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#0e0e12" rx="12"/>
+  <defs>
+    <linearGradient id="vg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="cellg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34d399"/>
+      <stop offset="100%" style="stop-color:#6366f1"/>
+    </linearGradient>
+  </defs>
+  <!-- The V -->
+  <path d="M40,45 L100,155 L160,45" fill="none" stroke="url(#vg)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Cell/molecule cluster inside the V -->
+  <!-- Main cell -->
+  <circle cx="100" cy="105" r="14" fill="none" stroke="#34d399" stroke-width="1.5" opacity="0.8"/>
+  <!-- Nucleus -->
+  <circle cx="100" cy="105" r="5" fill="#34d399" opacity="0.4"/>
+  <!-- Smaller cells budding off - like cell division -->
+  <circle cx="82" cy="88" r="8" fill="none" stroke="#34d399" stroke-width="1.2" opacity="0.5"/>
+  <circle cx="82" cy="88" r="3" fill="#34d399" opacity="0.25"/>
+  <circle cx="118" cy="88" r="8" fill="none" stroke="#34d399" stroke-width="1.2" opacity="0.5"/>
+  <circle cx="118" cy="88" r="3" fill="#34d399" opacity="0.25"/>
+  <!-- Tiny molecules floating -->
+  <circle cx="93" cy="72" r="3" fill="none" stroke="#34d399" stroke-width="1" opacity="0.35"/>
+  <circle cx="110" cy="75" r="2.5" fill="none" stroke="#34d399" stroke-width="1" opacity="0.3"/>
+  <circle cx="100" cy="130" r="4" fill="none" stroke="#34d399" stroke-width="1" opacity="0.3"/>
+  <!-- Connection lines between cells - like a network -->
+  <line x1="90" y1="95" x2="86" y2="92" stroke="#34d399" stroke-width="0.8" opacity="0.3"/>
+  <line x1="110" y1="95" x2="114" y2="92" stroke="#34d399" stroke-width="0.8" opacity="0.3"/>
+</svg>
