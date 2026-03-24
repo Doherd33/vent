@@ -1,4 +1,3 @@
-# Vent — Project Context
 
 ## Vision
 
